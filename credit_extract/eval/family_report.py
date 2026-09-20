@@ -158,14 +158,29 @@ class CoverageRun:
         return failures
 
 
+#: Every format the corpus actually holds. ``.mht`` is here because that is
+#: what a browser saves an EDGAR filing as, and it is how the first real
+#: documents arrived.
+_DOCUMENT_SUFFIXES = (".html", ".htm", ".mht", ".mhtml", ".pdf", ".txt")
+
+
 def _resolve_document(file: AssertionFile) -> Path | None:
     """Find the document an assertion file is about."""
-    for directory in (GOLD_DIR, CORPUS_DIR, CORPUS_DIR / "gold"):
-        for suffix in (".html", ".htm"):
+    if (
+        file.path is not None
+        and Path(file.path).suffix.lower() in _DOCUMENT_SUFFIXES
+        and Path(file.path).exists()
+    ):
+        return Path(file.path)
+    for directory in (GOLD_DIR, CORPUS_DIR, CORPUS_DIR / "gold", CORPUS_DIR / "real"):
+        for suffix in _DOCUMENT_SUFFIXES:
             candidate = directory / f"{file.document}{suffix}"
             if candidate.exists():
                 return candidate
-    matches = sorted(CORPUS_DIR.rglob(f"{file.document}.htm*"))
+    matches = [
+        path for path in sorted(CORPUS_DIR.rglob(f"{file.document}.*"))
+        if path.suffix.lower() in _DOCUMENT_SUFFIXES
+    ]
     return matches[0] if matches else None
 
 
@@ -192,6 +207,15 @@ def run_coverage(
         run.cost_usd += result.report.cost.total_usd
 
         if not include_mutations:
+            continue
+        if path.suffix.lower() not in (".html", ".htm", ".xhtml"):
+            # The mutators rewrite HTML. An .mht archive is MIME-wrapped and
+            # quoted-printable encoded, so editing it as text would corrupt it
+            # silently and every mutant would measure the corruption.
+            run.notes.append(
+                f"{file.document}: {path.suffix} source, so no mutants were "
+                "generated; its family coverage is Tier 2 only"
+            )
             continue
         # Tier 3: mutate this document and check the injected defect is found
         # and the invariant rewrites do not move the answer.

@@ -81,20 +81,28 @@ untestable_in_this_environment:
                F04_absence, F05_versioning, F06_structure, F07_benchmark,
                F08_units, F09_definitional_depth, F10_conditionality,
                F11_layout]
+    status: partially_lifted
     reason: >
       sec.gov and efts.sec.gov are blocked by this build environment's egress
       policy, so the stratified harvest in section 8 of the spec could not be
-      run and no real filing has ever passed through this pipeline.
+      run. Four real filings were supplied by hand and are in corpus/real: a
+      Silver Point recurring-revenue facility, a BNP Paribas BDC warehouse
+      revolver, a Wells Fargo prose amendment and an Ares Capital blackline.
+      Four documents are not a stratified sample of anything.
     consequence: >
-      Every number in this report is measured on generated documents. Real
-      filings differ in ways generated ones cannot anticipate: OCR noise,
-      inconsistent drafting conventions, tables rendered as whitespace-aligned
-      text, and defects nobody thought to synthesise. Treat all reported
-      metrics as an upper bound.
+      Every synthetic number in this report was measured on documents written
+      by the same hand that wrote the parser, and the four real ones showed
+      exactly what that is worth: recall collapsed from roughly thirty fields
+      of thirty-eight to between zero and three, both amendments parsed to no
+      effects at all, and a blackline mechanism the pipeline had no concept of
+      was quietly reporting a deleted figure as the facility size. The
+      per-family table separates real from synthetic for this reason. Read the
+      real column; the synthetic column measures the fixtures.
     remedy: >
       Run scripts/harvest_corpus.py from a network with EDGAR access, label
       per section 8, and refit. The harness reads a labels file alongside any
-      document, so real filings drop straight in.
+      document, so real filings drop straight in -- which is how the four in
+      corpus/real were added.
 
   - id: JEV_API
     families: [F02_precedence, F03_external_reference, F04_absence,

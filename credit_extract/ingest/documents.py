@@ -1117,6 +1117,17 @@ def operative_document(
             cell.end += shift
         tables.append(moved)
 
+    # Deletions are carried forward and re-anchored. Losing them here would
+    # leave a blackline's operative text correct but unexplained: the report
+    # would show the new figure with nothing to say what it replaced.
+    redlines = []
+    for region in base.redlines:
+        shift = remap_offset(region.start, operative.offset_map) - region.start
+        moved = region.model_copy()
+        moved.start += shift
+        moved.end += shift
+        redlines.append(moved)
+
     document = NormalizedDocument(
         document_id=f"{base.document_id}+operative",
         source_path=document_set.base.path,
@@ -1125,6 +1136,7 @@ def operative_document(
         tables=tables,
         pages=base.pages,
         sections=detect_sections(operative.text),
+        redlines=redlines,
         meta={
             "operative_as_of": str(document_set.operative_as_of or ""),
             "chain_length": str(len(document_set.chain)),

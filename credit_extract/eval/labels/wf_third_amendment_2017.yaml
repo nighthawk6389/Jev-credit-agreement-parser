@@ -1,0 +1,74 @@
+# Tier 2 assertions: Wells Fargo Third Amendment, effective 15 November 2016.
+#
+# A prose amendment, filed on its own, of the kind that makes up most of what
+# arrives in production. It is the document that proved the amendment parser
+# was matching its own phrasing rather than the market's: it parsed to zero
+# effects, silently, and every synthetic amendment had been passing.
+#
+# It exercises three conventions no fixture used:
+#
+#   * "amended and restated in its entirety **as follows**", without the
+#     "to read" the patterns required;
+#   * targets numbered 2.1(a)(ii)(B)(3), four levels below the section;
+#   * "amended to (i) delete the reference therein to X and insert in lieu
+#     thereof a reference to Y and (ii) delete ... and insert ...", where only
+#     the first of the two edits carries a section anchor.
+#
+# And it is filed alone, so there is no agreement to apply any of it to. That
+# is reported rather than papered over: the changes are enumerated, and nothing
+# in the document is offered as a current deal term.
+
+document: wf_third_amendment_2017
+source: real
+tier: 2
+
+assertions:
+  # -- F05 versioning ------------------------------------------------------
+  - id: wf_amendment_alone_cannot_yield_operative_terms
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: chain_finding
+    target: base_agreement_absent
+    expect: true
+    note: >
+      Exhibits are filed one at a time. Treating the amendment as the
+      agreement hands a reader its recitals as if they were deal terms.
+
+  - id: wf_is_not_an_amendment_and_restatement
+    family: F05_versioning
+    member: superseded_by_amendment_and_restatement
+    kind: chain_finding
+    target: superseded_by_restatement
+    expect: false
+    note: >
+      "Third Amendment" to an existing agreement, not an A&R of it; the
+      amendment number is what tells the two apart.
+
+  - id: wf_nothing_can_be_applied
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: report_count
+    target: effects_applied
+    expect: 0
+    note: there is no base text to apply the eighteen changes to
+
+  # -- F01 integrity -------------------------------------------------------
+  - id: wf_schedules_are_not_attached
+    family: F01_integrity
+    member: referenced_schedule_absent
+    kind: invariant_fired
+    target: referenced_schedules_present
+    expect: true
+    note: Schedule C-1 is amended by this document and is not attached to it
+
+  # -- coverage ------------------------------------------------------------
+  - id: wf_uncaptured_content_is_swept
+    family: F01_integrity
+    member: undefined_term_used
+    kind: report_count
+    target: orphan_chunks
+    expect: 9
+    note: >
+      A tripwire, not a target. Low because most of this amendment is quoted
+      replacement text, which the sweep attributes to the sections it
+      restates rather than reporting as uncaptured.

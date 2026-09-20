@@ -40,6 +40,8 @@ AssertionKind = Literal[
     "orphan_found",         # some orphan chunk contains this text
     "archetype",            # the detected deal archetype
     "report_count",         # a countable on the document report
+    "chain_finding",        # a named chain finding is / is not reported
+    "text_present",         # a string does / does not occur in operative text
 ]
 
 #: Statuses the pipeline presents as settled. Anything else is a review flag,
@@ -254,6 +256,26 @@ def evaluate_assertion(
     elif kind == "report_count":
         observed = _report_count(result.report, assertion.target)
         passed = values_equal(assertion.expect, observed)
+        # A count of the pipeline's own working -- how many chunks the sweep
+        # caught, how long the review queue is -- is a tripwire on the harness,
+        # not a proposition about the deal. No reader is ever shown one as a
+        # term, so a drifted count is a change to investigate and never a
+        # silent error. Counting it as one would let harness noise consume a
+        # family's error budget and hide a real mistake behind it.
+        confident = False
+
+    elif kind == "chain_finding":
+        reported = {
+            finding.get("kind") for finding in result.report.chain.get("findings", [])
+        }
+        observed = assertion.target in reported
+        passed = bool(observed) == bool(assertion.expect)
+
+    elif kind == "text_present":
+        # Asserted against the *operative* text, which is what every span
+        # quotes. A figure a blackline deleted must not be addressable here.
+        observed = assertion.target in getattr(result.document, "text", "")
+        passed = bool(observed) == bool(assertion.expect)
 
     else:  # pragma: no cover - AssertionKind is exhaustive
         raise ValueError(f"unhandled assertion kind {kind!r}")
@@ -273,6 +295,9 @@ _REPORT_COUNTS = {
     "unresolved_conflicts": lambda r: len(r.unresolved_conflicts),
     "override_findings": lambda r: len(r.override_findings),
     "review_queue": lambda r: len(r.review_queue),
+    "chain_findings": lambda r: len(r.chain.get("findings", [])),
+    "effects_applied": lambda r: len(r.chain.get("effects_applied", [])),
+    "effects_unapplied": lambda r: len(r.chain.get("effects_unapplied", [])),
 }
 
 

@@ -187,8 +187,20 @@ families:
     defended_by:
       - table_scale_declarations
       - nested_table_flattening
+      - RedlineRange
+      - blackline_deletions_excised
     members:
       - grid_rendered_as_text
       - footnote_modifies_table
       - table_split_across_pages
       - nested_html_tables
+      - blackline_flattened_to_text   # struck and inserted text side by side
+    notes: >
+      The blackline member is the most consequential defect in the register and
+      was the last one found, because it is invisible in plain text. A
+      blackline amendment marks its deletions with strike-through and its
+      insertions with a bold double underline; flatten it and both survive,
+      adjacent, in reading order. A real filing renders as "Up to U.S. $
+      2,150,000,000 2,250,000,000", and a first-match parser reports the
+      deleted figure off a span that quotes the document accurately.
+

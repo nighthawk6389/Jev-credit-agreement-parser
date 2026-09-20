@@ -74,6 +74,10 @@ class ExtractionResult(BaseModel):
     #: The rate, decomposed. A CSA folded into the margin overstates the yield
     #: and then overstates every MFN comparison made against it.
     pricing: Pricing = Field(default_factory=Pricing)
+    #: The operative text every span in this result indexes into. Excluded
+    #: from serialization -- it is already quoted span by span, and carrying a
+    #: second copy would double the size of every report on disk.
+    document: Any = Field(default=None, exclude=True, repr=False)
 
     def unresolved(self) -> list[str]:
         return [name for name, f in self.fields.items() if not f.is_resolved]
@@ -255,11 +259,12 @@ def run_pipeline(
 
     # -- tiers 0-1: ingest, structure, deterministic parsing ----------------
     operative: OperativeText | None = None
+    if document_set is None:
+        doc = ingest(source, document_id=document_id)
+        document_set = _implied_set(source, doc)
     if document_set is not None:
         operative = apply_chain(document_set)
         doc = operative_document(document_set, operative)
-    else:
-        doc = ingest(source, document_id=document_id)
     graph = build_definition_graph(doc)
     segments = segment_all(doc, graph)
     sweep = _sweep_chunks(segments)
@@ -436,6 +441,7 @@ def run_pipeline(
         actus_mappings=mappings,
         archetype=archetype,
         pricing=pricing,
+        document=doc,
         standards={
             "fibo": fibo_map.provenance(),
             "fpml": fpml_model.provenance(),
@@ -533,6 +539,37 @@ def _attribute_spans(
                 )
                 for span in variant.spans
             ]
+
+
+def _implied_set(
+    source: str | Path, doc: NormalizedDocument
+) -> DocumentSet | None:
+    """Treat a lone amendment as the one-document chain that it is.
+
+    Handed an amendment on its own -- which is how exhibits are filed, one at
+    a time -- a single-document run would report the amendment's recitals as
+    deal terms and say nothing about it. The chain machinery already knows how
+    to say what is wrong with that, so the document is routed through it.
+
+    Base agreements are left alone: there is nothing for the chain to add, and
+    routing every document through it would cost a reassembly for nothing.
+    """
+    from .ingest.documents import (
+        Document, assemble_set, classify_role, detect_effective_date,
+    )
+
+    role, number, title = classify_role(doc.text)
+    if role not in ("amendment", "amendment_and_restatement") and not doc.is_blackline:
+        return None
+    return assemble_set([Document(
+        document_id=doc.document_id,
+        path=str(source),
+        role=role,
+        normalized=doc,
+        effective_date=detect_effective_date(doc.text),
+        amendment_number=number,
+        title=title,
+    )])
 
 
 def _chain_report(

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 import yaml
 from pydantic import BaseModel, Field
 
@@ -102,6 +103,11 @@ class BlindSpot(BaseModel):
     member: str | None = None
     families: list[str] = Field(default_factory=list)
     category: str = "untestable_from_public_filings"
+    #: ``partially_lifted`` when some real examples now exist but too few to
+    #: measure anything. A blind spot that has narrowed is still a blind spot,
+    #: and dropping the entry the moment one example arrives is how a register
+    #: stops describing the gap it was written for.
+    status: Literal["open", "partially_lifted"] = "open"
 
     @property
     def affected(self) -> list[str]:
@@ -143,7 +149,11 @@ class BlindSpotRegister(BaseModel):
             lines.append(f"  {heading}")
             for entry in entries:
                 affected = ", ".join(entry.affected) or "-"
-                lines.append(f"    [{entry.id}] {affected}")
+                marker = (
+                    " (PARTIALLY LIFTED)"
+                    if entry.status == "partially_lifted" else ""
+                )
+                lines.append(f"    [{entry.id}]{marker} {affected}")
                 lines.append(f"      why: {_one_line(entry.reason)}")
                 if entry.consequence:
                     lines.append(f"      so:  {_one_line(entry.consequence)}")
