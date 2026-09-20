@@ -1,0 +1,65 @@
+{
+  "document_id": "fixture_meridian_2017",
+  "synthetic": true,
+  "note": "Synthetic surrogate for the Paya/GTCR-Ultra agreement.",
+  "fields": {
+    "borrower.legal_name": "MERIDIAN PAYMENTS INTERMEDIATE, LLC",
+    "holdings.legal_name": "MERIDIAN PAYMENTS HOLDINGS, LLC",
+    "administrative_agent.legal_name": "NORTHGATE CAPITAL LP",
+    "syndication_agent.legal_name": "CEDAR POINT CREDIT PARTNERS LLC",
+    "closing_date": "2017-08-01",
+    "initial_term_loan.commitment": 150500000,
+    "initial_term_loan.maturity_date": "2024-08-01",
+    "delayed_draw.commitment": 25000000,
+    "revolver.commitment": 20000000,
+    "revolver.maturity_date": "2022-08-01",
+    "lc_sublimit": 5000000,
+    "commitment_fee_pct": 0.5,
+    "fronting_fee_pct": 0.125,
+    "libor_floor_pct": 1.0,
+    "applicable_margin.eurodollar_top_level_pct": 5.0,
+    "amortization.quarterly_amount": 376250,
+    "amortization.unique_payment_count": 27,
+    "amortization.correct_total": 10158750,
+    "amortization.literal_table_total": 11663750,
+    "financial_covenant.opening_level": 6.5,
+    "financial_covenant.final_level": 5.5,
+    "opening_total_leverage_ratio": 3.72,
+    "mfn_threshold_pct": 0.5,
+    "mfn_sunset": null,
+    "call_protection.soft_call_pct": 1.0,
+    "call_protection.months": 12
+  },
+  "expected_status": {
+    "mfn_sunset": "absent_from_document",
+    "consolidated_ebitda.addback_cap_clause_a_xvi": "external_reference"
+  },
+  "traps": {
+    "trap_1_duplicated_amortization_rows": {
+      "printed_rows": 31,
+      "true_quarters": 27,
+      "literal_total": 11663750,
+      "correct_total": 10158750,
+      "duplicated_year": 2023
+    },
+    "trap_2_hardcoded_opening_ebitda": {
+      "quarters": {
+        "September 30, 2016": 11206749,
+        "December 31, 2016": 10115035,
+        "March 31, 2017": 9449315,
+        "June 30, 2017": 9699216
+      },
+      "ltm_total": 40470315
+    },
+    "trap_3_uncapped_external_addback": {
+      "clause": "(a)(xvi)",
+      "external_document": "Sponsor Model",
+      "visible_cap_pct": 25.0,
+      "visible_cap_applies_to": "(a)(xiii)-(a)(xv)"
+    },
+    "trap_4_absent_mfn_sunset": {
+      "mfn_threshold_pct": 0.5,
+      "sunset": null
+    }
+  }
+}
