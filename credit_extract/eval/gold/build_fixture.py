@@ -84,6 +84,12 @@ class Variant:
     lc_sublimit: int = 5_000_000
     netting_cap: int = 20_000_000
 
+    #: Post-2022 deals price off Term SOFR with a separate credit spread
+    #: adjustment. Folding the CSA into the margin overstates the yield, which
+    #: then overstates every MFN comparison made against it.
+    benchmark: str = "libor"
+    csa_bps: str = "10"
+    floor_applies_to: str = "base_rate"
     libor_floor: str = "1.00"
     commitment_fee: str = "0.50"
     fronting_fee: str = "0.125"
@@ -327,7 +333,24 @@ def _all_definitions(v: Variant) -> list[tuple[str, str]]:
          'applicable Reuters screen page as the London interbank offered rate for '
          'deposits in Dollars for a period equal to such Interest Period; provided '
          f'that the LIBO Rate shall not at any time be less than {v.libor_floor}% '
-         'per annum.'),
+         'per annum.') if v.benchmark == "libor" else
+        ("Adjusted Term SOFR",
+         'means, for any Interest Period, the Term SOFR Reference Rate for a '
+         'tenor comparable to such Interest Period, plus the Credit Spread '
+         f'Adjustment of {v.csa_bps} basis points for such tenor; provided that '
+         f'the Term SOFR Reference Rate shall not at any time be less than '
+         f'{v.libor_floor}% per annum. Term SOFR means the three-month forward-'
+         'looking term rate based on SOFR.'),
+        ("Benchmark Replacement",
+         'means, in order of precedence, (a) Adjusted Term SOFR, (b) Daily '
+         'Simple SOFR, and (c) the alternate rate of interest selected by the '
+         'Administrative Agent and the Borrower as the then-prevailing market '
+         'convention, in each case plus the related Benchmark Replacement '
+         'Adjustment.') if v.benchmark != "libor" else
+        ("Interest Period",
+         'means, as to any borrowing, the period commencing on the date of such '
+         'borrowing and ending one, three or six months thereafter, as selected '
+         'by the Borrower.'),
         ("Restricted Subsidiary",
          'means any Subsidiary of Holdings other than an Unrestricted Subsidiary.'),
         ("Revolving Credit Commitment",
@@ -584,6 +607,25 @@ def build_html(v: Variant = Variant()) -> str:
         "on the Maturity Date. There is no scheduled amortization.</p>"
     )
     ebitda_block = consolidated_ebitda_definition(v) if v.has_ebitda else ""
+    benchmark_name = (
+        "the LIBO Rate" if v.benchmark == "libor" else "Adjusted Term SOFR"
+    )
+    all_in_floor = (
+        f" The All-In Yield shall not be less than {v.libor_floor}% per annum."
+        if v.floor_applies_to == "all_in" else ""
+    )
+    # A filing that does not declare an omission is expected to carry its
+    # schedules. Referencing one that is absent, with no omission declared, is
+    # an integrity defect -- so the fixture attaches them unless the variant is
+    # deliberately testing the omitted case.
+    schedules_block = "" if v.omitted_schedules else (
+        "<p>Schedule 1.01(a)</p>"
+        "<p>Commitments of each Lender as of the Closing Date are set out "
+        "opposite such Lender's name in the records of the Administrative "
+        "Agent.</p>"
+        "<p>Schedule 6.01</p>"
+        "<p>Existing Indebtedness: none as of the Closing Date.</p>"
+    )
     omission_notice = (
         "<p>The Schedules and Exhibits to this Agreement have been omitted "
         "pursuant to Item 601(a)(5) of Regulation S-K. The Registrant hereby "
@@ -667,10 +709,10 @@ premium or penalty, subject to Section 2.16. (b) The Borrower shall prepay the
 Initial Term Loans with {v.ecf_sweep}% of Excess Cash Flow for each fiscal
 year, with step-downs to 25% and 0% based on the Senior Secured First Lien Net
 Leverage Ratio.</p>
-<p>SECTION 2.12 Interest. (a) Each Loan shall bear interest at the LIBO Rate
+<p>SECTION 2.12 Interest. (a) Each Loan shall bear interest at {benchmark_name}
 plus the Applicable Margin or, at the Borrower's election, the Base Rate plus
-the Applicable Margin. (b) The Applicable Margin shall be determined from the
-following grid:</p>
+the Applicable Margin.{all_in_floor} (b) The Applicable Margin shall be
+determined from the following grid:</p>
 {pricing_grid}
 {archetype_section(v)}
 <p>SECTION 2.14 Incremental Facilities. (a) The Borrower may request one or
@@ -694,6 +736,11 @@ Loans subject to such Repricing Transaction.</p>
 <p>ARTICLE IV</p>
 <p>REPRESENTATIONS AND WARRANTIES</p>
 {leverage_rep_block}
+<p>SECTION 5.14 Designation of Subsidiaries. The Borrower may designate any
+Restricted Subsidiary as an Unrestricted Subsidiary, and may re-designate any
+Unrestricted Subsidiary as a Restricted Subsidiary, in each case by written
+notice to the Administrative Agent, so long as no Event of Default has occurred
+and is continuing.</p>
 <hr>
 <p>ARTICLE VI</p>
 <p>NEGATIVE COVENANTS</p>
@@ -712,6 +759,7 @@ Subsidiaries in an aggregate principal amount not to exceed {other_basket}; and
 at 200 Harbor Street, Suite 1400, Wilmington, Delaware 19801, Attention: Chief
 Financial Officer.</p>
 {omission_notice}
+{schedules_block}
 <p>SECTION 9.22 Governing Law. THIS AGREEMENT SHALL BE GOVERNED BY, AND
 CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE STATE OF NEW YORK.</p>
 </body></html>

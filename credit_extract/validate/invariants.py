@@ -10,6 +10,7 @@ catches the resulting $1,505,000 overstatement.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from decimal import Decimal
 from typing import Any, Callable
@@ -63,6 +64,14 @@ class InvariantContext(BaseModel):
     #: does not have are skipped rather than failed.
     archetype: str | None = None
     inapplicable_invariants: frozenset[str] = frozenset()
+    #: Populated by the pipeline. Typed loosely to keep this module free of a
+    #: dependency on the graph and pricing layers.
+    definition_graph: Any = None
+    precedence_graph: Any = None
+    pricing: Any = None
+    document: Any = None
+    chain_findings: list[Any] = Field(default_factory=list)
+    document_omits_schedules: bool = False
 
     def quarter_index(self, when: date) -> int:
         return self.fiscal_calendar.quarter_index(when)
@@ -82,11 +91,16 @@ class InvariantContext(BaseModel):
 
 Invariant = Callable[[InvariantContext], list[InvariantViolation]]
 _REGISTRY: list[tuple[str, Invariant]] = []
+#: invariant name -> the trap family it defends. Keeps the register in
+#: trap_families.yaml honest: a family whose `defended_by` names an invariant
+#: that does not exist is caught by a test.
+FAMILY_OF: dict[str, str] = {}
 
 
-def invariant(name: str) -> Callable[[Invariant], Invariant]:
+def invariant(name: str, family: str = "F01_integrity") -> Callable[[Invariant], Invariant]:
     def decorate(fn: Invariant) -> Invariant:
         _REGISTRY.append((name, fn))
+        FAMILY_OF[name] = family
         return fn
     return decorate
 
@@ -96,7 +110,7 @@ def invariant(name: str) -> Callable[[Invariant], Invariant]:
 # ---------------------------------------------------------------------------
 
 
-@invariant("amortization_dates_strictly_increasing")
+@invariant("amortization_dates_strictly_increasing", "F01_integrity")
 def _dates_increasing(ctx: InvariantContext) -> list[InvariantViolation]:
     """Trap 1. Four duplicated rows make the table step backwards in time."""
     schedule = ctx.amortization
@@ -124,7 +138,7 @@ def _dates_increasing(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("amortization_dates_evenly_spaced")
+@invariant("amortization_dates_evenly_spaced", "F08_units")
 def _dates_evenly_spaced(ctx: InvariantContext) -> list[InvariantViolation]:
     """Spacing is checked in quarters, not days: quarters differ in length."""
     schedule = ctx.amortization
@@ -159,7 +173,7 @@ def _dates_evenly_spaced(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("amortization_row_count_matches_quarters")
+@invariant("amortization_row_count_matches_quarters", "F01_integrity")
 def _row_count(ctx: InvariantContext) -> list[InvariantViolation]:
     schedule = ctx.amortization
     if not schedule or not schedule.rows:
@@ -200,7 +214,7 @@ def _row_count(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("amortization_total_consistent")
+@invariant("amortization_total_consistent", "F01_integrity")
 def _amortization_total(ctx: InvariantContext) -> list[InvariantViolation]:
     """Level schedule: printed total must equal amount x quarters spanned."""
     schedule = ctx.amortization
@@ -232,7 +246,7 @@ def _amortization_total(ctx: InvariantContext) -> list[InvariantViolation]:
     ]
 
 
-@invariant("amortization_sums_to_principal")
+@invariant("amortization_sums_to_principal", "F01_integrity")
 def _sums_to_principal(ctx: InvariantContext) -> list[InvariantViolation]:
     schedule = ctx.amortization
     principal = schedule.original_principal if schedule else None
@@ -273,7 +287,7 @@ def _sums_to_principal(ctx: InvariantContext) -> list[InvariantViolation]:
     return []
 
 
-@invariant("actus_schedule_matches_document")
+@invariant("actus_schedule_matches_document", "F01_integrity")
 def _actus_diff(ctx: InvariantContext) -> list[InvariantViolation]:
     """The generated ACTUS schedule, diffed cell by cell against the table."""
     if not ctx.actus_schedule_diffs:
@@ -304,7 +318,7 @@ def _actus_diff(ctx: InvariantContext) -> list[InvariantViolation]:
 # ---------------------------------------------------------------------------
 
 
-@invariant("covenant_steps_monotonic")
+@invariant("covenant_steps_monotonic", "F07_benchmark")
 def _covenant_monotonic(ctx: InvariantContext) -> list[InvariantViolation]:
     steps = ctx.covenant_steps
     if len(steps) < 2:
@@ -330,7 +344,7 @@ def _covenant_monotonic(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("revolver_maturity_before_term_maturity")
+@invariant("revolver_maturity_before_term_maturity", "F01_integrity")
 def _maturity_order(ctx: InvariantContext) -> list[InvariantViolation]:
     revolver = ctx.value("revolver.maturity_date")
     term = ctx.value("initial_term_loan.maturity_date")
@@ -355,7 +369,7 @@ def _maturity_order(ctx: InvariantContext) -> list[InvariantViolation]:
     ]
 
 
-@invariant("percentages_and_ratios_in_range")
+@invariant("percentages_and_ratios_in_range", "F08_units")
 def _ranges(ctx: InvariantContext) -> list[InvariantViolation]:
     violations: list[InvariantViolation] = []
     for name, field in ctx.fields.items():
@@ -386,7 +400,7 @@ def _ranges(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("mfn_trigger_ordering")
+@invariant("mfn_trigger_ordering", "F07_benchmark")
 def _mfn_ordering(ctx: InvariantContext) -> list[InvariantViolation]:
     pari = ctx.mfn_triggers.get("pari_passu")
     junior = ctx.mfn_triggers.get("junior")
@@ -407,7 +421,7 @@ def _mfn_ordering(ctx: InvariantContext) -> list[InvariantViolation]:
     ]
 
 
-@invariant("opening_leverage_consistent")
+@invariant("opening_leverage_consistent", "F01_integrity")
 def _opening_leverage(ctx: InvariantContext) -> list[InvariantViolation]:
     """Compute leverage from extracted inputs; compare to the stated figure."""
     stated = ctx.value("opening_total_leverage_ratio")
@@ -436,7 +450,7 @@ def _opening_leverage(ctx: InvariantContext) -> list[InvariantViolation]:
     ]
 
 
-@invariant("ebitda_baskets_have_identified_base")
+@invariant("ebitda_baskets_have_identified_base", "F09_definitional_depth")
 def _basket_base(ctx: InvariantContext) -> list[InvariantViolation]:
     """A basket quoted off EBITDA is meaningless without knowing which EBITDA."""
     violations = []
@@ -461,7 +475,7 @@ def _basket_base(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("every_numeric_has_a_unit")
+@invariant("every_numeric_has_a_unit", "F08_units")
 def _units_present(ctx: InvariantContext) -> list[InvariantViolation]:
     """F08. A number without a unit is a 1000x error waiting to be believed."""
     violations = []
@@ -489,7 +503,7 @@ def _units_present(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
-@invariant("date_invariants_use_fiscal_calendar")
+@invariant("date_invariants_use_fiscal_calendar", "F08_units")
 def _calendar_declared(ctx: InvariantContext) -> list[InvariantViolation]:
     """F08. Assuming calendar quarters on a 52/53-week borrower is a false
     positive factory, so an undetected calendar is itself reported."""
@@ -539,3 +553,412 @@ def check_all(ctx: InvariantContext) -> list[InvariantViolation]:
 
 def registered() -> list[str]:
     return [name for name, _ in _REGISTRY]
+
+
+# ---------------------------------------------------------------------------
+# F01 -- integrity: defects that parse cleanly
+# ---------------------------------------------------------------------------
+
+_XREF_RE = re.compile(
+    r"\bSection\s+(\d+\.\d+[A-Za-z]?)\b|\bArticle\s+([IVXLC]+)\b"
+)
+_SCHEDULE_REF_RE = re.compile(
+    r"\b(Schedule|Exhibit|Annex)\s+([\w.()-]+)", re.IGNORECASE
+)
+#: "twenty-five percent (35%)" -- the words and the numeral disagree.
+_NUMERAL_WORD_RE = re.compile(
+    r"\b(?P<words>(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+    r"ten|eleven|twelve|fifteen|one|two|three|four|five|six|seven|eight|nine)"
+    r"(?:[\s-](?:one|two|three|four|five|six|seven|eight|nine))?)\s+"
+    r"percent\s*\(\s*(?P<numeral>\d+(?:\.\d+)?)\s*%\s*\)",
+    re.IGNORECASE,
+)
+_WORD_NUMBERS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+    "fifteen": 15, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+}
+
+
+def _words_to_number(words: str) -> int | None:
+    parts = re.split(r"[\s-]+", words.strip().lower())
+    total = 0
+    for part in parts:
+        if part not in _WORD_NUMBERS:
+            return None
+        total += _WORD_NUMBERS[part]
+    return total
+
+
+@invariant("cross_references_resolve", "F01_integrity")
+def _cross_references(ctx: InvariantContext) -> list[InvariantViolation]:
+    """Every internal cross-reference points at a section that exists.
+
+    A citation to a section that was renumbered in a restatement reads
+    perfectly and sends the reader nowhere.
+    """
+    doc = ctx.document
+    if doc is None or not doc.sections:
+        return []
+    known = {marker.section_id for marker in doc.sections}
+    known |= {s.upper() for s in known}
+    missing: dict[str, Span] = {}
+    for match in _XREF_RE.finditer(doc.text):
+        target = match.group(1) or f"ARTICLE {match.group(2)}"
+        if target in known or target.upper() in known:
+            continue
+        missing.setdefault(target, doc.span(match.start(), match.end()))
+    return [
+        InvariantViolation(
+            invariant="cross_references_resolve",
+            message=(
+                f"cross-reference to Section {target} does not resolve; no "
+                "such section exists in this document"
+            ),
+            fields=["cross_references"], spans=[span],
+            observed=target, expected="an existing section",
+        )
+        for target, span in sorted(missing.items())
+    ]
+
+
+@invariant("numeral_and_words_agree", "F01_integrity")
+def _numeral_words(ctx: InvariantContext) -> list[InvariantViolation]:
+    """"twenty-five percent (35%)" -- both halves parse and they disagree."""
+    doc = ctx.document
+    if doc is None:
+        return []
+    violations = []
+    for match in _NUMERAL_WORD_RE.finditer(doc.text):
+        spelled = _words_to_number(match.group("words"))
+        numeral = Decimal(match.group("numeral"))
+        if spelled is None or Decimal(spelled) == numeral:
+            continue
+        violations.append(InvariantViolation(
+            invariant="numeral_and_words_agree",
+            message=(
+                f"{match.group('words')!r} does not equal {numeral}% in "
+                f"{' '.join(match.group(0).split())!r}"
+            ),
+            fields=["numeral_word_agreement"],
+            spans=[doc.span(match.start(), match.end())],
+            observed=str(numeral), expected=str(spelled),
+        ))
+    return violations
+
+
+@invariant("defined_terms_are_unique", "F01_integrity")
+def _terms_unique(ctx: InvariantContext) -> list[InvariantViolation]:
+    """A term defined twice means half the document reads the wrong one."""
+    graph = ctx.definition_graph
+    doc = ctx.document
+    if graph is None or doc is None:
+        return []
+    violations = []
+    for term, node in sorted(graph.nodes.items()):
+        pattern = re.compile(
+            r'"' + re.escape(term) + r'"\s*(?:means|shall mean)\b'
+        )
+        hits = list(pattern.finditer(doc.text))
+        if len(hits) <= 1:
+            continue
+        violations.append(InvariantViolation(
+            invariant="defined_terms_are_unique",
+            message=(
+                f'"{term}" is defined {len(hits)} times; which definition '
+                "governs depends on where the reader is in the document"
+            ),
+            fields=["definitions"],
+            spans=[doc.span(h.start(), h.end()) for h in hits[:3]],
+            observed=len(hits), expected=1,
+        ))
+    return violations
+
+
+@invariant("referenced_schedules_present", "F01_integrity")
+def _schedules_present(ctx: InvariantContext) -> list[InvariantViolation]:
+    """A schedule cited but absent is either a gap or a filing artifact.
+
+    It is only a violation when nothing in the document says it was omitted:
+    a filer who declares the omission has told the reader what is missing, and
+    that is an F03 finding rather than an integrity defect.
+    """
+    doc = ctx.document
+    if doc is None or ctx.document_omits_schedules:
+        return []
+    cited: dict[str, Span] = {}
+    for match in _SCHEDULE_REF_RE.finditer(doc.text):
+        # The identifier runs up to the sentence, so "Schedule 6.01." at the end
+        # of a sentence captures the full stop and then never matches the
+        # heading "Schedule 6.01" that is sitting right there.
+        identifier = match.group(2).rstrip(".,;:")
+        if not identifier:
+            continue
+        cited.setdefault(
+            f"{match.group(1).title()} {identifier}",
+            doc.span(match.start(), match.end()),
+        )
+    if not cited:
+        return []
+    present = {
+        name for name in cited
+        if re.search(
+            r"^\s*" + re.escape(name) + r"\s*$", doc.text, re.MULTILINE | re.IGNORECASE
+        )
+    }
+    absent = sorted(set(cited) - present)
+    if not absent:
+        return []
+    return [InvariantViolation(
+        invariant="referenced_schedules_present",
+        severity="warning",
+        message=(
+            f"{len(absent)} referenced schedule(s) are not in the document and "
+            f"no omission is declared: {', '.join(absent[:6])}"
+        ),
+        fields=["schedules"], spans=[cited[absent[0]]],
+        observed=len(absent), expected=0,
+    )]
+
+
+# ---------------------------------------------------------------------------
+# F02 -- precedence
+# ---------------------------------------------------------------------------
+
+
+@invariant("precedence_graph_is_acyclic", "F02_precedence")
+def _precedence_acyclic(ctx: InvariantContext) -> list[InvariantViolation]:
+    """Two provisions each claiming to override the other is a drafting error."""
+    graph = ctx.precedence_graph
+    if graph is None:
+        return []
+    return [
+        InvariantViolation(
+            invariant="precedence_graph_is_acyclic",
+            message=(
+                "precedence cycle: "
+                + " -> ".join(f"Section {s}" for s in cycle)
+                + " -> " + f"Section {cycle[0]}; which governs is undetermined"
+            ),
+            fields=["precedence"], observed=cycle, expected="acyclic",
+        )
+        for cycle in graph.cycles()
+    ]
+
+
+@invariant("proviso_depth_is_readable", "F02_precedence")
+def _proviso_depth(ctx: InvariantContext) -> list[InvariantViolation]:
+    graph = ctx.precedence_graph
+    if graph is None:
+        return []
+    return [
+        InvariantViolation(
+            invariant="proviso_depth_is_readable",
+            severity="warning",
+            message=(
+                f"Section {stack.section_id} stacks {stack.depth} provisos; at "
+                "this depth the operative meaning is not readable from the "
+                "clause and any extraction from it should be reviewed"
+            ),
+            fields=["provisos"], spans=[stack.span],
+            observed=stack.depth, expected=f"< {4}",
+        )
+        for stack in graph.deep_provisos()
+    ]
+
+
+# ---------------------------------------------------------------------------
+# F05 -- versioning
+# ---------------------------------------------------------------------------
+
+
+@invariant("amendment_targets_exist", "F05_versioning")
+def _amendment_targets(ctx: InvariantContext) -> list[InvariantViolation]:
+    return [
+        InvariantViolation(
+            invariant="amendment_targets_exist",
+            message=finding.message,
+            fields=["amendment_chain"],
+            observed=finding.section, expected="an existing section",
+        )
+        for finding in ctx.chain_findings
+        if getattr(finding, "kind", "") == "amendment_target_missing"
+    ]
+
+
+@invariant("restatements_do_not_conflict", "F05_versioning")
+def _restatement_conflicts(ctx: InvariantContext) -> list[InvariantViolation]:
+    return [
+        InvariantViolation(
+            invariant="restatements_do_not_conflict",
+            message=finding.message,
+            fields=["amendment_chain"],
+            observed=finding.documents, expected="one operative version",
+        )
+        for finding in ctx.chain_findings
+        if getattr(finding, "kind", "") == "operative_version_ambiguous"
+    ]
+
+
+# ---------------------------------------------------------------------------
+# F07 -- benchmark
+# ---------------------------------------------------------------------------
+
+
+@invariant("csa_not_silently_zero", "F07_benchmark")
+def _csa_present(ctx: InvariantContext) -> list[InvariantViolation]:
+    """A SOFR deal with no credit spread adjustment is usually a miss.
+
+    CSAs are near-universal on SOFR facilities. A silent zero understates the
+    yield, and the understated yield then understates every MFN comparison
+    made against it.
+    """
+    pricing = ctx.pricing
+    if pricing is None or pricing.base not in ("term_sofr", "daily_simple_sofr"):
+        return []
+    if pricing.credit_spread_adjustment is not None:
+        return []
+    closing = ctx.value("closing_date")
+    if isinstance(closing, date) and closing < date(2021, 1, 1):
+        return []
+    return [InvariantViolation(
+        invariant="csa_not_silently_zero",
+        severity="warning",
+        message=(
+            f"pricing is off {pricing.base} but no credit spread adjustment "
+            "was found; a CSA treated as zero understates the all-in yield and "
+            "therefore understates the MFN comparison"
+        ),
+        fields=["pricing.credit_spread_adjustment"],
+        observed=None, expected="a stated CSA, or an explicit zero",
+    )]
+
+
+@invariant("grid_levels_monotonic", "F07_benchmark")
+def _grid_monotonic(ctx: InvariantContext) -> list[InvariantViolation]:
+    """Margin must fall as leverage falls; a grid that inverts is an error."""
+    pricing = ctx.pricing
+    if pricing is None or len(pricing.grid) < 2:
+        return []
+    priced = [
+        level for level in pricing.grid
+        if level.margin is not None and level.leverage_to is not None
+    ]
+    priced.sort(key=lambda level: level.leverage_to, reverse=True)
+    violations = []
+    for higher, lower in zip(priced, priced[1:]):
+        if lower.margin.value <= higher.margin.value:
+            continue
+        violations.append(InvariantViolation(
+            invariant="grid_levels_monotonic",
+            message=(
+                f"grid level {lower.level!r} prices at {lower.margin.value}% at "
+                f"lower leverage than level {higher.level!r} at "
+                f"{higher.margin.value}%; margin must not rise as leverage falls"
+            ),
+            fields=["pricing.grid"],
+            observed=str(lower.margin.value), expected=f"<= {higher.margin.value}",
+        ))
+    return violations
+
+
+@invariant("grid_bands_contiguous", "F07_benchmark")
+def _grid_bands(ctx: InvariantContext) -> list[InvariantViolation]:
+    """Bands must tile the range: a gap or overlap leaves the rate undefined."""
+    pricing = ctx.pricing
+    if pricing is None or len(pricing.grid) < 2:
+        return []
+    banded = [
+        level for level in pricing.grid
+        if level.leverage_from is not None or level.leverage_to is not None
+    ]
+    banded.sort(
+        key=lambda level: level.leverage_from
+        if level.leverage_from is not None else Decimal("-1")
+    )
+    violations = []
+    for lower, higher in zip(banded, banded[1:]):
+        if lower.leverage_to is None or higher.leverage_from is None:
+            continue
+        if lower.leverage_to == higher.leverage_from:
+            continue
+        relation = "gap" if lower.leverage_to < higher.leverage_from else "overlap"
+        violations.append(InvariantViolation(
+            invariant="grid_bands_contiguous",
+            message=(
+                f"{relation} between grid level {lower.level!r} (up to "
+                f"{lower.leverage_to}) and {higher.level!r} (above "
+                f"{higher.leverage_from}); the applicable margin is "
+                f"{'undefined' if relation == 'gap' else 'ambiguous'} in that range"
+            ),
+            fields=["pricing.grid"],
+            observed=f"{lower.leverage_to} / {higher.leverage_from}",
+            expected="contiguous bands",
+        ))
+    return violations
+
+
+# ---------------------------------------------------------------------------
+# F10 -- conditionality
+# ---------------------------------------------------------------------------
+
+
+@invariant("conditions_parse", "F10_conditionality")
+def _conditions_parse(ctx: InvariantContext) -> list[InvariantViolation]:
+    """A condition that does not parse cannot be evaluated at resolution time."""
+    from ..models.conditions import ConditionSyntaxError, parse_condition
+
+    violations = []
+    for name, field in ctx.fields.items():
+        for index, variant in enumerate(field.variants):
+            for condition in variant.conditions:
+                try:
+                    parse_condition(condition.expr)
+                except ConditionSyntaxError as exc:
+                    violations.append(InvariantViolation(
+                        invariant="conditions_parse",
+                        message=(
+                            f"{name} variant {index} carries an unparseable "
+                            f"condition {condition.expr!r}: {exc}"
+                        ),
+                        fields=[name], spans=condition.source_spans[:1],
+                        observed=condition.expr, expected="the condition grammar",
+                    ))
+    return violations
+
+
+@invariant("variant_ranges_do_not_overlap", "F10_conditionality")
+def _variant_ranges(ctx: InvariantContext) -> list[InvariantViolation]:
+    """Two unconditional variants covering one date make resolution arbitrary."""
+    violations = []
+    for name, field in ctx.fields.items():
+        unconditional = [
+            v for v in field.variants if v.unconditional and v.value is not None
+        ]
+        for index, first in enumerate(unconditional):
+            for second in unconditional[index + 1:]:
+                if not _windows_overlap(first, second):
+                    continue
+                violations.append(InvariantViolation(
+                    invariant="variant_ranges_do_not_overlap",
+                    message=(
+                        f"{name} has two unconditional variants whose date "
+                        f"windows overlap ({first.effective_from}..."
+                        f"{first.effective_to} and {second.effective_from}..."
+                        f"{second.effective_to}); which governs is decided by "
+                        "list order rather than by the document"
+                    ),
+                    fields=[name], spans=first.spans[:1],
+                    observed=[str(first.value), str(second.value)],
+                    expected="disjoint windows or an explicit condition",
+                ))
+    return violations
+
+
+def _windows_overlap(a: Any, b: Any) -> bool:
+    a_start = a.effective_from or date.min
+    a_end = a.effective_to or date.max
+    b_start = b.effective_from or date.min
+    b_end = b.effective_to or date.max
+    return a_start <= b_end and b_start <= a_end

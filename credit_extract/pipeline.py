@@ -22,10 +22,12 @@ from pydantic import BaseModel, Field
 
 from .extract.passes import (
     Candidate, ExtractionBackend, OfflineRuleBackend, parse_amortization_schedule,
-    parse_covenant_grid, parse_hardcoded_ebitda, run_passes,
+    parse_covenant_grid, parse_hardcoded_ebitda, parse_pricing_grid,
+    run_passes,
 )
 from .extract.reconcile import reconcile
 from .graph.definitions import build_definition_graph
+from .graph.precedence import PrecedenceGraph, build_precedence_graph
 from .ingest.documents import (
     DocumentSet, OperativeText, apply_chain, load_document_set,
     operative_document,
@@ -40,6 +42,7 @@ from .models.core import (
 )
 from .models.archetypes import ArchetypeDetection, inapplicable_fields
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
+from .models.pricing import Pricing, parse_pricing
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
 from .validate.calibrate import Thresholds, load_thresholds
 from .validate.invariants import (
@@ -47,6 +50,7 @@ from .validate.invariants import (
 )
 from .validate.archetype import detect_archetype
 from .validate.jev import JevBackend, JevSession, OfflineJev
+from .validate.omission import document_omits_schedules
 from .validate import validators as V
 
 #: Defined terms worth testing for override. These are the quantities a
@@ -65,6 +69,9 @@ class ExtractionResult(BaseModel):
     actus_mappings: dict[str, ActusMapping] = Field(default_factory=dict)
     standards: dict[str, Any] = Field(default_factory=dict)
     archetype: ArchetypeDetection = Field(default_factory=ArchetypeDetection)
+    #: The rate, decomposed. A CSA folded into the margin overstates the yield
+    #: and then overstates every MFN comparison made against it.
+    pricing: Pricing = Field(default_factory=Pricing)
 
     def unresolved(self) -> list[str]:
         return [name for name, f in self.fields.items() if not f.is_resolved]
@@ -106,6 +113,10 @@ def _build_invariant_context(
     fiscal_calendar: FiscalCalendar | None = None,
     archetype: str | None = None,
     inapplicable: frozenset[str] = frozenset(),
+    definition_graph: Any = None,
+    precedence_graph: Any = None,
+    pricing: Pricing | None = None,
+    chain_findings: list[Any] | None = None,
 ) -> InvariantContext:
     steps = [
         CovenantStep(label=label, level=level, span=span)
@@ -143,6 +154,12 @@ def _build_invariant_context(
         fiscal_calendar=fiscal_calendar or detect_fiscal_calendar(doc.text),
         archetype=archetype,
         inapplicable_invariants=inapplicable,
+        definition_graph=definition_graph,
+        precedence_graph=precedence_graph,
+        pricing=pricing,
+        document=doc,
+        chain_findings=chain_findings or [],
+        document_omits_schedules=document_omits_schedules(doc),
     )
 
 
@@ -261,6 +278,8 @@ def run_pipeline(
 
     # -- tier 2: free deterministic invariants ------------------------------
     fiscal_calendar = detect_fiscal_calendar(doc.text)
+    precedence = build_precedence_graph(doc)
+    pricing = parse_pricing(doc, parse_pricing_grid(doc))
     mappings, actus_diffs = _actus_contracts(fields, schedule)
     violations: list[InvariantViolation] = []
 
@@ -303,7 +322,21 @@ def run_pipeline(
         fiscal_calendar=fiscal_calendar,
         archetype=archetype.archetype,
         inapplicable=frozenset(profile.inapplicable_invariants),
+        definition_graph=graph,
+        precedence_graph=precedence,
+        pricing=pricing,
+        chain_findings=document_set.findings if document_set else [],
     ))
+
+    # Precedence is what justifies a variant ordering. A field whose section is
+    # overridden elsewhere records the clause that does the overriding, so the
+    # ordering is citable rather than asserted.
+    for field in fields.values():
+        if field.precedence_basis or not field.spans:
+            continue
+        basis = precedence.basis_for(field.spans[0].section_id)
+        if basis:
+            field.precedence_basis = basis
 
     V.validator_a_span_support(ctx)
     orphans = V.validator_b_orphan_sweep(ctx)
@@ -368,6 +401,8 @@ def run_pipeline(
         chain=_chain_report(document_set, operative, amendment_verdicts),
         archetype=archetype.model_dump(),
         definition_graph_stats=graph.stats() | {
+            "precedence": precedence.stats(),
+            "pricing": pricing.describe(),
             "segment_coverage": {
                 kind: round(coverage(doc, chunks), 4)
                 for kind, chunks in segments.items()
@@ -385,6 +420,7 @@ def run_pipeline(
             f"archetype: {archetype.archetype} ({archetype.basis}, "
             f"{archetype.confidence:.2f}) -- {archetype.note}",
             f"fields inapplicable to this archetype: {len(not_applicable)}",
+            f"pricing: {pricing.describe()}",
         ],
     )
 
@@ -396,6 +432,7 @@ def run_pipeline(
         amortization=schedule,
         actus_mappings=mappings,
         archetype=archetype,
+        pricing=pricing,
         standards={
             "fibo": fibo_map.provenance(),
             "fpml": fpml_model.provenance(),
