@@ -164,10 +164,27 @@ def _actus_contracts(
             ],
             arrayNextPrincipalRedemptionPayment=[r.amount for r in corrected.rows],
         )
-        events = generate_schedule(contract)
-        diffs = [
-            d.model_dump() for d in diff_schedule(events, schedule.as_pairs())
-        ]
+        try:
+            events = generate_schedule(contract)
+        except ValueError as exc:
+            # The extracted terms do not form a runnable contract -- a payment
+            # after maturity, or a redemption array that does not line up. That
+            # is a finding about the document, not a reason to stop: report it
+            # as a schedule disagreement and carry on.
+            diffs = [{
+                "row": -1,
+                "field": "contract",
+                "generated": None,
+                "documented": str(exc),
+                "message": (
+                    "the extracted terms do not form a runnable ACTUS contract: "
+                    f"{exc}"
+                ),
+            }]
+        else:
+            diffs = [
+                d.model_dump() for d in diff_schedule(events, schedule.as_pairs())
+            ]
     return mappings, diffs
 
 
@@ -267,6 +284,17 @@ def run_pipeline(
             }
             for name, f in fields.items()
             if f.status == "external_reference"
+        ],
+        override_findings=[
+            {
+                "subject": pair.subject,
+                "probability": round(pair.probability, 4),
+                "overrides": pair.overrides,
+                "note": pair.note,
+                "governing_span": pair.second.model_dump(),
+                "displaced_span": pair.first.model_dump(),
+            }
+            for pair in overrides if pair.overrides
         ],
         review_queue=_review_queue(fields),
         definition_graph_stats=graph.stats() | {

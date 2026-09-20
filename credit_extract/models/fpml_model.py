@@ -334,8 +334,12 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "the MFN yield differential that triggers repricing of the "
               "Initial Term Loans", "percent", "economic_terms", 5, None, None,
               verified_term=False, anchors=["All-In Yield"], sections=["2.14"]),
+        # Kind is text, not date: a sunset is written as a period running from
+        # closing ("twelve months after the Closing Date"), not as a calendar
+        # date. Typing it as a date would force the extractor to compute one,
+        # and no model in this pipeline is allowed to compute anything.
         _spec("mfn_sunset",
-              "any expiry or sunset of the MFN protection", "date",
+              "any expiry or sunset of the MFN protection", "text",
               "economic_terms", 5, None, None, verified_term=False,
               sections=["2.14"],
               negative="This agreement contains no provision under which the "

@@ -447,6 +447,14 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     Rule("mfn_threshold_pct",
          r"exceeds the All-In Yield applicable to the Initial Term Loans by more "
          r"than\s+([\d.]+%)", 0.90),
+    # An MFN sunset is a period, not a date, and it is written as a carve-out
+    # from the MFN clause rather than as its own provision. Without this rule
+    # the field is null whether or not a sunset exists, and the negative-space
+    # validator ends up asserting absence on agreements that plainly have one.
+    Rule("mfn_sunset",
+         r"(?:shall (?:not apply|cease to apply)|shall no longer apply)[^.]{0,160}?"
+         r"(?:after|following)\s+the date that is\s+"
+         r"([a-z]+|\d+)\s+months?\s+after the Closing Date", 0.88),
     # -- Consolidated EBITDA construction ------------------------------------
     Rule("consolidated_ebitda.addback_cap_pct",
          r"shall not exceed\s+([\d.]+%)\s+of Consolidated EBITDA for such period",

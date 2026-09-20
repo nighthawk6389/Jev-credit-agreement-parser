@@ -24,6 +24,7 @@ for judgements about what text says.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field as dc_field
 from decimal import Decimal
 from typing import Any, Iterable
@@ -83,9 +84,11 @@ class ValidationContext:
     orphans: list[OrphanChunk] = dc_field(default_factory=list)
     conflicts: list[ConflictRecord] = dc_field(default_factory=list)
 
-    def threshold_for(self, name: str) -> float:
+    def threshold_for(self, name: str, validator: str = "A_span_support") -> float:
         spec = self.specs.get(name)
-        return self.thresholds.for_class(spec.field_class if spec else "administrative")
+        return self.thresholds.for_class(
+            spec.field_class if spec else "administrative", validator
+        )
 
 
 def _describe(field: ExtractedValue, spec: FieldSpec) -> str:
@@ -150,9 +153,10 @@ def validator_a_span_support(ctx: ValidationContext) -> int:
             if decision is None:
                 continue
             field = ctx.fields[name]
-            threshold = ctx.threshold_for(name)
+            threshold = ctx.threshold_for(name, "A_span_support")
             passed = decision.confidence >= threshold
             field.validation_confidence = decision.confidence
+            field.validation_source = "A_span_support"
             field.record(ValidationEvent(
                 validator="A_span_support",
                 question=questions[names.index(name)].statement,
@@ -294,7 +298,8 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
     for name, probability in min_absence.items():
         field = ctx.fields[name]
         spec = ctx.specs[name]
-        threshold = ctx.threshold_for(name)
+        threshold = ctx.threshold_for(name, "C_negative_space")
+        field.validation_source = "C_negative_space"
         field.record(ValidationEvent(
             validator="C_negative_space",
             question=spec.absence_statement,
@@ -352,29 +357,41 @@ OVERRIDE_MARKERS = (
 
 
 def find_override_candidates(
-    doc: NormalizedDocument, subject: str, pad: int = 400
+    doc: NormalizedDocument, subject: str, reach: int = 700, pad: int = 400
 ) -> list[OverridePair]:
-    """Locate passages that both address ``subject``, one carrying override language."""
+    """Find provisions *introduced* by override language that govern ``subject``.
+
+    Anchored on the marker, not on the subject. A window drawn around every
+    mention of "Consolidated EBITDA" catches any "provided that" within a few
+    hundred characters and reports three findings where there is one, because
+    the definition is full of provisos that modify other things. A
+    ``notwithstanding`` governs what follows it, so the candidate provision
+    starts at the marker and has to mention the subject downstream of it.
+    """
     mentions = doc.find_all(subject.replace(" ", r"\s+"))
     if len(mentions) < 2:
         return []
-    marked: list[Span] = []
-    for mention in mentions:
-        lo, hi = mention.expand(pad, len(doc.text))
-        window = doc.slice(lo, hi).lower()
-        if any(marker in window for marker in OVERRIDE_MARKERS):
-            marked.append(doc.span(lo, hi))
+    pattern = "|".join(re.escape(marker) for marker in OVERRIDE_MARKERS)
     pairs: list[OverridePair] = []
-    for candidate in marked:
-        base = next(
-            (m for m in mentions if not candidate.overlaps(m)), None
-        )
-        if base is None:
+    claimed: list[Span] = []
+    for match in re.finditer(pattern, doc.text, re.IGNORECASE):
+        start = match.start()
+        end = min(len(doc.text), start + reach)
+        window = doc.text[start:end]
+        if subject.lower() not in window.lower():
             continue
+        second = doc.span(start, end)
+        if any(second.jaccard(existing) > 0.5 for existing in claimed):
+            continue
+        earlier = [m for m in mentions if m.end <= start]
+        if not earlier:
+            continue
+        base = earlier[-1]
         lo, hi = base.expand(pad, len(doc.text))
         pairs.append(OverridePair(
-            subject=subject, first=doc.span(lo, hi), second=candidate
+            subject=subject, first=doc.span(lo, min(hi, start)), second=second
         ))
+        claimed.append(second)
     return pairs
 
 
@@ -478,7 +495,7 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
         decision = result.get("external")
         if decision is None:
             continue
-        threshold = ctx.threshold_for(name)
+        threshold = ctx.threshold_for(name, "E_external_dependency")
         field.record(ValidationEvent(
             validator="E_external_dependency",
             question=statement,
@@ -493,6 +510,7 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
             field.external_document = document
             field.status = "external_reference"
             field.validation_confidence = decision.confidence
+            field.validation_source = "E_external_dependency"
             field.notes = (
                 f"magnitude is fixed by the {document}, which is not part of "
                 "this agreement; the figure stated here is not the real cap"
@@ -598,7 +616,7 @@ def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
         if decision is None:
             continue
         record.jev_distribution = decision.distribution
-        threshold = ctx.threshold_for(record.field)
+        threshold = ctx.threshold_for(record.field, "conflict_choice")
         field.record(ValidationEvent(
             validator="conflict_choice",
             question="which candidate value the text supports",
@@ -618,6 +636,7 @@ def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
             record.resolved_to = decision.choice
             field.status = "needs_review" if winner is None else "confirmed"
             field.validation_confidence = decision.confidence
+            field.validation_source = "conflict_choice"
             field.notes = (
                 f"conflict resolved to {decision.choice} at "
                 f"{decision.confidence:.2f}"

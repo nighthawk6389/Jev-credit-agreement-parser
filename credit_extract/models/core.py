@@ -113,6 +113,10 @@ class ExtractedValue(BaseModel, Generic[T]):
     validation_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     status: FieldStatus = "needs_review"
     notes: str | None = None
+    #: Which validator produced ``validation_confidence``. Different validators
+    #: answer different questions and their probabilities are not on a common
+    #: scale, so a threshold fitted on one cannot be applied to another.
+    validation_source: str | None = None
 
     # --- triage / audit metadata -------------------------------------------
     field_class: FieldClass = "economic_terms"
@@ -242,6 +246,10 @@ class DocumentReport(BaseModel):
     orphan_chunks: list[OrphanChunk] = Field(default_factory=list)
     unresolved_conflicts: list[ConflictRecord] = Field(default_factory=list)
     external_references: list[dict[str, Any]] = Field(default_factory=list)
+    #: Provisions found to displace an earlier one governing the same quantity.
+    #: A term that is correct in isolation and wrong in context is invisible
+    #: without this, so it is reported whether or not it changed a field.
+    override_findings: list[dict[str, Any]] = Field(default_factory=list)
     review_queue: list[dict[str, Any]] = Field(default_factory=list)
     definition_graph_stats: dict[str, Any] = Field(default_factory=dict)
     cost: CostLedger = Field(default_factory=CostLedger)
