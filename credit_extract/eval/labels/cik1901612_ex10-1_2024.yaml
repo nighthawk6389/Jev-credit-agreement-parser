@@ -68,16 +68,23 @@ assertions:
     expect: BNP PARIBAS
 
   # -- F01 integrity -------------------------------------------------------
-  - id: gbdc_exhibits_are_not_attached
+  - id: gbdc_unattached_exhibits_are_a_filing_artifact
     family: F01_integrity
     member: referenced_schedule_absent
     kind: invariant_fired
     target: referenced_schedules_present
-    expect: true
+    expect: false
     note: >
-      Thirty-three exhibits and schedules are referenced and none is attached,
-      with no omission declared. That is a property of the filing, not of the
-      deal, and F03 keeps the two apart.
+      Thirty-four exhibits and schedules are referenced and one is attached.
+      That is a property of the filing, not of the deal -- exhibits are filed
+      as separate documents -- and F03 keeps the two apart. This assertion
+      originally expected an integrity violation, contradicting its own note;
+      measured across the corpus the unqualified check fired on 78 of 98 real
+      agreements, which is not a market-wide defect but how EDGAR works. It
+      now fires when a filer attached most of what they cite and left one out,
+      or when an extracted term depends on the missing one. The unattached
+      exhibits are still reported, as external references of kind
+      omitted_from_filing, which is where a reader should look for them.
 
   - id: gbdc_reserved_sections_are_referenced
     family: F01_integrity

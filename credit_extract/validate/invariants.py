@@ -613,6 +613,11 @@ _REGULATION_AFTER_RE = re.compile(
 )
 
 
+def _cite(target: str) -> str:
+    """Render a cross-reference target the way the document writes it."""
+    return target if target.upper().startswith(("ARTICLE", "SECTION")) else f"Section {target}"
+
+
 def _cites_a_regulation(text: str, match: re.Match[str]) -> bool:
     """Whether this "Section N" points outside the agreement entirely."""
     return bool(
@@ -657,9 +662,12 @@ def _cross_references(ctx: InvariantContext) -> list[InvariantViolation]:
     return [
         InvariantViolation(
             invariant="cross_references_resolve",
+            # "Section ARTICLE I" was the old wording, because the target
+            # already carries its own kind. A finding a reader cannot read is
+            # a finding they will not act on.
             message=(
-                f"cross-reference to Section {target} does not resolve; no "
-                "such section exists in this document"
+                f"cross-reference to {_cite(target)} does not resolve; no such "
+                "provision exists in this document"
             ),
             fields=["cross_references"], spans=[span],
             observed=target, expected="an existing section",
@@ -668,8 +676,13 @@ def _cross_references(ctx: InvariantContext) -> list[InvariantViolation]:
     ] + [
         InvariantViolation(
             invariant="cross_references_resolve",
+            # A reference into a reserved provision is ordinary drafting
+            # residue -- the section was emptied during negotiation and the
+            # citation left behind -- so it is reported and not treated as an
+            # error. A reference to a number the document never used is not.
+            severity="warning",
             message=(
-                f"cross-reference to Section {target}, which the document "
+                f"cross-reference to {_cite(target)}, which the document "
                 "prints as reserved; the provision it points to is empty"
             ),
             fields=["cross_references"], spans=[span],
@@ -734,15 +747,40 @@ def _terms_unique(ctx: InvariantContext) -> list[InvariantViolation]:
 
 @invariant("referenced_schedules_present", "F01_integrity")
 def _schedules_present(ctx: InvariantContext) -> list[InvariantViolation]:
-    """A schedule cited but absent is either a gap or a filing artifact.
+    """A schedule a *field depends on* is cited and not attached.
 
-    It is only a violation when nothing in the document says it was omitted:
-    a filer who declares the omission has told the reader what is missing, and
-    that is an F03 finding rather than an integrity defect.
+    The unqualified version of this check fired on 78 of 98 real agreements,
+    which is not a market-wide defect -- it is how EDGAR works. Exhibits and
+    schedules are filed as separate documents, so essentially every credit
+    agreement references twenty-odd attachments that are not in the same file.
+    Reporting that as an integrity violation buries the cases where the
+    missing schedule actually carries a term, and those are the point.
+
+    The discriminator is what the filer did with the *other* schedules. A
+    document that attaches none of them is a document whose schedules are
+    filed separately, and a missing one says nothing about the agreement. A
+    document that attaches twelve and cites a thirteenth has a gap, and that
+    is worth reporting -- which is also what an injected-defect test exercises
+    when it deletes one.
+
+    A schedule some extracted field actually depends on is a defect either
+    way, because then the missing attachment is hiding a term.
     """
     doc = ctx.document
     if doc is None or ctx.document_omits_schedules:
         return []
+    # Schedules some extracted field points at. Only these can hide a term.
+    depended_on = {
+        (field.external_document or "").strip()
+        for field in ctx.fields.values()
+        if field.external_document
+    }
+    depended_on |= {
+        span.text.strip()
+        for field in ctx.fields.values()
+        for span in field.spans
+        if _SCHEDULE_REF_RE.fullmatch(span.text.strip())
+    }
     cited: dict[str, Span] = {}
     for match in _SCHEDULE_REF_RE.finditer(doc.text):
         # The identifier runs up to the sentence, so "Schedule 6.01." at the end
@@ -764,17 +802,36 @@ def _schedules_present(ctx: InvariantContext) -> list[InvariantViolation]:
         )
     }
     absent = sorted(set(cited) - present)
-    if not absent:
+    depended = sorted(
+        name for name in absent
+        if any(name.casefold() in d.casefold() for d in depended_on if d)
+    )
+    # Nothing attached at all: the schedules are in a separate filing, which
+    # is ordinary. Only a term that needs one makes it a defect.
+    # Proportion, not presence. Nearly every filing matches one or two
+    # schedule headings in passing -- one real agreement cites 34 and matches
+    # 1 -- so "attaches any" put almost the whole corpus back in the strict
+    # branch. A filer who attached most of what they cite and left one out has
+    # a gap; a filer who attached almost none files their schedules separately.
+    attaches_its_schedules = len(present) >= len(cited) / 2
+    needed = absent if attaches_its_schedules else depended
+    if not needed:
         return []
+    why = (
+        f"the document attaches {len(present)} of the {len(cited)} schedule(s) "
+        "it cites, so these are gaps rather than a separate filing"
+        if attaches_its_schedules else
+        "an extracted term depends on them and they are not in the document"
+    )
     return [InvariantViolation(
         invariant="referenced_schedules_present",
         severity="warning",
         message=(
-            f"{len(absent)} referenced schedule(s) are not in the document and "
-            f"no omission is declared: {', '.join(absent[:6])}"
+            f"{len(needed)} referenced schedule(s) are missing and no omission "
+            f"is declared -- {why}: {', '.join(needed[:6])}"
         ),
-        fields=["schedules"], spans=[cited[absent[0]]],
-        observed=len(absent), expected=0,
+        fields=["schedules"], spans=[cited[needed[0]]],
+        observed=len(needed), expected=0,
     )]
 
 
