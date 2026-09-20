@@ -363,6 +363,21 @@ CONCEPT_LEXICONS: dict[str, tuple[str, ...]] = {
         "fiscal quarter", "on or prior to", "each anniversary",
         "consecutive quarterly",
     ),
+    # Amendment effect (validator G). Without these the stand-in sits at a coin
+    # flip on every amendment and reports a disagreement with the parser on
+    # each one, which trains a reviewer to ignore the field.
+    "amendment_restates": (
+        "amended and restated in its entirety", "restated in its entirety",
+        "to read as follows", "is hereby amended and restated",
+    ),
+    "amendment_numeric": (
+        "deleting the text", "inserting in lieu", "the figure", "the amount",
+        "%", "$", "replacing the reference to",
+    ),
+    "amendment_deferred": (
+        "shall become effective on", "effective as of", "on and after",
+        "effective date\" means", "from and after",
+    ),
 }
 
 

@@ -15,12 +15,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 from .eval import traps as trap_checks
 from .extract.passes import AnthropicBackend, OfflineRuleBackend
-from .pipeline import ExtractionResult, run_pipeline
+from .pipeline import ExtractionResult, run_document_set, run_pipeline
 from .validate.calibrate import BackendMismatch, Thresholds, load_thresholds
 from .validate.jev import JevClient, OfflineJev
 
@@ -169,6 +170,49 @@ def cmd_traps(args: argparse.Namespace) -> int:
     return 0 if all(t.caught for t in results) else 1
 
 
+def cmd_chain(args: argparse.Namespace) -> int:
+    extraction_backend, jev_backend = _build_backends(args)
+    result = run_document_set(
+        list(args.files),
+        operative_as_of=args.as_of,
+        extraction_backend=extraction_backend,
+        jev_backend=jev_backend,
+    )
+    chain = result.report.chain
+    print(f"\noperative text assembled from {len(chain['documents'])} document(s)")
+    for document in chain["documents"]:
+        label = (
+            f"amendment {document['amendment_number']}"
+            if document["role"] == "amendment" else document["role"]
+        )
+        print(f"  {label:22} {document['effective_date'] or 'undated':12} "
+              f"{document['title'][:56]}")
+    if chain["superseded"]:
+        print(f"  superseded and excluded: {len(chain['superseded'])} document(s)")
+    if chain["effects_applied"]:
+        print(f"\n  amendments applied ({len(chain['effects_applied'])}):")
+        for effect in chain["effects_applied"]:
+            print(f"    {effect}")
+    if chain["effects_unapplied"]:
+        print(f"\n  COULD NOT APPLY ({len(chain['effects_unapplied'])}) -- these "
+              "terms are being reported from the unamended text:")
+        for item in chain["effects_unapplied"]:
+            print(f"    {item['effect']}: {item['reason']}")
+    for finding in chain["findings"]:
+        print(f"\n  [{finding['severity']}] {finding['kind']}: "
+              f"{finding['message']}")
+    for disagreement in chain["amendment_effect_disagreements"]:
+        print(f"\n  amendment effect disputed at Section {disagreement['section']}: "
+              f"{disagreement['note']}")
+
+    _print_summary(result, args.verbose)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(_serialize(result), indent=2))
+        print(f"\nwrote {args.out}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="credit-extract", description=__doc__,
@@ -204,6 +248,28 @@ def build_parser() -> argparse.ArgumentParser:
     traps = subparsers.add_parser("traps", help="run the four trap checks")
     add_common(traps)
     traps.set_defaults(func=cmd_traps)
+
+    chain = subparsers.add_parser(
+        "chain",
+        help="extract from a base agreement plus its amendments",
+        description=(
+            "Extraction runs on the operative text -- the base with every "
+            "amendment folded in. Order is taken from effective dates, not "
+            "filenames or filing dates."
+        ),
+    )
+    chain.add_argument("files", type=Path, nargs="+",
+                       help="base agreement and amendments, in any order")
+    chain.add_argument("--as-of", type=date.fromisoformat, default=None,
+                       help="ignore amendments effective after this date")
+    chain.add_argument("--out", type=Path)
+    chain.add_argument("--jev", choices=("offline", "api"), default="offline")
+    chain.add_argument("--backend", choices=("offline", "anthropic"),
+                       default="offline")
+    chain.add_argument("--model", default="claude-sonnet-5")
+    chain.add_argument("--temperature", type=float, default=0.0)
+    chain.add_argument("-v", "--verbose", action="store_true")
+    chain.set_defaults(func=cmd_chain)
 
     return parser
 

@@ -576,6 +576,13 @@ class DocumentReport(BaseModel):
     override_findings: list[dict[str, Any]] = Field(default_factory=list)
     review_queue: list[dict[str, Any]] = Field(default_factory=list)
     definition_graph_stats: dict[str, Any] = Field(default_factory=dict)
+    #: The amendment chain: what was in the set, what each amendment did, and
+    #: what could not be applied. Absent for a single-document run.
+    chain: dict[str, Any] = Field(default_factory=dict)
+    archetype: dict[str, Any] = Field(default_factory=dict)
+    #: Per-family coverage and the blind-spot register, rendered.
+    coverage: str = ""
+    blind_spots: str = ""
     cost: CostLedger = Field(default_factory=CostLedger)
     thresholds_version: str | None = None
     notes: list[str] = Field(default_factory=list)

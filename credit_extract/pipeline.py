@@ -26,6 +26,10 @@ from .extract.passes import (
 )
 from .extract.reconcile import reconcile
 from .graph.definitions import build_definition_graph
+from .ingest.documents import (
+    DocumentSet, OperativeText, apply_chain, load_document_set,
+    operative_document,
+)
 from .ingest.normalize import NormalizedDocument, ingest
 from .ingest.segment import Chunk, coverage, segment_all
 from .models.actus_map import (
@@ -207,8 +211,16 @@ def run_pipeline(
     reread: Callable[[Chunk], list[Candidate]] | None = None,
     document_id: str | None = None,
     passes: int = 3,
+    document_set: DocumentSet | None = None,
 ) -> ExtractionResult:
-    """Run the whole pipeline over one document."""
+    """Run the whole pipeline over one document, or over a chain.
+
+    Given a ``document_set``, extraction runs on the *operative* text -- the
+    base agreement with every amendment folded in -- rather than on the base.
+    Extracting the base alone reports terms that stopped being true years ago,
+    and does it silently, because every span is correct and every figure is
+    quoted accurately.
+    """
     from .models import actus_map, fibo_map, fpml_model
 
     extraction_backend = extraction_backend or OfflineRuleBackend()
@@ -223,7 +235,12 @@ def run_pipeline(
             )
 
     # -- tiers 0-1: ingest, structure, deterministic parsing ----------------
-    doc = ingest(source, document_id=document_id)
+    operative: OperativeText | None = None
+    if document_set is not None:
+        operative = apply_chain(document_set)
+        doc = operative_document(document_set, operative)
+    else:
+        doc = ingest(source, document_id=document_id)
     graph = build_definition_graph(doc)
     segments = segment_all(doc, graph)
     sweep = _sweep_chunks(segments)
@@ -298,6 +315,13 @@ def run_pipeline(
     V.resolve_conflicts(ctx)
     V.validator_f_criticality(ctx)
 
+    amendment_verdicts = (
+        V.validator_g_amendment_effect(ctx, document_set)
+        if document_set is not None and document_set.amendments else []
+    )
+    if operative is not None:
+        _attribute_spans(fields, operative)
+
     # -- report --------------------------------------------------------------
     cost = CostLedger()
     cost.merge(extracted.cost)
@@ -341,6 +365,8 @@ def run_pipeline(
             for pair in overrides if pair.overrides
         ],
         review_queue=_review_queue(fields),
+        chain=_chain_report(document_set, operative, amendment_verdicts),
+        archetype=archetype.model_dump(),
         definition_graph_stats=graph.stats() | {
             "segment_coverage": {
                 kind: round(coverage(doc, chunks), 4)
@@ -375,6 +401,72 @@ def run_pipeline(
             "fpml": fpml_model.provenance(),
             "actus": actus_map.provenance(),
         },
+    )
+
+
+
+def _attribute_spans(
+    fields: dict[str, ExtractedField], operative: OperativeText
+) -> None:
+    """Point every span at the document its text actually came from.
+
+    After a chain is folded in, an offset alone is not a citation. A figure
+    quoted from Section 6.12 may have been written by Amendment No. 3, and a
+    reviewer sent to the base agreement will not find it there.
+    """
+    for field in fields.values():
+        for variant in field.variants:
+            variant.spans = [
+                span.model_copy(
+                    update={"document_id": operative.source_of(span.section_id)}
+                )
+                for span in variant.spans
+            ]
+
+
+def _chain_report(
+    document_set: DocumentSet | None,
+    operative: OperativeText | None,
+    verdicts: list[Any],
+) -> dict[str, Any]:
+    if document_set is None or operative is None:
+        return {}
+    disagreements = [v for v in verdicts if not v.agrees_with_parser]
+    return {
+        "operative_as_of": str(document_set.operative_as_of or ""),
+        "documents": [
+            {
+                "document_id": d.document_id,
+                "role": d.role,
+                "amendment_number": d.amendment_number,
+                "effective_date": str(d.effective_date or ""),
+                "title": d.title[:100],
+            }
+            for d in document_set.chain
+        ],
+        "superseded": [d.document_id for d in document_set.superseded],
+        "findings": [f.model_dump() for f in document_set.findings],
+        "effects_applied": [e.describe() for e in operative.applied],
+        "effects_unapplied": [
+            {"effect": e.describe(), "reason": why}
+            for e, why in operative.unapplied
+        ],
+        "sections_amended": sorted(
+            s for s, r in operative.sections.items() if r.amended
+        ),
+        "amendment_effect_disagreements": [v.model_dump() for v in disagreements],
+    }
+
+
+def run_document_set(
+    paths: list[str | Path],
+    operative_as_of: date | None = None,
+    **kwargs: Any,
+) -> ExtractionResult:
+    """Extract from a chain: base agreement plus every amendment."""
+    document_set = load_document_set(paths, operative_as_of)
+    return run_pipeline(
+        document_set.base.path, document_set=document_set, **kwargs
     )
 
 

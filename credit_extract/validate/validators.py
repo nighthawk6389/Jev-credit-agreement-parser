@@ -732,3 +732,95 @@ def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
             )
             resolved.append(record)
     return resolved
+
+
+# ---------------------------------------------------------------------------
+# Validator G -- amendment effect
+# ---------------------------------------------------------------------------
+
+REPLACES_STATEMENT = "This amendment replaces the quoted section in its entirety."
+NUMERIC_CHANGE_STATEMENT = "This amendment changes a numeric term."
+DEFERRED_EFFECT_STATEMENT = (
+    "This amendment's changes take effect on a date later than its execution "
+    "date."
+)
+
+
+class AmendmentVerdict(BaseModel):
+    """What Jev thinks one amendment effect does."""
+
+    document_id: str
+    section: str
+    parsed_kind: str
+    replaces_entirely: float | None = None
+    changes_a_number: float | None = None
+    deferred_effect: float | None = None
+    agrees_with_parser: bool = True
+    note: str = ""
+
+
+def validator_g_amendment_effect(
+    ctx: ValidationContext,
+    document_set: Any,
+    threshold: float = 0.6,
+) -> list[AmendmentVerdict]:
+    """Check the parser's reading of each amendment against Jev's.
+
+    The parser decides restatement-versus-patch from drafting formulae, which
+    are conventional but not universal. Where the two disagree the amendment is
+    flagged rather than applied on the parser's word: mis-reading a patch as a
+    restatement replaces a whole section with a fragment, and mis-reading a
+    restatement as a patch leaves the old section in force. Both produce a
+    confident, wrong operative text.
+
+    All three questions ride on one state, so checking an amendment costs one
+    request.
+    """
+    verdicts: list[AmendmentVerdict] = []
+    base = document_set.base.normalized
+    for effect in document_set.effects():
+        section_text = ""
+        span = base.section_span(effect.target_section) if base else None
+        if span is not None:
+            section_text = span.text[:4000]
+        state = (
+            f"AMENDMENT TEXT\n{effect.span.text[:4000]}\n\n"
+            f"SECTION {effect.target_section} AS IT CURRENTLY READS\n{section_text}"
+        )
+        result = ctx.session.ask(
+            state,
+            [
+                Noul(name="replaces", statement=REPLACES_STATEMENT,
+                     concept="amendment_restates"),
+                Noul(name="numeric", statement=NUMERIC_CHANGE_STATEMENT,
+                     concept="amendment_numeric"),
+                Noul(name="deferred", statement=DEFERRED_EFFECT_STATEMENT,
+                     concept="amendment_deferred"),
+            ],
+            label="G_amendment_effect",
+        )
+        replaces = result["replaces"].confidence if result.get("replaces") else None
+        numeric = result["numeric"].confidence if result.get("numeric") else None
+        deferred = result["deferred"].confidence if result.get("deferred") else None
+
+        parser_says_restate = effect.is_restatement
+        model_says_restate = replaces is not None and replaces >= threshold
+        agrees = parser_says_restate == model_says_restate
+        verdicts.append(AmendmentVerdict(
+            document_id=effect.document_id,
+            section=effect.target_section,
+            parsed_kind=effect.kind,
+            replaces_entirely=replaces,
+            changes_a_number=numeric,
+            deferred_effect=deferred,
+            agrees_with_parser=agrees,
+            note=(
+                ""
+                if agrees else
+                f"parser read this as {effect.kind!r} but the text reads as "
+                f"{'a full restatement' if model_says_restate else 'an in-place edit'}"
+                f" ({replaces:.2f}); applying the wrong one silently changes the "
+                "operative text"
+            ),
+        ))
+    return verdicts

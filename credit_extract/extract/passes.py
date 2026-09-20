@@ -461,6 +461,13 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          r"prepay the Initial Term Loans with\s+([\d.]+%)\s+of Excess Cash Flow",
          0.88),
     # -- covenant and leverage ----------------------------------------------
+    # A restatement often replaces a step-down grid with a single prose level.
+    # Without this the field is only ever readable from a table, and an amended
+    # covenant reads as absent.
+    Rule("financial_covenant.opening_level",
+         r"Total Leverage Ratio[^.]{0,140}?to exceed\s+([\d.]+:[\d.]+)", 0.80),
+    Rule("financial_covenant.final_level",
+         r"Total Leverage Ratio[^.]{0,140}?to exceed\s+([\d.]+:[\d.]+)", 0.70),
     Rule("opening_total_leverage_ratio",
          r"Total Leverage Ratio is\s+([\d.]+:[\d.]+)", 0.90),
     Rule("incremental.leverage_based_test",

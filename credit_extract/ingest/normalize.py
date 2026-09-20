@@ -92,7 +92,12 @@ class NormalizedDocument(BaseModel):
         return self._page_at(offset), self._section_at(offset)
 
     def span(self, start: int, end: int, segmentation: str | None = None) -> Span:
-        """The only sanctioned way to build a Span: text is read from offsets."""
+        """The only sanctioned way to build a Span: text is read from offsets.
+
+        The span carries this document's id, because once a document *set* is
+        in play an offset alone is not a citation -- the same offset means
+        something different in the base agreement and in Amendment No. 3.
+        """
         start = max(0, start)
         end = min(len(self.text), end)
         page, section = self.locate(start)
@@ -103,6 +108,7 @@ class NormalizedDocument(BaseModel):
             page=page,
             section_id=section,
             segmentation=segmentation,
+            document_id=self.document_id,
         )
 
     def slice(self, start: int, end: int) -> str:

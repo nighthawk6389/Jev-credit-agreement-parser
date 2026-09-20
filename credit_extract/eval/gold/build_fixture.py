@@ -718,6 +718,72 @@ CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE STATE OF NEW YORK.</p>
 """
 
 
+
+AMENDMENT_TEMPLATE = """<!DOCTYPE html>
+<!-- SYNTHETIC TEST FIXTURE. Fictional parties. -->
+<html><head><meta charset="utf-8"><title>Amendment (synthetic fixture)</title></head>
+<body>
+<p>AMENDMENT NO. {number} TO CREDIT AGREEMENT</p>
+<p>This AMENDMENT NO. {number} TO CREDIT AGREEMENT (this "Amendment"), dated as
+of {effective}, is entered into among {borrower}, as the Borrower, {holdings},
+as Holdings, and {agent}, as Administrative Agent, and amends that certain
+Credit Agreement dated as of {closing} (as amended, the "Credit Agreement").
+Capitalized terms used herein and not otherwise defined have the meanings given
+in the Credit Agreement.</p>
+<p>SECTION 1.01 Amendments to the Credit Agreement. Effective as of the
+Amendment No. {number} Effective Date, the Credit Agreement is hereby amended
+as follows:</p>
+{changes}
+<p>SECTION 2.01 Conditions to Effectiveness. This Amendment shall become
+effective on the date on which the Administrative Agent has received
+counterparts hereof executed by the Borrower and the Required Lenders (the
+"Amendment No. {number} Effective Date"), which date is {effective}.</p>
+<p>SECTION 3.01 Effect of Amendment. Except as expressly amended hereby, the
+Credit Agreement remains in full force and effect.</p>
+</body></html>
+"""
+
+
+def restate_change(section: str, body: str) -> str:
+    """An amendment that replaces a section wholesale."""
+    return (
+        f"<p>(a) Section {section} of the Credit Agreement is hereby amended "
+        f"and restated in its entirety to read as follows:</p>"
+        f'<p>"{body}"</p>' 
+    )
+
+
+def replace_change(section: str, old: str, new: str, label: str = "b") -> str:
+    """The common case: a short amendment that swaps one figure for another.
+
+    Nothing is restated, so a pipeline that only understands restatement reads
+    the old figure straight out of the base agreement and reports it
+    confidently.
+    """
+    return (
+        f"<p>({label}) Section {section} of the Credit Agreement is hereby "
+        f'amended by deleting the text "{old}" and inserting in lieu thereof '
+        f'the text "{new}".</p>'
+    )
+
+
+def build_amendment(
+    v: Variant,
+    number: int,
+    effective: date,
+    changes: list[str],
+) -> str:
+    return AMENDMENT_TEMPLATE.format(
+        number=number,
+        effective=_fmt(effective),
+        closing=_fmt(v.closing),
+        borrower=v.borrower,
+        holdings=v.holdings,
+        agent=v.admin_agent,
+        changes="\n".join(changes),
+    )
+
+
 def build_labels(v: Variant = Variant()) -> dict:
     """Ground truth. True by construction, since the document is generated."""
     rows = v.amortization_rows()
