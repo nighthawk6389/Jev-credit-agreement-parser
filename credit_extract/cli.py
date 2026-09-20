@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import textwrap
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -108,6 +109,15 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
     print()
     print("  " + trap_checks.summarize(results).replace("\n", "\n  "))
 
+    # Printed unconditionally, and last, so it is the thing still on screen
+    # when a reader stops reading. A field list carries no sign that nothing
+    # resembling this deal was ever in the corpus, and looks equally confident
+    # either way.
+    if report.blind_spots:
+        print("\n  NOT TESTED ON")
+        for line in report.blind_spots.splitlines():
+            print(f"    {textwrap.fill(line, 96, subsequent_indent='    ')}")
+
     if verbose:
         stats = report.definition_graph_stats
         print(f"\n  definition graph: {stats.get('terms')} terms, "
@@ -167,7 +177,10 @@ def cmd_traps(args: argparse.Namespace) -> int:
     )
     results = trap_checks.check_all(result)
     print(trap_checks.summarize(results))
-    return 0 if all(t.caught for t in results) else 1
+    # A trap this document does not contain is not a failure. An undetermined
+    # one is: it means the pipeline could not read the structure the trap
+    # lives in, which is the same position as missing the trap outright.
+    return 0 if all(t.caught for t in results if t.present is not False) else 1
 
 
 def cmd_chain(args: argparse.Namespace) -> int:

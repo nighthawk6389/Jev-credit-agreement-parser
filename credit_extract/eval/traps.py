@@ -22,11 +22,51 @@ class TrapResult(BaseModel):
     caught: bool
     mechanism: str
     detail: str
+    #: Whether this document contains the trap at all. ``False`` means it was
+    #: ruled out on the document's own text; ``None`` means the question could
+    #: not be settled. Only ``True`` makes ``caught`` meaningful.
+    #:
+    #: Each trap is a defect in a particular agreement. Run against a different
+    #: one, a trap check that reports FAIL is announcing a failure that did not
+    #: happen -- four of them on every real filing, which is enough noise to
+    #: make a reader stop believing the ones that are real.
+    present: bool | None = True
     evidence: dict[str, Any] = Field(default_factory=dict)
 
+    @property
+    def meaningful(self) -> bool:
+        # A trap that was caught is in the document by definition. Presence is
+        # a cheap textual test and can be wrong; a positive catch cannot, so
+        # it wins. Without this, a presence test that misfires turns a real
+        # PASS into a silent n/a -- and would do the same to a real FAIL.
+        return self.present is True or self.caught
+
     def __str__(self) -> str:  # pragma: no cover - display helper
-        mark = "PASS" if self.caught else "FAIL"
-        return f"[{mark}] {self.trap}: {self.title} -- {self.detail}"
+        if self.caught:
+            return f"[PASS] {self.trap}: {self.title} -- {self.detail}"
+        if self.present is False:
+            return f"[n/a ] {self.trap}: {self.title} -- {self.detail}"
+        if self.present is None:
+            return f"[ ?  ] {self.trap}: {self.title} -- {self.detail}"
+        return f"[FAIL] {self.trap}: {self.title} -- {self.detail}"
+
+def _text(result: ExtractionResult) -> str:
+    """The operative text, when the result carried it."""
+    return getattr(result.document, "text", "") or ""
+
+
+def _mentions(result: ExtractionResult, *needles: str) -> bool:
+    """Whether the document uses any of these terms at all.
+
+    Presence is judged on the document's own words rather than on what
+    extraction managed to find, so a trap is never ruled out because the
+    pipeline failed to read the clause it lives in -- which would turn every
+    miss into a silent n/a.
+    """
+    text = _text(result).lower()
+    if not text:
+        return True          # nothing to rule it out with; assume it applies
+    return any(needle.lower() in text for needle in needles)
 
 
 def check_trap_1(result: ExtractionResult) -> TrapResult:
@@ -47,16 +87,34 @@ def check_trap_1(result: ExtractionResult) -> TrapResult:
         if v.invariant == "amortization_total_consistent"
     ]
     caught = required.issubset(invariants)
+    schedule = result.amortization
+    if schedule is None:
+        # No schedule was parsed. That is a finding in its own right when the
+        # document has one, but it is not evidence either way about this trap.
+        present: bool | None = (
+            None if _mentions(result, "amortization", "installment")
+            else False
+        )
+    else:
+        present = len(schedule.rows) != len(schedule.deduplicated().rows)
     return TrapResult(
         trap="trap_1",
         title="duplicated amortization rows",
         caught=caught,
+        present=present,
         mechanism="deterministic invariants (strictly increasing dates, row "
                   "count against quarters spanned) plus the generated ACTUS "
                   "schedule diffed against the printed table",
         detail=(
             "caught by " + ", ".join(sorted(invariants & required))
             if caught else
+            "no duplicated rows in this document\'s schedule"
+            if present is False and result.amortization is not None else
+            "this document has no amortization schedule to duplicate rows in"
+            if present is False else
+            "no amortization schedule was parsed, so this trap can be neither "
+            "confirmed nor ruled out here"
+            if present is None else
             "NOT caught: no invariant flagged the duplicated rows"
         ),
         evidence={
@@ -90,16 +148,21 @@ def check_trap_2(result: ExtractionResult) -> TrapResult:
         or "Notwithstanding" in o["governing_span"]["text"]
     ]
     caught = bool(hardcoded)
+    present = _mentions(result, "Consolidated EBITDA")
     return TrapResult(
         trap="trap_2",
         title="hardcoded opening EBITDA overrides the definition",
         caught=caught,
+        present=present,
         mechanism="validator D (override detection), anchored on the "
                   "notwithstanding clause that introduces the table",
         detail=(
             f"{len(hardcoded)} override provision(s) found governing "
             "Consolidated EBITDA"
             if caught else
+            "this agreement does not use Consolidated EBITDA, so there is no "
+            "definition for a table to displace"
+            if not present else
             "NOT caught: no provision was found displacing the Consolidated "
             "EBITDA definition, so the hardcoded quarters would be ignored"
         ),
@@ -132,15 +195,21 @@ def check_trap_3(result: ExtractionResult) -> TrapResult:
         and field.external_document
         and "sponsor model" in field.external_document.lower()
     )
+    ruled_out = (
+        field is not None and field.status == "not_applicable_to_archetype"
+    ) or not _mentions(result, "add back", "add-back", "addback")
     return TrapResult(
         trap="trap_3",
         title="add-back cap lives in the Sponsor Model, not in the agreement",
         caught=caught,
+        present=not ruled_out,
         mechanism="definition graph (Consolidated EBITDA reaches an external "
                   "document) plus validator E (external dependency)",
         detail=(
             f"reported as external_reference to {field.external_document}"
             if caught else
+            "this deal has no EBITDA add-back regime for a cap to sit outside of"
+            if ruled_out else
             f"NOT caught: status is "
             f"{field.status if field else 'missing'} with value "
             f"{field.value if field else None}; a number here would be wrong"
@@ -169,16 +238,28 @@ def check_trap_4(result: ExtractionResult) -> TrapResult:
         and field.validation_source == "C_negative_space"
     )
     mfn = result.fields.get("mfn_threshold_pct")
+    # MFN protection is almost never drafted under that name. In the canonical
+    # fixture it is a yield provision on an Incremental Term Facility and the
+    # letters MFN appear nowhere, so the presence test asks the question the
+    # provision actually turns on: is there an incremental facility at all?
+    present = _mentions(
+        result, "incremental", "most favored nation", "most favoured nation",
+        "all-in yield",
+    )
     return TrapResult(
         trap="trap_4",
         title="MFN protection with no sunset",
         caught=caught,
+        present=present,
         mechanism="validator C (negative-space confirmation), asked of every "
                   "chunk and combined in Python",
         detail=(
             f"affirmatively confirmed absent at "
             f"{field.validation_confidence:.2f}"
             if caught and field and field.validation_confidence is not None else
+            "this agreement has no incremental facility, so there is no MFN "
+            "protection to carry a sunset"
+            if not present else
             f"NOT caught: status is {field.status if field else 'missing'}; "
             "a bare null here conveys nothing about the deal"
         ),
@@ -201,7 +282,18 @@ def check_all(result: ExtractionResult) -> list[TrapResult]:
 
 
 def summarize(results: list[TrapResult]) -> str:
-    caught = sum(1 for r in results if r.caught)
-    lines = [f"traps: {caught}/{len(results)} caught"]
+    applicable = [r for r in results if r.meaningful]
+    caught = sum(1 for r in applicable if r.caught)
+    absent = sum(1 for r in results if r.present is False)
+    unknown = sum(1 for r in results if r.present is None)
+    headline = f"traps: {caught}/{len(applicable)} caught"
+    qualifiers = []
+    if absent:
+        qualifiers.append(f"{absent} not present in this document")
+    if unknown:
+        qualifiers.append(f"{unknown} undetermined")
+    if qualifiers:
+        headline += " (" + ", ".join(qualifiers) + ")"
+    lines = [headline]
     lines += [f"  {r}" for r in results]
     return "\n".join(lines)

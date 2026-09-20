@@ -408,6 +408,7 @@ def run_pipeline(
         review_queue=_review_queue(fields),
         chain=_chain_report(document_set, operative, amendment_verdicts),
         archetype=archetype.model_dump(),
+        blind_spots=_blind_spot_notice(archetype),
         definition_graph_stats=graph.stats() | {
             "precedence": precedence.stats(),
             "pricing": pricing.describe(),
@@ -539,6 +540,46 @@ def _attribute_spans(
                 )
                 for span in variant.spans
             ]
+
+
+def _blind_spot_notice(archetype: ArchetypeDetection) -> str:
+    """What this run has not been tested on, said in the run's own output.
+
+    The register belongs in every report, not in a design document nobody
+    opens next to the numbers. A reader looking at a field list has no way to
+    know that nothing resembling this deal was ever in the corpus, and the
+    fields will look exactly as confident either way.
+
+    The archetype narrows it: a reader of a NAV facility needs to be told that
+    archetype dispatch has no labelled examples of one, and does not need the
+    entries about fee letters repeated at them first.
+    """
+    from .eval.families import load_blind_spots
+
+    register = load_blind_spots()
+    detected = archetype.archetype or "unknown"
+    relevant = [
+        entry for entry in register.entries
+        if entry.member and detected in (entry.member, entry.member.rstrip("s"))
+        or (entry.member or "").startswith(detected)
+    ]
+    lines = [register.headline()]
+    for entry in relevant:
+        lines.append(
+            f"This deal was read as {detected}, which is a named blind spot "
+            f"[{entry.id}]: {_one_line(entry.reason)}"
+        )
+    if detected == "unknown":
+        lines.append(
+            "No archetype was dispatched, so archetype-gated fields were left "
+            "applicable rather than ruled out; nothing here is marked "
+            "not_applicable on a guess."
+        )
+    return "\n".join(line for line in lines if line)
+
+
+def _one_line(text: str) -> str:
+    return " ".join((text or "").split())
 
 
 def _implied_set(
