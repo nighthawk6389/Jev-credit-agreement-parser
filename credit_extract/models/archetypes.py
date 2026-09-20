@@ -31,6 +31,10 @@ Archetype = Literal[
     "unitranche",
     "holdco_pik",
     "project_finance",
+    "dip",
+    "venture_debt",
+    "investment_grade",
+    "european_lma",
     "unknown",
 ]
 
@@ -293,6 +297,75 @@ PROFILES: dict[str, ArchetypeProfile] = {
             criteria=(
                 "a project financing repaid from project cashflows and "
                 "covenanted on debt service coverage"
+            ),
+        ),
+        ArchetypeProfile(
+            archetype="dip",
+            title="debtor-in-possession financing",
+            expected_groups=["term_amortization"],
+            inapplicable_groups=["nav_tests", "recurring_revenue"],
+            # "DIP Financing" appears in 36 of a hundred agreements and only
+            # three of them are DIP facilities: the rest carry it in
+            # intercreditor boilerplate about what happens if the borrower
+            # files. Presence of the phrase decides nothing; being *made under*
+            # section 364 does.
+            decisive_signals=["debtor-in-possession credit agreement",
+                              "section 364", "superpriority claim",
+                              "interim order", "final order"],
+            supporting_signals=["bankruptcy court", "carve-out",
+                                "chapter 11 cases", "petition date",
+                                "budget variance"],
+            criteria=(
+                "a facility extended to a debtor in possession under section "
+                "364 of the Bankruptcy Code, approved by an interim or final "
+                "order and covenanted on a budget rather than on earnings"
+            ),
+        ),
+        ArchetypeProfile(
+            archetype="venture_debt",
+            title="venture debt / loan and security agreement",
+            expected_groups=["term_amortization"],
+            inapplicable_groups=["ebitda_baskets", "nav_tests"],
+            decisive_signals=["loan and security agreement", "warrant to purchase",
+                              "preferred stock financing"],
+            supporting_signals=["material adverse change", "investor abandonment",
+                                "minimum cash", "performance milestone"],
+            criteria=(
+                "a growth-stage facility documented as a loan and security "
+                "agreement, secured on all assets and often carrying warrants, "
+                "covenanted on cash and milestones rather than on leverage"
+            ),
+        ),
+        ArchetypeProfile(
+            archetype="investment_grade",
+            title="investment grade revolver",
+            expected_groups=["revolver"],
+            inapplicable_groups=["borrowing_base", "nav_tests",
+                                 "recurring_revenue", "ebitda_baskets"],
+            decisive_signals=["ratings-based pricing", "debt rating",
+                              "index debt", "s&p and moody"],
+            supporting_signals=["facility fee", "no borrowing base",
+                                "negative pledge"],
+            criteria=(
+                "an unsecured revolver priced off the borrower's public debt "
+                "ratings rather than off leverage, with a facility fee and a "
+                "single financial covenant"
+            ),
+        ),
+        ArchetypeProfile(
+            archetype="european_lma",
+            title="European LMA facilities agreement",
+            expected_groups=["term_amortization", "revolver"],
+            inapplicable_groups=["borrowing_base", "nav_tests"],
+            decisive_signals=["facilities agreement", "loan market association",
+                              "majority lenders", "utilisation request"],
+            supporting_signals=["utilisation date", "rollover loan",
+                                "agent's spot rate of exchange", "quotation day",
+                                "break costs"],
+            criteria=(
+                "an LMA-style facilities agreement, recognisable from its "
+                "British spelling and its own vocabulary -- utilisation, "
+                "Majority Lenders, break costs -- rather than from its economics"
             ),
         ),
         ArchetypeProfile(

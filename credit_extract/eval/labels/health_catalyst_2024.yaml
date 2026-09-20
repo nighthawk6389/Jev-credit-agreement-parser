@@ -83,16 +83,20 @@ assertions:
     note: five provisos in one provision of the defined-terms article
 
   # -- F07 benchmark: the rate is composed ---------------------------------
-  - id: hc_term_sofr_without_a_stated_csa
+  - id: hc_term_sofr_with_no_csa_is_not_a_finding
     family: F07_benchmark
     member: sofr_credit_spread_adjustment
     kind: invariant_fired
     target: csa_not_silently_zero
-    expect: true
+    expect: false
     note: >
-      Priced off Term SOFR with no credit spread adjustment stated anywhere.
-      Treating the CSA as zero understates the all-in rate, so the absence is
-      reported rather than assumed away.
+      Priced off Term SOFR with no credit spread adjustment stated anywhere,
+      and the margin -- 6.50% on SOFR loans -- absorbs it. Zero is the correct
+      reading. This assertion originally expected the check to fire, which is
+      what the check then did; measured across a hundred agreements it fires
+      on about forty that correctly have no adjustment, which made it the
+      loudest and least informative check in the suite. It now fires only when
+      an adjustment is stated with a figure and no value came back.
 
   - id: hc_applicable_margin_on_sofr_loans
     family: F07_benchmark

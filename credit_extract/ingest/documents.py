@@ -230,8 +230,14 @@ _OF_THE_AGREEMENT = (
 #: about as often as they write it without the "to read". Requiring the longer
 #: form is a two-word difference that matched none of the twelve restatements
 #: in a real Wells Fargo amendment.
+#: Counted over a hundred EDGAR agreements, "is hereby amended" is followed by
+#: "and restated in its entirety" 24 times, "in its entirety to read" 6 times
+#: and a bare "as follows" 5 times, with "and restated" often dropped and the
+#: entirety clause often dropped. Each optional piece is optional because a
+#: real amendment omitted it.
 _RESTATED_AS_FOLLOWS = (
-    r"is\s+hereby\s+amended\s+and\s+restated\s+in\s+its\s+entirety\s+"
+    r"(?:is|are)\s+hereby\s+amended\s+(?:and\s+restated\s+)?"
+    r"(?:in\s+(?:its|their\s+respective)\s+entiret(?:y|ies)\s+)?"
     r"(?:to\s+read\s+)?as\s+follows[:;]\s*"
 )
 
@@ -298,7 +304,7 @@ _REDLINE_RE = re.compile(
     r"(?:\s+to\s+the\s+(?:[A-Z][A-Za-z]*\s+){0,5}Agreement)?"
     r"\s+(?:is|are)\s+hereby\s+amended\s+to\s+"
     r"(?:delete|remove|strike)\s+the\s+"
-    r"(?:stricken|struck|struck-through|deleted|lined-out)\s+text\b"
+    r"(?:bold,?\s+)?(?:stricken|struck|struck-through|deleted|lined-out)\s+text\b"
     r"(?P<tail>.{0,600}?)(?=\.\s|\Z)",
     re.IGNORECASE | re.DOTALL,
 )

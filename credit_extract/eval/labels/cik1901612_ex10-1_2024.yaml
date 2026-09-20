@@ -88,13 +88,18 @@ assertions:
     note: Sections 2.16 and 8.05 are printed as reserved and cited anyway
 
   # -- F07 benchmark -------------------------------------------------------
-  - id: gbdc_term_sofr_without_a_stated_csa
+  - id: gbdc_term_sofr_with_no_csa_is_not_a_finding
     family: F07_benchmark
     member: sofr_credit_spread_adjustment
     kind: invariant_fired
     target: csa_not_silently_zero
-    expect: true
-    note: 22 references to Term SOFR, no credit spread adjustment stated
+    expect: false
+    note: >
+      22 references to Term SOFR and no credit spread adjustment stated, so
+      zero is correct. What this document does carry is benchmark-transition
+      boilerplate promising a spread adjustment if SOFR is ever replaced --
+      a contingency, not a term of the deal, and reading it as one is what
+      kept this check firing after the first attempt to narrow it.
 
   # -- coverage ------------------------------------------------------------
   - id: gbdc_uncaptured_content_is_swept

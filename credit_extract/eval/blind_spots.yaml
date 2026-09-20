@@ -24,11 +24,17 @@ untestable_from_public_filings:
   - id: F03_fee_letter
     family: F03_external_reference
     member: fee_letter
-    reason: fee letters are essentially never filed
+    status: partially_lifted
+    reason: >
+      Fee letters themselves are essentially never filed. The agreements that
+      point at one are: 52 of the 100 in corpus/edgar name a Fee Letter and 44
+      use "separately agreed" or equivalent.
     consequence: >
-      "as separately agreed" pricing is unverifiable. The pipeline will mark
-      it external_by_design, which is the right answer, but nothing confirms
-      that it does so reliably.
+      The *detection* side is now testable -- there are 52 real examples of
+      the reference to find, and marking one external_by_design is checkable.
+      What stays untestable is the content: no filing anywhere states the
+      number, so a pipeline claiming to have resolved one is wrong by
+      construction and nothing in the corpus can catch that.
 
   - id: F03_sponsor_model
     family: F03_external_reference
@@ -49,21 +55,30 @@ untestable_from_public_filings:
   - id: F06_unitranche_with_aal
     family: F06_structure
     member: unitranche_with_aal
+    status: partially_lifted
     reason: >
       Agreements Among Lenders are between lenders and are not borrower
-      exhibits
+      exhibits, so none is in the corpus. Nine of the hundred agreements refer
+      to one, or to first-out and last-out tranches.
     consequence: >
-      First-out/last-out economics are invisible. A unitranche will be read as
-      a single tranche at the blended rate.
+      The nine references make it testable that a unitranche is *recognised*.
+      The economics remain invisible: the split between first-out and last-out
+      lives in the AAL, so the deal still reads as a single tranche at the
+      blended rate and nothing in any filing says otherwise.
 
   - id: F06_nav_or_subscription_line
     family: F06_structure
     member: nav_or_subscription_line
-    reason: fund-level facilities are filed rarely and in redacted form
+    status: partially_lifted
+    reason: >
+      Fund-level facilities are filed rarely, but not never: stratum H of
+      corpus/edgar holds six subscription, NAV and CLO warehouse facilities,
+      and eight agreements overall use capital-commitment or NAV vocabulary.
     consequence: >
-      Archetype dispatch has no labelled examples; a NAV line may be
-      classified as a cash-flow term loan and covenanted on EBITDA it does
-      not have.
+      Archetype dispatch now has examples, and they are unlabelled. A NAV line
+      misread as a cash-flow term loan would be covenanted on EBITDA it does
+      not have, which is the failure this entry exists for -- the six
+      documents make it visible rather than fixing it.
 
   - id: F09_term_defined_in_other_loan_document
     family: F09_definitional_depth
@@ -84,25 +99,26 @@ untestable_in_this_environment:
     status: partially_lifted
     reason: >
       sec.gov and efts.sec.gov are blocked by this build environment's egress
-      policy, so the stratified harvest in section 8 of the spec could not be
-      run. Four real filings were supplied by hand and are in corpus/real: a
-      Silver Point recurring-revenue facility, a BNP Paribas BDC warehouse
-      revolver, a Wells Fargo prose amendment and an Ares Capital blackline.
-      Four documents are not a stratified sample of anything.
+      policy, so the harvest could not be run here. It was run elsewhere and
+      supplied: corpus/edgar holds 100 agreements stratified across 18 strata
+      with every target met, plus four filings in corpus/real. What is still
+      missing is labels. 104 documents are a corpus; without ground truth they
+      measure whether the pipeline *runs*, not whether it is right.
     consequence: >
-      Every synthetic number in this report was measured on documents written
-      by the same hand that wrote the parser, and the four real ones showed
-      exactly what that is worth: recall collapsed from roughly thirty fields
-      of thirty-eight to between zero and three, both amendments parsed to no
-      effects at all, and a blackline mechanism the pipeline had no concept of
-      was quietly reporting a deleted figure as the facility size. The
-      per-family table separates real from synthetic for this reason. Read the
-      real column; the synthetic column measures the fixtures.
+      Every accuracy number in this report still comes from documents written
+      by the same hand that wrote the parser, and the real ones have shown
+      repeatedly what that is worth: recall collapsed from roughly thirty
+      fields of thirty-eight to between zero and three; both amendments parsed
+      to no effects at all; a blackline mechanism the pipeline had no concept
+      of was reporting a deleted figure as the facility size, and it turns out
+      to be how a third of the corpus amends anything; and the credit spread
+      adjustment check was firing on 40 agreements that correctly have none.
+      The per-family table separates real from synthetic for this reason. Read
+      the real column; the synthetic column measures the fixtures.
     remedy: >
-      Run scripts/harvest_corpus.py from a network with EDGAR access, label
-      per section 8, and refit. The harness reads a labels file alongside any
-      document, so real filings drop straight in -- which is how the four in
-      corpus/real were added.
+      Label the strata in corpus/edgar, Tier 2 at least, starting with the
+      families the table reports as undersampled. The harness reads a labels
+      file alongside any document, so each one drops straight in.
 
   - id: JEV_API
     families: [F02_precedence, F03_external_reference, F04_absence,

@@ -22,9 +22,15 @@ from pydantic import BaseModel, Field
 
 from .quantities import Quantity
 
+#: Counted across 100 EDGAR agreements: Term SOFR 71, Daily Simple SOFR 49,
+#: Prime 46, ABR 35, SONIA 19, EURIBOR 18, CDOR/CORRA 16, TIBOR 6, LIBOR 6,
+#: SARON 2. A model that stops at SOFR describes two thirds of the market and
+#: silently reports "unknown" for the rest, which reads the same as a document
+#: it could not parse at all.
 BenchmarkBase = Literal[
     "term_sofr", "daily_simple_sofr", "abr", "prime", "libor", "euribor",
-    "sonia", "unknown",
+    "sonia", "saron", "tibor", "cdor", "corra", "bbsw", "canadian_prime",
+    "unknown",
 ]
 
 FloorApplies = Literal["base_rate", "all_in"]
@@ -119,13 +125,33 @@ _BASE_PATTERNS: tuple[tuple[str, BenchmarkBase], ...] = (
     (r"\bSOFR\b", "term_sofr"),
     (r"\bEURIBOR\b", "euribor"),
     (r"\bSONIA\b", "sonia"),
+    (r"\bSARON\b", "saron"),
+    (r"\bTIBOR\b", "tibor"),
+    (r"\bTerm\s+CORRA\b|\bCORRA\b", "corra"),
+    (r"\bCDOR\b", "cdor"),
+    (r"\bBBSW\b", "bbsw"),
     (r"\bLIBO(?:R)?\s+Rate\b", "libor"),
+    (r"\bCanadian\s+Prime(?:\s+Rate)?\b", "canadian_prime"),
     (r"\bAlternate\s+Base\s+Rate\b|\bABR\b", "abr"),
     (r"\bPrime\s+Rate\b", "prime"),
 )
 
+#: Every name the market gives the same thing. "Term SOFR Credit Adjustment
+#: Spread" is a real definition in two of the hundred agreements sampled, and a
+#: pattern anchored on "Credit Spread Adjustment" misses it -- which reads as a
+#: deal with no adjustment rather than as an adjustment that was not found.
+#: Deliberately does not include a bare "Spread Adjustment" or "Benchmark
+#: Replacement Adjustment". Every modern agreement carries benchmark-transition
+#: boilerplate promising a spread adjustment *if* SOFR is ever replaced, and
+#: matching that reads a contingency as a term of the deal -- which is how this
+#: check came to fire on two agreements that plainly have no adjustment today.
+_CSA_NAME = (
+    r"(?:Credit\s+Spread\s+Adjustment|Credit\s+Adjustment\s+Spread"
+    r"|SOFR\s+Adjustment|Adjusted\s+Term\s+SOFR)"
+)
+_CSA_MENTION_RE = re.compile(_CSA_NAME, re.IGNORECASE)
 _CSA_RE = re.compile(
-    r"Credit\s+Spread\s+Adjustment[^.]{0,400}?"
+    _CSA_NAME + r"[^.]{0,400}?"
     r"(?P<value>\d+(?:\.\d+)?\s*(?:%|basis\s+points|bps))",
     re.IGNORECASE | re.DOTALL,
 )
@@ -142,6 +168,20 @@ _ALL_IN_FLOOR_RE = re.compile(
     r"All-?In\s+(?:Yield|Rate)[^.]{0,120}?"
     r"shall\s+not\s+be\s+less\s+than\s+(\d+(?:\.\d+)?%)",
     re.IGNORECASE,
+)
+#: The commonest way a base-rate floor is actually drafted: not as a sentence
+#: saying the rate shall not be less than X, but structurally, inside the
+#: benchmark's own definition -- '"Term SOFR" means ... the greater of (i)
+#: 0.25% and (ii) the Term SOFR Reference Rate'. Fifteen of the hundred
+#: agreements sampled state their floor this way and no other, so a pattern
+#: that only reads the sentence form reports them as having no floor.
+_GREATER_OF_FLOOR_RE = re.compile(
+    r"\bmeans?\b[^.]{0,200}?the\s+greater\s+of\s*"
+    r"(?:\([ivx\d]{1,3}\)|\([a-z]\))?\s*"
+    r"(?:(?P<words>[a-z\- ]{3,30})\s*\(\s*)?"
+    r"(?P<value>\d+(?:\.\d+)?)\s*(?:%|percent)"
+    r"[^.]{0,160}?(?:Reference\s+Rate|Screen\s+Rate|SOFR|EURIBOR|SONIA)",
+    re.IGNORECASE | re.DOTALL,
 )
 _WATERFALL_RE = re.compile(
     r"Benchmark\s+Replacement[^.]{0,900}",
@@ -240,6 +280,14 @@ def parse_pricing(doc, pricing_rows: list[dict] | None = None) -> Pricing:
                 "all_in" if "all-in" in subject or "all in" in subject
                 else "base_rate"
             )
+        else:
+            structural = _GREATER_OF_FLOOR_RE.search(text)
+            if structural:
+                from .quantities import parse_quantity
+                floor = parse_quantity(structural.group("value") + "%")
+                # Inside the benchmark's own definition, so by construction it
+                # applies before the margin.
+                floor_applies = "base_rate"
 
     waterfall: list[str] = []
     waterfall_match = _WATERFALL_RE.search(text)

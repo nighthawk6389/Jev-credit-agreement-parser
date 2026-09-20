@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from ..models.core import ExtractedField, InvariantViolation, Span
 from ..models.fiscal import CALENDAR_YEAR, FiscalCalendar
 from ..models.quantities import Quantity
+from ..models.pricing import _CSA_RE as _CSA_STATED_RE
 from ..models.fpml_model import FIELD_REGISTRY, AmortizationSchedule, Facility
 
 #: How far a computed leverage ratio may sit from a stated one. Rounding to two
@@ -863,16 +864,34 @@ def _restatement_conflicts(ctx: InvariantContext) -> list[InvariantViolation]:
 
 @invariant("csa_not_silently_zero", "F07_benchmark")
 def _csa_present(ctx: InvariantContext) -> list[InvariantViolation]:
-    """A SOFR deal with no credit spread adjustment is usually a miss.
+    """A CSA the document names but the pipeline did not read.
 
-    CSAs are near-universal on SOFR facilities. A silent zero understates the
-    yield, and the understated yield then understates every MFN comparison
-    made against it.
+    This check used to fire whenever a SOFR deal carried no credit spread
+    adjustment, on the theory that CSAs are near-universal. Measured across a
+    hundred EDGAR agreements they are not: 71 price off Term SOFR and only 31
+    name an adjustment at all -- the rest fold the spread into the margin and
+    quote the bare rate, for which zero is the correct reading. Firing on the
+    other 40 made this the loudest check in the suite and the least
+    informative, which is how a reader learns to skip the section it prints in.
+
+    So the condition is now the one that indicates an error: the agreement
+    states an adjustment *with a figure* and none came back. A silent zero
+    there still understates the yield, and the understated yield understates
+    every MFN comparison made against it.
+
+    Naming alone is not enough either. Benchmark-transition boilerplate
+    promises a spread adjustment if SOFR is ever replaced, and it is in almost
+    every agreement written since 2022; reading that as a term of the deal is
+    how this check went on firing after the first fix.
     """
     pricing = ctx.pricing
+    document = ctx.document
     if pricing is None or pricing.base not in ("term_sofr", "daily_simple_sofr"):
         return []
     if pricing.credit_spread_adjustment is not None:
+        return []
+    named = _CSA_STATED_RE.search(document.text) if document is not None else None
+    if named is None:
         return []
     closing = ctx.value("closing_date")
     if isinstance(closing, date) and closing < date(2021, 1, 1):
@@ -881,12 +900,15 @@ def _csa_present(ctx: InvariantContext) -> list[InvariantViolation]:
         invariant="csa_not_silently_zero",
         severity="warning",
         message=(
-            f"pricing is off {pricing.base} but no credit spread adjustment "
-            "was found; a CSA treated as zero understates the all-in yield and "
-            "therefore understates the MFN comparison"
+            f"the agreement states a credit spread adjustment "
+            f"({' '.join(named.group(0).split())[:90]!r}) and no value for it "
+            f"was read, with pricing off {pricing.base}; an adjustment treated "
+            "as zero understates the all-in yield and therefore understates "
+            "every MFN comparison made against it"
         ),
         fields=["pricing.credit_spread_adjustment"],
-        observed=None, expected="a stated CSA, or an explicit zero",
+        spans=[document.span(named.start(), named.end())],
+        observed=None, expected="the stated adjustment",
     )]
 
 
