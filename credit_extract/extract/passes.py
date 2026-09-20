@@ -156,22 +156,68 @@ def parse_pricing_grid(doc: NormalizedDocument) -> list[dict[str, Any]]:
     return out
 
 
+_TEXT_GRID_RE = re.compile(
+    r"^\s*(?P<level>[IVX]+|Level\s+[IVX\d]+|\d)\s+"
+    r"(?P<band>[^\n]*?\d+\.\d+[^\n]*?)\s+"
+    r"(?P<margins>\d+\.\d+%(?:\s+\d+\.\d+%)*)\s*$",
+    re.MULTILINE,
+)
+
+
+def parse_pricing_grid_text(doc: NormalizedDocument) -> list[dict[str, Any]]:
+    """Read a pricing grid that lost its table markup.
+
+    A PDF-to-text pass, or a filer's tooling, leaves the grid as
+    whitespace-separated columns. It is still a grid, and a parser that only
+    understands ``<table>`` reports the margin as absent on a document that
+    states it plainly.
+    """
+    out: list[dict[str, Any]] = []
+    for match in _TEXT_GRID_RE.finditer(doc.text):
+        margins = [Decimal(m) for m in re.findall(r"(\d+\.\d+)%", match.group("margins"))]
+        if not margins:
+            continue
+        row: dict[str, Any] = {
+            "cells": [
+                match.group("level"), match.group("band"),
+                *[f"{m}%" for m in margins],
+            ],
+            "span": doc.span(match.start(), match.end()),
+            "eurodollar rate": margins[0],
+        }
+        if len(margins) > 1:
+            row["base rate"] = margins[1]
+        out.append(row)
+    return out
+
+
 def parse_commitment_table(doc: NormalizedDocument) -> list[dict[str, Any]]:
     table = _find_table(doc, ("facility", "tranche", "lender"),
                         ("commitment", "amount", "principal"))
     if table is None:
         return []
+    # A header reading "(in thousands)" multiplies every money cell beneath it
+    # and nothing in the cell records that. Reading the cell alone is wrong by
+    # three orders of magnitude and looks entirely reasonable.
+    scale = table_scale(doc, table)
     out: list[dict[str, Any]] = []
     for cells in table.body_rows():
         if len(cells) < 2:
             continue
-        amount = parse_money(cells[1].text)
-        if amount is None:
+        quantity = parse_quantity(
+            cells[1].text, prefer="money",
+            scale=scale[0] if scale else None,
+            scale_source=scale[1] if scale else None,
+        )
+        if quantity is None:
             continue
+        normalized = quantity.normalized()
         maturity = parse_date(cells[2].text) if len(cells) > 2 else None
         out.append({
             "facility": cells[0].text,
-            "commitment": amount,
+            "commitment": normalized.value,
+            "quantity": normalized,
+            "scale": scale,
             "maturity": maturity,
             "span": doc.span(cells[0].start, cells[-1].end),
         })
@@ -421,6 +467,11 @@ class Rule:
 
 _ENTITY = r"([A-Z][A-Za-z0-9 ,.&'\-]{3,80}?)"
 
+#: A percentage, however the drafter chose to write it. Requiring a literal
+#: "%" means every clause quoted in basis points reads as an absent field --
+#: and "50 basis points" is as common as "0.50%" in pricing and MFN clauses.
+_PCT = r"[\d.]+\s*(?:%|bps\b|basis\s+points)"
+
 OFFLINE_RULES: tuple[Rule, ...] = (
     # -- parties -------------------------------------------------------------
     Rule("borrower.legal_name", _ENTITY + r",\s*as (?:the )?Borrower", 0.90, 0),
@@ -453,12 +504,12 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          0.90),
     # -- pricing and fees ----------------------------------------------------
     Rule("libor_floor_pct",
-         r"LIBO Rate shall not at any time be less than\s+([\d.]+%)", 0.92),
-    Rule("commitment_fee_pct", r"commitment fee equal to\s+([\d.]+%)", 0.88),
-    Rule("fronting_fee_pct", r"fronting fee\s+equal to\s+([\d.]+%)", 0.88),
-    Rule("ticking_fee_pct", r"ticking fee[^.]{0,120}?equal to\s+([\d.]+%)", 0.85),
+         r"LIBO Rate shall not at any time be less than\s+(" + _PCT + r")", 0.92),
+    Rule("commitment_fee_pct", r"commitment fee equal to\s+(" + _PCT + r")", 0.88),
+    Rule("fronting_fee_pct", r"fronting fee\s+equal to\s+(" + _PCT + r")", 0.88),
+    Rule("ticking_fee_pct", r"ticking fee[^.]{0,120}?equal to\s+(" + _PCT + r")", 0.85),
     Rule("excess_cash_flow.sweep_pct",
-         r"prepay the Initial Term Loans with\s+([\d.]+%)\s+of Excess Cash Flow",
+         r"prepay the Initial Term Loans with\s+(" + _PCT + r")\s+of Excess Cash Flow",
          0.88),
     # -- covenant and leverage ----------------------------------------------
     # A restatement often replaces a step-down grid with a single prose level.
@@ -499,7 +550,7 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     # -- MFN -----------------------------------------------------------------
     Rule("mfn_threshold_pct",
          r"exceeds the All-In Yield applicable to the Initial Term Loans by more "
-         r"than\s+([\d.]+%)", 0.90),
+         r"than\s+(" + _PCT + r")", 0.90),
     # An MFN sunset is a period, not a date, and it is written as a carve-out
     # from the MFN clause rather than as its own provision. Without this rule
     # the field is null whether or not a sunset exists, and the negative-space
@@ -527,8 +578,8 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          r"paid in kind[^.]{0,120}?increased by\s+([\d.]+%)", 0.85),
     # -- Consolidated EBITDA construction ------------------------------------
     Rule("consolidated_ebitda.addback_cap_pct",
-         r"shall not exceed\s+([\d.]+%)\s+of Consolidated EBITDA for such period",
-         0.88,
+         r"shall not exceed\s+(" + _PCT + r")\s+of Consolidated EBITDA for such "
+         r"period", 0.88,
          note="stated cap; check which clauses it actually governs"),
     Rule("consolidated_ebitda.addback_cap_clause_a_xvi",
          r"\(xvi\)[^;]{0,400}?set forth in the Sponsor Model[^;]{0,200}",
@@ -643,15 +694,19 @@ def table_candidates(doc: NormalizedDocument) -> list[Candidate]:
         ))
 
     for row in parse_commitment_table(doc):
+        scale = row.get("scale")
         name = row["facility"].lower()
         if "revolv" in name:
-            add("revolver.commitment", row["commitment"], row["span"], 0.95)
+            add("revolver.commitment", row["commitment"], row["span"], 0.95,
+                quantity=row.get("quantity"))
             if row["maturity"]:
                 add("revolver.maturity_date", row["maturity"], row["span"], 0.95)
         elif "delayed draw" in name:
-            add("delayed_draw.commitment", row["commitment"], row["span"], 0.95)
+            add("delayed_draw.commitment", row["commitment"], row["span"],
+                0.95, quantity=row.get("quantity"))
         elif "term loan" in name:
-            add("initial_term_loan.commitment", row["commitment"], row["span"], 0.95)
+            add("initial_term_loan.commitment", row["commitment"],
+                row["span"], 0.95, quantity=row.get("quantity"))
             if row["maturity"]:
                 add("initial_term_loan.maturity_date", row["maturity"],
                     row["span"], 0.95)
@@ -671,7 +726,7 @@ def table_candidates(doc: NormalizedDocument) -> list[Candidate]:
         add("financial_covenant.opening_level", grid[0][1], grid[0][2], 0.95)
         add("financial_covenant.final_level", grid[-1][1], grid[-1][2], 0.95)
 
-    pricing = parse_pricing_grid(doc)
+    pricing = parse_pricing_grid(doc) or parse_pricing_grid_text(doc)
     margins = [
         (value, row["span"])
         for row in pricing
@@ -777,3 +832,96 @@ def run_passes(
         chunks_seen=seen,
         contributing_chunks=contributing,
     )
+
+
+# ---------------------------------------------------------------------------
+# Conditional and time-varying fields (family F10)
+# ---------------------------------------------------------------------------
+
+_PERIOD_RANGE_RE = re.compile(
+    r"(?P<from>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})\s+(?:through|to|until)\s+"
+    r"(?P<to>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})",
+)
+_PERIOD_OPEN_RE = re.compile(
+    r"(?P<from>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})\s+and\s+thereafter",
+)
+#: "shall apply only if ... exceeds 35% of ..." -- a springing covenant is not
+#: in force until its trigger is, and a scalar cannot say that.
+_SPRINGING_RE = re.compile(
+    r"(?:Financial\s+Covenant|covenant\s+set\s+forth\s+in\s+this\s+Section)"
+    r"[^.]{0,200}?(?:shall\s+apply|shall\s+be\s+tested)\s+only\s+"
+    r"(?:if|when|during\s+any\s+period\s+(?:in\s+)?which)\s+"
+    r"(?P<subject>[^.]{0,120}?)\s+exceeds?\s+(?P<threshold>[\d.]+%)",
+    re.IGNORECASE,
+)
+_POST_IPO_RE = re.compile(
+    r"(?:from\s+and\s+after|following|on\s+and\s+after)\s+(?:the\s+)?"
+    r"(?:consummation\s+of\s+(?:a|an|the)\s+)?(?:Qualifying\s+)?(?:IPO|Initial\s+"
+    r"Public\s+Offering)[^.]{0,160}?(?P<level>[\d.]+:[\d.]+)",
+    re.IGNORECASE,
+)
+
+
+def parse_covenant_variants(doc: NormalizedDocument) -> list[dict[str, Any]]:
+    """Read the covenant grid as time-varying variants, not as two scalars.
+
+    A step-down grid *is* a field that changes over time. Storing only the
+    opening and final levels answers "what is the covenant?" with a number that
+    is wrong for most of the life of the loan; storing variants lets the
+    question be asked as "what is the covenant on 30 June 2021?" and answered.
+    """
+    out: list[dict[str, Any]] = []
+    for label, level, span in parse_covenant_grid(doc):
+        effective_from: date | None = None
+        effective_to: date | None = None
+        ranged = _PERIOD_RANGE_RE.search(label)
+        if ranged:
+            effective_from = parse_date(ranged.group("from"))
+            effective_to = parse_date(ranged.group("to"))
+        else:
+            open_ended = _PERIOD_OPEN_RE.search(label)
+            if open_ended:
+                effective_from = parse_date(open_ended.group("from"))
+            else:
+                effective_to = parse_date(label)
+        out.append({
+            "label": label,
+            "level": level,
+            "span": span,
+            "effective_from": effective_from,
+            "effective_to": effective_to,
+        })
+    # Highest precedence first, which for a pure schedule means latest first:
+    # a later step-down governs once its window opens.
+    out.sort(
+        key=lambda row: row["effective_from"] or date.min, reverse=True
+    )
+    return out
+
+
+def parse_springing_condition(doc: NormalizedDocument) -> dict[str, Any] | None:
+    """A covenant that is not in force until a trigger fires."""
+    match = _SPRINGING_RE.search(doc.text)
+    if match is None:
+        return None
+    subject = " ".join(match.group("subject").split())
+    variable = re.sub(r"[^a-z0-9]+", "_", subject.lower()).strip("_") or "trigger"
+    threshold = parse_percent(match.group("threshold"))
+    return {
+        "expr": f"{variable} > {threshold}",
+        "subject": subject,
+        "threshold": threshold,
+        "span": doc.span(match.start(), match.end()),
+    }
+
+
+def parse_post_ipo_level(doc: NormalizedDocument) -> dict[str, Any] | None:
+    """A level that only applies once an IPO has happened."""
+    match = _POST_IPO_RE.search(doc.text)
+    if match is None:
+        return None
+    return {
+        "expr": "ipo_completed == true",
+        "level": parse_ratio(match.group("level")),
+        "span": doc.span(match.start(), match.end()),
+    }

@@ -14,6 +14,7 @@ import re
 import unicodedata
 from bisect import bisect_right
 from pathlib import Path
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -61,6 +62,35 @@ class SectionMarker(BaseModel):
     end: int | None = None
 
 
+class RedlineRange(BaseModel):
+    """A run of text that a blackline marks as deleted or newly inserted.
+
+    A blackline amendment says what it changes by *typography*: the old words
+    are struck through, the new words are bold and double-underlined. Render
+    that to plain text and both survive, adjacent and indistinguishable --
+    ``Up to U.S. $ 2,150,000,000 2,250,000,000`` is a real line from a real
+    filing, and a first-match parser reads it as $2.15bn, the number the
+    amendment just deleted. Nothing in the plain text signals a problem, which
+    is what makes it the worst class of error this pipeline can make.
+
+    Struck runs are therefore never written into the normalized text at all.
+    The offset space *is* the operative text, so every span downstream quotes
+    what the agreement currently says with no downstream code needing to know
+    a blackline was involved; ``start == end`` marks the point the deletion was
+    excised at, and ``text`` keeps the deleted words for audit. Inserted runs
+    are written like any other text and their range is recorded as provenance.
+    """
+
+    start: int
+    end: int
+    kind: Literal["struck", "inserted"]
+    text: str = ""
+
+    @property
+    def excised(self) -> bool:
+        return self.kind == "struck"
+
+
 class NormalizedDocument(BaseModel):
     """Normalized text plus everything needed to locate any offset."""
 
@@ -71,7 +101,41 @@ class NormalizedDocument(BaseModel):
     tables: list[Table] = Field(default_factory=list)
     pages: list[PageBreak] = Field(default_factory=list)
     sections: list[SectionMarker] = Field(default_factory=list)
+    redlines: list[RedlineRange] = Field(default_factory=list)
     meta: dict[str, str] = Field(default_factory=dict)
+
+    # -- blackline -----------------------------------------------------------
+
+    @property
+    def is_blackline(self) -> bool:
+        """True when this document struck text out, i.e. carries deletions."""
+        return any(r.excised for r in self.redlines)
+
+    def deletions(self) -> list[RedlineRange]:
+        """The runs excluded from the text, in the order they were excised."""
+        return [r for r in self.redlines if r.excised]
+
+    def insertions(self) -> list[RedlineRange]:
+        return [r for r in self.redlines if not r.excised]
+
+    def deleted_near(self, start: int, end: int, pad: int = 40) -> list[RedlineRange]:
+        """Deletions excised from inside or beside a span.
+
+        What a reader needs when a figure changed: the span quotes the new
+        number, and this says which number it replaced.
+        """
+        return [
+            r for r in self.deletions()
+            if start - pad <= r.start <= end + pad
+        ]
+
+    def blackline_summary(self) -> dict[str, Any]:
+        return {
+            "is_blackline": self.is_blackline,
+            "deletions": len(self.deletions()),
+            "deleted_characters": sum(len(r.text) for r in self.deletions()),
+            "insertions": len(self.insertions()),
+        }
 
     # -- lookup -------------------------------------------------------------
 
@@ -152,6 +216,7 @@ class NormalizedDocument(BaseModel):
                  "rows": t.n_rows, "cols": t.n_cols, "caption": t.caption}
                 for t in self.tables
             ],
+            "redlines": [r.model_dump() for r in self.redlines],
         }
 
 
@@ -222,23 +287,72 @@ _BLOCK_TAGS = {
 _SKIP_TAGS = {"script", "style", "head", "meta", "link", "title"}
 _PAGE_MARK_RE = re.compile(r"^\s*(?:page\s+)?(\d{1,4})\s*$", re.IGNORECASE)
 
+_STRUCK_TAGS = {"s", "strike", "del"}
+_BOLD_RE = re.compile(r"font-weight:(?:bold|[6-9]\d\d)")
+#: Any declared colour that is not black. A blackline picks out its insertions
+#: in colour as well as underlining them; ordinary emphasis does not.
+_COLOURED_RE = re.compile(r"(?<!background-)color:#(?!000000\b|000\b)[0-9a-f]{3,6}")
+
+
+def _mark_of(node) -> str | None:
+    """Whether a tag marks its contents as deleted or newly inserted.
+
+    Deletion is read strictly -- ``line-through`` and the strike tags mean one
+    thing in a legal document and nothing else. Insertion is read narrowly on
+    purpose: ``text-decoration:underline`` alone is how every section heading
+    in an EDGAR filing is set, so an underline only counts as an insertion when
+    it is also bold or coloured, which is what "bold and double-underlined"
+    amounts to once a converter has flattened the double rule to a single one.
+    """
+    name = node.name.lower()
+    if name in _STRUCK_TAGS:
+        return "struck"
+    style = (node.get("style") or "").lower().replace(" ", "")
+    if "line-through" in style:
+        return "struck"
+    if name == "ins":
+        return "inserted"
+    if "underline" in style and (_BOLD_RE.search(style) or _COLOURED_RE.search(style)):
+        return "inserted"
+    return None
+
+
+#: Tried in order when an MHT part declares no charset. A browser-saved
+#: archive of an EDGAR filing frequently omits it, and the bytes are Windows
+#: code page 1252 -- decoding them as UTF-8 turns every smart quote into a
+#: replacement character, which then breaks defined-term detection because the
+#: quotation marks around every defined term are gone.
+_MHT_FALLBACK_CHARSETS = ("utf-8", "cp1252", "latin-1")
+
+
+def _decode_part(payload: bytes, declared: str | None) -> str:
+    for charset in ([declared] if declared else []) + list(_MHT_FALLBACK_CHARSETS):
+        try:
+            return payload.decode(charset)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return payload.decode("utf-8", errors="replace")
+
 
 def _read_mht(path: Path) -> str:
     message = email.message_from_bytes(path.read_bytes())
     best = ""
     for part in message.walk():
         if part.get_content_type() in ("text/html", "application/xhtml+xml"):
-            charset = part.get_content_charset() or "utf-8"
-            payload = part.get_payload(decode=True) or b""
-            candidate = payload.decode(charset, errors="replace")
+            candidate = _decode_part(
+                part.get_payload(decode=True) or b"",
+                part.get_content_charset(),
+            )
             if len(candidate) > len(best):
                 best = candidate
     if not best:
-        best = path.read_text(encoding="utf-8", errors="replace")
+        best = path.read_bytes().decode("utf-8", errors="replace")
     return best
 
 
-def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBreak]]:
+def _ingest_html(
+    html: str, builder: _Builder
+) -> tuple[list[Table], list[PageBreak], list[RedlineRange]]:
     from bs4 import BeautifulSoup, NavigableString, Tag
 
     soup = BeautifulSoup(html, "lxml")
@@ -247,7 +361,42 @@ def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBr
 
     tables: list[Table] = []
     pages: list[PageBreak] = [PageBreak(offset=0, page=1)]
+    redlines: list[RedlineRange] = []
     counters = {"table": 0, "page": 1}
+
+    def emit(text: str, mark: str | None) -> tuple[int, int] | None:
+        if mark == "struck":
+            # Excised, not written. The deleted words are kept in the sidecar
+            # so the change is auditable, but they never enter the offset space
+            # and so can never be quoted back as an operative term.
+            deleted = re.sub(r"\s+", " ", normalize_chars(text)).strip()
+            if deleted:
+                redlines.append(RedlineRange(
+                    start=builder.offset, end=builder.offset,
+                    kind="struck", text=deleted,
+                ))
+            return None
+        written = builder.write(text)
+        if written is not None and mark is not None and written[1] > written[0]:
+            redlines.append(RedlineRange(
+                start=written[0], end=written[1], kind=mark,
+                text=builder.value()[written[0]:written[1]][:200],
+            ))
+        return written
+
+    def marked_runs(node, mark: str | None = None):
+        """Descendant strings, each paired with the markup governing it."""
+        if isinstance(node, NavigableString):
+            yield str(node), mark
+            return
+        if not isinstance(node, Tag) or node.name.lower() in _SKIP_TAGS:
+            return
+        mark = _mark_of(node) or mark
+        if node.name.lower() == "br":
+            yield " ", mark
+            return
+        for child in node.children:
+            yield from marked_runs(child, mark)
 
     def emit_table(node: Tag) -> None:
         counters["table"] += 1
@@ -260,10 +409,20 @@ def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBr
             col = 0
             wrote_any = False
             for cell_node in raw_cells:
-                text = cell_node.get_text(" ", strip=True)
                 if wrote_any:
                     builder._raw(" | ")
-                written = builder.write(text) if text else None
+                # Written run by run rather than through one ``get_text`` call,
+                # so that a cell holding a struck figure beside its replacement
+                # keeps the two distinguishable. Flattening here is how a
+                # blackline amortization table loses every old instalment into
+                # the new one.
+                written: tuple[int, int] | None = None
+                for run, mark in marked_runs(cell_node):
+                    piece = emit(run, mark)
+                    if piece is not None:
+                        written = (
+                            piece if written is None else (written[0], piece[1])
+                        )
                 if written is None:
                     # Empty spacer cell: keep a zero-width anchor at the cursor
                     written = (builder.offset, builder.offset)
@@ -271,7 +430,7 @@ def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBr
                     Cell(
                         row=r_idx,
                         col=col,
-                        text=normalize_chars(text).strip(),
+                        text=builder.value()[written[0]:written[1]].strip(),
                         start=written[0],
                         end=max(written[1], written[0] + 1),
                         is_header=cell_node.name == "th",
@@ -297,9 +456,9 @@ def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBr
             _infer_header_row(table)
             tables.append(table)
 
-    def walk(node) -> None:
+    def walk(node, mark: str | None = None) -> None:
         if isinstance(node, NavigableString):
-            builder.write(str(node))
+            emit(str(node), mark)
             return
         if not isinstance(node, Tag):
             return
@@ -318,13 +477,14 @@ def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBr
             counters["page"] += 1
             pages.append(PageBreak(offset=builder.offset, page=counters["page"]))
             return
+        mark = _mark_of(node) or mark
         is_block = name in _BLOCK_TAGS
         style = (node.get("style") or "").lower()
         page_break = "page-break-before" in style or "page-break-after" in style
         if is_block:
             builder.block()
         for child in node.children:
-            walk(child)
+            walk(child, mark)
         if is_block:
             builder.block()
         if page_break:
@@ -334,7 +494,30 @@ def _ingest_html(html: str, builder: _Builder) -> tuple[list[Table], list[PageBr
     body = soup.body or soup
     for child in body.children:
         walk(child)
-    return tables, pages
+    return tables, pages, _merge_redlines(redlines)
+
+
+def _merge_redlines(ranges: list[RedlineRange]) -> list[RedlineRange]:
+    """Coalesce adjacent runs of the same kind, keeping source order.
+
+    A blackline splits one deleted phrase across a dozen ``<font>`` runs; left
+    un-merged the register reads as a dozen deletions of two words each, which
+    overstates how much changed and hides what the change was.
+    """
+    merged: list[RedlineRange] = []
+    for region in ranges:
+        last = merged[-1] if merged else None
+        if (
+            last is not None
+            and last.kind == region.kind
+            and region.start <= last.end + 1
+        ):
+            last.end = max(last.end, region.end)
+            joiner = "" if last.text.endswith(" ") or region.text.startswith(" ") else " "
+            last.text = (last.text + joiner + region.text)[:400]
+            continue
+        merged.append(region.model_copy())
+    return merged
 
 
 def _infer_header_row(table: Table) -> None:
@@ -408,6 +591,13 @@ _BARE_SECTION_RE = re.compile(
     r"^[ \t]*(?P<num>\d+\.\d{2}[A-Za-z]?)[ \t]+(?P<title>[A-Z][^\n]{2,90})",
     re.MULTILINE,
 )
+#: Amendments number their own provisions "1. Defined Terms." rather than
+#: "2.10". Used only when no decimal-numbered sections were found at all,
+#: because in a base agreement this pattern would match list items in prose.
+_SIMPLE_SECTION_RE = re.compile(
+    r"^[ \t]*(?P<num>\d{1,2})\.[ \t]+(?P<title>[A-Z][^\n]{2,90})",
+    re.MULTILINE,
+)
 
 
 def detect_sections(text: str) -> list[SectionMarker]:
@@ -423,6 +613,14 @@ def detect_sections(text: str) -> list[SectionMarker]:
         for match in rx.finditer(text):
             if match.start() in markers:
                 continue
+            markers[match.start()] = SectionMarker(
+                offset=match.start(),
+                section_id=match.group("num"),
+                title=match.group("title").strip(" .:-"),
+                level="section",
+            )
+    if not markers:
+        for match in _SIMPLE_SECTION_RE.finditer(text):
             markers[match.start()] = SectionMarker(
                 offset=match.start(),
                 section_id=match.group("num"),
@@ -499,12 +697,13 @@ def ingest(path: str | Path, document_id: str | None = None) -> NormalizedDocume
 
     builder = _Builder()
     tables: list[Table] = []
+    redlines: list[RedlineRange] = []
     if suffix in (".htm", ".html", ".xhtml"):
         raw = path.read_bytes().decode("utf-8", errors="replace")
-        tables, pages = _ingest_html(raw, builder)
+        tables, pages, redlines = _ingest_html(raw, builder)
         fmt = "html"
     elif suffix in (".mht", ".mhtml"):
-        tables, pages = _ingest_html(_read_mht(path), builder)
+        tables, pages, redlines = _ingest_html(_read_mht(path), builder)
         fmt = "mht"
     elif suffix == ".pdf":
         pages = _ingest_pdf(path, builder)
@@ -529,6 +728,7 @@ def ingest(path: str | Path, document_id: str | None = None) -> NormalizedDocume
         tables=tables,
         pages=pages,
         sections=sections,
+        redlines=redlines,
         meta={"bytes": str(path.stat().st_size)},
     )
     for table in doc.tables:

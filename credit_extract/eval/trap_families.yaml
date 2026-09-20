@@ -67,6 +67,8 @@ families:
       - side_letter
       - intercreditor_override
       - schedule_omitted_from_filing    # a filing artifact, NOT a deal term
+      - redacted_from_filing            # blacked out under Item 601(b)(10);
+                                        # the borrower and the SEC have it
     notes: >
       external_by_design and omitted_from_filing are different things and must
       never be conflated. The first is unobtainable in principle and is a real

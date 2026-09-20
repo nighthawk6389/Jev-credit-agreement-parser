@@ -58,7 +58,22 @@ BY_DESIGN_PATTERNS: tuple[str, ...] = (
     r"agreed\s+between\s+the\s+borrower\s+and\s+the\s+(?:administrative\s+)?agent",
 )
 
+#: Redaction is a third thing entirely, and it is common. Under Item
+#: 601(b)(10) a filer may black out immaterial competitive terms and mark them,
+#: conventionally with three asterisks. The term IS in the agreement and the
+#: borrower and the SEC have it; only this copy does not. Treating a redacted
+#: pricing term as "absent from the document" reports a deal with no margin.
+REDACTION_PATTERNS: tuple[str, ...] = (
+    r"\[\s*\*{2,}\s*\]",
+    r"\[\s*redacted\s*\]",
+    r"have\s+been\s+redacted",
+    r"marked\s+.{0,40}?with\s+three\s+asterisks",
+    r"omitted\s+and\s+filed\s+separately\s+with\s+the\s+(?:commission|sec)",
+    r"confidential\s+treatment\s+(?:has\s+been\s+)?requested",
+)
+
 _OMISSION_RE = re.compile("|".join(OMISSION_PATTERNS), re.IGNORECASE)
+_REDACTION_RE = re.compile("|".join(REDACTION_PATTERNS), re.IGNORECASE)
 _BY_DESIGN_RE = re.compile("|".join(BY_DESIGN_PATTERNS), re.IGNORECASE)
 
 #: Nouls asked as a pair against one state, so the pair costs one request.
@@ -109,7 +124,33 @@ def document_omits_schedules(doc: NormalizedDocument) -> bool:
     return bool(_OMISSION_RE.search(doc.text))
 
 
+def document_is_redacted(doc: NormalizedDocument) -> bool:
+    return bool(_REDACTION_RE.search(doc.text))
+
+
+def redaction_markers(doc: NormalizedDocument) -> list[OmissionMarker]:
+    return [
+        OmissionMarker(
+            span=doc.span(m.start(), m.end()),
+            phrase=" ".join(m.group(0).split()),
+            scope="local",
+        )
+        for m in _REDACTION_RE.finditer(doc.text)
+    ]
+
+
 def classify_locally(window: str) -> ExternalVerdict | None:
+    """Tier 1 classification, redaction first."""
+    redacted = _REDACTION_RE.search(window or "")
+    if redacted:
+        return ExternalVerdict(
+            kind="redacted_from_filing", basis="deterministic",
+            evidence=" ".join(redacted.group(0).split()),
+        )
+    return _classify_omission_or_design(window)
+
+
+def _classify_omission_or_design(window: str) -> ExternalVerdict | None:
     """Tier 1. Decide from the surrounding text alone, for free.
 
     Only returns a verdict when the language is unambiguous; anything else is

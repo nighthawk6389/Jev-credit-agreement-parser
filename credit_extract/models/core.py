@@ -42,8 +42,10 @@ RESOLVED_NULL_STATES: frozenset[str] = frozenset(
 #: conflating them corrupts a corpus: the first is a deal characteristic, the
 #: second is an artifact of how the document was filed.
 ExternalKind = Literal[
-    "by_design",            # unobtainable in principle; a real deal term
-    "omitted_from_filing",  # obtainable from the borrower; a source artifact
+    "by_design",             # unobtainable in principle; a real deal term
+    "omitted_from_filing",   # obtainable from the borrower; a source artifact
+    "redacted_from_filing",  # in the filing, blacked out under a 601(b)(10)
+                             # confidential treatment request
 ]
 
 #: Coarse buckets used to fit separate confidence thresholds per field class.

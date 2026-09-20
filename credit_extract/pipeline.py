@@ -22,7 +22,8 @@ from pydantic import BaseModel, Field
 
 from .extract.passes import (
     Candidate, ExtractionBackend, OfflineRuleBackend, parse_amortization_schedule,
-    parse_covenant_grid, parse_hardcoded_ebitda, parse_pricing_grid,
+    parse_covenant_grid, parse_covenant_variants, parse_hardcoded_ebitda,
+    parse_post_ipo_level, parse_pricing_grid, parse_springing_condition,
     run_passes,
 )
 from .extract.reconcile import reconcile
@@ -38,7 +39,8 @@ from .models.actus_map import (
     ActusContract, ActusMapping, diff_schedule, generate_schedule, map_facility,
 )
 from .models.core import (
-    CostLedger, DocumentReport, ExtractedField, InvariantViolation,
+    Condition, CostLedger, DocumentReport, ExtractedField, InvariantViolation,
+    Variant,
 )
 from .models.archetypes import ArchetypeDetection, inapplicable_fields
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
@@ -279,6 +281,7 @@ def run_pipeline(
     # -- tier 2: free deterministic invariants ------------------------------
     fiscal_calendar = detect_fiscal_calendar(doc.text)
     precedence = build_precedence_graph(doc)
+    _build_covenant_variants(doc, fields, precedence)
     pricing = parse_pricing(doc, parse_pricing_grid(doc))
     mappings, actus_diffs = _actus_contracts(fields, schedule)
     violations: list[InvariantViolation] = []
@@ -440,6 +443,77 @@ def run_pipeline(
         },
     )
 
+
+
+
+def _build_covenant_variants(
+    doc: NormalizedDocument,
+    fields: dict[str, ExtractedField],
+    precedence: Any,
+) -> None:
+    """Assemble the financial covenant as a field that varies over time.
+
+    A step-down grid answers "what is the covenant?" differently depending on
+    when you ask. Two scalars cannot represent that, and the scalar that gets
+    reported is wrong for most of the life of the loan.
+    """
+    rows = parse_covenant_variants(doc)
+    springing = parse_springing_condition(doc)
+    post_ipo = parse_post_ipo_level(doc)
+    if not rows and not post_ipo:
+        return
+
+    variants: list[Variant] = []
+    if post_ipo and post_ipo["level"] is not None:
+        variants.append(Variant[Any](
+            value=post_ipo["level"], spans=[post_ipo["span"]], status="confirmed",
+            extraction_confidence=0.85,
+            conditions=[Condition(
+                kind="event", expr=post_ipo["expr"],
+                source_spans=[post_ipo["span"]],
+            )],
+            notes="applies only after an IPO",
+        ))
+    for row in rows:
+        conditions = []
+        if springing:
+            conditions.append(Condition(
+                kind="state", expr=springing["expr"],
+                source_spans=[springing["span"]],
+            ))
+        variants.append(Variant[Any](
+            value=row["level"], spans=[row["span"]], status="confirmed",
+            extraction_confidence=0.93,
+            effective_from=row["effective_from"],
+            effective_to=row["effective_to"],
+            conditions=conditions,
+            notes=row["label"],
+        ))
+    if not variants:
+        return
+
+    basis_parts = []
+    if springing:
+        basis_parts.append(
+            f"springing: tested only while {springing['subject']} exceeds "
+            f"{springing['threshold']}%"
+        )
+    if post_ipo:
+        basis_parts.append("post-IPO level takes precedence over the schedule")
+    grid_basis = precedence.basis_for("6.12") if precedence else None
+    if grid_basis:
+        basis_parts.append(grid_basis)
+
+    spec = FIELD_REGISTRY.get("financial_covenant.level")
+    fields["financial_covenant.level"] = ExtractedField[Any](
+        variants=variants,
+        standard_term=spec.standard_term if spec else None,
+        field_class=spec.field_class if spec else "covenant_levels",
+        criticality=spec.criticality if spec else 5,
+        precedence_basis="; ".join(basis_parts) or (
+            "step-down schedule, latest applicable window first"
+        ),
+    )
 
 
 def _attribute_spans(

@@ -303,6 +303,13 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "the opening maximum leverage level under the financial covenant",
               "ratio", "covenant_levels", 5, None, None, verified_term=False,
               anchors=["Total Leverage Ratio"], sections=["6.12"]),
+        # The covenant is one field that changes over time, stored as variants.
+        # The opening and final levels below remain for the scalar view.
+        _spec("financial_covenant.level",
+              "the maximum leverage level under the financial covenant, as it "
+              "stands at a given date", "ratio", "covenant_levels", 5,
+              None, None, verified_term=False,
+              anchors=["Total Leverage Ratio"], sections=["6.12"]),
         _spec("financial_covenant.final_level",
               "the final stepped-down maximum leverage level", "ratio",
               "covenant_levels", 5, None, None, verified_term=False,
