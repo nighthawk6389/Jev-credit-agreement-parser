@@ -21,15 +21,27 @@ from pathlib import Path
 from typing import Any
 
 from .eval import traps as trap_checks
-from .extract.passes import AnthropicBackend, OfflineRuleBackend
+from .extract.passes import (
+    AnthropicBackend, LayeredBackend, OfflineRuleBackend,
+)
 from .pipeline import ExtractionResult, run_document_set, run_pipeline
 from .validate.calibrate import BackendMismatch, Thresholds, load_thresholds
 from .validate.jev import JevClient, OfflineJev
 
 
 def _build_backends(args: argparse.Namespace):
+    """Rules first, model for what the rules leave.
+
+    ``--backend anthropic`` layers the model *behind* the deterministic rules
+    rather than replacing them. The rules are cheap and exact on the easy
+    fields; the model is for everything else, and it only ever sees the fields
+    the rules did not settle.
+    """
     if args.backend == "anthropic":
-        extraction = AnthropicBackend(model=args.model, temperature=args.temperature)
+        extraction = LayeredBackend(
+            OfflineRuleBackend(),
+            AnthropicBackend(model=args.model, temperature=args.temperature),
+        )
     else:
         extraction = OfflineRuleBackend()
     jev = JevClient() if args.jev == "api" else OfflineJev()

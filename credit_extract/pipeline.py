@@ -421,6 +421,14 @@ def run_pipeline(
         thresholds_version=f"{thresholds.version}@{thresholds.backend}",
         notes=[
             f"jev: {session.summary()}",
+            # Which tier answered what. The cheap tiers exist to take the easy
+            # fields off the model, so a run where they answer nothing is one
+            # where the pattern set has drifted from what documents look like.
+            "extraction by tier: " + (
+                ", ".join(
+                    f"{tier}={n}" for tier, n in extracted.by_tier().items()
+                ) or "nothing extracted"
+            ),
             f"chunks swept: {len(sweep)}",
             f"override findings: "
             f"{sum(1 for o in overrides if o.overrides)} of {len(overrides)} tested",

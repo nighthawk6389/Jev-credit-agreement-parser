@@ -1,13 +1,26 @@
-"""Extraction passes.
+"""Extraction passes, and the division of labour between them.
 
-Tier 1 of the escalation ladder lives at the top of this module: tables parse
-deterministically in Python, for free, with exact spans. Nothing below tier 1
-is asked to read a grid, and nothing at any tier is asked to do arithmetic.
+Three tiers, cheapest first, and the boundary between them is a design
+decision rather than an accident of what was easy to write:
 
-The LLM passes below run the same target list against three independent
-segmentations. Disagreement between them is the signal reconciliation keys on,
-so the passes must stay genuinely independent -- same prompt, different view of
-the document.
+* **tables** parse deterministically in Python, for free, with spans exact to
+  the character. Nothing below this tier is ever asked to read a grid.
+* **rules** (``OFFLINE_RULES``) take the fields that are cheap and
+  unambiguous -- a party named beside its role, a percentage next to the words
+  that anchor it. They are deliberately scoped to those; see the note above
+  the rule table for why extending them to the hard cases is a losing trade.
+* **the model** takes everything the first two leave. :class:`LayeredBackend`
+  is what enforces that: it runs the rules first and hands the model only the
+  fields they did not settle, so the two never duplicate each other's work and
+  the model is spent where judgement is actually needed.
+
+Nothing at any tier does arithmetic. Totals, date comparison and counting live
+in ``validate/invariants.py``, and whatever no tier settles is caught by the
+orphan sweep, which runs regardless.
+
+The passes run the same target list against three independent segmentations.
+Disagreement between them is the signal reconciliation keys on, so they must
+stay genuinely independent -- same prompt, different view of the document.
 """
 
 from __future__ import annotations
@@ -472,6 +485,27 @@ _ENTITY = r"([A-Z][A-Za-z0-9 ,.&'\-]{3,80}?)"
 #: and "50 basis points" is as common as "0.50%" in pricing and MFN clauses.
 _PCT = r"[\d.]+\s*(?:%|bps\b|basis\s+points)"
 
+#: Scope, and the reason for it.
+#:
+#: These rules take the fields that are cheap and unambiguous: a party named
+#: beside its role in the preamble, a figure in a table, a percentage next to
+#: the words that anchor it. On those they are exact, free, and better than a
+#: model -- a table cell has a span to the character, and no sampling variance.
+#:
+#: They are deliberately **not** extended to cover the hard cases, and the
+#: corpus is why. Across 100 real agreements, "is hereby amended" is followed
+#: by 24 distinct phrasings, 13 of which occur exactly once; the same shape
+#: shows up in how floors are drafted, how a credit spread adjustment is named,
+#: and how a pricing grid is laid out. A pattern set chasing that tail grows
+#: without bound, gets more fragile with every addition, and still misses the
+#: 25th phrasing -- while every regex added to catch a rare form is a regex
+#: that can misfire on a common one.
+#:
+#: So a field these rules do not settle is not a gap to be closed here. It is
+#: handed to the model tier by :class:`LayeredBackend`, and whatever the model
+#: does not settle either is still caught by the orphan sweep. Before adding a
+#: rule, the question is not "does this match the document in front of me" but
+#: "is this form common and unambiguous enough that a pattern beats a model".
 OFFLINE_RULES: tuple[Rule, ...] = (
     # -- parties -------------------------------------------------------------
     Rule("borrower.legal_name", _ENTITY + r",\s*as (?:the )?Borrower", 0.90, 0),
@@ -741,6 +775,87 @@ def table_candidates(doc: NormalizedDocument) -> list[Candidate]:
 
 
 # ---------------------------------------------------------------------------
+# The tier boundary
+# ---------------------------------------------------------------------------
+
+
+class LayeredBackend:
+    """Deterministic rules take the easy fields; the model takes the rest.
+
+    The division of labour this whole module is arranged around, and the one
+    it previously failed to implement: ``run_passes`` took a single backend,
+    so a run was either all-patterns or all-model, and the patterns were left
+    trying to cover the whole distribution on their own.
+
+    They cannot, and the corpus says so precisely. Across a hundred real
+    agreements, "is hereby amended" is followed by twenty-four distinct
+    phrasings, thirteen of which occur once. A pattern set chasing that tail
+    grows without bound, gets more fragile with every addition, and still
+    misses the twenty-fifth phrasing -- while the *easy* cases it does handle,
+    a figure in a table or a date in a preamble, it handles at a precision no
+    model matches and at no cost.
+
+    So the rules are deliberately scoped to what is cheap and unambiguous.
+    Every field they do not settle in a chunk is handed to the model, with the
+    chunk text and the definitional context already assembled. Anything the
+    model does not settle either is still caught by the orphan sweep, which
+    runs regardless.
+
+    The tier that produced each candidate stays on its ``pass_id``, so a
+    reader can see which answers were free and which were inferred.
+    """
+
+    name = "layered"
+
+    def __init__(
+        self,
+        deterministic: ExtractionBackend | None = None,
+        model: ExtractionBackend | None = None,
+    ) -> None:
+        self.deterministic = deterministic or OfflineRuleBackend()
+        self.model = model
+        self.name = (
+            f"{self.deterministic.name}+{self.model.name}" if self.model
+            else self.deterministic.name
+        )
+
+    def with_temperature(self, temperature: float) -> "LayeredBackend":
+        """Only the model tier varies; the rules are deterministic."""
+        if self.model is None:
+            return self
+        vary = getattr(self.model, "with_temperature", lambda _t: self.model)
+        return LayeredBackend(self.deterministic, vary(temperature))
+
+    def extract(
+        self,
+        doc: NormalizedDocument,
+        chunk: Chunk,
+        specs: list[FieldSpec],
+        context: str,
+        pass_id: str,
+    ) -> tuple[list[Candidate], CostLedger]:
+        found, cost = self.deterministic.extract(
+            doc, chunk, specs, context, pass_id=f"{pass_id}/rules"
+        )
+        if self.model is None:
+            return found, cost
+
+        settled = {candidate.field for candidate in found}
+        remaining = [spec for spec in specs if spec.name not in settled]
+        if not remaining:
+            return found, cost
+
+        inferred, model_cost = self.model.extract(
+            doc, chunk, remaining, context, pass_id=f"{pass_id}/model"
+        )
+        cost.merge(model_cost)
+        return [*found, *inferred], cost
+
+    def tier_of(self, candidate: Candidate) -> str:
+        return "model" if candidate.pass_id.endswith("/model") else "rules"
+
+
+# ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
 
@@ -751,6 +866,24 @@ class PassResult:
     cost: CostLedger
     chunks_seen: int
     contributing_chunks: set[str]
+
+    def by_tier(self) -> dict[str, int]:
+        """Distinct fields each tier settled.
+
+        Reported rather than inferred, because the division of labour is the
+        thing to watch: rules answering less over time means the pattern set
+        has drifted from what documents look like, and the model answering
+        everything means the cheap tier has stopped earning its place.
+        """
+        tiers: dict[str, set[str]] = {}
+        for candidate in self.candidates:
+            tier = (
+                "model" if candidate.pass_id.endswith("/model")
+                else "tables" if candidate.pass_id.endswith(":tables")
+                else "rules"
+            )
+            tiers.setdefault(tier, set()).add(candidate.field)
+        return {tier: len(fields) for tier, fields in sorted(tiers.items())}
 
 
 #: Temperatures used for passes beyond the first round over each segmentation.

@@ -182,3 +182,69 @@ def test_a_blackline_that_strikes_bold_text_is_still_a_blackline():
     redlines = [e for e in effects if e.kind == "redline"]
     assert redlines
     assert redlines[0].attachment == "Annex A"
+
+
+# ---------------------------------------------------------------------------
+# The tier boundary
+# ---------------------------------------------------------------------------
+
+
+class _RecordingModel:
+    """Stands in for the LLM tier and records what it was asked."""
+
+    name = "recording"
+
+    def __init__(self) -> None:
+        self.asked: list[list[str]] = []
+
+    def with_temperature(self, temperature: float):   # noqa: ANN201, D102
+        return self
+
+    def extract(self, doc, chunk, specs, context, pass_id):  # noqa: ANN001
+        from credit_extract.extract.passes import CostLedger
+
+        self.asked.append([spec.name for spec in specs])
+        return [], CostLedger()
+
+
+def test_the_model_is_never_asked_what_the_rules_already_settled():
+    """The division of labour, as an assertion rather than a comment.
+
+    ``run_passes`` used to take one backend, so a run was either all-patterns
+    or all-model and the patterns were left covering the whole distribution
+    alone. They cannot: across 100 real agreements "is hereby amended" takes
+    24 distinct phrasings, 13 of them occurring once. The rules take what is
+    cheap and unambiguous; everything else is the model's.
+    """
+    from credit_extract.extract.passes import LayeredBackend, OfflineRuleBackend
+    from credit_extract.ingest.normalize import ingest
+    from credit_extract.ingest.segment import segment_all
+    from credit_extract.models.fpml_model import FIELD_REGISTRY
+
+    doc = ingest("credit_extract/eval/gold/fixture_meridian_2017.html")
+    segments = segment_all(doc, None)
+    specs = list(FIELD_REGISTRY.values())
+    model = _RecordingModel()
+    backend = LayeredBackend(OfflineRuleBackend(), model)
+
+    settled_somewhere = False
+    for index, chunk in enumerate(segments["structural"]):
+        found, _ = backend.extract(doc, chunk, specs, "", f"p{index}")
+        settled = {c.field for c in found}
+        if not settled:
+            continue
+        settled_somewhere = True
+        # The model's call for this chunk is the last one recorded.
+        assert not (settled & set(model.asked[-1])), (
+            f"{sorted(settled & set(model.asked[-1]))} went to the model "
+            "after the rules had already answered them"
+        )
+    assert settled_somewhere, "the rules settled nothing, so nothing was tested"
+
+
+def test_the_report_says_which_tier_answered():
+    from credit_extract.pipeline import run_pipeline
+
+    result = run_pipeline("credit_extract/eval/gold/fixture_meridian_2017.html")
+    note = next(n for n in result.report.notes if n.startswith("extraction by tier"))
+    assert "rules=" in note and "tables=" in note

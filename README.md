@@ -16,6 +16,21 @@ ingest → normalize → segment (3 ways) → definition graph → extract (N pa
        → reconcile → Jev validate → invariant check → calibrate → report
 ```
 
+Extraction is tiered, cheapest first, and the boundary is deliberate:
+
+| tier | takes | why |
+| --- | --- | --- |
+| tables | figures in a grid | free, spans exact to the character, no sampling variance |
+| rules | fields that are cheap and unambiguous | better than a model where the form is fixed |
+| **model** | **everything else** | the hard cases are not a pattern problem |
+
+`LayeredBackend` enforces it: the rules run first and the model is handed only
+the fields they did not settle. The rules are **not** extended to cover the
+tail — across 100 real agreements "is hereby amended" takes 24 distinct
+phrasings, 13 of them occurring once, and a pattern set chasing that grows
+without bound while every regex added for a rare form can misfire on a common
+one. Whatever no tier settles is still caught by the orphan sweep.
+
 ## Quickstart
 
 ```bash
