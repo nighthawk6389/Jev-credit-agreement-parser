@@ -21,6 +21,7 @@ from decimal import Decimal
 from typing import Any, Iterable, Protocol
 
 from ..ingest.normalize import NormalizedDocument
+from ..ingest.segment import Chunk
 from ..ingest.tables import (
     Table, parse_date, parse_money, parse_percent, parse_ratio,
 )
@@ -191,14 +192,14 @@ class Candidate:
 
 
 class ExtractionBackend(Protocol):
-    """A pass backend. Both implementations return spans or nothing."""
+    """A pass backend. Every implementation returns spans or nothing."""
 
     name: str
 
     def extract(
         self,
         doc: NormalizedDocument,
-        chunk: Span,
+        chunk: Chunk,
         specs: list[FieldSpec],
         context: str,
         pass_id: str,
@@ -244,7 +245,7 @@ class AnthropicBackend:
     def extract(
         self,
         doc: NormalizedDocument,
-        chunk: Span,
+        chunk: Chunk,
         specs: list[FieldSpec],
         context: str,
         pass_id: str,
@@ -311,7 +312,7 @@ def _coerce(kind: str, raw: Any) -> Any:
 def _parse_llm_payload(
     text: str,
     doc: NormalizedDocument,
-    chunk: Span,
+    chunk: Chunk,
     specs: list[FieldSpec],
     pass_id: str,
 ) -> list[Candidate]:
@@ -325,6 +326,8 @@ def _parse_llm_payload(
         return []
     if isinstance(payload, dict):
         payload = payload.get("fields", [])
+    if not isinstance(payload, list):
+        return []
     by_name = {spec.name: spec for spec in specs}
     out: list[Candidate] = []
     for item in payload:
@@ -334,11 +337,12 @@ def _parse_llm_payload(
         spec = by_name.get(name)
         if spec is None:
             continue
-        quote = (item.get("quote") or "").strip()
-        span = _locate_quote(doc, chunk, quote)
+        span = chunk.locate(doc, item.get("quote") or "")
         value = _coerce(spec.kind, item.get("value"))
         if value is not None and span is None:
-            # No span, no value. Drop it rather than ship it unprovenanced.
+            # No span, no value. A quote the model produced but the chunk does
+            # not contain is a fabrication, so the value goes in the bin rather
+            # than into the record without provenance.
             continue
         out.append(
             Candidate(
@@ -347,7 +351,7 @@ def _parse_llm_payload(
                 span=span,
                 confidence=float(item.get("confidence", 0.5)),
                 pass_id=pass_id,
-                segmentation=chunk.segmentation or "unknown",
+                segmentation=chunk.segmentation,
                 external_document=item.get("external_document"),
                 qualifiers=item.get("qualifiers") or {},
                 notes=item.get("notes"),
@@ -356,18 +360,288 @@ def _parse_llm_payload(
     return out
 
 
-def _locate_quote(
-    doc: NormalizedDocument, chunk: Span, quote: str
-) -> Span | None:
-    """Find a verbatim quote inside the chunk, tolerating whitespace drift."""
-    if not quote:
-        return None
-    window = doc.text[chunk.start : chunk.end]
-    index = window.find(quote)
-    if index >= 0:
-        return doc.span(chunk.start + index, chunk.start + index + len(quote))
-    pattern = r"\s+".join(re.escape(part) for part in quote.split())
-    match = re.search(pattern, window)
-    if match:
-        return doc.span(chunk.start + match.start(), chunk.start + match.end())
-    return None
+# ---------------------------------------------------------------------------
+# Tier 1/2: the offline deterministic backend
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Rule:
+    """An anchored pattern for one field.
+
+    Group 1 carries the value; the whole match is the span, so a reviewer sees
+    the anchoring language and not a bare number floating in the document.
+    """
+
+    field: str
+    pattern: str
+    confidence: float = 0.80
+    flags: int = re.IGNORECASE
+    #: When set, the rule reports an external dependency instead of a value.
+    external_document: str | None = None
+    #: (probe regex, qualifier key, qualifier value) evaluated near the match.
+    qualifier_probe: tuple[str, str, str] | None = None
+    note: str | None = None
+
+
+_ENTITY = r"([A-Z][A-Za-z0-9 ,.&'\-]{3,80}?)"
+
+OFFLINE_RULES: tuple[Rule, ...] = (
+    # -- parties -------------------------------------------------------------
+    Rule("borrower.legal_name", _ENTITY + r",\s*as (?:the )?Borrower", 0.90, 0),
+    Rule("holdings.legal_name", _ENTITY + r",\s*as Holdings", 0.90, 0),
+    Rule("administrative_agent.legal_name",
+         _ENTITY + r",\s*as Administrative Agent", 0.90, 0),
+    Rule("collateral_agent.legal_name",
+         _ENTITY + r",\s*as (?:Administrative Agent and )?Collateral Agent", 0.85, 0),
+    Rule("arranger.legal_name",
+         _ENTITY + r",\s*as (?:Lead |Sole |Joint )*(?:Lead )?Arranger", 0.85, 0),
+    Rule("syndication_agent.legal_name",
+         _ENTITY + r",\s*as Syndication Agent", 0.90, 0),
+    # -- dates ---------------------------------------------------------------
+    Rule("closing_date", r'"Closing Date"\s+means\s+([^.]+)\.', 0.95),
+    Rule("closing_date", r"dated as of ([A-Z][a-z]+ \d{1,2}, \d{4})", 0.70),
+    Rule("initial_term_loan.maturity_date",
+         r'"Initial Term Loan Maturity Date"\s+means\s+([^.]+)\.', 0.95),
+    Rule("revolver.maturity_date",
+         r'"Revolving Credit Maturity Date"\s+means\s+([^.]+)\.', 0.95),
+    # -- commitments ---------------------------------------------------------
+    Rule("initial_term_loan.commitment",
+         r"Initial Term Loan Commitments on the Closing Date is\s+(\$[\d,]+)", 0.92),
+    Rule("delayed_draw.commitment",
+         r"Delayed Draw Term Loan Commitments on the Closing Date are\s+(\$[\d,]+)",
+         0.92),
+    Rule("revolver.commitment",
+         r"Revolving Credit Commitments on the Closing Date\s+are\s+(\$[\d,]+)", 0.92),
+    Rule("lc_sublimit",
+         r"shall not exceed\s+(\$[\d,]+)\s*\(the \"Letter of Credit Sublimit\"\)",
+         0.90),
+    # -- pricing and fees ----------------------------------------------------
+    Rule("libor_floor_pct",
+         r"LIBO Rate shall not at any time be less than\s+([\d.]+%)", 0.92),
+    Rule("commitment_fee_pct", r"commitment fee equal to\s+([\d.]+%)", 0.88),
+    Rule("fronting_fee_pct", r"fronting fee\s+equal to\s+([\d.]+%)", 0.88),
+    Rule("ticking_fee_pct", r"ticking fee[^.]{0,120}?equal to\s+([\d.]+%)", 0.85),
+    Rule("excess_cash_flow.sweep_pct",
+         r"prepay the Initial Term Loans with\s+([\d.]+%)\s+of Excess Cash Flow",
+         0.88),
+    # -- covenant and leverage ----------------------------------------------
+    Rule("opening_total_leverage_ratio",
+         r"Total Leverage Ratio is\s+([\d.]+:[\d.]+)", 0.90),
+    Rule("incremental.leverage_based_test",
+         r"Net Leverage Ratio would not exceed\s+([\d.]+:[\d.]+)", 0.85),
+    # -- baskets -------------------------------------------------------------
+    Rule("indebtedness.purchase_money_basket_amount",
+         r"purchase money[^.]{0,200}?greater of\s+(\$[\d,]+)", 0.82),
+    Rule("indebtedness.purchase_money_basket_ebitda_pct",
+         r"purchase money[^.]{0,200}?greater of \$[\d,]+ and\s+([\d.]+%)\s+of "
+         r"Consolidated EBITDA", 0.82,
+         qualifier_probe=(
+             r"after giving effect to the add-backs described in clause \(a\)",
+             "ebitda_base", "post_addback",
+         )),
+    Rule("incremental.free_and_clear_amount",
+         r"Incremental Term Facilities in an aggregate principal amount not to "
+         r"exceed\s+the greater of\s+(\$[\d,]+)", 0.85),
+    # -- MFN -----------------------------------------------------------------
+    Rule("mfn_threshold_pct",
+         r"exceeds the All-In Yield applicable to the Initial Term Loans by more "
+         r"than\s+([\d.]+%)", 0.90),
+    # -- Consolidated EBITDA construction ------------------------------------
+    Rule("consolidated_ebitda.addback_cap_pct",
+         r"shall not exceed\s+([\d.]+%)\s+of Consolidated EBITDA for such period",
+         0.88,
+         note="stated cap; check which clauses it actually governs"),
+    Rule("consolidated_ebitda.addback_cap_clause_a_xvi",
+         r"\(xvi\)[^;]{0,400}?set forth in the Sponsor Model[^;]{0,200}",
+         0.88, external_document="Sponsor Model",
+         note="clause (a)(xvi) is capped by the Sponsor Model, not by the "
+              "stated percentage cap"),
+)
+
+
+class OfflineRuleBackend:
+    """A deterministic backend: anchored patterns, exact spans, no network.
+
+    This is tier 1/2 of the escalation ladder, and it is what makes the
+    pipeline runnable and testable without an API key. It is genuinely weaker
+    at recall than an LLM pass -- which is the point of the orphan sweep, and
+    why the sweep is what rescues what the rules miss.
+    """
+
+    name = "offline"
+
+    def __init__(self, rules: tuple[Rule, ...] = OFFLINE_RULES) -> None:
+        self.rules = rules
+        self._compiled = [(r, re.compile(r.pattern, r.flags)) for r in rules]
+
+    def extract(
+        self,
+        doc: NormalizedDocument,
+        chunk: Chunk,
+        specs: list[FieldSpec],
+        context: str,
+        pass_id: str,
+    ) -> tuple[list[Candidate], CostLedger]:
+        wanted = {spec.name for spec in specs}
+        by_name = {spec.name: spec for spec in specs}
+        out: list[Candidate] = []
+        for rule, compiled in self._compiled:
+            if rule.field not in wanted:
+                continue
+            for match in compiled.finditer(chunk.text):
+                span = chunk.locate(doc, match.group(0))
+                if span is None:
+                    # The match straddles a chunk-region boundary, so it is an
+                    # artifact of concatenation rather than real document text.
+                    continue
+                qualifiers: dict[str, str] = {}
+                if rule.qualifier_probe:
+                    probe, key, value = rule.qualifier_probe
+                    window = chunk.text[
+                        max(0, match.start() - 400): match.end() + 400
+                    ]
+                    if re.search(probe, window, re.IGNORECASE):
+                        qualifiers[key] = value
+                if rule.external_document:
+                    out.append(Candidate(
+                        field=rule.field, value=None, span=span,
+                        confidence=rule.confidence, pass_id=pass_id,
+                        segmentation=chunk.segmentation,
+                        external_document=rule.external_document,
+                        qualifiers=qualifiers, notes=rule.note,
+                    ))
+                    continue
+                spec = by_name[rule.field]
+                value = _coerce(spec.kind, match.group(1))
+                if value is None:
+                    continue
+                out.append(Candidate(
+                    field=rule.field, value=value, span=span,
+                    confidence=rule.confidence, pass_id=pass_id,
+                    segmentation=chunk.segmentation,
+                    qualifiers=qualifiers, notes=rule.note,
+                ))
+        return out, CostLedger(deterministic_calls=1)
+
+
+# ---------------------------------------------------------------------------
+# Tier 1: candidates straight out of the tables
+# ---------------------------------------------------------------------------
+
+
+def table_candidates(doc: NormalizedDocument) -> list[Candidate]:
+    """Fields that live in a grid, parsed for free with exact cell spans."""
+    out: list[Candidate] = []
+
+    def add(field: str, value: Any, span: Span, confidence: float,
+            notes: str | None = None, qualifiers: dict[str, str] | None = None,
+            external: str | None = None) -> None:
+        out.append(Candidate(
+            field=field, value=value, span=span, confidence=confidence,
+            pass_id="deterministic:tables", segmentation="structural",
+            notes=notes, qualifiers=qualifiers or {}, external_document=external,
+        ))
+
+    for row in parse_commitment_table(doc):
+        name = row["facility"].lower()
+        if "revolv" in name:
+            add("revolver.commitment", row["commitment"], row["span"], 0.95)
+            if row["maturity"]:
+                add("revolver.maturity_date", row["maturity"], row["span"], 0.95)
+        elif "delayed draw" in name:
+            add("delayed_draw.commitment", row["commitment"], row["span"], 0.95)
+        elif "term loan" in name:
+            add("initial_term_loan.commitment", row["commitment"], row["span"], 0.95)
+            if row["maturity"]:
+                add("initial_term_loan.maturity_date", row["maturity"],
+                    row["span"], 0.95)
+
+    schedule = parse_amortization_schedule(doc)
+    if schedule and schedule.rows:
+        amounts = [r.amount for r in schedule.rows]
+        modal = max(set(amounts), key=amounts.count)
+        anchor = next(r for r in schedule.rows if r.amount == modal)
+        if anchor.span_start is not None and anchor.span_end is not None:
+            add("amortization.quarterly_amount", modal,
+                doc.span(anchor.span_start, anchor.span_end), 0.95,
+                notes=f"modal payment across {len(amounts)} printed rows")
+
+    grid = parse_covenant_grid(doc)
+    if grid:
+        add("financial_covenant.opening_level", grid[0][1], grid[0][2], 0.95)
+        add("financial_covenant.final_level", grid[-1][1], grid[-1][2], 0.95)
+
+    pricing = parse_pricing_grid(doc)
+    margins = [
+        (value, row["span"])
+        for row in pricing
+        for label, value in row.items()
+        if label not in ("cells", "span") and "eurodollar" in str(label)
+    ]
+    if margins:
+        top = max(margins, key=lambda pair: pair[0])
+        add("applicable_margin.eurodollar_top_level_pct", top[0], top[1], 0.93,
+            notes="highest grid level")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Orchestration
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PassResult:
+    candidates: list[Candidate]
+    cost: CostLedger
+    chunks_seen: int
+    contributing_chunks: set[str]
+
+
+def run_passes(
+    doc: NormalizedDocument,
+    segments: dict[str, list[Chunk]],
+    backend: ExtractionBackend,
+    specs: list[FieldSpec] | None = None,
+    graph=None,
+    include_tables: bool = True,
+    budget_usd: float | None = None,
+) -> PassResult:
+    """Run the target list over every segmentation.
+
+    One pass per segmentation, so a field found by all three has genuinely
+    independent support rather than three samples of the same view.
+    """
+    specs = specs or list(FIELD_REGISTRY.values())
+    candidates: list[Candidate] = []
+    cost = CostLedger()
+    contributing: set[str] = set()
+    seen = 0
+
+    if include_tables:
+        table_found = table_candidates(doc)
+        candidates.extend(table_found)
+        cost.deterministic_calls += 1
+
+    for kind, chunks in segments.items():
+        for chunk in chunks:
+            seen += 1
+            if budget_usd is not None and cost.total_usd >= budget_usd:
+                break
+            context = ""
+            if graph is not None and chunk.segmentation == "definitional":
+                context = graph.context_for(chunk.label)
+            found, spent = backend.extract(
+                doc, chunk, specs, context, pass_id=f"{backend.name}:{kind}"
+            )
+            cost.merge(spent)
+            if found:
+                contributing.add(chunk.chunk_id)
+            candidates.extend(found)
+    return PassResult(
+        candidates=candidates,
+        cost=cost,
+        chunks_seen=seen,
+        contributing_chunks=contributing,
+    )

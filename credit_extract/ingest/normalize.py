@@ -172,8 +172,15 @@ class _Builder:
         return start, self._len
 
     def write(self, text: str) -> tuple[int, int] | None:
-        """Append collapsed text; returns the span it occupies."""
-        collapsed = re.sub(r"[ \t\r\f\v]+", " ", normalize_chars(text)).strip()
+        """Append collapsed text; returns the span it occupies.
+
+        All whitespace inside a text node collapses, newlines included. A line
+        break inside a paragraph of source HTML is soft wrapping, not
+        structure, and preserving it fragments sentences ("purchase\\nmoney")
+        so that no anchored pattern can match across the break. Real block
+        structure is written explicitly by ``block()`` and ``linebreak()``.
+        """
+        collapsed = re.sub(r"\s+", " ", normalize_chars(text)).strip()
         if not collapsed:
             return None
         if self._len and not self._parts[-1].endswith(("\n", " ")):
