@@ -591,6 +591,35 @@ def _words_to_number(words: str) -> int | None:
     return total
 
 
+#: Citations to statute and regulation use the same word. "Section 1.163-5 of
+#: the proposed Treasury Regulations" and "29 C.F.R. Section 2510.3-101" are
+#: not dangling references to the agreement, and reporting them as such buries
+#: the ones that are: in one real filing two genuine broken references were
+#: sitting among thirty-odd of these.
+_REGULATION_BEFORE_RE = re.compile(
+    r"(?:C\.?F\.?R\.?|U\.?S\.?C\.?|Treasury\s+Regulations?|Regulations?\s+[A-Z]\b"
+    r"|ERISA|Internal\s+Revenue\s+Code|the\s+Code|Securities\s+Act"
+    r"|Exchange\s+Act|Investment\s+Company\s+Act|Bankruptcy\s+Code)"
+    r"[^.]{0,60}$",
+    re.IGNORECASE,
+)
+_REGULATION_AFTER_RE = re.compile(
+    r"^(?:-\d|\s*(?:of|under)\s+(?:the\s+)?(?:proposed\s+)?"
+    r"(?:United\s+States\s+)?(?:Treasury\s+Regulations?|C\.?F\.?R\.?|U\.?S\.?C\.?"
+    r"|Internal\s+Revenue\s+Code|Code\b|ERISA|Securities\s+Act|Exchange\s+Act"
+    r"|Investment\s+Company\s+Act|Bankruptcy\s+Code))",
+    re.IGNORECASE,
+)
+
+
+def _cites_a_regulation(text: str, match: re.Match[str]) -> bool:
+    """Whether this "Section N" points outside the agreement entirely."""
+    return bool(
+        _REGULATION_BEFORE_RE.search(text[max(0, match.start() - 80):match.start()])
+        or _REGULATION_AFTER_RE.match(text[match.end():match.end() + 80])
+    )
+
+
 @invariant("cross_references_resolve", "F01_integrity")
 def _cross_references(ctx: InvariantContext) -> list[InvariantViolation]:
     """Every internal cross-reference points at a section that exists.
@@ -603,10 +632,25 @@ def _cross_references(ctx: InvariantContext) -> list[InvariantViolation]:
         return []
     known = {marker.section_id for marker in doc.sections}
     known |= {s.upper() for s in known}
+    reserved = doc.reserved_sections()
+    reserved |= {s.upper() for s in reserved}
     missing: dict[str, Span] = {}
+    empty: dict[str, Span] = {}
     for match in _XREF_RE.finditer(doc.text):
         target = match.group(1) or f"ARTICLE {match.group(2)}"
+        if _cites_a_regulation(doc.text, match):
+            continue
+        if target in reserved or target.upper() in reserved:
+            empty.setdefault(target, doc.span(match.start(), match.end()))
+            continue
         if target in known or target.upper() in known:
+            continue
+        # "Section 3.1" where the document prints "SECTION 3 [RESERVED]": the
+        # subsection is gone because its parent was reserved, which is a more
+        # useful thing to say than that the number was never used.
+        parent = target.split(".")[0]
+        if reserved & {parent, f"ARTICLE {parent}", f"SECTION {parent}"}:
+            empty.setdefault(target, doc.span(match.start(), match.end()))
             continue
         missing.setdefault(target, doc.span(match.start(), match.end()))
     return [
@@ -620,6 +664,17 @@ def _cross_references(ctx: InvariantContext) -> list[InvariantViolation]:
             observed=target, expected="an existing section",
         )
         for target, span in sorted(missing.items())
+    ] + [
+        InvariantViolation(
+            invariant="cross_references_resolve",
+            message=(
+                f"cross-reference to Section {target}, which the document "
+                "prints as reserved; the provision it points to is empty"
+            ),
+            fields=["cross_references"], spans=[span],
+            observed=f"{target} (reserved)", expected="a section with content",
+        )
+        for target, span in sorted(empty.items())
     ]
 
 

@@ -62,6 +62,12 @@ class SectionMarker(BaseModel):
     end: int | None = None
 
 
+_RESERVED_TITLE_RE = re.compile(
+    r"^\[?\s*(?:Reserved|Intentionally\s+(?:Omitted|Left\s+Blank)|Omitted)\s*\]?",
+    re.IGNORECASE,
+)
+
+
 class RedlineRange(BaseModel):
     """A run of text that a blackline marks as deleted or newly inserted.
 
@@ -189,6 +195,31 @@ class NormalizedDocument(BaseModel):
     def find_first(self, pattern: str | re.Pattern[str], flags: int = 0) -> Span | None:
         spans = self.find_all(pattern, flags)
         return spans[0] if spans else None
+
+    def reserved_sections(self) -> set[str]:
+        """Sections headed "[Reserved]" or "[Intentionally Omitted]".
+
+        They exist as numbers and hold nothing. A cross-reference to one is a
+        different finding from a cross-reference to a number that was never
+        used, and telling a reader the section does not exist when the document
+        plainly prints it is how a true finding gets dismissed as a bug.
+        """
+        found: set[str] = set()
+        for marker in self.sections:
+            if _RESERVED_TITLE_RE.match(marker.title.strip()):
+                found.add(marker.section_id)
+                continue
+            if marker.title.strip():
+                continue
+            # The heading and the "[Reserved]" that follows it are often two
+            # separate blocks, so the title captures nothing at all.
+            line_end = self.text.find("\n", marker.offset)
+            if line_end < 0:
+                continue
+            body = self.text[line_end: line_end + 60].strip()
+            if _RESERVED_TITLE_RE.match(body):
+                found.add(marker.section_id)
+        return found
 
     def section_span(self, section_id: str) -> Span | None:
         for i, sec in enumerate(self.sections):
@@ -582,13 +613,33 @@ _ARTICLE_RE = re.compile(
     r"^[ \t]*ARTICLE\s+(?P<num>[IVXLC]+|\d+)\b[ \t]*(?P<title>[^\n]{0,80})",
     re.MULTILINE,
 )
+#: Some agreements have no articles: their top-level divisions are "SECTION 3"
+#: and the provisions inside are "3.1", "3.2". Without this, "SECTION 3
+#: [RESERVED]" leaves no marker, and a reference to Section 3.1 is reported as
+#: pointing at a number the document never used -- when in fact the document
+#: prints the division and reserves it, which is what a reader needs told.
+_NUMBERED_DIVISION_RE = re.compile(
+    r"^[ \t]*SECTION\s+(?P<num>\d{1,2})(?!\.\d)\b[ \t.:]*(?P<title>[^\n]{0,80})",
+    re.MULTILINE,
+)
 _SECTION_RE = re.compile(
     r"^[ \t]*(?:SECTION|Section)\s+(?P<num>\d+\.\d+[A-Za-z]?)\b[ \t.:]*"
     r"(?P<title>[^\n]{0,90})",
     re.MULTILINE,
 )
+#: Plenty of agreements head their sections "1.1 Defined Terms" with no
+#: "Section" keyword at all. Requiring two digits after the decimal -- which is
+#: what it takes to keep "1.5 times Consolidated EBITDA" out -- finds 2.10 and
+#: misses 1.1, so in one real filing two thirds of the sections were invisible
+#: and every cross-reference to Section 1.1 was reported as dangling. The title
+#: carries the discriminator instead: a heading is a capitalised phrase, and a
+#: multiple or a ratio is followed by a lower-case word.
+#: ``[`` is in the leading character class for "6.11 [Reserved]". A reserved
+#: section is still a section: skipping it makes every reference to it look
+#: like a reference to nothing, which is the right finding for the wrong
+#: reason and stops the report saying what a reader needs to hear.
 _BARE_SECTION_RE = re.compile(
-    r"^[ \t]*(?P<num>\d+\.\d{2}[A-Za-z]?)[ \t]+(?P<title>[A-Z][^\n]{2,90})",
+    r"^[ \t]*(?P<num>\d+\.\d{1,2}[A-Za-z]?)[ \t]+(?P<title>[A-Z\[][^\n]{2,90})",
     re.MULTILINE,
 )
 #: Amendments number their own provisions "1. Defined Terms." rather than
@@ -606,6 +657,15 @@ def detect_sections(text: str) -> list[SectionMarker]:
         markers[match.start()] = SectionMarker(
             offset=match.start(),
             section_id=f"ARTICLE {match.group('num')}",
+            title=match.group("title").strip(" .:-"),
+            level="article",
+        )
+    for match in _NUMBERED_DIVISION_RE.finditer(text):
+        if match.start() in markers:
+            continue
+        markers[match.start()] = SectionMarker(
+            offset=match.start(),
+            section_id=f"SECTION {match.group('num')}",
             title=match.group("title").strip(" .:-"),
             level="article",
         )
