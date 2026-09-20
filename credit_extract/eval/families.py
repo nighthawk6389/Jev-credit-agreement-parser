@@ -340,11 +340,33 @@ def check_registers(labels_dir: Path | None = None) -> list[str]:
     spots = load_blind_spots()
     problems: list[str] = []
 
+    from ..validate.invariants import FAMILY_OF
+
+    #: Defences that are not invariants: validators, and named mechanisms that
+    #: live in the model layer. Listed explicitly so that a typo in
+    #: defended_by is a failure rather than a silent addition to this set.
+    mechanisms = {
+        "A_span_support", "B_orphan_sweep", "C_negative_space", "D_override",
+        "E_external_dependency", "F_conflict_arbitration", "G_amendment_effect",
+        "precedence_graph", "definition_graph_closure", "definition_graph_cycles",
+        "definition_graph_external_refs", "archetype_dispatch",
+        "ebitda_invariants_gated_by_archetype", "ExtractedField.resolve",
+        "RedlineRange",
+    }
+
     for family in register:
         if family.undefended:
             problems.append(
                 f"{family.id} lists no invariant or validator in defended_by; "
                 "nothing in the pipeline is trying to catch it"
+            )
+        for defence in family.defended_by:
+            if defence in FAMILY_OF or defence in mechanisms:
+                continue
+            problems.append(
+                f"{family.id} says it is defended by {defence!r}, which is "
+                "neither a registered invariant nor a known mechanism; the "
+                "family reads as defended and is not"
             )
 
     known = set(register.member_ids())

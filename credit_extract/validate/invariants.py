@@ -1039,3 +1039,160 @@ def _windows_overlap(a: Any, b: Any) -> bool:
     b_start = b.effective_from or date.min
     b_end = b.effective_to or date.max
     return a_start <= b_end and b_start <= a_end
+
+
+# ---------------------------------------------------------------------------
+# F11 -- layout: structure destroyed by rendering
+# ---------------------------------------------------------------------------
+
+#: The sentence a blackline uses to say its changes are typographic.
+_BLACKLINE_CLAIM_RE = re.compile(
+    r"(?:delete|remove|strike)\s+the\s+(?:bold,?\s+)?"
+    r"(?:stricken|struck|struck-through|deleted|lined-out)\s+text",
+    re.IGNORECASE,
+)
+
+
+@invariant("blackline_deletions_excised", "F11_layout")
+def _blackline_excised(ctx: InvariantContext) -> list[InvariantViolation]:
+    """A document that says it is a blackline, with no markup to show for it.
+
+    32 of 100 real agreements amend by blackline -- more than amend in prose.
+    The changes are carried entirely by strike-through and underline, so a
+    converter that drops the styling leaves both the old and new figures in
+    the text, adjacent and in reading order. ``Up to U.S. $ 2,150,000,000
+    2,250,000,000`` is a real line, and a first-match parser reports the
+    deleted figure off a span that quotes the document accurately.
+
+    Nothing downstream can detect that. The only place it is visible is here,
+    comparing what the document says it is against what survived ingestion.
+    """
+    document = ctx.document
+    if document is None or not _BLACKLINE_CLAIM_RE.search(document.text):
+        return []
+    if getattr(document, "is_blackline", False):
+        return []
+    claim = _BLACKLINE_CLAIM_RE.search(document.text)
+    return [InvariantViolation(
+        invariant="blackline_deletions_excised",
+        message=(
+            "the document states that its amendments are marked by "
+            "strike-through, and no deletion markup survived conversion; every "
+            "figure it changed still reads as the superseded value beside its "
+            "replacement, so no term extracted from it can be relied on"
+        ),
+        fields=["*"],
+        spans=[document.span(claim.start(), claim.end())],
+        observed="no deletion markup",
+        expected="the struck runs, excised and recorded",
+    )]
+
+
+@invariant("table_scale_declarations", "F11_layout")
+def _table_scale(ctx: InvariantContext) -> list[InvariantViolation]:
+    """"(in thousands)" above a table the cells were not scaled by.
+
+    A thousand-fold error that looks entirely reasonable: $376 reads as a
+    plausible figure, and so does $376,250.
+    """
+    document = ctx.document
+    if document is None:
+        return []
+    from ..models.quantities import detect_scale
+
+    factors = {"USD_thousands": 1_000, "USD_millions": 1_000_000}
+    violations: list[InvariantViolation] = []
+    for table in getattr(document, "tables", []):
+        header = document.text[max(0, table.start - 300):table.start]
+        declared = detect_scale(header)
+        if declared is None:
+            continue
+        unit, phrase = declared
+        if getattr(table, "scale", None) == unit:
+            continue
+        violations.append(InvariantViolation(
+            invariant="table_scale_declarations",
+            severity="warning",
+            message=(
+                f"table {table.table_id} is headed "
+                f"{' '.join(phrase.split())!r} but its cells carry no scale; "
+                f"read literally every figure in it is out by "
+                f"{factors.get(unit, 1_000):,}x"
+            ),
+            fields=["*"],
+            spans=[document.span(table.start, min(table.end, table.start + 200))],
+            observed=getattr(table, "scale", None),
+            expected=unit,
+        ))
+    return violations
+
+
+@invariant("nested_table_flattening", "F11_layout")
+def _nested_tables(ctx: InvariantContext) -> list[InvariantViolation]:
+    """One table rendered inside another reads as a single grid.
+
+    The inner table's rows interleave with the outer one's, so a schedule
+    parsed from the result is a mixture of two schedules and every row of it
+    parses cleanly.
+    """
+    document = ctx.document
+    if document is None:
+        return []
+    tables = sorted(getattr(document, "tables", []), key=lambda t: t.start)
+    violations: list[InvariantViolation] = []
+    for index, outer in enumerate(tables):
+        for inner in tables[index + 1:]:
+            if inner.start >= outer.end:
+                break
+            if inner.end > outer.end:
+                continue
+            violations.append(InvariantViolation(
+                invariant="nested_table_flattening",
+                severity="warning",
+                message=(
+                    f"table {inner.table_id} is rendered inside table "
+                    f"{outer.table_id}; their rows interleave, and a schedule "
+                    "read from the outer one mixes both"
+                ),
+                fields=["*"],
+                spans=[document.span(inner.start, min(inner.end, inner.start + 200))],
+                observed=inner.table_id, expected="one grid per table",
+            ))
+    return violations
+
+
+# ---------------------------------------------------------------------------
+# F09 -- definitional depth
+# ---------------------------------------------------------------------------
+
+
+@invariant("conflicting_definitions_across_documents", "F09_definitional_depth")
+def _conflicting_definitions(ctx: InvariantContext) -> list[InvariantViolation]:
+    """One term, two documents in the set, two different definitions.
+
+    Ordinary in a loan-document package: the credit agreement and the security
+    agreement each define Permitted Liens, and they do not always agree. A
+    pipeline that resolves the term against whichever document it read last
+    reports a definition that is right about half the time and never says so.
+    """
+    graph = ctx.definition_graph
+    if graph is None:
+        return []
+    conflicts = getattr(graph, "cross_document_conflicts", None)
+    if not callable(conflicts):
+        return []
+    violations: list[InvariantViolation] = []
+    for conflict in conflicts():
+        violations.append(InvariantViolation(
+            invariant="conflicting_definitions_across_documents",
+            message=(
+                f"{conflict['term']!r} is defined differently in "
+                f"{' and '.join(conflict['documents'])}; the operative meaning "
+                "depends on which document governs and is not being guessed at"
+            ),
+            fields=[conflict["term"]],
+            spans=conflict.get("spans", [])[:2],
+            observed=conflict["documents"],
+            expected="one definition, or a stated order of precedence",
+        ))
+    return violations
