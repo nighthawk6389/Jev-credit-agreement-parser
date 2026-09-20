@@ -385,3 +385,82 @@ def test_depth_is_not_exponential_in_the_number_of_cycles():
     elapsed = time.monotonic() - started
     assert elapsed < 1.0, f"depths() took {elapsed:.1f}s on a 50-node graph"
     assert max(depths.values()) >= 24
+
+
+# ---------------------------------------------------------------------------
+# Every chunk has to be sendable
+# ---------------------------------------------------------------------------
+
+
+def _headingless(chars: int):
+    """A long document with nothing a heading pattern can find."""
+    from credit_extract.ingest.normalize import NormalizedDocument
+
+    body = "\n\n".join(
+        f"The Borrower shall deliver the quarterly report for period {i}."
+        for i in range(chars // 60)
+    )
+    return NormalizedDocument(
+        document_id="headingless", source_path="-", source_format="txt", text=body,
+    )
+
+
+def test_a_document_with_no_headings_is_still_split():
+    """The crash that took two real filings out of a hundred-document run.
+
+    ``segment_structural`` returned the whole document as one chunk when no
+    sections were detected, ignoring its own size budget. One filing produced
+    a single 887,000-character chunk -- 222,000 tokens of state against a
+    64,000-token context -- and the pipeline raised instead of reporting.
+    """
+    from credit_extract.ingest.segment import segment_structural
+
+    doc = _headingless(200_000)
+    assert not doc.sections, "the fixture must have no detectable headings"
+    chunks = segment_structural(doc)
+    assert len(chunks) > 1
+    assert all(len(c.text) <= 12_000 for c in chunks)
+
+
+def test_no_segmentation_emits_a_chunk_too_large_to_send():
+    """The guarantee, stated once for all three segmentations.
+
+    Every chunk becomes the state of a Jev request at some point, and an
+    unsendable one takes the whole document down with it -- findings and all.
+    """
+    from credit_extract.ingest.segment import SENDABLE_MAX_CHARS, segment_all
+
+    doc = _headingless(200_000)
+    for kind, chunks in segment_all(doc).items():
+        oversized = [c.chunk_id for c in chunks if len(c.text) > SENDABLE_MAX_CHARS]
+        assert not oversized, f"{kind} emitted unsendable chunks: {oversized[:3]}"
+
+
+def test_the_cap_is_derived_from_the_limit_it_protects():
+    """So the two cannot drift apart silently."""
+    from credit_extract.ingest.segment import SENDABLE_MAX_CHARS
+    from credit_extract.validate.jev import STATE_PLUS_QUESTION_TOKENS, estimate_tokens
+
+    assert estimate_tokens("x" * SENDABLE_MAX_CHARS) < STATE_PLUS_QUESTION_TOKENS
+
+
+def test_a_split_chunk_keeps_its_segmentation():
+    """A definitional chunk split for size is still definitional.
+
+    Reconciliation counts agreement across segmentations, so a chunk
+    relabelled by the splitter would inflate apparent independent support.
+    """
+    from credit_extract.ingest.segment import Chunk, enforce_sendable
+    from credit_extract.models.core import Span
+
+    doc = _headingless(120_000)
+    big = Chunk(
+        chunk_id="defn:Whatever", segmentation="definitional", label="Whatever",
+        spans=[Span(start=0, end=len(doc.text), text=doc.text,
+                    document_id=doc.document_id)],
+        text=doc.text,
+    )
+    parts = enforce_sendable(doc, [big])
+    assert len(parts) > 1
+    assert all(p.segmentation == "definitional" for p in parts)
+    assert all(p.label == "Whatever" for p in parts)

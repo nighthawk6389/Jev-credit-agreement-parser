@@ -32,6 +32,15 @@ SLIDING_WINDOW_CHARS = 6_000
 SLIDING_OVERLAP = 0.30
 USE_SITE_PAD = 600
 
+#: No chunk may be larger than a validator can send, whatever produced it.
+#:
+#: Every chunk becomes the *state* of a Jev request at some point, and state is
+#: capped at 32,000 tokens with the questions counted alongside it. Derived
+#: from that limit rather than written down separately, so the two cannot
+#: drift: at four characters per token, and leaving a third of the budget for
+#: questions, a chunk fits when it is under this many characters.
+SENDABLE_MAX_CHARS = 32_000 * 4 * 2 // 3
+
 
 class Chunk(BaseModel):
     """A unit of text handed to one extraction or validation pass.
@@ -143,10 +152,17 @@ def segment_structural(
     than mid-sentence, and the parts keep the section label so a finding still
     reports as "Section 2.10".
     """
-    if not doc.sections:
-        return [_build(doc, "struct:whole", "structural", "document",
-                       [doc.span(0, len(doc.text))])]
     chunks: list[Chunk] = []
+    if not doc.sections:
+        # No headings were found at all. Returning the document as one chunk
+        # looks harmless and is not: a real filing with no detectable sections
+        # produced a single 887,000-character chunk, which is 222,000 tokens of
+        # state against a 64,000-token context, and the run died there. A
+        # document whose structure could not be read still has to be readable.
+        chunks.extend(_split_region(
+            doc, 0, len(doc.text), max_chars, "document", "struct:whole",
+        ))
+        return chunks
     for section in doc.sections:
         start = section.offset
         end = section.end or len(doc.text)
@@ -156,20 +172,42 @@ def segment_structural(
                 section.section_id, [doc.span(start, end)],
             ))
             continue
-        part = 1
-        cursor = start
-        while cursor < end:
-            stop = min(cursor + max_chars, end)
-            if stop < end:
-                boundary = doc.text.rfind("\n\n", cursor + max_chars // 2, stop)
-                if boundary > cursor:
-                    stop = boundary
-            chunks.append(_build(
-                doc, f"struct:{section.section_id}#{part}", "structural",
-                section.section_id, [doc.span(cursor, stop)],
-            ))
-            cursor = stop
-            part += 1
+        chunks.extend(_split_region(
+            doc, start, end, max_chars, section.section_id,
+            f"struct:{section.section_id}",
+        ))
+    return chunks
+
+
+def _split_region(
+    doc: NormalizedDocument,
+    start: int,
+    end: int,
+    max_chars: int,
+    label: str,
+    prefix: str,
+    segmentation: SegmentationKind = "structural",
+) -> list[Chunk]:
+    """Split [start, end) on paragraph boundaries, never mid-sentence.
+
+    Parts keep the section label, so a finding still reports as "Section 2.10"
+    rather than as a chunk id nobody can look up.
+    """
+    chunks: list[Chunk] = []
+    part = 1
+    cursor = start
+    while cursor < end:
+        stop = min(cursor + max_chars, end)
+        if stop < end:
+            boundary = doc.text.rfind("\n\n", cursor + max_chars // 2, stop)
+            if boundary > cursor:
+                stop = boundary
+        chunks.append(_build(
+            doc, f"{prefix}#{part}", segmentation, label,
+            [doc.span(cursor, stop)],
+        ))
+        cursor = stop
+        part += 1
     return chunks
 
 
@@ -246,12 +284,43 @@ def segment_sliding(
 
 
 def segment_all(doc: NormalizedDocument, graph=None) -> dict[SegmentationKind, list[Chunk]]:
-    """Run all three segmentations. The orphan sweep runs over the union."""
+    """Run all three segmentations. The orphan sweep runs over the union.
+
+    Every result passes through :func:`enforce_sendable`, so the guarantee
+    holds once for all three rather than being re-argued in each of them.
+    """
     out: dict[SegmentationKind, list[Chunk]] = {
         "structural": segment_structural(doc),
         "sliding": segment_sliding(doc),
     }
     out["definitional"] = segment_definitional(doc, graph) if graph else []
+    return {kind: enforce_sendable(doc, chunks) for kind, chunks in out.items()}
+
+
+def enforce_sendable(
+    doc: NormalizedDocument,
+    chunks: list[Chunk],
+    max_chars: int = SENDABLE_MAX_CHARS,
+) -> list[Chunk]:
+    """Split any chunk too large to be sent as a validator's state.
+
+    A last line of defence rather than the primary mechanism -- each
+    segmentation sizes its own output -- but the failure it prevents is total.
+    A definitional chunk assembled from a term with many use sites, or a
+    structural one from a document with no detectable headings, can exceed the
+    context limit, and the validator's only option then is to raise. One
+    unsendable chunk takes the whole document down with it, findings and all.
+    """
+    out: list[Chunk] = []
+    for chunk in chunks:
+        if len(chunk.text) <= max_chars:
+            out.append(chunk)
+            continue
+        for span in chunk.spans:
+            out.extend(_split_region(
+                doc, span.start, span.end, max_chars,
+                chunk.label, f"{chunk.chunk_id}~", chunk.segmentation,
+            ))
     return out
 
 
