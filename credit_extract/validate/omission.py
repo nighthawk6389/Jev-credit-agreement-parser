@@ -27,7 +27,7 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from ..ingest.normalize import NormalizedDocument
 from ..models.core import ExternalKind, Span

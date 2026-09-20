@@ -352,6 +352,34 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "the cap applicable to the run-rate synergies add-back in clause "
               "(a)(xvi) of Consolidated EBITDA", "percent", "covenant_levels", 5,
               None, None, verified_term=False, anchors=["Consolidated EBITDA"]),
+        # -- archetype-specific (F06) ----------------------------------------
+        # These exist so that an archetype that has them can be measured, and
+        # so that one that does not resolves them to not_applicable_to_archetype
+        # rather than to a spurious null that drags recall down.
+        _spec("borrowing_base.advance_rate_accounts",
+              "the advance rate against eligible accounts receivable",
+              "percent", "economic_terms", 5, None, None, verified_term=False,
+              anchors=["Borrowing Base"]),
+        _spec("borrowing_base.advance_rate_inventory",
+              "the advance rate against eligible inventory", "percent",
+              "economic_terms", 5, None, None, verified_term=False,
+              anchors=["Borrowing Base"]),
+        _spec("borrowing_base.availability_block",
+              "the availability block reserved against the borrowing base",
+              "money", "economic_terms", 4, None, None, verified_term=False),
+        _spec("arr.leverage_covenant_level",
+              "the maximum ARR leverage ratio", "ratio", "covenant_levels", 5,
+              None, None, verified_term=False,
+              anchors=["Annualized Recurring Revenue"]),
+        _spec("arr.minimum_liquidity",
+              "the minimum liquidity covenant", "money", "covenant_levels", 5,
+              None, None, verified_term=False),
+        _spec("nav.loan_to_value_cap",
+              "the maximum loan-to-value against portfolio net asset value",
+              "percent", "covenant_levels", 5, None, None, verified_term=False),
+        _spec("pik.toggle_step_up_pct",
+              "the margin step-up when interest is paid in kind", "percent",
+              "economic_terms", 5, None, None, verified_term=False),
     ]
 }
 

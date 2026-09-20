@@ -501,6 +501,23 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          r"(?:shall (?:not apply|cease to apply)|shall no longer apply)[^.]{0,160}?"
          r"(?:after|following)\s+the date that is\s+"
          r"([a-z]+|\d+)\s+months?\s+after the Closing Date", 0.88),
+    # -- archetype-specific (F06) --------------------------------------------
+    Rule("borrowing_base.advance_rate_accounts",
+         r"([\d.]+%)\s+of\s+(?:the\s+)?(?:face\s+amount\s+of\s+)?[Ee]ligible "
+         r"[Aa]ccounts", 0.88),
+    Rule("borrowing_base.advance_rate_inventory",
+         r"([\d.]+%)\s+of\s+(?:the\s+)?(?:value\s+of\s+)?[Ee]ligible "
+         r"[Ii]nventory", 0.88),
+    Rule("borrowing_base.availability_block",
+         r"[Aa]vailability [Bb]lock[^.]{0,80}?(\$[\d,]+)", 0.85),
+    Rule("arr.leverage_covenant_level",
+         r"ARR Leverage Ratio[^.]{0,120}?exceed\s+([\d.]+:[\d.]+)", 0.88),
+    Rule("arr.minimum_liquidity",
+         r"[Mm]inimum [Ll]iquidity[^.]{0,80}?(\$[\d,]+)", 0.85),
+    Rule("nav.loan_to_value_cap",
+         r"[Ll]oan.[Tt]o.[Vv]alue [Rr]atio[^.]{0,80}?exceed\s+([\d.]+%)", 0.88),
+    Rule("pik.toggle_step_up_pct",
+         r"paid in kind[^.]{0,120}?increased by\s+([\d.]+%)", 0.85),
     # -- Consolidated EBITDA construction ------------------------------------
     Rule("consolidated_ebitda.addback_cap_pct",
          r"shall not exceed\s+([\d.]+%)\s+of Consolidated EBITDA for such period",

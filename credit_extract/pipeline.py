@@ -31,13 +31,17 @@ from .ingest.segment import Chunk, coverage, segment_all
 from .models.actus_map import (
     ActusContract, ActusMapping, diff_schedule, generate_schedule, map_facility,
 )
-from .models.core import CostLedger, DocumentReport, ExtractedField
+from .models.core import (
+    CostLedger, DocumentReport, ExtractedField, InvariantViolation,
+)
+from .models.archetypes import ArchetypeDetection, inapplicable_fields
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
 from .validate.calibrate import Thresholds, load_thresholds
 from .validate.invariants import (
     BasketRecord, CovenantStep, InvariantContext, check_all,
 )
+from .validate.archetype import detect_archetype
 from .validate.jev import JevBackend, JevSession, OfflineJev
 from .validate import validators as V
 
@@ -56,6 +60,7 @@ class ExtractionResult(BaseModel):
     amortization: AmortizationSchedule | None = None
     actus_mappings: dict[str, ActusMapping] = Field(default_factory=dict)
     standards: dict[str, Any] = Field(default_factory=dict)
+    archetype: ArchetypeDetection = Field(default_factory=ArchetypeDetection)
 
     def unresolved(self) -> list[str]:
         return [name for name, f in self.fields.items() if not f.is_resolved]
@@ -240,12 +245,32 @@ def run_pipeline(
     # -- tier 2: free deterministic invariants ------------------------------
     fiscal_calendar = detect_fiscal_calendar(doc.text)
     mappings, actus_diffs = _actus_contracts(fields, schedule)
-    violations = check_all(_build_invariant_context(
-        doc, fields, schedule, actus_diffs, fiscal_calendar=fiscal_calendar,
-    ))
+    violations: list[InvariantViolation] = []
 
     # -- tier 3: batched Jev validation -------------------------------------
     session = JevSession(jev_backend, budget_usd=budget_usd)
+
+    # Archetype first: it decides which fields are even applicable, and asking
+    # after extraction would mean validating fields this deal kind cannot have.
+    archetype = detect_archetype(doc, session)
+    profile = archetype.profile
+    not_applicable = inapplicable_fields(profile, list(fields))
+    for name, reason in not_applicable.items():
+        field = fields[name]
+        if field.value is not None:
+            # The deal kind says this cannot exist and yet something extracted
+            # it. That disagreement is a finding, not a field to suppress.
+            field.notes = (
+                f"extracted despite {archetype.archetype} profile ruling it "
+                f"inapplicable: {reason}"
+            )
+            continue
+        field.status = "not_applicable_to_archetype"
+        field.archetype_note = reason
+        field.notes = reason
+        field.validation_confidence = archetype.confidence
+        field.validation_source = "archetype_dispatch"
+
     ctx = V.ValidationContext(
         doc=doc,
         fields=fields,
@@ -256,6 +281,13 @@ def run_pipeline(
         conflicts=reconciliation.conflicts,
         graph=graph,
     )
+    violations = check_all(_build_invariant_context(
+        doc, fields, schedule, actus_diffs,
+        fiscal_calendar=fiscal_calendar,
+        archetype=archetype.archetype,
+        inapplicable=frozenset(profile.inapplicable_invariants),
+    ))
+
     V.validator_a_span_support(ctx)
     orphans = V.validator_b_orphan_sweep(ctx)
     if reread is not None and orphans:
@@ -324,6 +356,9 @@ def run_pipeline(
             f"{sum(1 for o in overrides if o.overrides)} of {len(overrides)} tested",
             f"fibo gaps: {sorted(fibo_map.gaps())}",
             f"fiscal calendar: {fiscal_calendar.source}",
+            f"archetype: {archetype.archetype} ({archetype.basis}, "
+            f"{archetype.confidence:.2f}) -- {archetype.note}",
+            f"fields inapplicable to this archetype: {len(not_applicable)}",
         ],
     )
 
@@ -334,6 +369,7 @@ def run_pipeline(
         report=report,
         amortization=schedule,
         actus_mappings=mappings,
+        archetype=archetype,
         standards={
             "fibo": fibo_map.provenance(),
             "fpml": fpml_model.provenance(),

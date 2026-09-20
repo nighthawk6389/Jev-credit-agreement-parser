@@ -108,6 +108,17 @@ class Variant:
     incremental_amount: int = 30_000_000
     incremental_test: str = "4.75"
 
+    #: Which deal kind to emit. Changes which sections exist at all, which is
+    #: the point: an ABL has no amortization table and an ARR loan has no
+    #: EBITDA anywhere, so a pipeline that assumes either is wrong by default.
+    archetype: str = "cash_flow_term_loan"
+    abl_advance_accounts: str = "85"
+    abl_advance_inventory: str = "65"
+    abl_availability_block: int = 7_500_000
+    arr_leverage: str = "6.00"
+    arr_min_liquidity: int = 10_000_000
+    nav_ltv_cap: str = "25"
+    pik_step_up: str = "0.75"
     #: Moves the incremental capacity into a schedule and files the document
     #: with that schedule omitted -- an artifact of the source, not a deal term.
     omitted_schedules: bool = False
@@ -115,6 +126,14 @@ class Variant:
     decoy: bool = False
     #: Drops the maturity column and restates definitions the rules anchor on.
     alt_phrasing: bool = False
+
+    @property
+    def has_amortization(self) -> bool:
+        return self.archetype not in ("abl_revolver", "nav_or_subscription")
+
+    @property
+    def has_ebitda(self) -> bool:
+        return self.archetype not in ("recurring_revenue", "nav_or_subscription")
 
     @property
     def quarterly_amort(self) -> int:
@@ -207,7 +226,26 @@ def _table(headers: list[str], rows: list[list[str]], caption: str = "") -> str:
 # ---------------------------------------------------------------------------
 
 
+#: Defined terms that only make sense when the deal is covenanted on earnings.
+EBITDA_DEPENDENT_TERMS = frozenset({
+    "Available Amount",
+    "Consolidated Senior Secured First Lien Net Indebtedness",
+    "Senior Secured First Lien Net Leverage Ratio",
+    "Total Leverage Ratio",
+})
+
+
 def definitions(v: Variant) -> list[tuple[str, str]]:
+    terms = _all_definitions(v)
+    if v.has_ebitda:
+        return terms
+    # An ARR or NAV facility has no EBITDA anywhere. Leaving the leverage
+    # definitions in would make the fixture a hybrid that exists nowhere, and
+    # a detector that cannot classify a hybrid is behaving correctly.
+    return [(t, b) for t, b in terms if t not in EBITDA_DEPENDENT_TERMS]
+
+
+def _all_definitions(v: Variant) -> list[tuple[str, str]]:
     return [
         ("Administrative Agent",
          f'means {_title(v.admin_agent)}, in its capacity as administrative agent for '
@@ -416,6 +454,65 @@ TOC_ENTRIES = [
 ]
 
 
+
+ARCHETYPE_SECTIONS: dict[str, str] = {
+    "abl_revolver": """
+<p>SECTION 2.02 Borrowing Base. The Borrowing Base means, at any time, the sum
+of (a) {accounts}% of the face amount of Eligible Accounts, plus (b)
+{inventory}% of the value of Eligible Inventory valued at the lower of cost or
+market, minus (c) the Availability Block and any Reserves established by the
+Administrative Agent in its Permitted Discretion. Availability Block means
+{block}. The Administrative Agent shall exercise dominion over the Borrower's
+deposit accounts during any Cash Dominion Period.</p>
+""",
+    "recurring_revenue": """
+<p>SECTION 6.13 ARR Financial Covenants. Annualized Recurring Revenue means, as
+of any date, the aggregate annualized contractually recurring subscription
+revenue of the Borrower and its Restricted Subsidiaries. This is a Recurring
+Revenue Loan and no covenant herein is measured against earnings. Holdings will
+not permit the ARR Leverage Ratio as of the last day of any Test Period to
+exceed {arr_leverage}:1.00. Holdings will not permit Minimum Liquidity to be
+less than {liquidity} at any time.</p>
+""",
+    "nav_or_subscription": """
+<p>SECTION 6.14 Portfolio Tests. The Borrower is a fund whose obligations are
+secured by uncalled capital commitments of its limited partners and by its
+portfolio investments. Net Asset Value means the aggregate fair value of the
+Portfolio Investments. The Borrower shall not permit the Loan-to-Value Ratio to
+exceed {ltv}% at any time.</p>
+""",
+    "holdco_pik": """
+<p>SECTION 2.13 PIK Toggle. Interest on the Loans may at the Borrower's
+election be paid in kind by capitalizing such interest, in which case the
+Applicable Margin shall be increased by {pik}% per annum for the applicable
+Interest Period. The Borrower is a holding company and the Obligations are
+structurally subordinated to the obligations of its operating subsidiaries.</p>
+""",
+    "second_lien": """
+<p>SECTION 1.04 Lien Priority. This is a Second Lien Credit Agreement. The
+Liens securing the Obligations are junior lien and second priority to the Liens
+securing the First Lien Obligations, and are subject in all respects to the
+Intercreditor Agreement.</p>
+""",
+}
+
+
+def archetype_section(v: Variant) -> str:
+    """Sections that exist only for this deal kind."""
+    template = ARCHETYPE_SECTIONS.get(v.archetype)
+    if not template:
+        return ""
+    return template.format(
+        accounts=v.abl_advance_accounts,
+        inventory=v.abl_advance_inventory,
+        block=_money(v.abl_availability_block),
+        arr_leverage=v.arr_leverage,
+        liquidity=_money(v.arr_min_liquidity),
+        ltv=v.nav_ltv_cap,
+        pik=v.pik_step_up,
+    )
+
+
 def build_html(v: Variant = Variant()) -> str:
     defs = "".join(f'<p><b>"{term}"</b> {body}</p>' for term, body in definitions(v))
     toc = "".join(f"<p>{num} {title}</p>" for num, title in TOC_ENTRIES)
@@ -427,6 +524,8 @@ def build_html(v: Variant = Variant()) -> str:
         ["Revolving Credit Facility", _money(v.revolver_commitment),
          _fmt(v.revolver_maturity)],
     ]
+    if not v.has_amortization:
+        commitment_rows = [commitment_rows[-1]]     # revolver only
     headers = ["Facility", "Aggregate Commitment", "Maturity"]
     if v.alt_phrasing:
         # No maturity column: the dates must then come from the definitions
@@ -443,6 +542,36 @@ def build_html(v: Variant = Variant()) -> str:
         ["Test Period Ending", "Maximum Total Leverage Ratio"],
         [list(row) for row in v.covenant_levels],
     )
+    financial_covenant_block = (
+        "<p>SECTION 6.12 Financial Covenant. Holdings will not permit the Total "
+        "Leverage Ratio as of the last day of any Test Period to exceed the "
+        "ratio set forth below opposite such Test Period:</p>\n" + covenant_grid
+        if v.has_ebitda else ""
+    )
+    leverage_rep_block = (
+        "<p>SECTION 4.14 Solvency; Closing Date Leverage. As of the Closing "
+        "Date, after giving effect to the Transactions and calculated on a Pro "
+        f"Forma Basis, the Total Leverage Ratio is {v.opening_leverage}:1.00.</p>"
+        if v.has_ebitda else
+        "<p>SECTION 4.14 Solvency. As of the Closing Date, after giving effect "
+        "to the Transactions, the Borrower is Solvent.</p>"
+    )
+    pm_basket = (
+        f"the greater of {_money(v.pm_basket_amount)} and {v.pm_basket_pct}% of "
+        "Consolidated EBITDA for the most recently ended Test Period, "
+        "calculated on a Pro Forma Basis after giving effect to the add-backs "
+        "described in clause (a) of the definition thereof"
+        if v.has_ebitda else _money(v.pm_basket_amount)
+    )
+    other_basket = (
+        "the greater of $10,000,000 and 20% of Consolidated EBITDA"
+        if v.has_ebitda else "$10,000,000"
+    )
+    incremental_test_block = (
+        " plus unlimited additional amounts so long as the Senior Secured "
+        f"First Lien Net Leverage Ratio would not exceed {v.incremental_test}"
+        ":1.00 on a Pro Forma Basis" if v.has_ebitda else ""
+    )
     decoy_block = (
         "<p>Prior to giving effect to the First Amendment, the aggregate "
         f"Revolving Credit Commitments on the Closing Date are "
@@ -450,6 +579,11 @@ def build_html(v: Variant = Variant()) -> str:
         "its entirety on the First Amendment Effective Date.</p>"
         if v.decoy else ""
     )
+    amortization_block = amortization_section(v) if v.has_amortization else (
+        "<p>SECTION 2.10 Repayment of Loans. The Loans shall be repaid in full "
+        "on the Maturity Date. There is no scheduled amortization.</p>"
+    )
+    ebitda_block = consolidated_ebitda_definition(v) if v.has_ebitda else ""
     omission_notice = (
         "<p>The Schedules and Exhibits to this Agreement have been omitted "
         "pursuant to Item 601(a)(5) of Regulation S-K. The Registrant hereby "
@@ -460,8 +594,11 @@ def build_html(v: Variant = Variant()) -> str:
     incremental_capacity = (
         "the amount set forth on Schedule 2.14"
         if v.omitted_schedules
-        else f"the greater of {_money(v.incremental_amount)} and 100% of "
-             "Consolidated EBITDA"
+        else (
+            f"the greater of {_money(v.incremental_amount)} and 100% of "
+            "Consolidated EBITDA" if v.has_ebitda
+            else _money(v.incremental_amount)
+        )
     )
     mfn_sunset = (
         f" This clause (b) shall not apply to any Incremental Term Facility "
@@ -495,7 +632,7 @@ def build_html(v: Variant = Variant()) -> str:
 <p>SECTION 1.01 Defined Terms. As used in this Agreement, the following terms
 have the meanings specified below:</p>
 {defs}
-{consolidated_ebitda_definition(v)}
+{ebitda_block}
 <p>SECTION 1.02 Terms Generally. The definitions of terms herein shall apply
 equally to the singular and plural forms of the terms defined.</p>
 <p>SECTION 1.03 Accounting Terms; Pro Forma Basis. All financial statements to
@@ -523,7 +660,7 @@ Revolving Credit Commitment of such Lender, payable quarterly in arrears. The
 Borrower agrees to pay a ticking fee on the undrawn Delayed Draw Term Loan
 Commitments equal to {v.ticking_fee}% per annum, accruing from and after the
 date that is 60 days after the Closing Date.</p>
-{amortization_section(v)}
+{amortization_block}
 <p>SECTION 2.11 Prepayment of Loans. (a) The Borrower may, upon notice to the
 Administrative Agent, voluntarily prepay the Loans in whole or in part without
 premium or penalty, subject to Section 2.16. (b) The Borrower shall prepay the
@@ -535,12 +672,10 @@ plus the Applicable Margin or, at the Borrower's election, the Base Rate plus
 the Applicable Margin. (b) The Applicable Margin shall be determined from the
 following grid:</p>
 {pricing_grid}
+{archetype_section(v)}
 <p>SECTION 2.14 Incremental Facilities. (a) The Borrower may request one or
 more Incremental Term Facilities in an aggregate principal amount not to exceed
-{incremental_capacity}
-for the most recently ended Test Period, plus unlimited additional amounts so
-long as the Senior Secured First Lien Net Leverage Ratio would not exceed
-{v.incremental_test}:1.00 on a Pro Forma Basis. (b) If the All-In Yield
+{incremental_capacity}{incremental_test_block}. (b) If the All-In Yield
 applicable to any Incremental Term Facility that is secured on a pari passu
 basis with the Initial Term Loans exceeds the All-In Yield applicable to the
 Initial Term Loans by more than {v.mfn_pct}% per annum, then the Applicable
@@ -558,9 +693,7 @@ Loans subject to such Repricing Transaction.</p>
 <hr>
 <p>ARTICLE IV</p>
 <p>REPRESENTATIONS AND WARRANTIES</p>
-<p>SECTION 4.14 Solvency; Closing Date Leverage. As of the Closing Date, after
-giving effect to the Transactions and calculated on a Pro Forma Basis, the
-Total Leverage Ratio is {v.opening_leverage}:1.00.</p>
+{leverage_rep_block}
 <hr>
 <p>ARTICLE VI</p>
 <p>NEGATIVE COVENANTS</p>
@@ -568,17 +701,10 @@ Total Leverage Ratio is {v.opening_leverage}:1.00.</p>
 Restricted Subsidiary to, create, incur, assume or permit to exist any
 Indebtedness, except: (a) Indebtedness under the Loan Documents; (b) purchase
 money Indebtedness and Capital Lease Obligations in an aggregate principal
-amount not to exceed the greater of {_money(v.pm_basket_amount)} and
-{v.pm_basket_pct}% of Consolidated EBITDA for the most recently ended Test
-Period, calculated on a Pro Forma Basis after giving effect to the add-backs
-described in clause (a) of the definition thereof; (c) Indebtedness of non-Loan
-Party Restricted Subsidiaries in an aggregate principal amount not to exceed
-the greater of $10,000,000 and 20% of Consolidated EBITDA; and (d) Indebtedness
-set forth on Schedule 6.01.</p>
-<p>SECTION 6.12 Financial Covenant. Holdings will not permit the Total Leverage
-Ratio as of the last day of any Test Period to exceed the ratio set forth below
-opposite such Test Period:</p>
-{covenant_grid}
+amount not to exceed {pm_basket}; (c) Indebtedness of non-Loan Party Restricted
+Subsidiaries in an aggregate principal amount not to exceed {other_basket}; and
+(d) Indebtedness set forth on Schedule 6.01.</p>
+{financial_covenant_block}
 <hr>
 <p>ARTICLE IX</p>
 <p>MISCELLANEOUS</p>
