@@ -27,18 +27,21 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field as dc_field
 from decimal import Decimal
-from typing import Iterable
+from typing import Any, Iterable
 
 from pydantic import BaseModel
 
 from ..ingest.normalize import NormalizedDocument
 from ..ingest.segment import Chunk
 from ..models.core import (
-    CRITICALITY_RUBRIC, ConflictRecord, ExtractedValue, OrphanChunk, Span,
+    CRITICALITY_RUBRIC, ConflictRecord, ExtractedField, OrphanChunk, Span,
     ValidationEvent,
 )
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from .calibrate import Thresholds
+from .omission import (
+    BY_DESIGN_STATEMENT, OMITTED_STATEMENT, classify, document_omits_schedules,
+)
 from .jev import ChoiceQ, JevSession, Noul, Question, ScoreQ
 
 #: Context either side of a cited span for validator A.
@@ -74,13 +77,17 @@ class ValidationContext:
     """Everything the validators read and write."""
 
     doc: NormalizedDocument
-    fields: dict[str, ExtractedValue]
+    fields: dict[str, ExtractedField]
     chunks: list[Chunk]
     session: JevSession
     thresholds: Thresholds
     #: chunk_id -> field names that chunk contributed. Drives the orphan sweep.
     chunk_contributions: dict[str, set[str]] = dc_field(default_factory=dict)
     specs: dict[str, FieldSpec] = dc_field(default_factory=lambda: FIELD_REGISTRY)
+    #: Definition graph, when available. "Is this external by design?" is
+    #: answered by the definition of the document being pointed at, which is
+    #: nowhere near the citation.
+    graph: Any = None
     orphans: list[OrphanChunk] = dc_field(default_factory=list)
     conflicts: list[ConflictRecord] = dc_field(default_factory=list)
 
@@ -91,7 +98,7 @@ class ValidationContext:
         )
 
 
-def _describe(field: ExtractedValue, spec: FieldSpec) -> str:
+def _describe(field: ExtractedField, spec: FieldSpec) -> str:
     value = field.value
     if isinstance(value, Decimal):
         text = format(value.normalize(), "f")
@@ -459,42 +466,102 @@ def _sentence_window(doc: NormalizedDocument, span: Span, cap: int = 900) -> str
     return doc.text[start:end]
 
 
+def _with_definition(ctx: ValidationContext, document: str, state: str) -> str:
+    """Append the named document's own definition to the state, when we have it.
+
+    "the Sponsor Model" at the point of citation says nothing about whether it
+    is obtainable. Its definition -- "is not a Loan Document and is not
+    attached hereto" -- says everything, and sits thousands of characters away.
+    """
+    graph = ctx.graph
+    if graph is None or not hasattr(graph, "resolve"):
+        return state
+    resolved = graph.resolve(document)
+    node = graph.get(resolved) if resolved else None
+    if node is None:
+        return state
+    return f"{state}\n\nDEFINITION OF {node.term}\n{node.body}"
+
+
+def _classify_external(
+    ctx: ValidationContext, state: str, result: Any, document_omits: bool
+):
+    return classify(
+        state,
+        omitted_probability=(
+            result["omitted"].confidence if result.get("omitted") else None
+        ),
+        by_design_probability=(
+            result["by_design"].confidence if result.get("by_design") else None
+        ),
+        document_omits=document_omits,
+    )
+
+
 def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
-    """Force ``external_reference`` where a magnitude lives outside the document.
+    """Force ``external_reference``, and say *which kind* of external it is.
 
     Two tiers. Python first: does the sentence carrying this figure cite
     something outside the agreement at all? Only then is Jev asked the question
     that costs money -- and it is asked with the candidate document named, so
     it is judging dependence rather than rediscovering a citation that a regex
     already found for free.
+
+    The kind question rides on the same state, so asking whether the material
+    is unobtainable in principle or merely omitted from the filing costs what
+    asking the first question alone would. That distinction is the difference
+    between a deal term and an artifact of the source, and a pipeline that
+    reports only ``external_reference`` has thrown it away.
     """
     forced: list[str] = []
+    document_omits = document_omits_schedules(ctx.doc)
     for name, field in ctx.fields.items():
         spec = ctx.specs.get(name)
-        if (
-            not field.spans
-            or spec is None
-            or spec.kind not in ("money", "percent", "ratio")
-            or field.status == "external_reference"
-        ):
+        if not field.spans or spec is None:
             continue
+        already_external = field.status == "external_reference"
+        if already_external and field.external_kind is not None:
+            continue                         # nothing left to decide
+        if not already_external and spec.kind not in ("money", "percent", "ratio"):
+            continue
+
         state = _sentence_window(ctx.doc, field.spans[0])
-        document = next(
+        document = field.external_document or next(
             (h for h in _EXTERNAL_HINTS if h.lower() in state.lower()), None
         )
         if document is None:
             continue                         # tier 1 settled it, for free
+        state = _with_definition(ctx, document, state)
         statement = (
             f"The magnitude of this limit depends on the {document}, a document "
             "not contained in this agreement."
         )
         result = ctx.session.ask(
-            state, [Noul(name="external", statement=statement)],
+            state,
+            [
+                Noul(name="external", statement=statement),
+                Noul(name="omitted", statement=OMITTED_STATEMENT),
+                Noul(name="by_design", statement=BY_DESIGN_STATEMENT),
+            ],
             label="E_external_dependency",
         )
         decision = result.get("external")
         if decision is None:
             continue
+
+        if already_external:
+            # Externality is settled; only the kind is open.
+            verdict = _classify_external(ctx, state, result, document_omits)
+            field.external_kind = verdict.kind
+            field.record(ValidationEvent(
+                validator="E_external_kind", question=OMITTED_STATEMENT,
+                jev_type="noul", result=verdict.kind,
+                probability=verdict.omitted_probability, passed=verdict.certain,
+                backend=ctx.session.backend.name,
+                notes=f"{verdict.basis}: {verdict.evidence}",
+            ))
+            continue
+
         threshold = ctx.threshold_for(name, "E_external_dependency")
         field.record(ValidationEvent(
             validator="E_external_dependency",
@@ -506,14 +573,31 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
             backend=decision.backend,
         ))
         if decision.confidence >= threshold:
+            verdict = _classify_external(ctx, state, result, document_omits)
             field.value = None
             field.external_document = document
+            field.external_kind = verdict.kind
             field.status = "external_reference"
             field.validation_confidence = decision.confidence
             field.validation_source = "E_external_dependency"
+            field.record(ValidationEvent(
+                validator="E_external_kind", question=OMITTED_STATEMENT,
+                jev_type="noul", result=verdict.kind,
+                probability=verdict.omitted_probability, passed=verdict.certain,
+                backend=ctx.session.backend.name,
+                notes=f"{verdict.basis}: {verdict.evidence}",
+            ))
             field.notes = (
-                f"magnitude is fixed by the {document}, which is not part of "
-                "this agreement; the figure stated here is not the real cap"
+                f"magnitude is fixed by the {document}"
+                + (
+                    ", which the filer omitted from this filing -- the borrower "
+                    "has it, so this is an artifact of the source and not a "
+                    "deal term"
+                    if verdict.kind == "omitted_from_filing"
+                    else ", which is not part of this agreement; the figure "
+                         "stated here is not the real cap"
+                )
+                + f" [{verdict.basis}: {verdict.evidence}]"
             )
             forced.append(name)
     return forced

@@ -26,6 +26,7 @@ from ..ingest.tables import (
     Table, parse_date, parse_money, parse_percent, parse_ratio,
 )
 from ..models.core import CostLedger, Span
+from ..models.quantities import Quantity, detect_scale, parse_quantity, quantity_for
 from ..models.fpml_model import (
     FIELD_REGISTRY, AmortizationSchedule, FieldSpec, ScheduleRow,
 )
@@ -41,6 +42,22 @@ def _find_table(doc: NormalizedDocument, *header_groups: tuple[str, ...]) -> Tab
         labels = " | ".join(table.header_labels()).lower()
         if all(any(term in labels for term in group) for group in header_groups):
             return table
+    return None
+
+
+def table_scale(doc: NormalizedDocument, table: Table) -> tuple[str, str] | None:
+    """Find a scale declaration governing a table's money cells.
+
+    A header or lead-in reading "(in thousands)" multiplies every figure
+    beneath it and nothing in the cell records that. Looked for in the caption,
+    the header labels, and the text immediately preceding the table, which is
+    where filers most often put it.
+    """
+    lead_in = doc.text[max(0, table.start - 300):table.start]
+    for source in (table.caption or "", " ".join(table.header_labels()), lead_in):
+        found = detect_scale(source)
+        if found:
+            return found
     return None
 
 
@@ -179,6 +196,9 @@ class Candidate:
     qualifiers: dict[str, str] = dc_field(default_factory=dict)
     external_document: str | None = None
     notes: str | None = None
+    #: The value with its unit attached, resolved at the point of extraction --
+    #: which is the only place that still has the raw text and the table scale.
+    quantity: Quantity | None = None
 
     def key(self) -> str:
         """Value identity for agreement counting. Never compared as floats."""
@@ -344,7 +364,8 @@ def _parse_llm_payload(
         if spec is None:
             continue
         span = chunk.locate(doc, item.get("quote") or "")
-        value = _coerce(spec.kind, item.get("value"))
+        written = item.get("value")
+        value = _coerce(spec.kind, written)
         if value is not None and span is None:
             # No span, no value. A quote the model produced but the chunk does
             # not contain is a fabrication, so the value goes in the bin rather
@@ -361,6 +382,10 @@ def _parse_llm_payload(
                 external_document=item.get("external_document"),
                 qualifiers=item.get("qualifiers") or {},
                 notes=item.get("notes"),
+                quantity=(
+                    parse_quantity(str(written), prefer=spec.kind)
+                    or quantity_for(value, spec.kind, as_written=str(written))
+                ) if value is not None else None,
             )
         )
     return out
@@ -385,6 +410,10 @@ class Rule:
     flags: int = re.IGNORECASE
     #: When set, the rule reports an external dependency instead of a value.
     external_document: str | None = None
+    #: Capture group naming the external document, when it varies. A magnitude
+    #: replaced by "the amount set forth on Schedule 2.14" is an external
+    #: reference whose target is written into the clause, not known in advance.
+    external_group: int | None = None
     #: (probe regex, qualifier key, qualifier value) evaluated near the match.
     qualifier_probe: tuple[str, str, str] | None = None
     note: str | None = None
@@ -449,6 +478,17 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     Rule("incremental.free_and_clear_amount",
          r"Incremental Term Facilities in an aggregate principal amount not to "
          r"exceed\s+the greater of\s+(\$[\d,]+)", 0.85),
+    # A magnitude can be replaced by a pointer to a schedule. If nothing
+    # recognises the pointer the field simply comes back empty, the
+    # negative-space validator is asked whether the agreement is silent on it,
+    # and the honest answer -- "it is in a schedule you do not have" -- is
+    # never reachable.
+    Rule("incremental.free_and_clear_amount",
+         r"Incremental Term Facilities in an aggregate principal amount not to "
+         r"exceed\s+the amounts?\s+set forth (?:on|in)\s+"
+         r"(Schedule\s+[\w.()-]+|Exhibit\s+[\w.()-]+|Annex\s+[\w.()-]+)",
+         0.88, external_group=1,
+         note="capacity is stated in a schedule rather than in the agreement"),
     # -- MFN -----------------------------------------------------------------
     Rule("mfn_threshold_pct",
          r"exceeds the All-In Yield applicable to the Initial Term Loans by more "
@@ -527,24 +567,31 @@ class OfflineRuleBackend:
                     ]
                     if re.search(probe, window, re.IGNORECASE):
                         qualifiers[key] = value
-                if rule.external_document:
+                external = rule.external_document
+                if rule.external_group is not None:
+                    external = (match.group(rule.external_group) or "").strip()
+                if external:
                     out.append(Candidate(
                         field=rule.field, value=None, span=span,
                         confidence=rule.confidence, pass_id=pass_id,
                         segmentation=chunk.segmentation,
-                        external_document=rule.external_document,
+                        external_document=external,
                         qualifiers=qualifiers, notes=rule.note,
                     ))
                     continue
                 spec = by_name[rule.field]
-                value = _coerce(spec.kind, match.group(1))
+                written = match.group(1)
+                value = _coerce(spec.kind, written)
                 if value is None:
                     continue
+                quantity = parse_quantity(written, prefer=spec.kind)
+                if quantity is None:
+                    quantity = quantity_for(value, spec.kind, as_written=written)
                 out.append(Candidate(
                     field=rule.field, value=value, span=span,
                     confidence=rule.confidence, pass_id=pass_id,
                     segmentation=chunk.segmentation,
-                    qualifiers=qualifiers, notes=rule.note,
+                    qualifiers=qualifiers, notes=rule.note, quantity=quantity,
                 ))
         return out, CostLedger(deterministic_calls=1)
 
@@ -560,11 +607,15 @@ def table_candidates(doc: NormalizedDocument) -> list[Candidate]:
 
     def add(field: str, value: Any, span: Span, confidence: float,
             notes: str | None = None, qualifiers: dict[str, str] | None = None,
-            external: str | None = None) -> None:
+            external: str | None = None, quantity: Quantity | None = None) -> None:
+        spec = FIELD_REGISTRY.get(field)
+        if quantity is None and spec is not None:
+            quantity = quantity_for(value, spec.kind, as_written=span.text)
         out.append(Candidate(
             field=field, value=value, span=span, confidence=confidence,
             pass_id="deterministic:tables", segmentation="structural",
             notes=notes, qualifiers=qualifiers or {}, external_document=external,
+            quantity=quantity,
         ))
 
     for row in parse_commitment_table(doc):

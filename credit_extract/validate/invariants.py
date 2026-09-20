@@ -16,8 +16,9 @@ from typing import Any, Callable
 
 from pydantic import BaseModel, Field
 
-from ..ingest.tables import quarter_index
-from ..models.core import ExtractedValue, InvariantViolation, Span
+from ..models.core import ExtractedField, InvariantViolation, Span
+from ..models.fiscal import CALENDAR_YEAR, FiscalCalendar
+from ..models.quantities import Quantity
 from ..models.fpml_model import FIELD_REGISTRY, AmortizationSchedule, Facility
 
 #: How far a computed leverage ratio may sit from a stated one. Rounding to two
@@ -46,7 +47,7 @@ class InvariantContext(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
     document_id: str = "unknown"
-    fields: dict[str, ExtractedValue] = Field(default_factory=dict)
+    fields: dict[str, ExtractedField] = Field(default_factory=dict)
     amortization: AmortizationSchedule | None = None
     facilities: list[Facility] = Field(default_factory=list)
     covenant_steps: list[CovenantStep] = Field(default_factory=list)
@@ -54,6 +55,17 @@ class InvariantContext(BaseModel):
     hardcoded_ebitda_quarters: dict[str, Decimal] = Field(default_factory=dict)
     mfn_triggers: dict[str, Decimal] = Field(default_factory=dict)
     actus_schedule_diffs: list[dict[str, Any]] = Field(default_factory=list)
+    #: The borrower's fiscal calendar. Date spacing is counted in *fiscal*
+    #: quarters, which are evenly spaced under any calendar; counting days
+    #: fires on every correct 52/53-week schedule in the corpus.
+    fiscal_calendar: FiscalCalendar = CALENDAR_YEAR
+    #: Set by archetype dispatch. Invariants that assume a term this deal kind
+    #: does not have are skipped rather than failed.
+    archetype: str | None = None
+    inapplicable_invariants: frozenset[str] = frozenset()
+
+    def quarter_index(self, when: date) -> int:
+        return self.fiscal_calendar.quarter_index(when)
 
     def value(self, name: str) -> Any:
         field = self.fields.get(name)
@@ -120,7 +132,7 @@ def _dates_evenly_spaced(ctx: InvariantContext) -> list[InvariantViolation]:
         return []
     unique = schedule.deduplicated().rows
     gaps = [
-        quarter_index(b.payment_date) - quarter_index(a.payment_date)
+        ctx.quarter_index(b.payment_date) - ctx.quarter_index(a.payment_date)
         for a, b in zip(unique, unique[1:])
     ]
     if not gaps:
@@ -154,7 +166,7 @@ def _row_count(ctx: InvariantContext) -> list[InvariantViolation]:
         return []
     rows = schedule.rows
     first, last = rows[0].payment_date, max(r.payment_date for r in rows)
-    spanned = quarter_index(last) - quarter_index(first) + 1
+    spanned = ctx.quarter_index(last) - ctx.quarter_index(first) + 1
     violations: list[InvariantViolation] = []
     if len(rows) != spanned:
         violations.append(
@@ -172,7 +184,7 @@ def _row_count(ctx: InvariantContext) -> list[InvariantViolation]:
             )
         )
     maturity = ctx.value("initial_term_loan.maturity_date")
-    if isinstance(maturity, date) and quarter_index(maturity) < quarter_index(last):
+    if isinstance(maturity, date) and ctx.quarter_index(maturity) < ctx.quarter_index(last):
         violations.append(
             InvariantViolation(
                 invariant="amortization_row_count_matches_quarters",
@@ -200,7 +212,7 @@ def _amortization_total(ctx: InvariantContext) -> list[InvariantViolation]:
     per_quarter = amounts.pop()
     first = schedule.rows[0].payment_date
     last = max(r.payment_date for r in schedule.rows)
-    spanned = quarter_index(last) - quarter_index(first) + 1
+    spanned = ctx.quarter_index(last) - ctx.quarter_index(first) + 1
     literal = schedule.total_scheduled
     expected = per_quarter * spanned
     if literal == expected:
@@ -449,13 +461,78 @@ def _basket_base(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
+@invariant("every_numeric_has_a_unit")
+def _units_present(ctx: InvariantContext) -> list[InvariantViolation]:
+    """F08. A number without a unit is a 1000x error waiting to be believed."""
+    violations = []
+    for name, field in ctx.fields.items():
+        spec = FIELD_REGISTRY.get(name)
+        if spec is None or field.value is None:
+            continue
+        if spec.kind not in ("money", "percent", "ratio"):
+            continue
+        quantity = field.quantity
+        if isinstance(quantity, Quantity):
+            continue
+        violations.append(
+            InvariantViolation(
+                invariant="every_numeric_has_a_unit",
+                message=(
+                    f"{name} stores {field.value} with no unit; scale cannot be "
+                    "checked and a thousands/millions confusion would be "
+                    "invisible"
+                ),
+                fields=[name], spans=field.spans[:1],
+                observed=None, expected=spec.kind,
+            )
+        )
+    return violations
+
+
+@invariant("date_invariants_use_fiscal_calendar")
+def _calendar_declared(ctx: InvariantContext) -> list[InvariantViolation]:
+    """F08. Assuming calendar quarters on a 52/53-week borrower is a false
+    positive factory, so an undetected calendar is itself reported."""
+    if ctx.amortization is None or not ctx.amortization.rows:
+        return []
+    if ctx.fiscal_calendar.source != "default (document is silent)":
+        return []
+    ends = {(r.payment_date.month, r.payment_date.day) for r in ctx.amortization.rows}
+    calendar_quarter_ends = {(3, 31), (6, 30), (9, 30), (12, 31)}
+    if ends <= calendar_quarter_ends:
+        return []
+    return [
+        InvariantViolation(
+            invariant="date_invariants_use_fiscal_calendar",
+            severity="warning",
+            message=(
+                "payment dates are not calendar quarter ends "
+                f"({sorted(ends - calendar_quarter_ends)[:4]}) but no fiscal "
+                "calendar was detected; spacing checks are running on an "
+                "assumed calendar year"
+            ),
+            fields=["amortization.schedule"],
+            observed=ctx.fiscal_calendar.source,
+            expected="a fiscal calendar read from the document",
+        )
+    ]
+
+
 # ---------------------------------------------------------------------------
 
 
 def check_all(ctx: InvariantContext) -> list[InvariantViolation]:
-    """Run every registered invariant. Order is stable for reproducible reports."""
+    """Run every applicable invariant. Order is stable for reproducible reports.
+
+    An invariant the archetype rules out is skipped, not failed. Running an
+    EBITDA leverage check on a recurring-revenue loan produces a violation on a
+    perfectly correct document, and a reviewer who sees a few of those stops
+    reading the rest.
+    """
     out: list[InvariantViolation] = []
-    for _, fn in _REGISTRY:
+    for name, fn in _REGISTRY:
+        if name in ctx.inapplicable_invariants:
+            continue
         out.extend(fn(ctx))
     return out
 

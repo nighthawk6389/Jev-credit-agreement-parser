@@ -1,0 +1,125 @@
+# Blind-spot register.
+#
+# Printed in full in every report the pipeline emits. These are precisely the
+# inputs where the pipeline is most likely to be wrong, because they are where
+# the information is least available. Claiming coverage you do not have is the
+# failure mode this register exists to prevent.
+#
+# Two categories, and they are not the same thing:
+#
+#   untestable_from_public_filings
+#       a permanent property of the source. No amount of harvesting fixes it.
+#
+#   untestable_in_this_environment
+#       a property of where the build ran. Fixable by running somewhere with
+#       the relevant egress or credentials, and the register says exactly what
+#       would fix each one.
+#
+# A family appearing here is not a bug to be closed. It is a statement about
+# what the numbers elsewhere in the report do and do not cover.
+
+version: 2
+
+untestable_from_public_filings:
+  - id: F03_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    reason: fee letters are essentially never filed
+    consequence: >
+      "as separately agreed" pricing is unverifiable. The pipeline will mark
+      it external_by_design, which is the right answer, but nothing confirms
+      that it does so reliably.
+
+  - id: F03_sponsor_model
+    family: F03_external_reference
+    member: sponsor_model
+    reason: financial models are not loan documents and are not filed
+    consequence: >
+      Tested only against the synthetic fixture, where the clause was written
+      to be found. Real sponsor-model carve-outs are drafted many ways.
+
+  - id: F03_disclosure_letter
+    family: F03_external_reference
+    member: disclosure_letter
+    reason: routinely omitted under the exhibit-omission rules
+    consequence: >
+      Indistinguishable in a filing from a schedule omitted by the filer,
+      which is the exact distinction section 7 of the spec turns on.
+
+  - id: F06_unitranche_with_aal
+    family: F06_structure
+    member: unitranche_with_aal
+    reason: >
+      Agreements Among Lenders are between lenders and are not borrower
+      exhibits
+    consequence: >
+      First-out/last-out economics are invisible. A unitranche will be read as
+      a single tranche at the blended rate.
+
+  - id: F06_nav_or_subscription_line
+    family: F06_structure
+    member: nav_or_subscription_line
+    reason: fund-level facilities are filed rarely and in redacted form
+    consequence: >
+      Archetype dispatch has no labelled examples; a NAV line may be
+      classified as a cash-flow term loan and covenanted on EBITDA it does
+      not have.
+
+  - id: F09_term_defined_in_other_loan_document
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    reason: >
+      security, guarantee and intercreditor agreements are frequently filed
+      separately from the credit agreement or not at all
+    consequence: >
+      A term defined only in the security agreement resolves to nothing, and
+      the definition graph reports it as undefined rather than as external.
+
+untestable_in_this_environment:
+  - id: EDGAR_egress
+    families: [F01_integrity, F02_precedence, F03_external_reference,
+               F04_absence, F05_versioning, F06_structure, F07_benchmark,
+               F08_units, F09_definitional_depth, F10_conditionality,
+               F11_layout]
+    reason: >
+      sec.gov and efts.sec.gov are blocked by this build environment's egress
+      policy, so the stratified harvest in section 8 of the spec could not be
+      run and no real filing has ever passed through this pipeline.
+    consequence: >
+      Every number in this report is measured on generated documents. Real
+      filings differ in ways generated ones cannot anticipate: OCR noise,
+      inconsistent drafting conventions, tables rendered as whitespace-aligned
+      text, and defects nobody thought to synthesise. Treat all reported
+      metrics as an upper bound.
+    remedy: >
+      Run scripts/harvest_corpus.py from a network with EDGAR access, label
+      per section 8, and refit. The harness reads a labels file alongside any
+      document, so real filings drop straight in.
+
+  - id: JEV_API
+    families: [F02_precedence, F03_external_reference, F04_absence,
+               F06_structure]
+    reason: JEV_API_KEY is not configured, so OfflineJev serves every request.
+    consequence: >
+      OfflineJev is a deterministic lexical stand-in, not a calibrated model.
+      Validators B, C, D, E and G are exercised end to end but their
+      judgements are keyword matches. Archetype dispatch in particular leans
+      on a semantic choice that the stand-in approximates crudely.
+    remedy: set JEV_API_KEY and refit thresholds; they are tagged per backend.
+
+  - id: ANTHROPIC_API
+    families: [F01_integrity, F09_definitional_depth, F11_layout]
+    reason: ANTHROPIC_API_KEY is not configured.
+    consequence: >
+      Extraction runs on anchored patterns rather than an LLM pass. Recall is
+      lower than production would be, and the orphan sweep is carrying more
+      weight than it would with a real extractor behind it.
+    remedy: set ANTHROPIC_API_KEY and run with --backend anthropic.
+
+  - id: FPML_SCHEMAS
+    families: [F06_structure, F07_benchmark]
+    reason: fpml.org is unreachable, so loan product element names are unverified.
+    consequence: >
+      FpML standard_term values carry verified=false. Output is internally
+      consistent but may not be comparable to another system's FpML mapping.
+    remedy: python scripts/gen_fpml.py --verify

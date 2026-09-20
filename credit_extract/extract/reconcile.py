@@ -23,7 +23,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
-from ..models.core import ConflictRecord, ExtractedValue, Span
+from ..models.core import ConflictRecord, ExtractedField, Span
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from .passes import Candidate
 
@@ -93,7 +93,7 @@ class ValueGroup:
 
 @dataclass
 class Reconciliation:
-    fields: dict[str, ExtractedValue]
+    fields: dict[str, ExtractedField]
     conflicts: list[ConflictRecord]
     #: field -> chunk ids that contributed a candidate, for the orphan sweep.
     contributions: dict[str, set[str]]
@@ -129,7 +129,7 @@ def reconcile(
     for candidate in candidates:
         by_field[candidate.field].append(candidate)
 
-    fields: dict[str, ExtractedValue] = {}
+    fields: dict[str, ExtractedField] = {}
     conflicts: list[ConflictRecord] = []
     contributions: dict[str, set[str]] = defaultdict(set)
 
@@ -142,7 +142,7 @@ def reconcile(
         if not found:
             # Not "absent" -- just not found by these passes. Validator C is the
             # only thing entitled to call a field absent from the document.
-            fields[name] = ExtractedValue[Any](
+            fields[name] = ExtractedField[Any].single(
                 value=None,
                 status="needs_review",
                 field_class=spec.field_class,
@@ -155,7 +155,7 @@ def reconcile(
         external = [c for c in found if c.external_document]
         if external and all(c.value is None for c in external):
             best = max(external, key=lambda c: c.confidence)
-            fields[name] = ExtractedValue[Any](
+            fields[name] = ExtractedField[Any].single(
                 value=None,
                 spans=[s for s in (best.span,) if s],
                 status="external_reference",
@@ -173,7 +173,7 @@ def reconcile(
 
         valued = [c for c in found if c.value is not None]
         if not valued:
-            fields[name] = ExtractedValue[Any](
+            fields[name] = ExtractedField[Any].single(
                 value=None,
                 status="needs_review",
                 field_class=spec.field_class,
@@ -201,9 +201,13 @@ def reconcile(
             qualifiers.update(candidate.qualifiers)
         notes = next((c.notes for c in winner.candidates if c.notes), None)
 
-        field = ExtractedValue[Any](
+        quantity = next(
+            (c.quantity for c in winner.candidates if c.quantity is not None), None
+        )
+        field = ExtractedField[Any].single(
             value=winner.value,
             spans=winner.spans(),
+            quantity=quantity,
             status="confirmed",
             field_class=spec.field_class,
             criticality=spec.criticality,

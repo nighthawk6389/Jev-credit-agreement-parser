@@ -31,7 +31,8 @@ from .ingest.segment import Chunk, coverage, segment_all
 from .models.actus_map import (
     ActusContract, ActusMapping, diff_schedule, generate_schedule, map_facility,
 )
-from .models.core import CostLedger, DocumentReport, ExtractedValue
+from .models.core import CostLedger, DocumentReport, ExtractedField
+from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
 from .validate.calibrate import Thresholds, load_thresholds
 from .validate.invariants import (
@@ -50,7 +51,7 @@ class ExtractionResult(BaseModel):
 
     document_id: str
     source_path: str
-    fields: dict[str, ExtractedValue] = Field(default_factory=dict)
+    fields: dict[str, ExtractedField] = Field(default_factory=dict)
     report: DocumentReport
     amortization: AmortizationSchedule | None = None
     actus_mappings: dict[str, ActusMapping] = Field(default_factory=dict)
@@ -90,9 +91,12 @@ def _chunk_contributions(
 
 def _build_invariant_context(
     doc: NormalizedDocument,
-    fields: dict[str, ExtractedValue],
+    fields: dict[str, ExtractedField],
     schedule: AmortizationSchedule | None,
     actus_diffs: list[dict[str, Any]],
+    fiscal_calendar: FiscalCalendar | None = None,
+    archetype: str | None = None,
+    inapplicable: frozenset[str] = frozenset(),
 ) -> InvariantContext:
     steps = [
         CovenantStep(label=label, level=level, span=span)
@@ -127,11 +131,14 @@ def _build_invariant_context(
         hardcoded_ebitda_quarters=hardcoded,
         mfn_triggers=mfn,
         actus_schedule_diffs=actus_diffs,
+        fiscal_calendar=fiscal_calendar or detect_fiscal_calendar(doc.text),
+        archetype=archetype,
+        inapplicable_invariants=inapplicable,
     )
 
 
 def _actus_contracts(
-    fields: dict[str, ExtractedValue], schedule: AmortizationSchedule | None
+    fields: dict[str, ExtractedField], schedule: AmortizationSchedule | None
 ) -> tuple[dict[str, ActusMapping], list[dict[str, Any]]]:
     """Map facilities to ACTUS and falsify the printed schedule against one."""
     mappings = {
@@ -231,10 +238,11 @@ def run_pipeline(
     )
 
     # -- tier 2: free deterministic invariants ------------------------------
+    fiscal_calendar = detect_fiscal_calendar(doc.text)
     mappings, actus_diffs = _actus_contracts(fields, schedule)
-    violations = check_all(
-        _build_invariant_context(doc, fields, schedule, actus_diffs)
-    )
+    violations = check_all(_build_invariant_context(
+        doc, fields, schedule, actus_diffs, fiscal_calendar=fiscal_calendar,
+    ))
 
     # -- tier 3: batched Jev validation -------------------------------------
     session = JevSession(jev_backend, budget_usd=budget_usd)
@@ -246,6 +254,7 @@ def run_pipeline(
         thresholds=thresholds,
         chunk_contributions=_chunk_contributions(extracted.candidates, sweep),
         conflicts=reconciliation.conflicts,
+        graph=graph,
     )
     V.validator_a_span_support(ctx)
     orphans = V.validator_b_orphan_sweep(ctx)
@@ -279,6 +288,9 @@ def run_pipeline(
             {
                 "field": name,
                 "document": f.external_document,
+                # by_design vs omitted_from_filing. A reader who cannot tell
+                # them apart will read a missing schedule as a deal term.
+                "kind": f.external_kind,
                 "note": f.notes,
                 "span": f.spans[0].model_dump() if f.spans else None,
             }
@@ -311,6 +323,7 @@ def run_pipeline(
             f"override findings: "
             f"{sum(1 for o in overrides if o.overrides)} of {len(overrides)} tested",
             f"fibo gaps: {sorted(fibo_map.gaps())}",
+            f"fiscal calendar: {fiscal_calendar.source}",
         ],
     )
 
@@ -329,14 +342,14 @@ def run_pipeline(
     )
 
 
-def _status_counts(fields: dict[str, ExtractedValue]) -> dict[str, int]:
+def _status_counts(fields: dict[str, ExtractedField]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for field in fields.values():
         counts[field.status] = counts.get(field.status, 0) + 1
     return counts
 
 
-def _review_queue(fields: dict[str, ExtractedValue]) -> list[dict[str, Any]]:
+def _review_queue(fields: dict[str, ExtractedField]) -> list[dict[str, Any]]:
     """Fields a human should look at, most economically material first."""
     queue = [
         {

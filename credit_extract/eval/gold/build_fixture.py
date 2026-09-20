@@ -108,6 +108,9 @@ class Variant:
     incremental_amount: int = 30_000_000
     incremental_test: str = "4.75"
 
+    #: Moves the incremental capacity into a schedule and files the document
+    #: with that schedule omitted -- an artifact of the source, not a deal term.
+    omitted_schedules: bool = False
     #: Injects a superseded figure that competes with the real one.
     decoy: bool = False
     #: Drops the maturity column and restates definitions the rules anchor on.
@@ -447,6 +450,19 @@ def build_html(v: Variant = Variant()) -> str:
         "its entirety on the First Amendment Effective Date.</p>"
         if v.decoy else ""
     )
+    omission_notice = (
+        "<p>The Schedules and Exhibits to this Agreement have been omitted "
+        "pursuant to Item 601(a)(5) of Regulation S-K. The Registrant hereby "
+        "agrees to furnish supplementally a copy of any omitted schedule to "
+        "the Securities and Exchange Commission upon request.</p>"
+        if v.omitted_schedules else ""
+    )
+    incremental_capacity = (
+        "the amount set forth on Schedule 2.14"
+        if v.omitted_schedules
+        else f"the greater of {_money(v.incremental_amount)} and 100% of "
+             "Consolidated EBITDA"
+    )
     mfn_sunset = (
         f" This clause (b) shall not apply to any Incremental Term Facility "
         f"incurred after the date that is {v.mfn_sunset_months} months after "
@@ -521,7 +537,7 @@ following grid:</p>
 {pricing_grid}
 <p>SECTION 2.14 Incremental Facilities. (a) The Borrower may request one or
 more Incremental Term Facilities in an aggregate principal amount not to exceed
-the greater of {_money(v.incremental_amount)} and 100% of Consolidated EBITDA
+{incremental_capacity}
 for the most recently ended Test Period, plus unlimited additional amounts so
 long as the Senior Secured First Lien Net Leverage Ratio would not exceed
 {v.incremental_test}:1.00 on a Pro Forma Basis. (b) If the All-In Yield
@@ -569,6 +585,7 @@ opposite such Test Period:</p>
 <p>SECTION 9.01 Notices. All notices hereunder shall be given to the Borrower
 at 200 Harbor Street, Suite 1400, Wilmington, Delaware 19801, Attention: Chief
 Financial Officer.</p>
+{omission_notice}
 <p>SECTION 9.22 Governing Law. THIS AGREEMENT SHALL BE GOVERNED BY, AND
 CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE STATE OF NEW YORK.</p>
 </body></html>
@@ -618,14 +635,19 @@ def build_labels(v: Variant = Variant()) -> dict:
         "consolidated_ebitda.addback_cap_pct": float(v.addback_cap),
         "indebtedness.purchase_money_basket_amount": v.pm_basket_amount,
         "indebtedness.purchase_money_basket_ebitda_pct": float(v.pm_basket_pct),
-        "incremental.free_and_clear_amount": v.incremental_amount,
+        "incremental.free_and_clear_amount": (
+            None if v.omitted_schedules else v.incremental_amount
+        ),
         "incremental.leverage_based_test": float(v.incremental_test),
     }
-    expected_status = {
+    expected_status: dict[str, str] = {}
+    if v.omitted_schedules:
+        expected_status["incremental.free_and_clear_amount"] = "external_reference"
+    expected_status.update({
         "mfn_sunset": (
             "absent_from_document" if v.mfn_sunset_months is None else "confirmed"
         ),
-    }
+    })
     if v.sponsor_model_clause:
         expected_status["consolidated_ebitda.addback_cap_clause_a_xvi"] = (
             "external_reference"
@@ -786,6 +808,7 @@ def gold_corpus(n: int = 24, seed: int = 20260920) -> list[Variant]:
             pm_basket_pct=f"{rng.choice([25, 30, 35, 40])}",
             incremental_amount=rng.randrange(10, 90) * 1_000_000,
             incremental_test=f"{rng.choice([4.25, 4.50, 4.75, 5.00]):.2f}",
+            omitted_schedules=index % 6 == 0,
             decoy=index % 5 == 0,
             alt_phrasing=index % 7 == 0,
         ))

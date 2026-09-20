@@ -11,7 +11,7 @@ from credit_extract.ingest.normalize import ingest, normalize_chars
 from credit_extract.ingest.tables import (
     parse_date, parse_money, parse_percent, parse_ratio, quarter_index,
 )
-from credit_extract.models.core import ExtractedValue, Span
+from credit_extract.models.core import ExtractedField, Span
 from credit_extract.models.fpml_model import AmortizationSchedule, ScheduleRow
 
 
@@ -22,24 +22,24 @@ from credit_extract.models.fpml_model import AmortizationSchedule, ScheduleRow
 
 def test_a_value_without_a_span_fails_the_record():
     with pytest.raises(ValueError, match="must cite at least one span"):
-        ExtractedValue[Decimal](value=Decimal("150500000"), status="confirmed")
+        ExtractedField[Decimal].single(value=Decimal("150500000"), status="confirmed")
 
 
 def test_absent_from_document_cannot_carry_a_value():
     span = Span(start=0, end=10, text="0123456789")
     with pytest.raises(ValueError, match="cannot carry a value"):
-        ExtractedValue[Decimal](
+        ExtractedField[Decimal].single(
             value=Decimal(1), spans=[span], status="absent_from_document"
         )
 
 
 def test_external_reference_must_name_the_document():
     with pytest.raises(ValueError, match="must name the document"):
-        ExtractedValue[str](status="external_reference")
+        ExtractedField[str].single(status="external_reference")
 
 
 def test_null_alone_is_not_a_resolved_state():
-    field = ExtractedValue[Decimal](value=None, status="needs_review")
+    field = ExtractedField[Decimal].single(value=None, status="needs_review")
     assert field.is_resolved is True          # needs_review is a real answer
     field.status = "confirmed"
     assert field.is_resolved is False, (

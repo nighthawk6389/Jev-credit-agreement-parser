@@ -1,0 +1,107 @@
+# Tier 2 assertions for the canonical fixture.
+#
+# One proposition each, bound to one family member. These are cheap to write
+# and each tests exactly one mechanism, so a failure names the mechanism rather
+# than the document.
+
+document: fixture_meridian_2017
+source: synthetic
+tier: 2
+archetype: cash_flow_term_loan
+
+assertions:
+  # -- F01 integrity: defects that parse cleanly --------------------------
+  - id: duplicated_rows_break_date_ordering
+    family: F01_integrity
+    member: duplicated_table_rows
+    kind: invariant_fired
+    target: amortization_dates_strictly_increasing
+    expect: true
+    note: the four duplicated 2023 quarters make the table step backwards
+
+  - id: duplicated_rows_break_row_count
+    family: F01_integrity
+    member: duplicated_table_rows
+    kind: invariant_fired
+    target: amortization_row_count_matches_quarters
+    expect: true
+
+  - id: duplicated_rows_overstate_the_total
+    family: F01_integrity
+    member: duplicated_table_rows
+    kind: invariant_fired
+    target: amortization_total_consistent
+    expect: true
+    note: $11,663,750 printed against $10,158,750 correct
+
+  - id: trap_1_end_to_end
+    family: F01_integrity
+    member: duplicated_table_rows
+    kind: trap_caught
+    target: trap_1
+    expect: true
+
+  # -- F02 precedence -----------------------------------------------------
+  - id: hardcoded_ebitda_table_overrides_the_definition
+    family: F02_precedence
+    member: table_overrides_definition
+    kind: trap_caught
+    target: trap_2
+    expect: true
+
+  # -- F03 external reference ---------------------------------------------
+  - id: addback_cap_is_external
+    family: F03_external_reference
+    member: sponsor_model
+    kind: field_status
+    target: consolidated_ebitda.addback_cap_clause_a_xvi
+    expect: external_reference
+    note: the visible 25% cap governs (a)(xiii)-(a)(xv), not (a)(xvi)
+
+  - id: addback_cap_carries_no_number
+    family: F03_external_reference
+    member: sponsor_model
+    kind: field_value
+    target: consolidated_ebitda.addback_cap_clause_a_xvi
+    expect: null
+
+  # -- F04 absence --------------------------------------------------------
+  - id: mfn_has_no_sunset
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_sunset
+    expect: absent_from_document
+
+  - id: mfn_protection_itself_is_present
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_value
+    target: mfn_threshold_pct
+    expect: 0.50
+    note: absence is only a finding because the protection exists
+
+  # -- orphan sweep: a provision no field targets --------------------------
+  - id: call_protection_surfaces_as_an_orphan
+    family: F01_integrity
+    member: undefined_term_used
+    kind: orphan_found
+    expect: Call Protection
+    note: >
+      Section 2.16 is deliberately outside the field registry, so only the
+      inverted question can surface it.
+
+  # -- baseline economics --------------------------------------------------
+  - id: term_loan_commitment
+    family: F01_integrity
+    member: dropped_table_rows
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: 150500000
+
+  - id: term_loan_maturity
+    family: F01_integrity
+    member: dropped_table_rows
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: "2024-08-01"

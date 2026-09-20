@@ -12,7 +12,7 @@ from credit_extract.ingest.segment import (
     SLIDING_OVERLAP, SLIDING_WINDOW_CHARS, coverage, segment_all,
     segment_definitional, segment_sliding, segment_structural,
 )
-from credit_extract.models.core import ExtractedValue, Span
+from credit_extract.models.core import ExtractedField, Span
 from credit_extract.models.fpml_model import AmortizationSchedule, ScheduleRow
 from credit_extract.validate.invariants import (
     BasketRecord, CovenantStep, InvariantContext, check_all, registered,
@@ -227,7 +227,7 @@ def test_monotonic_step_downs_pass():
 
 def _field(value, kind_class="economic_terms", span=None):
     span = span or Span(start=0, end=5, text="abcde")
-    return ExtractedValue(value=value, spans=[span], status="confirmed",
+    return ExtractedField.single(value=value, spans=[span], status="confirmed",
                           field_class=kind_class)
 
 
