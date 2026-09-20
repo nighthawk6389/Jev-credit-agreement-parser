@@ -105,9 +105,13 @@ untestable_in_this_environment:
       missing is labels. 104 documents are a corpus; without ground truth they
       measure whether the pipeline *runs*, not whether it is right.
     consequence: >
-      Every accuracy number in this report still comes from documents written
-      by the same hand that wrote the parser, and the real ones have shown
-      repeatedly what that is worth: recall collapsed from roughly thirty
+      Most accuracy numbers in this report still come from documents written
+      by the same hand that wrote the parser. F05 is now the exception: two
+      real amendment chains are labelled, and one of them -- Wheels Up
+      Amendments No. 4 and No. 5 -- is the family's defining case, where
+      reading the 547,000-character conformed agreement alone reports the
+      revolver as expiring two years early. The real documents have shown
+      repeatedly what synthetic labels are worth: recall collapsed from roughly thirty
       fields of thirty-eight to between zero and three; both amendments parsed
       to no effects at all; a blackline mechanism the pipeline had no concept
       of was reporting a deleted figure as the facility size, and it turns out
