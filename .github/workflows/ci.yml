@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Tests
+        run: pytest -q --cov=credit_extract --cov-report=term-missing
+
+      # The four traps are the acceptance criteria, so they get their own step:
+      # a green test suite with a failing trap should read as a failing build at
+      # a glance, not as one assertion buried in a summary line.
+      - name: Traps
+        run: |
+          python -m credit_extract.cli traps \
+            credit_extract/eval/gold/fixture_meridian_2017.html
+
+      # A model or scorer update that moves calibration should fail the build
+      # here, rather than surfacing later as quietly degraded extractions.
+      - name: Calibration
+        run: python -m credit_extract.eval.harness -n 12
+
+      # The headline gate. Per family, of the propositions the pipeline
+      # asserted confidently, what share were wrong -- because a wrong answer
+      # routed to review was handled correctly and a wrong answer asserted
+      # reaches a reader unannounced. The budget is zero for every family.
+      #
+      # The run prints the per-family table, the real/synthetic split and the
+      # blind-spot register whether it passes or fails, so a green build still
+      # says what it did not cover. It also fails if the register is missing,
+      # which is the one way the numbers could be made to look better than
+      # they are.
+      - name: Family coverage
+        run: python -m credit_extract.eval.family_report --gate
+
+      # Every assertion binds to a member of trap_families.yaml, and every
+      # blind spot to a real family. A label file that drifts from the
+      # register is how a family silently stops being tested while its row
+      # keeps printing.
+      - name: Registers are consistent
+        run: python -m credit_extract.eval.families --check
+
+  packaging:
+    # `pip install -e .` hides two whole classes of bug, and both were live
+    # here: an undeclared runtime dependency that happened to be in the dev
+    # environment, and data files missing from package-data. The registers are
+    # YAML and every report reads them, so a wheel without them imports fine
+    # and then fails on the first extraction. Built and run from a clean
+    # environment, against a file outside the source tree, so nothing is
+    # resolved from the working directory.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and install the wheel alone
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+      - name: Extract from outside the source tree
+        run: |
+          cp credit_extract/eval/gold/fixture_meridian_2017.html /tmp/agreement.html
+          cd /tmp
+          /tmp/clean/bin/credit-extract traps /tmp/agreement.html
+
+  standards-drift:
+    # Upstream FIBO and ACTUS move. When they do, the vendored snapshot should
+    # be reviewed deliberately -- a term URI that changed underneath us makes
+    # every output incomparable to the last run. Informational only: a drift in
+    # someone else's repository is not a reason to fail a pull request.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Check vendored standards against upstream
+        run: python scripts/vendor_standards.py --check

@@ -1,0 +1,206 @@
+# Trap family register -- the single source of truth.
+#
+# Every test case binds to exactly one family member. Coverage is computed per
+# family and is never averaged into a single number without this table printed
+# alongside it: an aggregate that silently averages over untested document
+# families is worse than no number, because it will be believed.
+#
+# Fields per family:
+#   members                 the defect kinds this family covers
+#   silent_error_budget     max share of `confirmed` fields that may be wrong
+#                           before CI fails. The headline metric, per family.
+#   min_n                   below this, the family is reported as undersampled
+#                           and its metrics carry no weight
+#   defended_by             invariants and validators that exist to catch it,
+#                           so a family with no defence is visible as such
+
+version: 2
+
+families:
+  F01_integrity:
+    title: defects that parse cleanly
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - amortization_dates_strictly_increasing
+      - amortization_row_count_matches_quarters
+      - amortization_total_consistent
+      - cross_references_resolve
+      - numeral_and_words_agree
+      - defined_terms_are_unique
+      - referenced_schedules_present
+    members:
+      - duplicated_table_rows
+      - dropped_table_rows
+      - broken_cross_reference          # cites a section that does not exist
+      - misdirected_cross_reference     # cites the wrong section
+      - numeral_word_mismatch           # "twenty-five percent (35%)"
+      - undefined_term_used
+      - doubly_defined_term
+      - referenced_schedule_absent
+
+  F02_precedence:
+    title: provisions correct in isolation and wrong in context
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - D_override
+      - precedence_graph
+      - precedence_graph_is_acyclic
+    members:
+      - notwithstanding_override
+      - stacked_provisos                # 4+ deep
+      - table_overrides_definition
+      - later_section_overrides_earlier
+
+  F03_external_reference:
+    title: magnitudes that live outside the agreement
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - E_external_dependency
+      - definition_graph_external_refs
+    members:
+      - sponsor_model
+      - fee_letter                      # "as separately agreed"
+      - disclosure_letter
+      - side_letter
+      - intercreditor_override
+      - schedule_omitted_from_filing    # a filing artifact, NOT a deal term
+      - redacted_from_filing            # blacked out under Item 601(b)(10);
+                                        # the borrower and the SEC have it
+    notes: >
+      external_by_design and omitted_from_filing are different things and must
+      never be conflated. The first is unobtainable in principle and is a real
+      deal characteristic; the second is obtainable from the borrower and is an
+      artifact of the source. Conflating them inflates reported
+      external-dependency rates several times over.
+
+  F04_absence:
+    title: terms whose absence is itself the finding
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - C_negative_space
+    members:
+      - no_mfn_sunset
+      - no_financial_covenant
+      - springing_covenant_only
+      - no_ecf_sweep
+      - no_lme_blocker
+
+  F05_versioning:
+    title: the operative terms are scattered across a chain
+    silent_error_budget: 0.0
+    min_n: 8
+    defended_by:
+      - G_amendment_effect
+      - amendment_targets_exist
+      - restatements_do_not_conflict
+    members:
+      - amendment_restates_section
+      - conformed_vs_executed
+      - incremental_amendment_adds_tranche
+      - superseded_by_amendment_and_restatement
+      - operative_version_ambiguous
+    notes: >
+      The likeliest production failure and the one a single-document eval
+      cannot detect at all.
+
+  F06_structure:
+    title: deal archetypes whose field model differs
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - archetype_dispatch
+      - ebitda_invariants_gated_by_archetype
+    members:
+      - abl_borrowing_base
+      - unitranche_with_aal
+      - second_lien
+      - recurring_revenue_arr
+      - pik_toggle
+      - nav_or_subscription_line
+      - delayed_draw_multi_tranche
+
+  F07_benchmark:
+    title: the all-in rate is composed, not scalar
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - csa_not_silently_zero
+      - grid_levels_monotonic
+      - grid_bands_contiguous
+    members:
+      - sofr_credit_spread_adjustment
+      - term_vs_daily_simple_sofr
+      - benchmark_replacement_waterfall
+      - floor_on_base_vs_all_in
+      - pricing_grid_stepdowns
+
+  F08_units:
+    title: errors of scale that look entirely reasonable
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - every_numeric_has_a_unit
+      - date_invariants_use_fiscal_calendar
+    members:
+      - bps_vs_percent
+      - thousands_vs_millions
+      - ratio_formatting
+      - fiscal_year_non_calendar
+      - week_52_53_calendar
+
+  F09_definitional_depth:
+    title: meaning resolved several definitions deep
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - definition_graph_closure
+      - definition_graph_cycles
+      - conflicting_definitions_across_documents
+    members:
+      - depth_4_plus_closure
+      - circular_definition
+      - term_defined_in_other_loan_document
+      - conflicting_definition_across_documents
+
+  F10_conditionality:
+    title: a field is a function of time and state
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - conditions_parse
+      - variant_ranges_do_not_overlap
+      - ExtractedField.resolve
+    members:
+      - post_ipo_only
+      - springing_on_trigger
+      - time_and_leverage_stepdown
+      - covenant_conversion_on_junior_debt
+
+  F11_layout:
+    title: structure destroyed by rendering
+    silent_error_budget: 0.0
+    min_n: 5
+    defended_by:
+      - table_scale_declarations
+      - nested_table_flattening
+      - RedlineRange
+      - blackline_deletions_excised
+    members:
+      - grid_rendered_as_text
+      - footnote_modifies_table
+      - table_split_across_pages
+      - nested_html_tables
+      - blackline_flattened_to_text   # struck and inserted text side by side
+    notes: >
+      The blackline member is the most consequential defect in the register and
+      was the last one found, because it is invisible in plain text. A
+      blackline amendment marks its deletions with strike-through and its
+      insertions with a bold double underline; flatten it and both survive,
+      adjacent, in reading order. A real filing renders as "Up to U.S. $
+      2,150,000,000 2,250,000,000", and a first-match parser reports the
+      deleted figure off a span that quotes the document accurately.
+

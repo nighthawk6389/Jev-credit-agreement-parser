@@ -1,0 +1,151 @@
+# Tier 2 assertions: Health Catalyst / Silver Point, 16 July 2024.
+#
+# SEC EDGAR exhibit 10.1. A senior secured recurring-revenue facility: a
+# $125,000,000 closing-date term loan plus $100,000,000 of delayed draw, split
+# into a $40,000,000 A tranche and a $60,000,000 B tranche.
+#
+# Every expectation below was read out of the filing before it was run through
+# the pipeline. Where the pipeline does not yet reach the answer, the assertion
+# stays and fails: an eval written to what the code currently does measures
+# nothing. A failure here is only a *silent* error when the pipeline also
+# claimed the field was settled, which is the number the family report gates on.
+#
+# What makes this document worth having:
+#
+#   * it has no Consolidated EBITDA at all -- not a low count, zero -- and
+#     covenants on Recurring Revenue instead. Every EBITDA-shaped field must
+#     come back not_applicable_to_archetype rather than absent;
+#   * 70 terms are blacked out under Item 601(b)(10). They are redactions, not
+#     external references: the borrower has them and so does the Commission.
+#     Conflating the two is what section 7 of the spec exists to prevent;
+#   * SECTION 3 is reserved and Section 5.2 refers to Section 3.1 twice.
+
+document: health_catalyst_2024
+source: real
+tier: 2
+archetype: recurring_revenue
+
+assertions:
+  # -- F06 structure: the field model differs by archetype -----------------
+  - id: hc_archetype_is_recurring_revenue
+    family: F06_structure
+    member: recurring_revenue_arr
+    kind: archetype
+    expect: recurring_revenue
+    note: >
+      "Recurring Revenue" is a defined term and "ARR Leverage" is decisive
+      vocabulary; the agreement never uses Consolidated EBITDA.
+
+  - id: hc_ebitda_addback_cap_is_not_applicable
+    family: F06_structure
+    member: recurring_revenue_arr
+    kind: field_status
+    target: consolidated_ebitda.addback_cap_pct
+    expect: not_applicable_to_archetype
+    note: >
+      Zero occurrences of Consolidated EBITDA in 571,000 characters. Reporting
+      this absent would read as a missing cap rather than a different deal.
+
+  - id: hc_ebitda_clause_cap_is_not_applicable
+    family: F06_structure
+    member: recurring_revenue_arr
+    kind: field_status
+    target: consolidated_ebitda.addback_cap_clause_a_xvi
+    expect: not_applicable_to_archetype
+
+  - id: hc_no_borrowing_base
+    family: F06_structure
+    member: recurring_revenue_arr
+    kind: field_status
+    target: borrowing_base.advance_rate_accounts
+    expect: not_applicable_to_archetype
+    note: the phrase "borrowing base" does not occur in this agreement
+
+  # -- F01 integrity: defects that parse cleanly ---------------------------
+  - id: hc_reserved_section_is_still_referenced
+    family: F01_integrity
+    member: broken_cross_reference
+    kind: invariant_fired
+    target: cross_references_resolve
+    expect: true
+    note: >
+      The document prints "SECTION 3 [RESERVED]" and then Section 5.2 refers
+      to "Section 3.1 (and not Section 3.2)" twice. Also 6.11 [Reserved],
+      cited by the security-document definition.
+
+  # -- F02 precedence ------------------------------------------------------
+  - id: hc_definitions_stack_provisos
+    family: F02_precedence
+    member: stacked_provisos
+    kind: invariant_fired
+    target: proviso_depth_is_readable
+    expect: true
+    note: five provisos in one provision of the defined-terms article
+
+  # -- F07 benchmark: the rate is composed ---------------------------------
+  - id: hc_term_sofr_with_no_csa_is_not_a_finding
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: invariant_fired
+    target: csa_not_silently_zero
+    expect: false
+    note: >
+      Priced off Term SOFR with no credit spread adjustment stated anywhere,
+      and the margin -- 6.50% on SOFR loans -- absorbs it. Zero is the correct
+      reading. This assertion originally expected the check to fire, which is
+      what the check then did; measured across a hundred agreements it fires
+      on about forty that correctly have no adjustment, which made it the
+      loudest and least informative check in the suite. It now fires only when
+      an adjustment is stated with a figure and no value came back.
+
+  - id: hc_applicable_margin_on_sofr_loans
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: 6.50
+    note: >
+      '"Applicable Margin": for the Initial Loans and the Delayed Draw Loans,
+      (i) with respect to SOFR Loans, 6.50% per annum, and (ii) with respect to
+      ABR Loans, 5.50% per annum.' Flat, not a grid.
+
+  # -- F08 units -----------------------------------------------------------
+  - id: hc_initial_commitment
+    family: F08_units
+    member: thousands_vs_millions
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: 125000000
+    note: '"The initial aggregate amount of the Initial Commitments is $125,000,000."'
+
+  - id: hc_delayed_draw_commitment
+    family: F08_units
+    member: thousands_vs_millions
+    kind: field_value
+    target: delayed_draw.commitment
+    expect: 100000000
+    note: $40,000,000 of Delayed Draw A plus $60,000,000 of Delayed Draw B
+
+  # -- F10 conditionality --------------------------------------------------
+  - id: hc_maturity_date
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: 2029-07-16
+    note: >
+      '"Maturity Date": July 16, 2029, as extended in accordance with any
+      Extension Amendment, solely with respect to any Extended Loans governed
+      thereby.' The extension is a conditional variant, not a different date.
+
+  # -- coverage ------------------------------------------------------------
+  - id: hc_uncaptured_content_is_swept
+    family: F01_integrity
+    member: undefined_term_used
+    kind: report_count
+    target: orphan_chunks
+    expect: 171
+    note: >
+      Recall on this document is low and the orphan sweep is what says so.
+      This number is a tripwire, not a target: if it moves, either extraction
+      improved or the sweep stopped working, and the two must not be confused.

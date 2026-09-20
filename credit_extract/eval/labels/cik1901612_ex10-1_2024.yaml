@@ -1,0 +1,120 @@
+# Tier 2 assertions: GBDC 4 Funding III / BNP Paribas, 2024.
+#
+# SEC EDGAR exhibit 10.1. A revolving credit and security agreement -- a BDC
+# warehouse facility, lending against a pool of collateral loans at advance
+# rates that vary by loan type and class.
+#
+# This is the archetype counterweight to the Health Catalyst filing. Its
+# capacity is a borrowing base, not a commitment; it has no term loan and no
+# delayed draw; and it never mentions Consolidated EBITDA either, for an
+# entirely different reason. A field model built around a cash-flow term loan
+# describes almost nothing in it, which is the point.
+#
+# Its title is also the reason the role classifier changed: "REVOLVING CREDIT
+# AND SECURITY AGREEMENT" matches the standalone security-agreement pattern,
+# and classifying it as an ancillary document drops the whole deal out of the
+# chain.
+
+document: cik1901612_ex10-1_2024
+source: real
+tier: 2
+archetype: abl_revolver
+
+assertions:
+  # -- F06 structure -------------------------------------------------------
+  - id: gbdc_archetype_is_borrowing_base
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: abl_revolver
+    note: >
+      Decisive vocabulary: "Borrowing Base" and "Advance Rate", the latter set
+      out in a table by Loan Type and Loan Class (75.0%, 70.0%, 65.0%).
+
+  - id: gbdc_has_no_term_loan
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_status
+    target: initial_term_loan.commitment
+    expect: not_applicable_to_archetype
+
+  - id: gbdc_has_no_delayed_draw
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_status
+    target: delayed_draw.commitment
+    expect: not_applicable_to_archetype
+
+  - id: gbdc_term_loan_maturity_is_not_applicable
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_status
+    target: initial_term_loan.maturity_date
+    expect: not_applicable_to_archetype
+
+  # -- the parties, which is where recall on a real filing starts ----------
+  - id: gbdc_borrower
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: GBDC 4 FUNDING III LLC
+
+  - id: gbdc_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: BNP PARIBAS
+
+  # -- F01 integrity -------------------------------------------------------
+  - id: gbdc_unattached_exhibits_are_a_filing_artifact
+    family: F01_integrity
+    member: referenced_schedule_absent
+    kind: invariant_fired
+    target: referenced_schedules_present
+    expect: false
+    note: >
+      Thirty-four exhibits and schedules are referenced and one is attached.
+      That is a property of the filing, not of the deal -- exhibits are filed
+      as separate documents -- and F03 keeps the two apart. This assertion
+      originally expected an integrity violation, contradicting its own note;
+      measured across the corpus the unqualified check fired on 78 of 98 real
+      agreements, which is not a market-wide defect but how EDGAR works. It
+      now fires when a filer attached most of what they cite and left one out,
+      or when an extracted term depends on the missing one. The unattached
+      exhibits are still reported, as external references of kind
+      omitted_from_filing, which is where a reader should look for them.
+
+  - id: gbdc_reserved_sections_are_referenced
+    family: F01_integrity
+    member: broken_cross_reference
+    kind: invariant_fired
+    target: cross_references_resolve
+    expect: true
+    note: Sections 2.16 and 8.05 are printed as reserved and cited anyway
+
+  # -- F07 benchmark -------------------------------------------------------
+  - id: gbdc_term_sofr_with_no_csa_is_not_a_finding
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: invariant_fired
+    target: csa_not_silently_zero
+    expect: false
+    note: >
+      22 references to Term SOFR and no credit spread adjustment stated, so
+      zero is correct. What this document does carry is benchmark-transition
+      boilerplate promising a spread adjustment if SOFR is ever replaced --
+      a contingency, not a term of the deal, and reading it as one is what
+      kept this check firing after the first attempt to narrow it.
+
+  # -- coverage ------------------------------------------------------------
+  - id: gbdc_uncaptured_content_is_swept
+    family: F01_integrity
+    member: undefined_term_used
+    kind: report_count
+    target: orphan_chunks
+    expect: 143
+    note: >
+      A tripwire on the sweep, not a target. 182 tables in this document and
+      the field model reaches almost none of them.

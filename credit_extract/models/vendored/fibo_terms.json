@@ -1,0 +1,3304 @@
+{
+  "source": "https://raw.githubusercontent.com/edmcouncil/fibo/master/",
+  "license": "MIT (EDM Council FIBO)",
+  "modules": [
+    "LOAN/LoansGeneral/Loans.rdf",
+    "FBC/DebtAndEquities/Debt.rdf",
+    "FBC/DebtAndEquities/Guaranty.rdf",
+    "FBC/ProductsAndServices/FinancialProductsAndServices.rdf",
+    "FBC/ProductsAndServices/ClientsAndAccounts.rdf",
+    "FBC/FinancialInstruments/FinancialInstruments.rdf",
+    "FND/Parties/Parties.rdf",
+    "FND/ProductsAndServices/ProductsAndServices.rdf",
+    "FND/ProductsAndServices/PaymentsAndSchedules.rdf",
+    "FND/Agreements/Agreements.rdf",
+    "FND/Agreements/Contracts.rdf",
+    "FND/DatesAndTimes/FinancialDates.rdf",
+    "FND/Accounting/CurrencyAmount.rdf"
+  ],
+  "prefixes": {
+    "cmns-av": "https://www.omg.org/spec/Commons/AnnotationVocabulary/",
+    "cmns-bauth": "https://www.omg.org/spec/Commons/BusinessAuthorizations/",
+    "cmns-cds": "https://www.omg.org/spec/Commons/CodesAndCodeSets/",
+    "cmns-cls": "https://www.omg.org/spec/Commons/Classifiers/",
+    "cmns-col": "https://www.omg.org/spec/Commons/Collections/",
+    "cmns-cxtdsg": "https://www.omg.org/spec/Commons/ContextualDesignators/",
+    "cmns-cxtid": "https://www.omg.org/spec/Commons/ContextualIdentifiers/",
+    "cmns-doc": "https://www.omg.org/spec/Commons/Documents/",
+    "cmns-dsg": "https://www.omg.org/spec/Commons/Designators/",
+    "cmns-dt": "https://www.omg.org/spec/Commons/DatesAndTimes/",
+    "cmns-id": "https://www.omg.org/spec/Commons/Identifiers/",
+    "cmns-loc": "https://www.omg.org/spec/Commons/Locations/",
+    "cmns-org": "https://www.omg.org/spec/Commons/Organizations/",
+    "cmns-pts": "https://www.omg.org/spec/Commons/PartiesAndSituations/",
+    "cmns-qtu": "https://www.omg.org/spec/Commons/QuantitiesAndUnits/",
+    "cmns-ra": "https://www.omg.org/spec/Commons/RegistrationAuthorities/",
+    "cmns-rga": "https://www.omg.org/spec/Commons/RegulatoryAgencies/",
+    "cmns-rlcmp": "https://www.omg.org/spec/Commons/RolesAndCompositions/",
+    "cmns-sfc": "https://www.omg.org/spec/Commons/SitesAndFacilities/",
+    "cmns-txt": "https://www.omg.org/spec/Commons/TextDatatype/",
+    "fibo-be-fct-fct": "https://spec.edmcouncil.org/fibo/ontology/BE/FunctionalEntities/FunctionalEntities/",
+    "fibo-be-fct-pub": "https://spec.edmcouncil.org/fibo/ontology/BE/FunctionalEntities/Publishers/",
+    "fibo-be-ge-ge": "https://spec.edmcouncil.org/fibo/ontology/BE/GovernmentEntities/GovernmentEntities/",
+    "fibo-be-le-fbo": "https://spec.edmcouncil.org/fibo/ontology/BE/LegalEntities/FormalBusinessOrganizations/",
+    "fibo-be-le-lei": "https://spec.edmcouncil.org/fibo/ontology/BE/LegalEntities/LEIEntities/",
+    "fibo-be-oac-cown": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/CorporateOwnership/",
+    "fibo-be-oac-cpty": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/ControlParties/",
+    "fibo-be-oac-exec": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/Executives/",
+    "fibo-be-oac-opty": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/OwnershipParties/",
+    "fibo-fbc-dae-dbt": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/",
+    "fibo-fbc-dae-gty": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/",
+    "fibo-fbc-fct-breg": "https://spec.edmcouncil.org/fibo/ontology/FBC/FunctionalEntities/BusinessRegistries/",
+    "fibo-fbc-fct-fse": "https://spec.edmcouncil.org/fibo/ontology/FBC/FunctionalEntities/FinancialServicesEntities/",
+    "fibo-fbc-fi-fi": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/",
+    "fibo-fbc-pas-caa": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/",
+    "fibo-fbc-pas-fpas": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/",
+    "fibo-fnd-aap-ppl": "https://spec.edmcouncil.org/fibo/ontology/FND/AgentsAndPeople/People/",
+    "fibo-fnd-acc-cur": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/",
+    "fibo-fnd-agr-agr": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/",
+    "fibo-fnd-agr-ctr": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/",
+    "fibo-fnd-arr-asmt": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Assessments/",
+    "fibo-fnd-arr-doc": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/",
+    "fibo-fnd-arr-lif": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/",
+    "fibo-fnd-dt-bd": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/BusinessDates/",
+    "fibo-fnd-dt-fd": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/",
+    "fibo-fnd-dt-oc": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/",
+    "fibo-fnd-gao-obj": "https://spec.edmcouncil.org/fibo/ontology/FND/GoalsAndObjectives/Objectives/",
+    "fibo-fnd-law-lcap": "https://spec.edmcouncil.org/fibo/ontology/FND/Law/LegalCapacity/",
+    "fibo-fnd-oac-ctl": "https://spec.edmcouncil.org/fibo/ontology/FND/OwnershipAndControl/Control/",
+    "fibo-fnd-oac-own": "https://spec.edmcouncil.org/fibo/ontology/FND/OwnershipAndControl/Ownership/",
+    "fibo-fnd-pas-pas": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/",
+    "fibo-fnd-pas-psch": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/",
+    "fibo-fnd-plc-adr": "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/",
+    "fibo-fnd-plc-rp": "https://spec.edmcouncil.org/fibo/ontology/FND/Places/RealProperty/",
+    "fibo-fnd-pty-pty": "https://spec.edmcouncil.org/fibo/ontology/FND/Parties/Parties/",
+    "fibo-fnd-rel-rel": "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/",
+    "fibo-fnd-utl-alx": "https://spec.edmcouncil.org/fibo/ontology/FND/Utilities/Analytics/",
+    "fibo-fnd-utl-av": "https://spec.edmcouncil.org/fibo/ontology/FND/Utilities/AnnotationVocabulary/",
+    "fibo-loan-ln-ln": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/"
+  },
+  "terms": {
+    "fibo-fbc-dae-dbt:Accrual": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Accrual",
+      "label": "accrual",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:AccruedInterest": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/AccruedInterest",
+      "label": "accrued interest",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Amortization": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Amortization",
+      "label": "amortization",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:AmortizationSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/AmortizationSchedule",
+      "label": "amortization schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Borrower": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Borrower",
+      "label": "borrower",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:BorrowerIdentificationScheme": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/BorrowerIdentificationScheme",
+      "label": "borrower identification scheme",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:BorrowerIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/BorrowerIdentifier",
+      "label": "borrower identifier",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:BorrowingCapacity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/BorrowingCapacity",
+      "label": "borrowing capacity",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CapitalLease": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CapitalLease",
+      "label": "capital lease",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Collateral": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Collateral",
+      "label": "collateral",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CollateralValueAsOfDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CollateralValueAsOfDate",
+      "label": "collateral value as of date",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CommittedCreditFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CommittedCreditFacility",
+      "label": "committed credit facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CommittedSubFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CommittedSubFacility",
+      "label": "committed sub-facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CreditAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CreditAgreement",
+      "label": "CreditAgreement",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CreditAgreementRepaidAtMaturity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CreditAgreementRepaidAtMaturity",
+      "label": "credit agreement repaid at maturity",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CreditAgreementRepaidPeriodically": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CreditAgreementRepaidPeriodically",
+      "label": "credit agreement repaid periodically",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CreditEnhancementAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CreditEnhancementAgreement",
+      "label": "credit enhancement agreement",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CreditEnhancementBeneficiary": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CreditEnhancementBeneficiary",
+      "label": "credit enhancement beneficiary",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:CreditFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/CreditFacility",
+      "label": "credit facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Creditor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Creditor",
+      "label": "creditor",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:DayCountConvention": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/DayCountConvention",
+      "label": "day-count convention",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Debt": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Debt",
+      "label": "debt",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:DebtTerms": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/DebtTerms",
+      "label": "debt terms",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Debtor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Debtor",
+      "label": "debtor",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:ExplicitContractEventSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/ExplicitContractEventSchedule",
+      "label": "explicit contract event schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:FixedInterestRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/FixedInterestRate",
+      "label": "fixed interest rate",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:FloatingInterestRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/FloatingInterestRate",
+      "label": "floating interest rate",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:FullAmortization": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/FullAmortization",
+      "label": "full amortization",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Interest": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Interest",
+      "label": "interest",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestCalculation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestCalculation",
+      "label": "interest calculation",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestCalculationSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestCalculationSchedule",
+      "label": "interest calculation schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestPayment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestPayment",
+      "label": "interest payment",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestPaymentSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestPaymentSchedule",
+      "label": "interest payment schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestPaymentTerms": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestPaymentTerms",
+      "label": "InterestPaymentTerms",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestRateReset": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestRateReset",
+      "label": "interest rate reset",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestRateResetSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestRateResetSchedule",
+      "label": "interest rate reset schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:InterestRateSettingEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/InterestRateSettingEvent",
+      "label": "interest rate setting event",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Lease": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Lease",
+      "label": "lease",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Lender": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Lender",
+      "label": "lender",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:ManagedInterestRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/ManagedInterestRate",
+      "label": "managed interest rate",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:MotorVehicleLease": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/MotorVehicleLease",
+      "label": "motor vehicle lease",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:NegativeAmortization": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/NegativeAmortization",
+      "label": "negative amortization",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:NonPhysicalCollateral": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/NonPhysicalCollateral",
+      "label": "non-physical collateral",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:PartialAmortization": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/PartialAmortization",
+      "label": "partial amortization",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:PhysicalCollateral": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/PhysicalCollateral",
+      "label": "physical collateral",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:Principal": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Principal",
+      "label": "principal",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:PrincipalPayment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/PrincipalPayment",
+      "label": "principal payment",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:PrincipalPaymentSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/PrincipalPaymentSchedule",
+      "label": "principal payment schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:PrincipalRepaymentTerms": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/PrincipalRepaymentTerms",
+      "label": "PrincipalRepaymentTerms",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-fbc-dae-dbt:ProjectedContractEventSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/ProjectedContractEventSchedule",
+      "label": "projected contract event schedule",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:RateResetTimeOfDay": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/RateResetTimeOfDay",
+      "label": "rate reset time of day",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:RetailCreditFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/RetailCreditFacility",
+      "label": "retail credit facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:RevolvingLineOfCredit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/RevolvingLineOfCredit",
+      "label": "revolving line of credit",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:SecurityAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/SecurityAgreement",
+      "label": "closed-end credit",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-fbc-dae-dbt:SubFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/SubFacility",
+      "label": "sub-facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:UncommittedCreditFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/UncommittedCreditFacility",
+      "label": "uncommitted credit facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:UncommittedSubFacility": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/UncommittedSubFacility",
+      "label": "uncommitted sub-facility",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:VariableInterestRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/VariableInterestRate",
+      "label": "variable interest rate",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:governsPaymentOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/governsPaymentOf",
+      "label": "governs payment of",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasAccrualBasis": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasAccrualBasis",
+      "label": "has accrual basis",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasAmountOfCreditExtended": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasAmountOfCreditExtended",
+      "label": "has amount of credit extended",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasAnticipatedNumberOfPayments": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasAnticipatedNumberOfPayments",
+      "label": "has anticipated number of payments",
+      "kind": "DatatypeProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasAvailableAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasAvailableAmount",
+      "label": "has available amount",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasBorrower": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasBorrower",
+      "label": "has borrower",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasCompoundingFrequency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasCompoundingFrequency",
+      "label": "has compounding frequency",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasCreditLimit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasCreditLimit",
+      "label": "has credit limit",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasDebtAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasDebtAmount",
+      "label": "has debt amount",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasDenomination": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasDenomination",
+      "label": "has denomination",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasFinalInterestPaymentDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasFinalInterestPaymentDate",
+      "label": "has final interest payment date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInitialExchangeDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInitialExchangeDate",
+      "label": "has initial exchange date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInitialInterestAccrualDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInitialInterestAccrualDate",
+      "label": "has initial interest accrual date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInitialInterestPaymentDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInitialInterestPaymentDate",
+      "label": "has initial interest payment date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInitialPrincipalPaymentDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInitialPrincipalPaymentDate",
+      "label": "has initial principal payment date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInterestPaymentDay": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInterestPaymentDay",
+      "label": "has interest payment day",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInterestPaymentFrequency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInterestPaymentFrequency",
+      "label": "has interest payment frequency",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInterestRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInterestRate",
+      "label": "has interest rate",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasInterestRateCap": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasInterestRateCap",
+      "label": "has interest rate cap",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasLender": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasLender",
+      "label": "has lender",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasMaturityDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasMaturityDate",
+      "label": "has maturity date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasMaximumAdvanceAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasMaximumAdvanceAmount",
+      "label": "has maximum advance amount",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasOriginalTimeToMaturity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasOriginalTimeToMaturity",
+      "label": "has time to maturity",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasOutstandingAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasOutstandingAmount",
+      "label": "has outstanding amount",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasPrincipal": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasPrincipal",
+      "label": "has principal",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasPrincipalPaymentDay": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasPrincipalPaymentDay",
+      "label": "has principal payment day",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasPrincipalPaymentFrequency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasPrincipalPaymentFrequency",
+      "label": "has principal payment frequency",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:hasPrincipalRepaymentDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/hasPrincipalRepaymentDate",
+      "label": "has principal repayment date",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isAmortizationOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isAmortizationOf",
+      "label": "is amortization of",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isBasedOn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isBasedOn",
+      "label": "is based on",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isCollateralizationOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isCollateralizationOf",
+      "label": "is collateralization of",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isCollateralizedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isCollateralizedBy",
+      "label": "is collateralized by",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isInterestOn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isInterestOn",
+      "label": "is interest on",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isOwed": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isOwed",
+      "label": "is owed",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isOwedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isOwedBy",
+      "label": "is owed by",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isOwedTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isOwedTo",
+      "label": "is owed to",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:isPrincipalOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/isPrincipalOf",
+      "label": "is principal of",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-dbt:owes": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/owes",
+      "label": "owes",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fbc-dae-gty:CollateralizedGuaranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/CollateralizedGuaranty",
+      "label": "collateralized guaranty",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:GovernmentGuaranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/GovernmentGuaranty",
+      "label": "government guaranty",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:Guarantor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/Guarantor",
+      "label": "guarantor",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:Guaranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/Guaranty",
+      "label": "guaranty",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:InsuranceBackedGuaranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/InsuranceBackedGuaranty",
+      "label": "insurance-backed guaranty",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:InsurancePolicy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/InsurancePolicy",
+      "label": "insurance policy",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:Insurer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/Insurer",
+      "label": "insurer",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:JointGuaranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/JointGuaranty",
+      "label": "joint guaranty",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:LetterOfCredit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/LetterOfCredit",
+      "label": "letter of credit",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:LetterOfCreditGuaranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/LetterOfCreditGuaranty",
+      "label": "letter of credit guaranty",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:NegativePledge": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/NegativePledge",
+      "label": "negative pledge",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:Policyholder": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/Policyholder",
+      "label": "policyholder",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:PriorityLevel": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/PriorityLevel",
+      "label": "priority level",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:hasGuaranteedAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/hasGuaranteedAmount",
+      "label": "has guaranteed amount",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:hasGuarantor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/hasGuarantor",
+      "label": "has guarantor",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:hasGuarantorParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/hasGuarantorParty",
+      "label": "has guarantor party",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:hasPriorityLevel": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/hasPriorityLevel",
+      "label": "has priority level",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:isGuaranteedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/isGuaranteedBy",
+      "label": "is guaranteed by",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-dae-gty:isGuarantorOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/isGuarantorOf",
+      "label": "is guarantor of",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/Guaranty.rdf"
+    },
+    "fibo-fbc-fct-fse:Bank": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FunctionalEntities/FinancialServicesEntities/Bank",
+      "label": "Bank",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-fct-fse:DepositoryInstitution": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FunctionalEntities/FinancialServicesEntities/DepositoryInstitution",
+      "label": "DepositoryInstitution",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-fi-fi:CalculationAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/CalculationAgent",
+      "label": "calculation agent",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:CashInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/CashInstrument",
+      "label": "cash instrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:CommodityInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/CommodityInstrument",
+      "label": "commodity instrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:CurrencyInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/CurrencyInstrument",
+      "label": "currency instrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:DebtInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/DebtInstrument",
+      "label": "debt instrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:DerivativeInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/DerivativeInstrument",
+      "label": "derivative instrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:Entitlement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/Entitlement",
+      "label": "entitlement",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:EquityInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/EquityInstrument",
+      "label": "equity instrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:ExemptSecurity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/ExemptSecurity",
+      "label": "exempt security",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:FinancialInstrument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/FinancialInstrument",
+      "label": "FinancialInstrument",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:FinancialInstrumentIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/FinancialInstrumentIdentifier",
+      "label": "financial instrument identifier",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:Future": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/Future",
+      "label": "future",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:Issuer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/Issuer",
+      "label": "issuer",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:NegotiableSecurity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/NegotiableSecurity",
+      "label": "negotiable security",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:NonNegotiableSecurity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/NonNegotiableSecurity",
+      "label": "non-negotiable security",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:Option": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/Option",
+      "label": "option",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:PackagedFinancialProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/PackagedFinancialProduct",
+      "label": "packaged financial product",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:PromissoryNote": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/PromissoryNote",
+      "label": "promissory note",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:RedemptionProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/RedemptionProvision",
+      "label": "redemption provision",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:SecuritiesTransaction": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/SecuritiesTransaction",
+      "label": "securities transaction",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:Security": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/Security",
+      "label": "security",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:SpotContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/SpotContract",
+      "label": "spot contract",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:StandardizedTerms": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/StandardizedTerms",
+      "label": "standardized terms",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:Underlier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/Underlier",
+      "label": "underlier",
+      "kind": "Class",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasBuyingCurrency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasBuyingCurrency",
+      "label": "has buying currency",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasCalculationAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasCalculationAgent",
+      "label": "has calculation agent",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasCommodityValueAsOfExecutionDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasCommodityValueAsOfExecutionDate",
+      "label": "has commodity value as of execution date",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasNominalValue": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasNominalValue",
+      "label": "has nominal value",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasPrincipalExecutiveOfficeAddress": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasPrincipalExecutiveOfficeAddress",
+      "label": "has principal executive office address",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasRedemptionProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasRedemptionProvision",
+      "label": "has redemption terms",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasSellingCurrency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasSellingCurrency",
+      "label": "has selling currency",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasShareholder": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasShareholder",
+      "label": "has shareholder",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasUnderlier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasUnderlier",
+      "label": "has underlier",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:hasValueExpressedIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/hasValueExpressedIn",
+      "label": "has value expressed in",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:holdsSharesIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/holdsSharesIn",
+      "label": "holds shares in",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:isDenominatedIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/isDenominatedIn",
+      "label": "is denominated in",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:isLegallyRecordedIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/isLegallyRecordedIn",
+      "label": "is legally recorded in",
+      "kind": "ObjectProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-fi-fi:isNegotiable": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/isNegotiable",
+      "label": "is negotiable",
+      "kind": "DatatypeProperty",
+      "module": "FBC/FinancialInstruments/FinancialInstruments.rdf"
+    },
+    "fibo-fbc-pas-caa:Account": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/Account",
+      "label": "Account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountAsAnAsset": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountAsAnAsset",
+      "label": "account as an asset",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountHolder": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountHolder",
+      "label": "account holder",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountIdentifier",
+      "label": "account identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountOwnership": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountOwnership",
+      "label": "account ownership",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountProvider": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountProvider",
+      "label": "account provider",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountSpecificServiceAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountSpecificServiceAgreement",
+      "label": "account-specific service agreement",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountStatement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountStatement",
+      "label": "AccountStatement",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:AccountingTransaction": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountingTransaction",
+      "label": "accounting transaction",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:Balance": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/Balance",
+      "label": "balance",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:BankAccountIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/BankAccountIdentifier",
+      "label": "bank account identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:BankIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/BankIdentifier",
+      "label": "bank identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:BasicBankAccountIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/BasicBankAccountIdentifier",
+      "label": "basic bank account identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:BrokerageAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/BrokerageAccount",
+      "label": "brokerage account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:CertificateOfDeposit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CertificateOfDeposit",
+      "label": "certificate of deposit",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:ChartOfAccounts": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/ChartOfAccounts",
+      "label": "chart of accounts",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:CloseDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CloseDate",
+      "label": "close date",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:CommercialLendingService": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CommercialLendingService",
+      "label": "commercial lending service",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:CustomerAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CustomerAccount",
+      "label": "CustomerAccount",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:CustomerAccountHolder": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CustomerAccountHolder",
+      "label": "customer account holder",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:DemandDepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/DemandDepositAccount",
+      "label": "demand deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:DepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/DepositAccount",
+      "label": "deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:Fee": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/Fee",
+      "label": "fee",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:GeneralLedger": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/GeneralLedger",
+      "label": "general ledger",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:IndividualTransaction": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction",
+      "label": "IndividualTransaction",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:InternationalBankAccountIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/InternationalBankAccountIdentifier",
+      "label": "international bank account identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:InvestmentAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/InvestmentAccount",
+      "label": "investment account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:InvestmentOrDepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/InvestmentOrDepositAccount",
+      "label": "investment or deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:LedgerAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/LedgerAccount",
+      "label": "ledger account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:LedgerAccountClassifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/LedgerAccountClassifier",
+      "label": "ledger account classifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:LendingOfficer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/LendingOfficer",
+      "label": "lending officer",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:LoanOrCreditAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/LoanOrCreditAccount",
+      "label": "loan or credit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:NonTransactionDepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/NonTransactionDepositAccount",
+      "label": "non-transaction deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:OpenDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/OpenDate",
+      "label": "open date",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:PaymentDueDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/PaymentDueDate",
+      "label": "payment due date",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:PostingDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/PostingDate",
+      "label": "posting date",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:RelationshipManager": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/RelationshipManager",
+      "label": "relationship manager",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TimeCertificateOfDepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TimeCertificateOfDepositAccount",
+      "label": "time certificate of deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TimeDepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TimeDepositAccount",
+      "label": "time deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TimeDepositOpenAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TimeDepositOpenAccount",
+      "label": "time deposit open account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionCategory": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionCategory",
+      "label": "transaction category",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionDate",
+      "label": "transaction date",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionDepositAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionDepositAccount",
+      "label": "transaction deposit account",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionIdentifier",
+      "label": "transaction identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionRecord": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionRecord",
+      "label": "TransactionRecord",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionRecordIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionRecordIdentifier",
+      "label": "transaction record identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:TransactionSubcategory": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionSubcategory",
+      "label": "transaction subcategory",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:appliesToAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/appliesToAccount",
+      "label": "applies to account",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasBalance": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasBalance",
+      "label": "has balance",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasCloseDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasCloseDate",
+      "label": "has close date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasCorrespondingAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasCorrespondingAccount",
+      "label": "has corresponding account",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasEndingBalance": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasEndingBalance",
+      "label": "has ending balance",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasOpenDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasOpenDate",
+      "label": "has open date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasPaymentDueDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasPaymentDueDate",
+      "label": "has payment due date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasPostingDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasPostingDate",
+      "label": "has posting date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasPrimaryAccountHolder": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasPrimaryAccountHolder",
+      "label": "has primary account holder",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasSecondaryAccountHolder": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasSecondaryAccountHolder",
+      "label": "has secondary account holder",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasStartingBalance": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasStartingBalance",
+      "label": "has starting balance",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasTransactionDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasTransactionDate",
+      "label": "has transaction date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasTransactionDescription": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasTransactionDescription",
+      "label": "has transaction description",
+      "kind": "DatatypeProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:hasTransactionRecordStatus": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasTransactionRecordStatus",
+      "label": "has transaction record status",
+      "kind": "DatatypeProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:involvesMerchant": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/involvesMerchant",
+      "label": "involves merchant",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:isLinkedToAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/isLinkedToAccount",
+      "label": "is linked to account",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-caa:recordsTransaction": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/recordsTransaction",
+      "label": "records transaction",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fbc-pas-fpas:AgencyAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/AgencyAgreement",
+      "label": "agency agreement",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:AgentForServiceOfProcess": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/AgentForServiceOfProcess",
+      "label": "agent for service of process",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Basket": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Basket",
+      "label": "basket",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:BasketConstituent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/BasketConstituent",
+      "label": "basket constituent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Broker": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Broker",
+      "label": "broker",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:BrokerDealer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/BrokerDealer",
+      "label": "broker-dealer",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Catalog": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Catalog",
+      "label": "catalog",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ContractLifecycle": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycle",
+      "label": "contract lifecycle",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ContractLifecycleEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEvent",
+      "label": "contract lifecycle event",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence",
+      "label": "contract lifecycle event occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ContractLifecycleOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleOccurrence",
+      "label": "contract lifecycle occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ContractLifecycleStage": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleStage",
+      "label": "ContractLifecycleStage",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ContractLifecycleStageOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleStageOccurrence",
+      "label": "contract lifecycle stage occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Dealer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Dealer",
+      "label": "dealer",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Exposure": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Exposure",
+      "label": "exposure",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ExposureBearer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ExposureBearer",
+      "label": "exposure bearer",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ExposureSituation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ExposureSituation",
+      "label": "exposure situation",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:FinancialExposure": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialExposure",
+      "label": "financial exposure",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:FinancialIntermediationService": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialIntermediationService",
+      "label": "financial intermediation service",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:FinancialProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialProduct",
+      "label": "financial product",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:FinancialProductCatalog": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialProductCatalog",
+      "label": "financial product catalog",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:FinancialService": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialService",
+      "label": "financial service",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:FinancialServiceProvider": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialServiceProvider",
+      "label": "financial service provider",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Holding": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Holding",
+      "label": "legal agent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:LegalAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/LegalAgent",
+      "label": "legal agent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:LicensedAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/LicensedAgent",
+      "label": "licensed agent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Offeree": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Offeree",
+      "label": "offeree",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Offering": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Offering",
+      "label": "offering",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Offeror": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Offeror",
+      "label": "offeror",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Position": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Position",
+      "label": "position",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ProductLifecycle": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ProductLifecycle",
+      "label": "product lifecycle",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ProductLifecycleEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ProductLifecycleEvent",
+      "label": "product lifecycle event",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ProductLifecycleEventOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ProductLifecycleEventOccurrence",
+      "label": "product lifecycle event occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ProductLifecycleOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ProductLifecycleOccurrence",
+      "label": "product lifecycle occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ProductLifecycleStage": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ProductLifecycleStage",
+      "label": "ProductLifecycleStage",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ProductLifecycleStageOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ProductLifecycleStageOccurrence",
+      "label": "product lifecycle stage occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:RegisteredAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/RegisteredAgent",
+      "label": "registered agent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:RegulatedCommodity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/RegulatedCommodity",
+      "label": "regulated commodity",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:SettlementTerms": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/SettlementTerms",
+      "label": "settlement terms",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:ThirdPartyAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ThirdPartyAgent",
+      "label": "third-party agent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Trade": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Trade",
+      "label": "Trade",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeIdentifier",
+      "label": "trade identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeLifecycle": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeLifecycle",
+      "label": "trade lifecycle",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeLifecycleEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeLifecycleEvent",
+      "label": "trade lifecycle event",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeLifecycleEventOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeLifecycleEventOccurrence",
+      "label": "trade lifecycle event occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeLifecycleOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeLifecycleOccurrence",
+      "label": "trade lifecycle occurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeLifecycleStage": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeLifecycleStage",
+      "label": "TradeLifecycleStage",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradeLifecycleStageOccurrence": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradeLifecycleStageOccurrence",
+      "label": "TradeLifecycleStageOccurrence",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:Trader": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/Trader",
+      "label": "trader",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:TradingStrategy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/TradingStrategy",
+      "label": "trading strategy",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:UniqueTransactionIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/UniqueTransactionIdentifier",
+      "label": "unique transaction identifier",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:WeightedBasket": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/WeightedBasket",
+      "label": "weighted basket",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:WeightedBasketConstituent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/WeightedBasketConstituent",
+      "label": "weighted basket constituent",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:exposesIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/exposesIn",
+      "label": "exposes in",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:facilitates": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/facilitates",
+      "label": "facilitates",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasExposedParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasExposedParty",
+      "label": "has exposed party",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasExposureTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasExposureTo",
+      "label": "has exposure to",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasGeneratingEntity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasGeneratingEntity",
+      "label": "has generating entity",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasGeneratingEntityIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasGeneratingEntityIdentifier",
+      "label": "has generating entity identifier",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasLegalAgent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasLegalAgent",
+      "label": "has registered agent",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasNominalNumberOfUnits": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasNominalNumberOfUnits",
+      "label": "has nominal number of units",
+      "kind": "DatatypeProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasOffering": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasOffering",
+      "label": "has offering",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasOfferingAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasOfferingAmount",
+      "label": "has offering amount",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasOfferingPrice": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasOfferingPrice",
+      "label": "has offering price",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasOfferingUnits": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasOfferingUnits",
+      "label": "has offering units",
+      "kind": "DatatypeProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasSelectingParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasSelectingParty",
+      "label": "has selecting party",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasSelectionCriteria": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasSelectionCriteria",
+      "label": "has selection criteria",
+      "kind": "DatatypeProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasSettlementDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasSettlementDate",
+      "label": "has settlement date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:hasTradeDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/hasTradeDate",
+      "label": "has trade date",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:isEmbodiedIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/isEmbodiedIn",
+      "label": "is embodied in",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:isExposedPartyIn": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/isExposedPartyIn",
+      "label": "is exposed party in",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:isExposedTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/isExposedTo",
+      "label": "is exposed to",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:isExposureOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/isExposureOf",
+      "label": "is exposure of",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:isFacilitatedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/isFacilitatedBy",
+      "label": "is facilitated by",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:isOfferingOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/isOfferingOf",
+      "label": "is offering of",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fbc-pas-fpas:relatesTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/relatesTo",
+      "label": "relates to",
+      "kind": "ObjectProperty",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fnd-aap-ppl:BirthCertificate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/AgentsAndPeople/People/BirthCertificate",
+      "label": "BirthCertificate",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-aap-ppl:DeathCertificate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/AgentsAndPeople/People/DeathCertificate",
+      "label": "DeathCertificate",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-aap-ppl:IdentityDocument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/AgentsAndPeople/People/IdentityDocument",
+      "label": "IdentityDocument",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-acc-cur:AmountOfMoney": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/AmountOfMoney",
+      "label": "amount of money",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:CalculatedPrice": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/CalculatedPrice",
+      "label": "calculated price",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:Currency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/Currency",
+      "label": "currency",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:CurrencyBasket": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/CurrencyBasket",
+      "label": "currency basket",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:CurrencyIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/CurrencyIdentifier",
+      "label": "currency identifier",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:ExchangeRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/ExchangeRate",
+      "label": "exchange rate",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:Funds": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/Funds",
+      "label": "funds",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:FundsIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/FundsIdentifier",
+      "label": "funds identifier",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:InterestRate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/InterestRate",
+      "label": "interest rate",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:MonetaryAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/MonetaryAmount",
+      "label": "monetary amount",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:MonetaryPrice": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/MonetaryPrice",
+      "label": "monetary price",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:PercentageMonetaryAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/PercentageMonetaryAmount",
+      "label": "percentage monetary amount",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:PreciousMetal": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/PreciousMetal",
+      "label": "buyer",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-acc-cur:PreciousMetalIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/PreciousMetalIdentifier",
+      "label": "precious metal identifier",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:Price": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/Price",
+      "label": "price",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:UnitOfAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/UnitOfAccount",
+      "label": "unit of account",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:UnitOfAccountIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/UnitOfAccountIdentifier",
+      "label": "unit of account identifier",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:UnitPrice": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/UnitPrice",
+      "label": "unit price",
+      "kind": "Class",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount",
+      "label": "has amount",
+      "kind": "DatatypeProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasBaseCurrency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasBaseCurrency",
+      "label": "has base currency",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasCurrency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasCurrency",
+      "label": "has currency",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasDealtCurrency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasDealtCurrency",
+      "label": "has dealt currency",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasFundsType": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasFundsType",
+      "label": "has funds type",
+      "kind": "DatatypeProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasMinorUnit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasMinorUnit",
+      "label": "has minor unit",
+      "kind": "DatatypeProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasMonetaryAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasMonetaryAmount",
+      "label": "has monetary amount",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasNotionalAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasNotionalAmount",
+      "label": "has notional amount",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasNumericCode": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasNumericCode",
+      "label": "has numeric code",
+      "kind": "DatatypeProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasPrice": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasPrice",
+      "label": "has price",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:hasRateValue": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasRateValue",
+      "label": "has rate value",
+      "kind": "DatatypeProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-acc-cur:isPriceFor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/isPriceFor",
+      "label": "is price for",
+      "kind": "ObjectProperty",
+      "module": "FND/Accounting/CurrencyAmount.rdf"
+    },
+    "fibo-fnd-agr-agr:Agreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/Agreement",
+      "label": "agreement",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:Beneficiary": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/Beneficiary",
+      "label": "beneficiary",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:BilateralAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/BilateralAgreement",
+      "label": "bilateral agreement",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:Commitment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/Commitment",
+      "label": "commitment",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:CommitmentAtLarge": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/CommitmentAtLarge",
+      "label": "commitment at large",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:MultilateralAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/MultilateralAgreement",
+      "label": "multilateral agreement",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:Obligee": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/Obligee",
+      "label": "obligee",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:Obligor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/Obligor",
+      "label": "obligor",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:UnilateralCommitment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/UnilateralCommitment",
+      "label": "unilateral commitment",
+      "kind": "Class",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:hasObligation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/hasObligation",
+      "label": "has obligation",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-agr:isObligationOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/isObligationOf",
+      "label": "is obligation of",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Agreements.rdf"
+    },
+    "fibo-fnd-agr-ctr:AssignableContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/AssignableContract",
+      "label": "assignable contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:BilateralContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/BilateralContract",
+      "label": "bilateral contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:BilateralNettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/BilateralNettingProvision",
+      "label": "bilateral netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:BreachOfContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/BreachOfContract",
+      "label": "BreachOfContract",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fnd-agr-ctr:BreachOfCovenant": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/BreachOfCovenant",
+      "label": "BreachOfCovenant",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fnd-agr-ctr:CloseOutNettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/CloseOutNettingProvision",
+      "label": "close-out netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:CollateralAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/CollateralAgreement",
+      "label": "CollateralAgreement",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/Debt.rdf"
+    },
+    "fibo-fnd-agr-ctr:ConditionPrecedent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ConditionPrecedent",
+      "label": "condition precedent",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:Contract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/Contract",
+      "label": "contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractDocument": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractDocument",
+      "label": "contract document",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractMilestone": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractMilestone",
+      "label": "contract milestone",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractParty",
+      "label": "contract party",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractPrincipal": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractPrincipal",
+      "label": "contract principal",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractThirdParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractThirdParty",
+      "label": "contract third party",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractualCommitment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractualCommitment",
+      "label": "contractual commitment",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractualDefinition": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractualDefinition",
+      "label": "contractual definition",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ContractualElement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ContractualElement",
+      "label": "contractual element",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:Counterparty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/Counterparty",
+      "label": "counterparty",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:DisclosureProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/DisclosureProvision",
+      "label": "disclosure provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:EarlyTerminationProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/EarlyTerminationProvision",
+      "label": "early termination provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:ExtensionProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/ExtensionProvision",
+      "label": "extension provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:MasterAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/MasterAgreement",
+      "label": "master agreement",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:MilestoneEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/MilestoneEvent",
+      "label": "milestone event",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:MilestoneSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/MilestoneSchedule",
+      "label": "milestone schedule",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:MultilateralContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/MultilateralContract",
+      "label": "multilateral contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:MultilateralNettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/MultilateralNettingProvision",
+      "label": "multilateral netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:NettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/NettingProvision",
+      "label": "netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:NonBindingTerm": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/NonBindingTerm",
+      "label": "non-binding term",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:NonTransferableContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/NonTransferableContract",
+      "label": "non-transferable contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:NotificationProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/NotificationProvision",
+      "label": "notification provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:NovateableContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/NovateableContract",
+      "label": "novateable contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:NovationNettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/NovationNettingProvision",
+      "label": "novation netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:PaymentNettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/PaymentNettingProvision",
+      "label": "payment netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:Representation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/Representation",
+      "label": "representation",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:SettlementNettingProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/SettlementNettingProvision",
+      "label": "settlement netting provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:TermSheet": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/TermSheet",
+      "label": "term sheet",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:TerminationProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/TerminationProvision",
+      "label": "termination provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:TransferableContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/TransferableContract",
+      "label": "transferable contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:UnilateralContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/UnilateralContract",
+      "label": "unilateral contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:UseOfProceedsProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/UseOfProceedsProvision",
+      "label": "use of proceeds provision",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:VerbalContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/VerbalContract",
+      "label": "verbal contract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:Warranty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/Warranty",
+      "label": "warranty",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:WrittenContract": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/WrittenContract",
+      "label": "WrittenContract",
+      "kind": "Class",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:definesTermsFor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/definesTermsFor",
+      "label": "defines terms for",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasBeneficiary": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasBeneficiary",
+      "label": "has beneficiary",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasContractDuration": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasContractDuration",
+      "label": "has contract duration",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasContractParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasContractParty",
+      "label": "has contract party",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasContractualElement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasContractualElement",
+      "label": "has contractual element",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasCounterparty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasCounterparty",
+      "label": "has counterparty",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasEarlyTerminationDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasEarlyTerminationDate",
+      "label": "has early termination date",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasEffectiveDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasEffectiveDate",
+      "label": "has effective date",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasEffectiveDateTimeStamp": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasEffectiveDateTimeStamp",
+      "label": "has effective date time stamp",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasExecutionDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasExecutionDate",
+      "label": "has execution date",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasExecutionDateTimeStamp": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasExecutionDateTimeStamp",
+      "label": "has execution date time stamp",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasExtendablePeriod": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasExtendablePeriod",
+      "label": "has extendable period",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasExtensionProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasExtensionProvision",
+      "label": "has extension provision",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasGoverningJurisdiction": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasGoverningJurisdiction",
+      "label": "has governing jurisdiction",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasLegalDescription": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasLegalDescription",
+      "label": "has legal description",
+      "kind": "DatatypeProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasMilestoneProvision": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasMilestoneProvision",
+      "label": "has milestone provision",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasNonBindingTerm": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasNonBindingTerm",
+      "label": "has non-binding term",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasPrincipalParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasPrincipalParty",
+      "label": "has principal party",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasTerm": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasTerm",
+      "label": "has term",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:hasThirdParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/hasThirdParty",
+      "label": "has third party",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isAssignable": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isAssignable",
+      "label": "is assignable",
+      "kind": "DatatypeProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isBeneficiaryOf": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isBeneficiaryOf",
+      "label": "is beneficiary of",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isEvidenceFor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isEvidenceFor",
+      "label": "is evidence for",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isEvidencedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isEvidencedBy",
+      "label": "is evidenced by",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isNettingAutomatic": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isNettingAutomatic",
+      "label": "is netting automatic",
+      "kind": "DatatypeProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isPrimaryContractFor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isPrimaryContractFor",
+      "label": "is primary contract for",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isQualifiedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isQualifiedBy",
+      "label": "is qualified by",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:isSubordinateTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/isSubordinateTo",
+      "label": "is subordinate to",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:qualifies": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/qualifies",
+      "label": "qualifies",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-agr-ctr:supersedes": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/supersedes",
+      "label": "supersedes",
+      "kind": "ObjectProperty",
+      "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-dt-fd:AdHocSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule",
+      "label": "ad hoc schedule",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:AdHocScheduleEntry": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocScheduleEntry",
+      "label": "ad hoc schedule entry",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:Age": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/Age",
+      "label": "age",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:AnchorDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AnchorDate",
+      "label": "anchor date",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:BusinessCalendar": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/BusinessCalendar",
+      "label": "business calendar",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:CalculatedDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/CalculatedDate",
+      "label": "calculated date",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:CalculationPeriod": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/CalculationPeriod",
+      "label": "calculation period",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:CalculationPeriodLength": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/CalculationPeriodLength",
+      "label": "calculation period length",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:CalendarPeriod": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/CalendarPeriod",
+      "label": "calendar period",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:CalendarSpecifiedInterval": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/CalendarSpecifiedInterval",
+      "label": "calendar-specified interval",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:DatedCollectionConstituent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/DatedCollectionConstituent",
+      "label": "dated collection constituent",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:DatedStructuredCollection": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/DatedStructuredCollection",
+      "label": "dated structured collection",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:ExplicitRecurrenceInterval": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/ExplicitRecurrenceInterval",
+      "label": "explicit recurrence interval",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:RecurrenceInterval": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/RecurrenceInterval",
+      "label": "recurrence interval",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:RegularSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/RegularSchedule",
+      "label": "RegularSchedule",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:RelativeDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/RelativeDate",
+      "label": "relative date",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:Schedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/Schedule",
+      "label": "schedule",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:ScheduleStub": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/ScheduleStub",
+      "label": "schedule stub",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:SpecifiedDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/SpecifiedDate",
+      "label": "specified date",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:TimeDirection": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/TimeDirection",
+      "label": "time direction",
+      "kind": "Class",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasAcquisitionDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasAcquisitionDate",
+      "label": "has acquisition date",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasAge": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasAge",
+      "label": "has age",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasAnchorDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasAnchorDate",
+      "label": "has anchor date",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasAsOfDate": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasAsOfDate",
+      "label": "has as-of date",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasCalendarPeriod": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasCalendarPeriod",
+      "label": "has calendar period",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasClosingDateTime": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasClosingDateTime",
+      "label": "has closing date time",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasCount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasCount",
+      "label": "has count",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasDateAdded": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasDateAdded",
+      "label": "has date added",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasDateReceived": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasDateReceived",
+      "label": "has date received",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasDateSpecification": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasDateSpecification",
+      "label": "has date specification",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasFinalStub": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasFinalStub",
+      "label": "has final stub",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasInitialStub": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasInitialStub",
+      "label": "has initial stub",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasOpeningDateTime": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasOpeningDateTime",
+      "label": "has opening date time",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasOrdinalNumber": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasOrdinalNumber",
+      "label": "has ordinal number",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasOverallPeriod": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasOverallPeriod",
+      "label": "has overall period",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasRecurrenceInterval": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval",
+      "label": "has recurrence interval",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasRelativeDuration": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRelativeDuration",
+      "label": "has relative duration",
+      "kind": "DatatypeProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule",
+      "label": "has schedule",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasStub": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasStub",
+      "label": "has stub",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:hasTimeDirection": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasTimeDirection",
+      "label": "has time direction",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-dt-fd:isRelativeTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/isRelativeTo",
+      "label": "is relative to",
+      "kind": "ObjectProperty",
+      "module": "FND/DatesAndTimes/FinancialDates.rdf"
+    },
+    "fibo-fnd-oac-own:Portfolio": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/OwnershipAndControl/Ownership/Portfolio",
+      "label": "Portfolio",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Buyer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Buyer",
+      "label": "buyer",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Client": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Client",
+      "label": "client",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:ClientIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/ClientIdentifier",
+      "label": "client identifier",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Commodity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Commodity",
+      "label": "commodity",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Consumer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Consumer",
+      "label": "consumer",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:ContractualProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/ContractualProduct",
+      "label": "ContractualProduct",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/ClientsAndAccounts.rdf"
+    },
+    "fibo-fnd-pas-pas:ContractualTemplateProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/ContractualTemplateProduct",
+      "label": "contractual template product",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:CustomProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/CustomProduct",
+      "label": "custom product",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Customer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Customer",
+      "label": "customer",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:CustomerIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/CustomerIdentifier",
+      "label": "customer identifier",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Good": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Good",
+      "label": "good",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:NegotiableCommodity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/NegotiableCommodity",
+      "label": "negotiable commodity",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:OffTheShelfProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/OffTheShelfProduct",
+      "label": "off-the-shelf product",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Producer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Producer",
+      "label": "producer",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Product": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Product",
+      "label": "Product",
+      "kind": "Class",
+      "module": "FBC/ProductsAndServices/FinancialProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:ProductIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/ProductIdentifier",
+      "label": "product identifier",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Sale": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Sale",
+      "label": "sale",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Seller": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Seller",
+      "label": "seller",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:ServiceAgreement": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/ServiceAgreement",
+      "label": "service agreement",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:Supplier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/Supplier",
+      "label": "supplier",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:TransactionConfirmation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/TransactionConfirmation",
+      "label": "transaction confirmation",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:TransactionEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/TransactionEvent",
+      "label": "transaction event",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:buys": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/buys",
+      "label": "buys",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:buysFrom": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/buysFrom",
+      "label": "buys from",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:hasBuyer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/hasBuyer",
+      "label": "has buyer",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:hasSeller": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/hasSeller",
+      "label": "has seller",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:isProvisionedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/isProvisionedBy",
+      "label": "is provisioned by",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:isSuppliedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/isSuppliedBy",
+      "label": "is supplied by",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:provisions": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/provisions",
+      "label": "provisions",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:sells": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/sells",
+      "label": "sells",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:sellsTo": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/sellsTo",
+      "label": "sells to",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-pas:supplies": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/supplies",
+      "label": "supplies",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/ProductsAndServices.rdf"
+    },
+    "fibo-fnd-pas-psch:Payee": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/Payee",
+      "label": "payee",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:Payer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/Payer",
+      "label": "payer",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:Payment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/Payment",
+      "label": "payment",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:PaymentEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentEvent",
+      "label": "payment event",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:PaymentObligation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation",
+      "label": "payment obligation",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:PaymentSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentSchedule",
+      "label": "payment schedule",
+      "kind": "Class",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:fulfillsObligation": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/fulfillsObligation",
+      "label": "fulfills obligation",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:hasPaymentAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/hasPaymentAmount",
+      "label": "has payment amount",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pas-psch:hasPaymentSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/hasPaymentSchedule",
+      "label": "has payment schedule",
+      "kind": "ObjectProperty",
+      "module": "FND/ProductsAndServices/PaymentsAndSchedules.rdf"
+    },
+    "fibo-fnd-pty-pty:PartyRoleIdentificationScheme": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Parties/Parties/PartyRoleIdentificationScheme",
+      "label": "party role identification scheme",
+      "kind": "Class",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-fnd-pty-pty:PartyRoleIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Parties/Parties/PartyRoleIdentifier",
+      "label": "party role identifier",
+      "kind": "Class",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-fnd-pty-pty:TaxIdentificationScheme": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Parties/Parties/TaxIdentificationScheme",
+      "label": "tax identification scheme",
+      "kind": "Class",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-fnd-pty-pty:TaxIdentifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Parties/Parties/TaxIdentifier",
+      "label": "tax identifier",
+      "kind": "Class",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-fnd-pty-pty:hasMailingAddress": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Parties/Parties/hasMailingAddress",
+      "label": "has mailing address",
+      "kind": "ObjectProperty",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-fnd-rel-rel:holds": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/holds",
+      "label": "holds",
+      "kind": "ObjectProperty",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-fnd-rel-rel:isHeldBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/isHeldBy",
+      "label": "isHeldBy",
+      "kind": "ObjectProperty",
+      "module": "FND/Parties/Parties.rdf"
+    },
+    "fibo-loan-ln-ln:ClosedEndCredit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/ClosedEndCredit",
+      "label": "closed-end credit",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:CollateralizedLoan": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/CollateralizedLoan",
+      "label": "collateralized loan",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:Comaker": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/Comaker",
+      "label": "co-maker",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:CombinedLoanToValueRatio": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/CombinedLoanToValueRatio",
+      "label": "combined loan-to-value ratio",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:GuaranteedLoan": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/GuaranteedLoan",
+      "label": "guaranteed loan",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:IndividualPaymentTransaction": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/IndividualPaymentTransaction",
+      "label": "individual payment transaction",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:LenderLienPosition": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/LenderLienPosition",
+      "label": "lender lien position",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:Loan": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/Loan",
+      "label": "Loan",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:LoanPaymentSchedule": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/LoanPaymentSchedule",
+      "label": "loan payment schedule",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:LoanSpecificCustomerAccount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/LoanSpecificCustomerAccount",
+      "label": "LoanSpecificCustomerAccount",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:LoanToValueRatio": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/LoanToValueRatio",
+      "label": "loan-to-value ratio",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:OpenEndCredit": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/OpenEndCredit",
+      "label": "open-end credit",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:OwnershipInterest": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/OwnershipInterest",
+      "label": "ownership interest",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:PaymentHistory": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/PaymentHistory",
+      "label": "payment history",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:PrepaymentTerms": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/PrepaymentTerms",
+      "label": "pre-payment terms",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:SecuredLoan": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/SecuredLoan",
+      "label": "secured loan",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:Servicer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/Servicer",
+      "label": "servicer",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:TotalOutstandingPrincipal": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/TotalOutstandingPrincipal",
+      "label": "total outstanding principal",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:UnsecuredLoan": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/UnsecuredLoan",
+      "label": "unsecured loan",
+      "kind": "Class",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasBalloonPayment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasBalloonPayment",
+      "label": "has balloon payment",
+      "kind": "DatatypeProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasCost": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasCost",
+      "label": "has cost",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasFirstRateChangeTerm": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasFirstRateChangeTerm",
+      "label": "has first rate change term",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasIndividualPayment": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasIndividualPayment",
+      "label": "has individual payment",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasLoanBalance": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasLoanBalance",
+      "label": "has loan balance",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasNegativeAmortization": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasNegativeAmortization",
+      "label": "has negative amortization",
+      "kind": "DatatypeProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasPaymentHistory": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasPaymentHistory",
+      "label": "has payment history",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasPrePaymentPenaltyTerm": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasPrePaymentPenaltyTerm",
+      "label": "has pre-payment penalty term",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasPrincipalAmount": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasPrincipalAmount",
+      "label": "has principal amount",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasScheduledUnpaidBalance": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasScheduledUnpaidBalance",
+      "label": "has scheduled unpaid balance",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasTotalClosingCosts": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasTotalClosingCosts",
+      "label": "has total closing costs",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:hasTotalPointsAndFees": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/hasTotalPointsAndFees",
+      "label": "has total points and fees",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:isAssumable": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/isAssumable",
+      "label": "is assumable",
+      "kind": "DatatypeProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:isInitiallyPayable": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/isInitiallyPayable",
+      "label": "is initially payable",
+      "kind": "DatatypeProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:isInterestOnly": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/isInterestOnly",
+      "label": "is interest only",
+      "kind": "DatatypeProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    },
+    "fibo-loan-ln-ln:isServicedBy": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/isServicedBy",
+      "label": "is performed by",
+      "kind": "ObjectProperty",
+      "module": "LOAN/LoansGeneral/Loans.rdf"
+    }
+  }
+}

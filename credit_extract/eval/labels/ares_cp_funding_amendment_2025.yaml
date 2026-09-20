@@ -1,0 +1,86 @@
+# Tier 2 assertions: Ares Capital CP Funding, Amendment No. 18, 28 July 2025.
+#
+# A blackline. It describes none of its changes in prose. Article III says, in
+# one sentence, that the agreement is amended "to delete the stricken text and
+# to add the bold and double-underlined text as set forth on the pages attached
+# as Appendix A", and Appendix A is a conformed copy of the whole agreement
+# with the changes marked typographically.
+#
+# This document is the reason the ingester stopped writing struck text into the
+# offset space. Flattened to plain text, its facility size reads
+#
+#     Up to U.S. $ 2,150,000,000 2,250,000,000
+#
+# and the same pair appears again inside the definition. A first-match parser
+# reports $2,150,000,000 -- the figure this amendment deleted -- with full
+# confidence, off a span that quotes the document accurately. Nothing about the
+# output looks wrong. That is the worst error this pipeline can make, and it is
+# not hypothetical: it is a $100,000,000 error on the headline term of a real
+# facility, and it took a real document to find it.
+
+document: ares_cp_funding_amendment_2025
+source: real
+tier: 2
+
+assertions:
+  # -- F11 layout: structure destroyed by rendering ------------------------
+  - id: ares_deleted_figure_is_not_addressable
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "2,150,000,000"
+    expect: false
+    note: >
+      The superseded facility size. It is kept in the sidecar for audit and
+      excluded from the text, so no span can quote it as a term.
+
+  - id: ares_operative_figure_survives
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "2,250,000,000"
+    expect: true
+    note: the figure this amendment inserted, and the one now in force
+
+  # -- F05 versioning ------------------------------------------------------
+  - id: ares_blackline_is_recognised
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: chain_finding
+    target: blackline_restates_agreement
+    expect: true
+    note: >
+      An amendment mechanism carried entirely by typography. Reporting no
+      effects, as the parser did before, is indistinguishable from an
+      amendment that changes nothing.
+
+  - id: ares_markup_survived_conversion
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: chain_finding
+    target: blackline_markup_lost
+    expect: false
+    note: >
+      The counterpart finding. Were the strike-through to be lost in
+      conversion, no term in this document could be relied on and the report
+      must say exactly that rather than read the flattened text.
+
+  - id: ares_conformed_copy_is_self_sufficient
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: chain_finding
+    target: base_agreement_absent
+    expect: false
+    note: >
+      Unlike a prose amendment filed alone, a blackline attaches the whole
+      agreement; once the deletions are excised the operative terms are all
+      present in the one document.
+
+  # -- coverage ------------------------------------------------------------
+  - id: ares_uncaptured_content_is_swept
+    family: F11_layout
+    member: table_split_across_pages
+    kind: report_count
+    target: orphan_chunks
+    expect: 28
+    note: a tripwire on the sweep, not a target
