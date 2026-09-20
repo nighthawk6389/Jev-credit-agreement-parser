@@ -10,12 +10,10 @@ from __future__ import annotations
 
 import email
 import hashlib
-import io
 import re
 import unicodedata
 from bisect import bisect_right
 from pathlib import Path
-from typing import Iterable, Iterator
 
 from pydantic import BaseModel, Field
 

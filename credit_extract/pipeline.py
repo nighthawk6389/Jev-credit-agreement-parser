@@ -24,16 +24,14 @@ from .extract.passes import (
     Candidate, ExtractionBackend, OfflineRuleBackend, parse_amortization_schedule,
     parse_covenant_grid, parse_hardcoded_ebitda, run_passes,
 )
-from .extract.reconcile import Reconciliation, reconcile
-from .graph.definitions import DefinitionGraph, build_definition_graph
+from .extract.reconcile import reconcile
+from .graph.definitions import build_definition_graph
 from .ingest.normalize import NormalizedDocument, ingest
 from .ingest.segment import Chunk, coverage, segment_all
 from .models.actus_map import (
     ActusContract, ActusMapping, diff_schedule, generate_schedule, map_facility,
 )
-from .models.core import (
-    CostLedger, DocumentReport, ExtractedValue, InvariantViolation, OrphanChunk,
-)
+from .models.core import CostLedger, DocumentReport, ExtractedValue
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
 from .validate.calibrate import Thresholds, load_thresholds
 from .validate.invariants import (
@@ -196,6 +194,7 @@ def run_pipeline(
     budget_usd: float | None = None,
     reread: Callable[[Chunk], list[Candidate]] | None = None,
     document_id: str | None = None,
+    passes: int = 3,
 ) -> ExtractionResult:
     """Run the whole pipeline over one document."""
     from .models import actus_map, fibo_map, fpml_model
@@ -217,10 +216,11 @@ def run_pipeline(
     segments = segment_all(doc, graph)
     sweep = _sweep_chunks(segments)
 
-    passes = run_passes(
-        doc, segments, extraction_backend, graph=graph, budget_usd=budget_usd
+    extracted = run_passes(
+        doc, segments, extraction_backend, graph=graph, budget_usd=budget_usd,
+        passes=passes,
     )
-    reconciliation = reconcile(passes.candidates)
+    reconciliation = reconcile(extracted.candidates)
     fields = reconciliation.fields
 
     principal = fields.get("initial_term_loan.commitment")
@@ -244,7 +244,7 @@ def run_pipeline(
         chunks=sweep,
         session=session,
         thresholds=thresholds,
-        chunk_contributions=_chunk_contributions(passes.candidates, sweep),
+        chunk_contributions=_chunk_contributions(extracted.candidates, sweep),
         conflicts=reconciliation.conflicts,
     )
     V.validator_a_span_support(ctx)
@@ -259,7 +259,7 @@ def run_pipeline(
 
     # -- report --------------------------------------------------------------
     cost = CostLedger()
-    cost.merge(passes.cost)
+    cost.merge(extracted.cost)
     cost.merge(session.ledger)
 
     report = DocumentReport(

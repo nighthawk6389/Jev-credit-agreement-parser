@@ -26,8 +26,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from .fibo_map import TermBinding, binding as fibo_binding
-from .fibo_map import gap as fibo_gap
+from .fibo_map import TermBinding
 
 FPML_VERSION = "5.13"
 FPML_NAMESPACE = "http://www.fpml.org/FpML-5/confirmation"

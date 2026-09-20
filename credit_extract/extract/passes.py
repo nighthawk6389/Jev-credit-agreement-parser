@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field as dc_field
 from datetime import date
 from decimal import Decimal
-from typing import Any, Iterable, Protocol
+from typing import Any, Protocol
 
 from ..ingest.normalize import NormalizedDocument
 from ..ingest.segment import Chunk
@@ -227,6 +227,12 @@ class AnthropicBackend:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self._client = None
+
+    def with_temperature(self, temperature: float) -> "AnthropicBackend":
+        """A sibling backend at a different temperature, sharing the client."""
+        clone = AnthropicBackend(self.model, temperature, self.max_tokens)
+        clone._client = self._client
+        return clone
 
     def _ensure_client(self):
         if self._client is None:
@@ -483,6 +489,16 @@ class OfflineRuleBackend:
         self.rules = rules
         self._compiled = [(r, re.compile(r.pattern, r.flags)) for r in rules]
 
+    def with_temperature(self, temperature: float) -> "OfflineRuleBackend":
+        """Deterministic by construction: temperature has nothing to vary.
+
+        Returning self rather than a copy is the honest answer -- extra passes
+        over the same segmentation with this backend produce identical
+        candidates, so they add no independent support and reconciliation
+        counts segmentations rather than passes.
+        """
+        return self
+
     def extract(
         self,
         doc: NormalizedDocument,
@@ -607,6 +623,33 @@ class PassResult:
     contributing_chunks: set[str]
 
 
+#: Temperatures used for passes beyond the first round over each segmentation.
+PASS_TEMPERATURES: tuple[float, ...] = (0.0, 0.3, 0.7, 1.0)
+
+
+def plan_passes(
+    segmentations: list[str], passes: int
+) -> list[tuple[str, float, str]]:
+    """Lay out ``passes`` passes as (segmentation, temperature, pass id).
+
+    Segmentations come first and temperature second. Two passes over different
+    views of the document disagree for reasons that mean something; two passes
+    over the same view at different temperatures mostly resample the same
+    reading, so they are only worth spending on once every segmentation has
+    been covered.
+    """
+    if not segmentations:
+        return []
+    plan: list[tuple[str, float, str]] = []
+    for index in range(max(1, passes)):
+        kind = segmentations[index % len(segmentations)]
+        round_index = index // len(segmentations)
+        temperature = PASS_TEMPERATURES[min(round_index, len(PASS_TEMPERATURES) - 1)]
+        suffix = f"@{temperature}" if round_index else ""
+        plan.append((kind, temperature, f"{kind}{suffix}"))
+    return plan
+
+
 def run_passes(
     doc: NormalizedDocument,
     segments: dict[str, list[Chunk]],
@@ -615,11 +658,12 @@ def run_passes(
     graph=None,
     include_tables: bool = True,
     budget_usd: float | None = None,
+    passes: int = 3,
 ) -> PassResult:
-    """Run the target list over every segmentation.
+    """Run the target list over every segmentation, at least ``passes`` times.
 
-    One pass per segmentation, so a field found by all three has genuinely
-    independent support rather than three samples of the same view.
+    One pass per segmentation by default, so a field found by all three has
+    genuinely independent support rather than three samples of the same view.
     """
     specs = specs or list(FIELD_REGISTRY.values())
     candidates: list[Candidate] = []
@@ -628,20 +672,25 @@ def run_passes(
     seen = 0
 
     if include_tables:
-        table_found = table_candidates(doc)
-        candidates.extend(table_found)
+        candidates.extend(table_candidates(doc))
         cost.deterministic_calls += 1
 
-    for kind, chunks in segments.items():
-        for chunk in chunks:
-            seen += 1
+    populated = [kind for kind, chunks in segments.items() if chunks]
+    stop = False
+    for kind, temperature, pass_id in plan_passes(populated, passes):
+        if stop:
+            break
+        worker = getattr(backend, "with_temperature", lambda _t: backend)(temperature)
+        for chunk in segments[kind]:
             if budget_usd is not None and cost.total_usd >= budget_usd:
+                stop = True
                 break
+            seen += 1
             context = ""
             if graph is not None and chunk.segmentation == "definitional":
                 context = graph.context_for(chunk.label)
-            found, spent = backend.extract(
-                doc, chunk, specs, context, pass_id=f"{backend.name}:{kind}"
+            found, spent = worker.extract(
+                doc, chunk, specs, context, pass_id=f"{backend.name}:{pass_id}"
             )
             cost.merge(spent)
             if found:

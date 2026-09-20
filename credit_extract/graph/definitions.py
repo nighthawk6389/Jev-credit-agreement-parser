@@ -23,8 +23,6 @@ add-back is unknowable from this document, so the correct output is
 from __future__ import annotations
 
 import re
-from collections import defaultdict
-from functools import lru_cache
 
 from pydantic import BaseModel, Field
 

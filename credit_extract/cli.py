@@ -45,7 +45,7 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
     print(f"\n{result.source_path}")
     print(f"  {report.normalized_chars:,} normalized characters, "
           f"{report.fields_total} target fields")
-    print(f"  status: " + ", ".join(
+    print("  status: " + ", ".join(
         f"{k}={v}" for k, v in sorted(report.status_counts.items())
     ))
     print(f"  thresholds: {report.thresholds_version}")
@@ -139,6 +139,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
         jev_backend=jev_backend,
         thresholds=thresholds,
         budget_usd=args.budget,
+        passes=args.passes,
     )
     _print_summary(result, args.verbose)
 

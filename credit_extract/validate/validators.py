@@ -27,9 +27,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field as dc_field
 from decimal import Decimal
-from typing import Any, Iterable
+from typing import Iterable
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from ..ingest.normalize import NormalizedDocument
 from ..ingest.segment import Chunk
@@ -39,7 +39,7 @@ from ..models.core import (
 )
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from .calibrate import Thresholds
-from .jev import ChoiceQ, Decision, JevSession, Noul, Question, ScoreQ
+from .jev import ChoiceQ, JevSession, Noul, Question, ScoreQ
 
 #: Context either side of a cited span for validator A.
 SPAN_CONTEXT_PAD = 500

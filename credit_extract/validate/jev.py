@@ -33,7 +33,7 @@ import math
 import os
 import re
 import time
-from typing import Any, Iterable, Literal, Protocol
+from typing import Any, Literal, Protocol
 
 import httpx
 from pydantic import BaseModel, Field

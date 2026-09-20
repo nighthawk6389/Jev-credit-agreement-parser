@@ -30,3 +30,6 @@ credit_extract = ["extract/prompts/*.txt", "eval/gold/*.json", "eval/gold/*.html
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["error::DeprecationWarning:credit_extract.*"]
+markers = [
+    "slow: regenerates part of the gold corpus and reruns the pipeline over it",
+]
