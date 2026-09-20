@@ -29,8 +29,9 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 104 tests
+pytest -q                                          # 191 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
+python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 ```
 
 Against the live services:
@@ -244,12 +245,28 @@ synthetic counts stay in separate columns, because catching a defect we
 injected, in the shape we injected it, demonstrates less than catching the
 same defect in a filing.
 
-### Four real filings, and what they showed
+### Real filings, and what they showed
 
-`corpus/real/` holds four SEC exhibits, supplied by hand because EDGAR egress
-is blocked. Four documents are not a stratified sample of anything, and the
-blind-spot register says so — but they were enough to find defects no
-synthetic fixture could have:
+`corpus/edgar/` holds 100 SEC exhibits stratified across 18 strata — sponsor
+direct lending, broadly syndicated, ABL, second lien, ARR, PIK toggle, venture
+debt, fund-level, investment grade, LMA, DIP, amendment chains, A&R,
+forbearance, SOFR/CSA, legacy LIBOR, 52/53-week calendars, multicurrency — with
+every harvest target met. `corpus/real/` holds four more, read in detail.
+
+They are **unlabelled**, so they establish that the pipeline runs and what it
+claims, not whether any claim is right. That was enough to find defects no
+synthetic fixture could have. [`docs/corpus_findings.md`](docs/corpus_findings.md)
+has the full scan; the headline is that the pipeline's assumptions about the
+market were wrong in four measurable places, including a check that was firing
+on ~40 correctly-drafted agreements.
+
+Run it yourself:
+
+```bash
+python scripts/run_corpus.py --limit 10      # unzips corpus/edgar on demand
+```
+
+The four in `corpus/real/` are the ones with Tier 2 labels:
 
 | filing | what it is | what it found |
 | --- | --- | --- |
@@ -272,10 +289,14 @@ output looks wrong. Deleted runs are now excised during ingestion and kept in
 a sidecar beside the span that replaced them, so the offset space *is* the
 operative text and no downstream code needs to know a blackline was involved.
 
+That was built from one document, on the assumption it was an oddity. **32 of
+the 100 agreements amend by blackline**, against 6 that restate in prose — the
+form the pipeline originally handled is the rare one.
+
 Recall on real filings is the headline gap: roughly thirty fields of
-thirty-eight on the synthetic fixtures, between zero and three on these. The
-labels in `credit_extract/eval/labels/` assert the real values regardless, so
-the gap is measured rather than avoided.
+thirty-eight on the synthetic fixtures, low single digits on these. The labels
+in `credit_extract/eval/labels/` assert the real values regardless, so the gap
+is measured rather than avoided.
 
 ## What this environment could not verify
 
@@ -356,19 +377,22 @@ credit_extract/
   pipeline.py                   orchestration
   cli.py                        extract | traps | chain
 config/thresholds.json          fitted, versioned, CI-asserted
-corpus/real/                    four SEC filings, with labels alongside
+corpus/real/                    four SEC filings, read in detail and labelled
+corpus/edgar/                   100 more, stratified, zipped, unlabelled
+docs/corpus_findings.md         what those 100 say about the pipeline
 scripts/                        vendor_standards.py, fetch_corpus.py, gen_fpml.py
 ```
 
 ## Next, in order of value
 
-1. **Extraction recall on real filings.** Between zero and three fields of
-   thirty-eight, against roughly thirty on the synthetic fixtures. Every other
-   number here is bounded by this one, and the four real documents make it
-   measurable for the first time.
-2. **Harvest and label a stratified corpus** (`scripts/harvest_corpus.py`).
-   Four documents leave seven families undersampled and one untested; the
-   register names each of them in every report until that changes.
+1. **Label the corpus.** 104 real documents establish that the pipeline runs
+   and what it claims; not one of them can say whether a claim is right. Every
+   accuracy number in this repository is still measured on documents the parser's
+   own author wrote. Tier 2 labels, starting with the families the coverage
+   table reports as undersampled, are worth more than any other work here.
+2. **Extraction recall on real filings.** Low single digits of thirty-eight
+   fields, against roughly thirty on the synthetic fixtures. Every other number
+   is bounded by this one.
 3. **Point at live Jev** and refit. The offline stand-in's concept lexicons are
    a placeholder for the judgement the real model makes.
 4. **Measure the orphan sweep** — what fraction of held-out labelled fields it
