@@ -61,6 +61,32 @@ jobs:
       - name: Registers are consistent
         run: python -m credit_extract.eval.families --check
 
+  packaging:
+    # `pip install -e .` hides two whole classes of bug, and both were live
+    # here: an undeclared runtime dependency that happened to be in the dev
+    # environment, and data files missing from package-data. The registers are
+    # YAML and every report reads them, so a wheel without them imports fine
+    # and then fails on the first extraction. Built and run from a clean
+    # environment, against a file outside the source tree, so nothing is
+    # resolved from the working directory.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and install the wheel alone
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+      - name: Extract from outside the source tree
+        run: |
+          cp credit_extract/eval/gold/fixture_meridian_2017.html /tmp/agreement.html
+          cd /tmp
+          /tmp/clean/bin/credit-extract traps /tmp/agreement.html
+
   standards-drift:
     # Upstream FIBO and ACTUS move. When they do, the vendored snapshot should
     # be reviewed deliberately -- a term URI that changed underneath us makes

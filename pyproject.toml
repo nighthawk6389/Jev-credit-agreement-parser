@@ -13,6 +13,10 @@ dependencies = [
     "lxml>=5.0",
     "pypdf>=4.0",
     "httpx>=0.27",
+    # The trap-family and blind-spot registers are YAML and are read on every
+    # run: the pipeline prints the blind-spot register in every report, so this
+    # is a runtime dependency rather than a dev one.
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -25,7 +29,20 @@ credit-extract = "credit_extract.cli:main"
 include = ["credit_extract*"]
 
 [tool.setuptools.package-data]
-credit_extract = ["extract/prompts/*.txt", "eval/gold/*.json", "eval/gold/*.html"]
+credit_extract = [
+    "extract/prompts/*.txt",
+    "eval/gold/*.json",
+    "eval/gold/*.html",
+    # The registers and the Tier 2 labels. Without these an installed wheel
+    # imports cleanly and then fails on the first extraction, because every
+    # report reads the blind-spot register.
+    "eval/*.yaml",
+    "eval/labels/*.yaml",
+    # The FIBO and ACTUS snapshots. fibo() and actus_term() raise on a term
+    # that is not in them, which is the whole point -- an invented URI cannot
+    # ship -- so without these files every extraction raises instead.
+    "models/vendored/*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
