@@ -124,12 +124,62 @@ class Document(BaseModel):
 
     @property
     def sort_key(self) -> tuple[date, int, str]:
-        """Effective date first, then amendment number, then id for stability."""
+        """Effective date first, then amendment number, then id for stability.
+
+        Deliberately *not* used to order a set on its own; see
+        :func:`chain_order`. An undated document defaulting to ``date.min``
+        sorts ahead of everything, and in a chain the first document is taken
+        as the base -- so a single undated amendment silently became the
+        agreement that every other amendment was applied to. That happened on
+        a real pair: Amendment No. 5 carried no date, so it became the base
+        and Amendment No. 1 was applied on top of it, reversing the deal.
+        """
         return (
             self.effective_date or date.min,
             self.amendment_number if self.amendment_number is not None else 0,
             self.document_id,
         )
+
+    @property
+    def order_hint(self) -> int | None:
+        """Where the drafter says this document sits in the sequence."""
+        return self.amendment_number
+
+
+def chain_order(documents: list[Document]) -> list[Document]:
+    """Order a chain, using the numbering when the dates do not carry it.
+
+    Dates are authoritative when every document has one. When some do not,
+    amendment numbering is the drafter's own statement of sequence and is
+    better evidence than a missing date -- which, defaulted to ``date.min``,
+    puts the undated document first and makes it the base of the chain.
+
+    Numbering is used only when it is complete and consistent: every
+    amendment numbered, and no two numbered the same. A partly-numbered set
+    falls back to dates, because a mixture of the two orderings is a guess
+    dressed up as a rule, and ``undated_amendment`` already says the sequence
+    could not be established from the documents.
+    """
+    amendments = [d for d in documents if d.role != "base"]
+    numbers = [d.amendment_number for d in amendments]
+    undated = [d for d in documents if d.effective_date is None]
+    numbering_is_usable = (
+        bool(amendments)
+        and all(n is not None for n in numbers)
+        and len(set(numbers)) == len(numbers)
+    )
+    if undated and numbering_is_usable:
+        # A base agreement, if there is one, precedes every amendment
+        # whatever its date says.
+        return sorted(
+            documents,
+            key=lambda d: (
+                0 if d.role == "base" else 1,
+                d.amendment_number if d.amendment_number is not None else 0,
+                d.document_id,
+            ),
+        )
+    return sorted(documents, key=lambda d: d.sort_key)
 
 
 def classify_role(text: str) -> tuple[DocumentRole, int | None, str]:
@@ -236,9 +286,11 @@ _OF_THE_AGREEMENT = (
 #: entirety clause often dropped. Each optional piece is optional because a
 #: real amendment omitted it.
 _RESTATED_AS_FOLLOWS = (
-    r"(?:is|are)\s+hereby\s+amended\s+(?:and\s+restated\s+)?"
-    r"(?:in\s+(?:its|their\s+respective)\s+entiret(?:y|ies)\s+)?"
-    r"(?:to\s+read\s+)?as\s+follows[:;]\s*"
+    r"(?:is|are)\s+hereby\s+(?:amended\s+and\s+restated|amended|deleted|"
+    r"deleted\s+in\s+its\s+entirety\s+and\s+replaced|replaced|restated)"
+    r"(?:\s+in\s+(?:its|their\s+respective)\s+entiret(?:y|ies))?"
+    r"(?:\s+and\s+(?:replaced|restated))?"
+    r"\s+(?:to\s+read\s+)?as\s+follows[:;]\s*"
 )
 
 #: A restatement quotes the replacement text. Preferring the quoted form is
@@ -265,6 +317,60 @@ _RESTATE_ELEMENT_RE = re.compile(
     r"first\s+sentence|last\s+sentence|final\s+sentence)\s+"
     r"(?:set\s+forth\s+|contained\s+|appearing\s+)?in\s+"
     rf"Section\s+(?P<section>{_SECTION_ID})\s+{_OF_THE_AGREEMENT}"
+    rf"{_RESTATED_AS_FOLLOWS}(?P<body>.*?)"
+    r"(?=\n\n\(?[a-zA-Z0-9]{1,4}\)\s|\n\n(?:SECTION|Section)\s+\d|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+#: The same thing for a list of terms: \u201cthe definitions of \u201cBorrowing
+#: Base\u201d, \u201cLoans\u201d ... and \u201cTotal Usage\u201d appearing in
+#: Section 1.01 are hereby amended in their respective entireties to read as
+#: follows\u201d. A real amendment restates nine definitions this way, and read
+#: as a restatement of Section 1.01 it replaces the entire definitions article
+#: with those nine -- every other defined term in the agreement silently gone.
+_DEFINITION_LIST_RE = re.compile(
+    r"[Tt]he\s+definitions?\s+of\s+(?P<terms>[\"\u201c][^\n]{1,600}?)\s+"
+    r"(?:set\s+forth\s+|contained\s+|appearing\s+)?in\s+"
+    rf"Section\s+(?P<section>{_SECTION_ID})\s+"
+    r"(?:of\s+the\s+[A-Z][A-Za-z]*(?:\s+[A-Za-z&]+){0,5}\s+Agreement\s+)?"
+    rf"{_RESTATED_AS_FOLLOWS}(?P<body>.*?)"
+    r"(?=\n\n(?:SECTION|Section)\s+\d|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+#: A preamble that is amending defined terms rather than a whole section.
+_NAMES_DEFINITIONS_RE = re.compile(
+    r"[Tt]he\s+definitions?\s+of\b(?![^.]{0,80}\bis\s+hereby\s+deleted\b)",
+)
+_QUOTED_TERM_RE = re.compile(r"[\"\u201c\u2018']\s*(?P<term>[A-Z][^\"\u201d\u2019'\n]{1,90}?)\s*[\"\u201d\u2019']")
+
+#: A defined term introducing its own body: \u201cBorrowing Base\u201d means ...
+_DEFINITION_START_RE = re.compile(
+    r"[\"\u201c\u2018']\s*(?P<term>[A-Z][^\"\u201d\u2019'\n]{1,90}?)\s*[\"\u201d\u2019']\s*"
+    r"(?:means|shall\s+mean|has\s+the\s+meaning|:)",
+)
+
+
+def split_definitions(body: str) -> dict[str, str]:
+    """Split a run of replacement definitions into one body per term."""
+    starts = list(_DEFINITION_START_RE.finditer(body))
+    out: dict[str, str] = {}
+    for index, match in enumerate(starts):
+        stop = starts[index + 1].start() if index + 1 < len(starts) else len(body)
+        out[" ".join(match.group("term").split())] = body[match.start():stop].strip()
+    return out
+
+
+#: "the definition of the defined term \u201cRevolving Availability Period\u201d
+#: set forth in Section 1.01 of the Credit Agreement is hereby deleted in its
+#: entirety and replaced as follows". Changing one defined term is how most
+#: deals are amended, and the target is the definition, not the section it
+#: sits in: applied as a restatement of Section 1.01 this deletes the whole of
+#: Article I and replaces it with a single definition.
+_RESTATE_DEFINITION_RE = re.compile(
+    r"[Tt]he\s+definition\s+of\s+(?:the\s+(?:defined\s+)?term\s+)?"
+    r"[\"\u201c](?P<term>[^\"\u201d]{1,90})[\"\u201d]\s*"
+    r"(?:set\s+forth\s+|contained\s+|appearing\s+)?"
+    rf"(?:in\s+Section\s+(?P<section>{_SECTION_ID})\s+)?{_OF_THE_AGREEMENT}"
     rf"{_RESTATED_AS_FOLLOWS}(?P<body>.*?)"
     r"(?=\n\n\(?[a-zA-Z0-9]{1,4}\)\s|\n\n(?:SECTION|Section)\s+\d|\Z)",
     re.IGNORECASE | re.DOTALL,
@@ -380,9 +486,28 @@ class AmendmentEffect(BaseModel):
                 f"and insertions underlined{where}"
             )
         if self.is_partial:
+            element = self.target_element or ""
+            if element == "definitions:unparsed":
+                return (
+                    f"amends named definitions in Section {self.target_section}, "
+                    "and which ones could not be read"
+                )
+            if element.startswith("definitions:"):
+                terms = element.split(":", 1)[1].split("|")
+                shown = ", ".join(f'"{t}"' for t in terms[:3])
+                more = f" and {len(terms) - 3} more" if len(terms) > 3 else ""
+                return (
+                    f"restates {len(terms)} definitions in Section "
+                    f"{self.target_section}: {shown}{more}"
+                )
+            if element.startswith("definition:"):
+                term = element.split(":", 1)[1]
+                return (
+                    f'restates the definition of "{term}" in Section '
+                    f"{self.target_section}"
+                )
             return (
-                f"restates the {self.target_element} in Section "
-                f"{self.target_section}"
+                f"restates the {element} in Section {self.target_section}"
             )
         if self.kind == "restate":
             return f"restates Section {self.target_section} in its entirety"
@@ -455,13 +580,57 @@ def parse_amendment_effects(document: Document) -> list[AmendmentEffect]:
     # Element-first: "The table set forth in Section 2.2(b) is restated" must
     # be claimed before the plain restatement pattern reads the same sentence
     # as a restatement of all of Section 2.2(b).
+    # Definitions first: they are the commonest target and the ones whose
+    # mis-application destroys the most text. The list form runs before the
+    # single form, and both before the plain section restatement, so a
+    # sentence naming definitions can never be claimed as a whole section.
+    for match in _DEFINITION_LIST_RE.finditer(text):
+        named = [
+            " ".join(m.group("term").split())
+            for m in _QUOTED_TERM_RE.finditer(match.group("terms"))
+        ]
+        bodies = split_definitions(match.group("body"))
+        if len(named) < 2:
+            continue
+        add("restate", match.start(), match.end(), match.group("section"),
+            new_text=match.group("body").strip(),
+            target_element="definitions:" + "|".join(named))
+    for match in _RESTATE_DEFINITION_RE.finditer(text):
+        term = " ".join(match.group("term").split())
+        add("restate", match.start(), match.end(),
+            match.group("section") or _DEFINITIONS_SECTION,
+            new_text=match.group("body").strip(),
+            target_element=f"definition:{term}")
     for match in _RESTATE_ELEMENT_RE.finditer(text):
         add_match("restate", match, new_text=match.group("body").strip(),
                   target_element=" ".join(match.group("element").split()).lower())
+    def add_restatement(match: re.Match[str]) -> None:
+        """One restatement, unless its preamble says it is amending terms.
+
+        A sentence that names definitions is amending those definitions,
+        whatever section they sit in. Applied as a section restatement it
+        replaces the whole of Article I with however many definitions the
+        amendment happened to list -- every other defined term in the
+        agreement gone, silently, with a correct span to point at.
+
+        One real amendment reaches here despite the two definition patterns
+        above, because a DocuSign stamp and an image filename are interleaved
+        into the middle of its list of terms. It cannot be parsed, and it must
+        still not be applied: it is recorded as a definition restatement whose
+        targets are unknown, which lands in `unapplied` with a reason.
+        """
+        preamble = text[max(0, match.start() - 400):match.start()]
+        element = (
+            "definitions:unparsed"
+            if _NAMES_DEFINITIONS_RE.search(preamble) else None
+        )
+        add_match("restate", match, new_text=match.group("body").strip(),
+                  target_element=element)
+
     for match in _RESTATE_QUOTED_RE.finditer(text):
-        add_match("restate", match, new_text=match.group("body").strip())
+        add_restatement(match)
     for match in _RESTATE_RE.finditer(text):
-        add_match("restate", match, new_text=match.group("body").strip())
+        add_restatement(match)
     for match in _REPLACE_RE.finditer(text):
         add_match("replace_text", match,
                   old_fragment=match.group("old").strip(),
@@ -622,7 +791,7 @@ def assemble_set(
                 documents=[document.document_id],
             ))
 
-    ordered = sorted(chain_docs, key=lambda d: d.sort_key)
+    ordered = chain_order(chain_docs)
 
     # An amended-and-restated agreement supersedes everything before it.
     last_restatement = max(
@@ -839,6 +1008,9 @@ class OperativeText(BaseModel):
 #: inside a section body when an amendment restates only the table.
 _TABLE_ROW = " | "
 
+#: Where a definition lives when the amendment does not say which section.
+_DEFINITIONS_SECTION = "1.01"
+
 
 def _element_bounds(body: str, element: str) -> tuple[int, int] | None:
     """Locate the element of a section a partial restatement replaces."""
@@ -862,8 +1034,41 @@ def _element_bounds(body: str, element: str) -> tuple[int, int] | None:
         return sentences[0].start(), sentences[0].end()
     if element in ("last sentence", "final sentence"):
         return sentences[-1].start(), sentences[-1].end()
-    # "the definition", "the proviso": no reliable anchor, and guessing which
-    # sentence was meant is how an amendment gets applied to the wrong clause.
+    if element.startswith("definitions:"):
+        # Several named definitions, replaced together. Each is located and
+        # replaced on its own, so the rest of the article survives; a term the
+        # replacement text does not actually carry is left alone rather than
+        # blanked. Bounds span the first to the last, and the caller edits
+        # within them.
+        terms = element.split(":", 1)[1].split("|")
+        spans = [
+            _element_bounds(body, f"definition:{term}") for term in terms
+        ]
+        found = [s for s in spans if s is not None]
+        if not found:
+            return None
+        return min(s[0] for s in found), max(s[1] for s in found)
+    if element.startswith("definition:"):
+        # Locatable, unlike a bare "the definition": the amendment names the
+        # term, and a defined term is introduced by its own quoted heading.
+        term = element.split(":", 1)[1]
+        opening = re.search(
+            rf"[\"\u201c]\s*{re.escape(term)}\s*[\"\u201d]\s*"
+            r"(?:means|shall\s+mean|has\s+the\s+meaning|:)",
+            body, re.IGNORECASE,
+        )
+        if opening is None:
+            return None
+        # A definition runs to the next one, not to the end of the article.
+        following = re.search(
+            r"[\"\u201c][A-Z][^\"\u201d\n]{1,90}[\"\u201d]\s*"
+            r"(?:means|shall\s+mean|has\s+the\s+meaning|:)",
+            body[opening.end():],
+        )
+        stop = opening.end() + following.start() if following else len(body)
+        return opening.start(), stop
+    # "the proviso": no reliable anchor, and guessing which sentence was meant
+    # is how an amendment gets applied to the wrong clause.
     return None
 
 
