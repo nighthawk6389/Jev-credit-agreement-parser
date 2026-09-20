@@ -41,6 +41,26 @@ jobs:
       - name: Calibration
         run: python -m credit_extract.eval.harness -n 12
 
+      # The headline gate. Per family, of the propositions the pipeline
+      # asserted confidently, what share were wrong -- because a wrong answer
+      # routed to review was handled correctly and a wrong answer asserted
+      # reaches a reader unannounced. The budget is zero for every family.
+      #
+      # The run prints the per-family table, the real/synthetic split and the
+      # blind-spot register whether it passes or fails, so a green build still
+      # says what it did not cover. It also fails if the register is missing,
+      # which is the one way the numbers could be made to look better than
+      # they are.
+      - name: Family coverage
+        run: python -m credit_extract.eval.family_report --gate
+
+      # Every assertion binds to a member of trap_families.yaml, and every
+      # blind spot to a real family. A label file that drifts from the
+      # register is how a family silently stops being tested while its row
+      # keeps printing.
+      - name: Registers are consistent
+        run: python -m credit_extract.eval.families --check
+
   standards-drift:
     # Upstream FIBO and ACTUS move. When they do, the vendored snapshot should
     # be reviewed deliberately -- a term URI that changed underneath us makes

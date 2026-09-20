@@ -314,3 +314,85 @@ def empty_coverage(register: FamilyRegister | None = None) -> dict[str, FamilyCo
         )
         for family in register
     }
+
+
+# ---------------------------------------------------------------------------
+# Consistency
+# ---------------------------------------------------------------------------
+
+
+def check_registers(labels_dir: Path | None = None) -> list[str]:
+    """Problems that would let a family stop being tested while it still prints.
+
+    Three ways the registers drift apart, all of which leave the coverage
+    table looking exactly as it did before:
+
+    * a label binds to a family or member that no longer exists, so the
+      assertion is dropped and the family's row quietly loses a case;
+    * a blind spot names a family or member that does not exist, so a caveat
+      is being printed about nothing;
+    * a family lists no defences at all, which is a real state and worth
+      saying out loud rather than discovering from a zero in a column.
+    """
+    from .assertions import load_assertions
+
+    register = load_families()
+    spots = load_blind_spots()
+    problems: list[str] = []
+
+    for family in register:
+        if family.undefended:
+            problems.append(
+                f"{family.id} lists no invariant or validator in defended_by; "
+                "nothing in the pipeline is trying to catch it"
+            )
+
+    known = set(register.member_ids())
+    for spot in spots.entries:
+        for family_id in spot.affected:
+            if family_id not in register.families:
+                problems.append(
+                    f"blind spot {spot.id} names {family_id!r}, which is not a "
+                    "family in trap_families.yaml"
+                )
+        if spot.family and spot.member and f"{spot.family}:{spot.member}" not in known:
+            problems.append(
+                f"blind spot {spot.id} names member {spot.member!r} of "
+                f"{spot.family}, which is not in the register"
+            )
+
+    labels = labels_dir or (HERE / "labels")
+    if labels.exists():
+        for file in load_assertions(labels, register):
+            for assertion in file.assertions:
+                try:
+                    register.validate_member(assertion.family, assertion.member)
+                except UnknownFamilyMember as exc:
+                    problems.append(f"{file.document}/{assertion.id}: {exc}")
+    return problems
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=check_registers.__doc__)
+    parser.add_argument("--check", action="store_true",
+                        help="exit non-zero when the registers disagree")
+    parser.add_argument("--labels", type=Path, default=None)
+    args = parser.parse_args(argv)
+
+    problems = check_registers(args.labels)
+    register = load_families()
+    print(
+        f"{len(register)} families, {len(register.member_ids())} members, "
+        f"{len(load_blind_spots().entries)} blind spots"
+    )
+    for problem in problems:
+        print(f"  {problem}")
+    if not problems:
+        print("  registers agree")
+    return 1 if (args.check and problems) else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

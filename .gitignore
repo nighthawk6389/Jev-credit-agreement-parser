@@ -7,5 +7,17 @@ htmlcov/
 build/
 dist/
 *.egg-info/
-corpus/
 out/
+
+# The corpus is generated output by default -- synthetic variants, mutants and
+# harvest scratch -- and is rebuilt by `python -m credit_extract.eval.gold`.
+corpus/
+
+# Real filings are the exception. They cannot be regenerated, the labels in
+# credit_extract/eval/labels are written against these exact bytes, and a test
+# that skips because its document is missing reports a pass. They are checked
+# in for the same reason the fixtures are.
+!corpus/real/
+!corpus/real/**
+!corpus/edgar/
+!corpus/edgar/*.zip
