@@ -80,12 +80,34 @@ class Assertion(BaseModel):
 
 
 class AssertionFile(BaseModel):
+    """Assertions about one document, or about one chain of them.
+
+    ``chain`` is the F05 case and is why this is not simply a per-file thing.
+    The operative terms of an amended agreement live scattered across a base
+    and however many amendments, so the unit that can be labelled is the set,
+    not any file in it -- and a label written against a single amendment
+    cannot express the thing most worth asserting, which is what the terms
+    say *after* the chain is folded in.
+
+    ``chain`` is ordered as filed, not as it takes effect. Working out the
+    operative order is the pipeline's job and is exactly what the assertions
+    are here to check, so a label that pre-sorted the documents would be
+    marking its own homework.
+    """
+
     document: str
+    #: Documents forming a set, oldest-looking first. Mutually exclusive with
+    #: ``document``; ``document`` then names the chain for reporting.
+    chain: list[str] = Field(default_factory=list)
     path: Path | None = None
     source: Literal["real", "synthetic"] = "synthetic"
     tier: int = 2
     archetype: str | None = None
     assertions: list[Assertion] = Field(default_factory=list)
+
+    @property
+    def is_chain(self) -> bool:
+        return len(self.chain) > 1
 
     @property
     def is_synthetic(self) -> bool:

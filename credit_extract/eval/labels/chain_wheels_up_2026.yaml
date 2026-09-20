@@ -1,0 +1,109 @@
+# Tier 2 assertions: Wheels Up Experience, Amendments No. 4 and No. 5, 2026.
+#
+# The first real amendment chain in the corpus, and the clearest instance of
+# the failure F05 exists to catch.
+#
+# Amendment No. 4 (29 May 2026) is a blackline carrying the whole conformed
+# agreement -- 547,000 characters, the document that *looks* like the
+# agreement. In it:
+#
+#     "Revolving Availability Period" shall mean the period from and
+#     including the Closing Date to but excluding the September 20, 2026
+#
+# Amendment No. 5 (31 July 2026) is eleven thousand characters long and does
+# one thing:
+#
+#     the definition of the defined term "Revolving Availability Period" set
+#     forth in Section 1.01 of the Credit Agreement is hereby deleted in its
+#     entirety and replaced as follows: "... to but excluding September 20,
+#     2028 ..."
+#
+# So the revolver is available for two years longer than the big document
+# says. Extract No. 4 on its own -- the obvious thing to do, it is the one
+# that contains the agreement -- and every span is correct, the figure is
+# quoted accurately, and the answer is two years wrong. Nothing in the output
+# of a single-document run can tell you that.
+#
+# These assertions are about the *operative* text, which is what the chain
+# exists to produce.
+
+document: chain_wheels_up_2026
+source: real
+tier: 2
+chain:
+  - ex-102xupamendmentno4to202
+  - ex-101xwheelsupamendno5toc
+
+assertions:
+  # -- F05 versioning: the operative term, not the one in the big document --
+  - id: wu_superseded_date_is_gone
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: text_present
+    target: "to but excluding the September 20, 2026"
+    expect: false
+    note: >
+      The availability period as Amendment No. 4 states it. After No. 5 is
+      folded in it is not a term of the deal and must not be quotable as one.
+
+  - id: wu_operative_date_governs
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: text_present
+    target: "to but excluding September 20, 2028"
+    expect: true
+    note: the definition as Amendment No. 5 restates it
+
+  - id: wu_the_amendment_was_applied
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: report_count
+    target: effects_applied
+    expect: 1
+    note: >
+      One effect, and it is a definition restatement. Applied as a
+      restatement of Section 1.01 it would replace the entire definitions
+      article with this single definition.
+
+  - id: wu_nothing_was_left_unapplied
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: report_count
+    target: effects_unapplied
+    expect: 0
+    note: >
+      An amendment the pipeline could not apply is a term it is now reporting
+      wrongly with full confidence, so an unapplied effect here is a failure
+      even though the chain otherwise assembles.
+
+  - id: wu_the_chain_is_not_ambiguous
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: chain_finding
+    target: operative_version_ambiguous
+    expect: false
+    note: >
+      Both amendments are dated and numbered consecutively, so the order they
+      took effect in is established by the documents and is not being guessed.
+
+  - id: wu_both_documents_are_in_the_chain
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: chain_finding
+    target: base_agreement_absent
+    expect: false
+    note: >
+      No. 4 carries the conformed agreement, so the set is self-sufficient
+      even though the original credit agreement is not among the filings.
+
+  # -- F11 layout: No. 4 is a blackline ------------------------------------
+  - id: wu_blackline_is_recognised
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: chain_finding
+    target: blackline_restates_agreement
+    expect: true
+    note: >
+      Amendment No. 4 states that it deletes stricken text and adds
+      underlined text. 44 of the 100 agreements in the corpus carry deletion
+      markup, against 6 that restate in prose.

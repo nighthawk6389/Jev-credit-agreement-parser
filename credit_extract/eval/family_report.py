@@ -25,7 +25,7 @@ from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 from typing import Any
 
-from ..pipeline import run_pipeline
+from ..pipeline import run_document_set, run_pipeline
 from .assertions import (
     AssertionFile, AssertionOutcome, evaluate_assertion, evaluate_file,
     load_assertions,
@@ -164,6 +164,58 @@ class CoverageRun:
 _DOCUMENT_SUFFIXES = (".html", ".htm", ".mht", ".mhtml", ".pdf", ".txt")
 
 
+#: The harvested corpus, kept zipped because it is 143MB unpacked.
+CORPUS_ZIP = CORPUS_DIR / "edgar" / "edgar_corpus_raw.zip"
+CORPUS_WORK = CORPUS_DIR / "edgar" / "work"
+
+
+def ensure_corpus_unpacked() -> None:
+    """Unpack the harvested corpus if a label needs it and it is not there.
+
+    The unpacked corpus is generated output and is not checked in, so without
+    this a chain label silently reports "chain incomplete" on any clean
+    checkout -- including CI, where the whole point is that the chain
+    assertions run.
+    """
+    import zipfile
+
+    if (CORPUS_WORK / "edgar_corpus" / "raw").is_dir() or not CORPUS_ZIP.exists():
+        return
+    CORPUS_WORK.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(CORPUS_ZIP) as archive:
+        archive.extractall(CORPUS_WORK)
+
+
+def _resolve_named(name: str) -> Path | None:
+    """Find one document by name, anywhere in the corpus.
+
+    Chain members are named rather than pathed so a label reads as a list of
+    documents and does not break when the corpus is unpacked somewhere else.
+    A harvested file carries its company, date and accession number in front
+    of the exhibit name, so a trailing match counts: a label naming
+    ``ex-101xwheelsupamendno5toc`` should find
+    ``L_wheels-up-...-26-000123_ex-101xwheelsupamendno5toc.htm`` without
+    repeating the harvest metadata that a re-harvest would change anyway.
+    """
+    for directory in (GOLD_DIR, CORPUS_DIR, CORPUS_DIR / "gold", CORPUS_DIR / "real"):
+        for suffix in _DOCUMENT_SUFFIXES:
+            candidate = directory / f"{name}{suffix}"
+            if candidate.exists():
+                return candidate
+    exact = [
+        path for path in sorted(CORPUS_DIR.rglob(f"{name}.*"))
+        if path.suffix.lower() in _DOCUMENT_SUFFIXES
+    ]
+    if exact:
+        return exact[0]
+    ensure_corpus_unpacked()
+    suffixed = [
+        path for path in sorted(CORPUS_DIR.rglob(f"*{name}.*"))
+        if path.suffix.lower() in _DOCUMENT_SUFFIXES
+    ]
+    return suffixed[0] if suffixed else None
+
+
 def _resolve_document(file: AssertionFile) -> Path | None:
     """Find the document an assertion file is about."""
     if (
@@ -194,6 +246,25 @@ def run_coverage(
     register = load_families()
 
     for file in load_assertions(labels_dir, register):
+        if file.is_chain:
+            # A chain is extracted from the operative text -- the base with
+            # every amendment folded in -- which is the only thing its
+            # assertions can meaningfully be about.
+            paths = [_resolve_named(name) for name in file.chain]
+            missing = [n for n, p in zip(file.chain, paths) if p is None]
+            if missing:
+                run.notes.append(
+                    f"{file.document}: chain incomplete, missing "
+                    f"{', '.join(missing)}; its {len(file.assertions)} "
+                    "assertion(s) did not run"
+                )
+                continue
+            result = run_document_set([p for p in paths if p], **pipeline_kwargs)
+            run.outcomes.extend(evaluate_file(file, result))
+            run.documents += len(paths)
+            run.cost_usd += result.report.cost.total_usd
+            continue
+
         path = _resolve_document(file)
         if path is None:
             run.notes.append(

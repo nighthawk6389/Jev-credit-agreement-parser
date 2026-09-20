@@ -1,0 +1,87 @@
+# Tier 2 assertions: BRC Group Holdings, two 2026 filings that are NOT a chain.
+#
+# This label started as a chain and the pipeline refused it, correctly.
+#
+# The two filings share a CIK and were grouped on that basis. Amendment No. 1
+# (30 June 2026) is a blackline carrying a conformed agreement; Amendment
+# No. 5 (undated) amends Sections 2.08(c)(i), 2.10(e), 3.23, 5.15, 6.04,
+# 6.06, 6.13 and 9.01. None of those sections exists in No. 1 -- the string
+# "2.08" does not occur in it at all. They amend different agreements.
+#
+# So the useful thing to assert here is not what the operative text says, but
+# that the pipeline *noticed*. A set assembled wrongly and folded anyway
+# produces an operative text that is a splice of two deals, with every span
+# correct and no error raised, and there is no way to see it downstream.
+# amendment_target_missing is the only thing standing between that and a
+# report a reader would believe.
+#
+# CIK is not a chain key. Same borrower, same year, same filer -- different
+# facilities. Whatever eventually groups documents into chains has to check
+# that the amendments land somewhere, and this is the case that proves it.
+#
+# The set also exercises the ordering fix: No. 5 carries no effective date,
+# and ordered by date alone it sorted ahead of No. 1 and became the base.
+
+document: chain_brc_2026
+source: real
+tier: 2
+chain:
+  - rily-20260630xexx104
+  - ea030141701ex10-1
+
+assertions:
+  # -- F05 versioning: the set does not hang together, and that is reported -
+  - id: brc_amendments_land_nowhere
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: chain_finding
+    target: amendment_target_missing
+    expect: true
+    note: >
+      Ten effects aimed at sections that are not in the base text. This is
+      the finding that says the set was assembled wrongly; without it the
+      chain folds into a splice of two agreements and reads as one.
+
+  - id: brc_nothing_from_the_wrong_amendment_was_applied
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: report_count
+    target: effects_applied
+    expect: 0
+    note: >
+      Refusing to apply is the point. An effect applied to a section that
+      only coincidentally shares a number would rewrite the wrong clause.
+
+  - id: brc_undated_amendment_is_reported
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: chain_finding
+    target: undated_amendment
+    expect: true
+    note: >
+      No. 5 states no effective date this parser can find, which is ordinary.
+      The chain is ordered by numbering instead, and the reader is told.
+
+  - id: brc_no_amendment_predates_the_base
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: chain_finding
+    target: effective_before_base
+    expect: false
+    note: >
+      This fired before the ordering was fixed, and was the only visible
+      symptom of it: with undated No. 5 sorted first and taken as the base,
+      No. 1's June date preceded it. A true statement about a wrong chain,
+      which is the worst kind of finding -- it reads as a defect in the
+      documents rather than in the reader.
+
+  - id: brc_blackline_is_recognised
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: chain_finding
+    target: blackline_restates_agreement
+    expect: true
+    note: >
+      Amendment No. 1 carries deletion markup. It never says "is hereby
+      amended to delete the stricken text" -- the finding follows the markup,
+      not the sentence.

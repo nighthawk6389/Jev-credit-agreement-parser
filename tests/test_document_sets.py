@@ -294,3 +294,137 @@ def test_an_unapplicable_effect_is_recorded_never_dropped(chain_files, tmp_path)
     effect, reason = operative.unapplied[0]
     assert effect.target_section == "2.09"
     assert "not in Section" in reason
+
+
+# ---------------------------------------------------------------------------
+# Ordering, when the documents will not carry it
+# ---------------------------------------------------------------------------
+
+
+def _doc(document_id: str, role: str, number: int | None, when: date | None):
+    from credit_extract.ingest.documents import Document
+
+    return Document(
+        document_id=document_id, path=f"{document_id}.html", role=role,
+        amendment_number=number, effective_date=when, title=document_id,
+    )
+
+
+def test_an_undated_amendment_does_not_become_the_base():
+    """The bug this guards, from a real pair of filings.
+
+    sort_key defaults a missing effective date to date.min, which sorts ahead
+    of everything, and the first document in a chain is taken as the agreement
+    the rest are applied to. BRC Group filed Amendment No. 1 dated and
+    Amendment No. 5 undated; No. 5 became the base and No. 1 was applied on
+    top of it. Two amendments, applied in reverse, no error raised, every span
+    correct.
+    """
+    from credit_extract.ingest.documents import chain_order
+
+    ordered = chain_order([
+        _doc("five", "amendment", 5, None),
+        _doc("one", "amendment", 1, date(2026, 6, 30)),
+    ])
+    assert [d.document_id for d in ordered] == ["one", "five"]
+
+
+def test_dates_still_win_when_every_document_has_one():
+    """Numbering is the fallback, not the rule.
+
+    An amendment can be numbered in one sequence and take effect in another --
+    a No. 6 agreed before a No. 5 closes is unusual but it happens, and the
+    dates are what the parties actually operated under.
+    """
+    from credit_extract.ingest.documents import chain_order
+
+    ordered = chain_order([
+        _doc("later_number", "amendment", 6, date(2026, 1, 1)),
+        _doc("earlier_number", "amendment", 5, date(2026, 6, 1)),
+    ])
+    assert [d.document_id for d in ordered] == ["later_number", "earlier_number"]
+
+
+def test_a_base_agreement_leads_its_chain_whatever_the_dates_say():
+    from credit_extract.ingest.documents import chain_order
+
+    ordered = chain_order([
+        _doc("amendment", "amendment", 1, None),
+        _doc("agreement", "base", None, date(2026, 5, 1)),
+    ])
+    assert ordered[0].document_id == "agreement"
+
+
+def test_ambiguous_numbering_falls_back_to_dates():
+    """Two amendments sharing a number order nothing; do not pretend it does."""
+    from credit_extract.ingest.documents import chain_order
+
+    ordered = chain_order([
+        _doc("b", "amendment", 3, None),
+        _doc("a", "amendment", 3, date(2026, 2, 1)),
+    ])
+    assert len(ordered) == 2      # ordered somehow, but not by the numbering
+
+
+# ---------------------------------------------------------------------------
+# Definitions are not the articles they live in
+# ---------------------------------------------------------------------------
+
+
+def _amendment_text(body: str):
+    from credit_extract.ingest.documents import Document
+    from credit_extract.ingest.normalize import NormalizedDocument
+
+    return Document(
+        document_id="a", path="a.html", role="amendment", amendment_number=1,
+        normalized=NormalizedDocument(
+            document_id="a", source_path="-", source_format="txt", text=body,
+        ),
+    )
+
+
+def test_amending_one_definition_targets_the_definition():
+    """Quoted from Wheels Up Amendment No. 5.
+
+    Read as a restatement of Section 1.01 this replaces the whole definitions
+    article with a single definition.
+    """
+    from credit_extract.ingest.documents import parse_amendment_effects
+
+    effects = parse_amendment_effects(_amendment_text(
+        'SECTION 2. Amendment. As of the Amendment Effective Date, the '
+        'definition of the defined term "Revolving Availability Period" set '
+        "forth in Section 1.01 of the Credit Agreement is hereby deleted in "
+        'its entirety and replaced as follows: "" Revolving Availability '
+        'Period " shall mean the period from and including the Closing Date '
+        'to but excluding September 20, 2028."\n'
+    ))
+    assert len(effects) == 1
+    assert effects[0].is_partial
+    assert effects[0].target_element == "definition:Revolving Availability Period"
+    assert not effects[0].is_restatement
+
+
+def test_a_restatement_that_names_definitions_is_never_a_section_restatement():
+    """The guard for the form that cannot be parsed.
+
+    AIR T Amendment No. 7 restates nine named definitions in Section 1.01,
+    with a DocuSign stamp and an image filename interleaved into the middle
+    of the list. The list cannot be read; it must still not be applied as a
+    restatement of Section 1.01.
+    """
+    from credit_extract.ingest.documents import parse_amendment_effects
+
+    effects = parse_amendment_effects(_amendment_text(
+        '3. Amendments. (a) The definition of the terms "Borrowing Base", '
+        '"Leverage Ratio",\n\nsome-scanned-page.jpg\n\n2 "Loans", "Total '
+        'Usage" appearing in Section 1.01 of the Original Agreement are '
+        "hereby amended in their respective entireties to read as follows: "
+        '" \'Borrowing Base\' means, at any date of determination, 85% of '
+        'Eligible Accounts."\n'
+    ))
+    restatements = [e for e in effects if e.target_section == "1.01"]
+    assert restatements, "the sentence must still produce an effect"
+    assert all(e.is_partial for e in restatements), (
+        "a sentence naming definitions must never restate the whole article"
+    )

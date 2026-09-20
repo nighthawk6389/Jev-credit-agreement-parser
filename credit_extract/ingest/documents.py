@@ -869,6 +869,35 @@ def _chain_conflicts(document_set: DocumentSet) -> list[ChainFinding]:
         s.section_id for s in (document_set.base.normalized.sections or [])
     } if document_set.base.normalized is not None else set()
 
+    # Deletion markup is evidence of fact; the sentence announcing it is only
+    # evidence of intent, and the two do not always agree. One real amendment
+    # says "the Credit Agreement *shall be* amended to delete the stricken
+    # text" rather than "is hereby amended", which no phrasing pattern caught
+    # -- while 39 deletions, including a figure, were sitting in its markup.
+    # The finding follows the markup, so a reader is told the document's
+    # changes are typographic however the document chose to say so.
+    announced = {
+        effect.document_id for effect in document_set.declared_effects()
+        if effect.kind == "redline"
+    }
+    for document in document_set.chain:
+        marked = document.normalized
+        if marked is None or not marked.is_blackline:
+            continue
+        if document.document_id in announced:
+            continue
+        findings.append(ChainFinding(
+            kind="blackline_restates_agreement",
+            severity="warning",
+            message=(
+                f"{document.title[:60]!r} carries deletion markup without "
+                f"saying so in terms this parser recognised; "
+                f"{len(marked.deletions())} deleted run(s) were excised from "
+                "the operative text and kept for audit"
+            ),
+            documents=[document.document_id],
+        ))
+
     by_section: dict[str, list[AmendmentEffect]] = {}
     for effect in document_set.declared_effects():
         if effect.kind == "redline":
