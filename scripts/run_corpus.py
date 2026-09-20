@@ -81,11 +81,50 @@ def load_manifest() -> dict[str, dict[str, str]]:
         return {row["name"]: row for row in csv.DictReader(handle)}
 
 
+#: A document that takes longer than this has hit something pathological
+#: rather than something large. The 13MB filings in this corpus run in about
+#: nine seconds; the one that motivated this budget was 944KB and had not
+#: finished after an hour, because ``DefinitionGraph.depth`` was searching
+#: every simple path through a graph with 96 cycles in it. Without a budget
+#: that document silently consumed the whole run and reported nothing at all.
+DOCUMENT_BUDGET_SECONDS = 300
+
+
+class DocumentTimeout(RuntimeError):
+    pass
+
+
+def _budget(seconds: int):
+    """Abort a document that has stopped making progress.
+
+    SIGALRM rather than a thread, so the interrupt lands inside whatever tight
+    loop is running and the traceback names it.
+    """
+    import signal
+
+    def fire(signum, frame):        # noqa: ANN001, ARG001
+        raise DocumentTimeout(
+            f"exceeded {seconds}s; something is pathological rather than large"
+        )
+
+    if not hasattr(signal, "SIGALRM"):
+        return None, None
+    previous = signal.signal(signal.SIGALRM, fire)
+    signal.alarm(seconds)
+    return signal, previous
+
+
 def run_one(path: Path, timeout_note: list[str]) -> dict[str, Any]:
     from credit_extract.pipeline import run_pipeline
 
     started = time.monotonic()
-    result = run_pipeline(path)
+    signal_module, previous = _budget(DOCUMENT_BUDGET_SECONDS)
+    try:
+        result = run_pipeline(path)
+    finally:
+        if signal_module is not None:
+            signal_module.alarm(0)
+            signal_module.signal(signal_module.SIGALRM, previous)
     report = result.report
     return {
         "document": path.stem,
@@ -239,16 +278,25 @@ def main(argv: list[str] | None = None) -> int:
     rows: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
     for index, path in enumerate(paths, 1):
-        print(f"[{index}/{len(paths)}] {path.stem[:70]}", flush=True)
+        size = path.stat().st_size
+        print(
+            f"[{index}/{len(paths)}] {size / 1e6:5.1f}MB {path.stem[:60]}",
+            end="", flush=True,
+        )
         try:
-            rows.append(run_one(path, []))
+            row = run_one(path, [])
+            rows.append(row)
+            # Timed per document and printed as it finishes, because the run
+            # this was written after spent an hour inside one document and the
+            # only evidence was that the next line never appeared.
+            print(f"  {row['seconds']:6.1f}s", flush=True)
         except Exception as exc:                      # noqa: BLE001
             errors.append({
                 "document": path.stem,
                 "error": f"{type(exc).__name__}: {exc}",
                 "traceback": traceback.format_exc()[-2000:],
             })
-            print(f"    FAILED {type(exc).__name__}: {exc}", flush=True)
+            print(f"  FAILED {type(exc).__name__}: {exc}", flush=True)
 
     report = summarize(rows, errors, manifest)
     print(report)

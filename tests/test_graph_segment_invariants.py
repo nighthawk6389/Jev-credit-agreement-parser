@@ -308,3 +308,80 @@ def test_mfn_pari_passu_must_sit_below_the_junior_trigger():
         "pari_passu": Decimal("0.75"), "junior": Decimal("0.50"),
     })
     assert [v for v in check_all(ctx) if v.invariant == "mfn_trigger_ordering"]
+
+
+# ---------------------------------------------------------------------------
+# Definition depth: linear, and it has to stay that way
+# ---------------------------------------------------------------------------
+
+
+def _graph(edges: dict[str, list[str]]):
+    """A DefinitionGraph over bare terms, with the spans the model demands."""
+    from credit_extract.graph.definitions import DefinitionGraph, DefinitionNode
+    from credit_extract.models.core import Span
+
+    span = Span(start=0, end=1, text="x")
+    return DefinitionGraph(nodes={
+        term: DefinitionNode(term=term, span=span, body="", uses=set(uses))
+        for term, uses in edges.items()
+    })
+
+
+def _longest_simple_path(graph, term: str) -> int:
+    """The original recursive definition, kept as the oracle to check against."""
+    def walk(name: str, seen: frozenset[str]) -> int:
+        node = graph.nodes.get(name)
+        if node is None or not node.uses:
+            return 0
+        best = 0
+        for used in node.uses:
+            if used in seen:
+                continue
+            best = max(best, 1 + walk(used, seen | {used}))
+        return best
+
+    return walk(term, frozenset({term}))
+
+
+def test_depth_agrees_with_the_exhaustive_definition_on_a_dag():
+    """Memoising by term is exact on a DAG, which is what a good draft is."""
+    graph = _graph({
+        "A": ["B", "C"], "B": ["D"], "C": ["D", "E"],
+        "D": ["F"], "E": ["F"], "F": [],
+    })
+    for term in graph.nodes:
+        assert graph.depth(term) == _longest_simple_path(graph, term), term
+    assert graph.depth("A") == 3          # A -> C -> D -> F
+
+
+def test_a_cycle_does_not_make_depth_unbounded():
+    """Cycles are real -- 96 of them in one agreement -- and are findings."""
+    graph = _graph({"A": ["B"], "B": ["C"], "C": ["A"]})
+    assert graph.depth("A") == 2
+    assert graph.cycles(), "the cycle itself is the finding, and must still show"
+
+
+def test_depth_is_not_exponential_in_the_number_of_cycles():
+    """The regression that cost an hour on one real agreement.
+
+    ``depth`` carried the path as a set and explored every simple path below a
+    term, and ``stats`` called it once per term. A dense definitions article
+    made that astronomical: 477 terms, 1,414 edges, 96 cycles, and the run had
+    not finished after an hour. Linear now, so a graph this size is instant --
+    the diamond below has 2**24 simple paths from the top.
+    """
+    import time
+
+    edges: dict[str, list[str]] = {}
+    for level in range(24):
+        for branch in ("a", "b"):
+            edges[f"n{level}{branch}"] = [f"n{level + 1}a", f"n{level + 1}b"]
+    edges["n24a"] = ["n0a"]              # a cycle back to the top, for good measure
+    edges["n24b"] = []
+    graph = _graph(edges)
+
+    started = time.monotonic()
+    depths = graph.depths()
+    elapsed = time.monotonic() - started
+    assert elapsed < 1.0, f"depths() took {elapsed:.1f}s on a 50-node graph"
+    assert max(depths.values()) >= 24

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import re
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from ..ingest.normalize import NormalizedDocument
 from ..models.core import Span
@@ -85,6 +85,10 @@ class DefinitionGraph(BaseModel):
 
     nodes: dict[str, DefinitionNode] = Field(default_factory=dict)
     article_span: Span | None = None
+    #: Memo for :meth:`depths`, computed once per graph. Excluded from
+    #: serialization: it is derivable, and a report carrying a second copy of
+    #: every term is noise.
+    _depths: dict[str, int] | None = PrivateAttr(default=None)
 
     # -- basic access -------------------------------------------------------
 
@@ -139,23 +143,63 @@ class DefinitionGraph(BaseModel):
         return order
 
     def depth(self, term: str) -> int:
-        """Longest acyclic dependency chain below ``term``."""
+        """Longest dependency chain below ``term``."""
         start = self.resolve(term)
-        if start is None:
-            return 0
+        return self.depths().get(start, 0) if start is not None else 0
 
-        def walk(name: str, seen: frozenset[str]) -> int:
-            node = self.nodes.get(name)
-            if node is None or not node.uses:
-                return 0
-            best = 0
-            for used in node.uses:
-                if used in seen:
+    def depths(self) -> dict[str, int]:
+        """Longest chain below every term, in one linear pass.
+
+        This was a recursive walk carrying the path as a set, which is the
+        textbook longest-*simple*-path search: correct, and exponential. A
+        definitions article cross-references itself densely enough that the
+        number of simple paths is astronomical, and ``stats`` ran it once per
+        term. One real agreement -- 944,000 characters, an ordinary Article I
+        -- took over an hour and had not finished.
+
+        Because a well-drafted definition graph is a DAG, no path can revisit
+        a term anyway, so memoising by term is exact there and linear. Cycles
+        do occur, and they are reported as drafting errors by ``cycles()``; an
+        edge back into a term already on the current path contributes nothing
+        rather than being followed, which is what the path set achieved. For a
+        cyclic graph that is a lower bound rather than the true longest simple
+        path, which is the right trade: the number is a readability signal,
+        and the cycle itself is the finding.
+
+        Iterative rather than recursive, because a chain a few hundred
+        definitions long is ordinary and the recursion limit is not.
+        """
+        if self._depths is not None:
+            return self._depths
+
+        depth: dict[str, int] = {}
+        on_stack: set[str] = set()
+        for root in self.nodes:
+            if root in depth:
+                continue
+            stack: list[tuple[str, bool]] = [(root, False)]
+            while stack:
+                name, finished = stack.pop()
+                if finished:
+                    on_stack.discard(name)
+                    node = self.nodes.get(name)
+                    best = 0
+                    for used in node.uses if node else ():
+                        if used in on_stack or used not in self.nodes:
+                            continue          # back edge, or a dangling cite
+                        best = max(best, 1 + depth.get(used, 0))
+                    depth[name] = best
                     continue
-                best = max(best, 1 + walk(used, seen | {used}))
-            return best
-
-        return walk(start, frozenset({start}))
+                if name in depth or name in on_stack:
+                    continue
+                on_stack.add(name)
+                stack.append((name, True))
+                node = self.nodes.get(name)
+                for used in node.uses if node else ():
+                    if used in self.nodes and used not in depth:
+                        stack.append((used, False))
+        self._depths = depth
+        return depth
 
     def context_for(self, term: str, max_chars: int = 24_000) -> str:
         """The closure rendered as text, for an extractor's prompt."""
@@ -241,7 +285,7 @@ class DefinitionGraph(BaseModel):
         return sorted(n.term for n in self.nodes.values() if n.is_external_document)
 
     def stats(self) -> dict:
-        depths = {t: self.depth(t) for t in self.nodes}
+        depths = self.depths()
         return {
             "terms": len(self.nodes),
             "edges": sum(len(n.uses) for n in self.nodes.values()),
