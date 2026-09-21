@@ -242,8 +242,65 @@ def test_actus_terms_resolve_and_the_revolver_is_left_unmapped():
     assert "CLM" in revolver.rationale, "the gap must say what was rejected"
 
 
-def test_fpml_bindings_declare_that_they_are_unverified():
-    from credit_extract.models.fpml_model import provenance
+def test_fpml_terms_resolve_against_the_vendored_schemas():
+    from credit_extract.models.fpml_model import fpml, provenance
 
-    assert provenance()["verified"] is False
-    assert "fpml.org" in provenance()["note"]
+    term = fpml("accruingPikOption")
+    assert term.verified is True
+    assert term.term == "fpml:accruingPikOption"
+    assert provenance()["verified"] is True
+    assert provenance()["elements_available"] > 800
+
+
+def test_an_invented_fpml_element_is_refused():
+    from credit_extract.models.fpml_model import fpml
+
+    with pytest.raises(KeyError, match="not in the vendored FpML snapshot"):
+        fpml("paymentInKindToggleThatSoundsPlausible")
+
+
+def test_every_fpml_registry_term_resolves_to_a_schema_declaration():
+    from credit_extract.models.fpml_model import FIELD_REGISTRY, fpml
+
+    terms = {
+        spec.standard_term.split(":", 1)[1]
+        for spec in FIELD_REGISTRY.values()
+        if spec.standard_term and spec.standard_term.startswith("fpml:")
+    }
+    assert terms
+    assert all(fpml(term).verified for term in terms)
+
+
+def test_fpml_and_fibo_are_complementary_not_competing_mappings():
+    from credit_extract.models.fpml_model import standards_bindings
+
+    mappings = standards_bindings()
+    assert {binding.standard for binding in mappings["credit_rating"]} == {"fpml", "fibo"}
+    assert {binding.standard for binding in mappings["lien"]} == {"fpml", "fibo"}
+    assert mappings["pik"][0].verified is True
+    assert mappings["pik"][1].term is None, "a documented FIBO gap beats an invented term"
+
+
+def test_facility_retains_pik_rank_rating_and_draw_optionality():
+    from credit_extract.models.fpml_model import (
+        CommitmentTerms, CreditRating, Facility, FacilityClassification, PikTerms,
+    )
+
+    facility = Facility(
+        facility_id="TL-B",
+        facility_type="delayed_draw_term_loan",
+        pik=PikTerms(rate_pct=Decimal("2.00"), spread_pct=Decimal("1.00")),
+        commitment=CommitmentTerms(
+            current_amount=Decimal("100000000"),
+            must_draw_by_date=date(2028, 6, 30),
+            refusal_allowed=False,
+        ),
+        classification=FacilityClassification(
+            lien="first lien", seniority="senior secured", multi_currency=True,
+        ),
+        ratings=[CreditRating(agency="S&P", rating="BB-", credit_quality="NIVG")],
+    )
+    assert facility.pik and facility.pik.rate_pct == Decimal("2.00")
+    assert facility.classification.seniority == "senior secured"
+    assert facility.commitment.must_draw_by_date == date(2028, 6, 30)
+    assert facility.ratings[0].rating == "BB-"

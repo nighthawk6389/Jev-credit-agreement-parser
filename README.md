@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 191 tests
+pytest -q                                          # 221 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 ```
@@ -59,11 +59,12 @@ credit-extract extract agreement.htm --backend anthropic --jev api --out result.
 ## What it produces
 
 ```
-  16,348 normalized characters, 31 target fields
-  status: absent_from_document=1, confirmed=29, external_reference=1
-  cost: $0.0011 (56 Jev requests, 141 questions; 0 LLM calls)
+  17,031 normalized characters, 56 target fields
+  status: absent_from_document=3, confirmed=30, external_reference=1,
+          needs_review=13, not_applicable_to_archetype=9
+  cost: $0.0024 (73 Jev requests, 565 questions; 0 LLM calls)
 
-  invariant violations (4):
+  invariant violations (5):
     [error] amortization_total_consistent
       amortization table sums to $11,663,750 but a level $376,250 payment over
       27 quarters is $10,158,750, a $1,505,000 discrepancy
@@ -114,13 +115,24 @@ recorded as documented gaps with reasons, not force-fitted onto
 `ThirdPartyAgent`. `fibo()` raises on an unknown CURIE, so an invented URI
 cannot ship.
 
-**FpML** supplies facility and tranche structure — facility identity,
-commitment amounts, accrual options, commitment schedules, LC sub-facilities,
-fee types. **These are the one set of bindings not verified against a source of
-truth**, because fpml.org is unreachable from this build environment. They are
-hand-mapped from FpML 5.x and every one carries `verified=False`.
-`scripts/gen_fpml.py --verify` checks them against the published XSDs from a
-network that can reach them; `--generate` runs `xsdata` over the schemas.
+**FpML** supplies operational loan structure and economics — facility type,
+current and original commitments, accrual choices, SOFR credit-spread
+adjustments, floors/caps, PIK options, delayed-draw optionality, lien/seniority,
+ratings, currencies, party references and fee options. The checked-in
+`fpml_terms.json` index contains 851 element declarations generated from the
+published 5-13-7 schemas at a pinned public mirror commit. `fpml()` raises on
+an unknown element just as `fibo()` does on an unknown CURIE.
+
+The two standards are deliberately composed rather than treated as
+alternatives. FpML says how a facility operates; FIBO says what the entity or
+relationship means. Thus a lien resolves to both `fpml:lien` and
+`fibo-loan-ln-ln:LenderLienPosition`, and a rating resolves to both
+`fpml:creditRating` and `fibo-fbc-dae-crt:CreditRating`. Where only one
+standard has the concept (for example PIK accrual in FpML), the other side is a
+documented gap rather than an invented ontology term.
+
+`scripts/gen_fpml.py --check` re-fetches the pinned schemas and detects drift;
+`--vendor` refreshes the snapshot, and `--generate` optionally runs `xsdata`.
 
 **ACTUS** supplies anything that generates a cashflow, and is the reason to
 bother with standards at all. LAM and LAX are reimplemented in Python
@@ -348,8 +360,9 @@ API but unexercised. `OfflineRuleBackend` is the default: anchored patterns
 with exact spans, deliberately weaker at recall than an LLM — which is what the
 orphan sweep exists to compensate for.
 
-**fpml.org is unreachable**, so FpML bindings carry `verified=False` as
-described above.
+**FpML's authenticated download page is not used by CI.** The schema bytes are
+fetched from a pinned public mirror commit, hashed in the vendored index, and
+cross-checked against every FpML registry binding.
 
 ## Layout
 
@@ -364,7 +377,7 @@ credit_extract/
               fibo_map.py       FIBO bindings + documented gaps
               fpml_model.py     facility structure + the field registry
               actus_map.py      contract mapping + LAM/LAX execution
-              vendored/         checked-in FIBO and ACTUS snapshots
+              vendored/         checked-in FIBO, FpML and ACTUS snapshots
   ingest/     normalize.py      one offset space; blackline deletions excised
               documents.py      document sets, amendment effects, chain folding
               tables.py         grids with per-cell offsets; scalar parsers
@@ -413,5 +426,6 @@ scripts/                        vendor_standards.py, fetch_corpus.py, gen_fpml.p
 4. **Measure the orphan sweep** — what fraction of held-out labelled fields it
    rescues that the extractor missed. It is the highest-value mechanism here
    and it deserves its own number.
-5. **Verify the FpML bindings** (`scripts/gen_fpml.py --verify`) and promote
-   them to `verified=True`.
+5. **Label the new structural fields** — PIK, lien/seniority, ratings,
+   multicurrency and delayed-draw optionality now have verified standard
+   targets, but need real-document labels before their accuracy is knowable.

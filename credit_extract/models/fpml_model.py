@@ -3,14 +3,10 @@
 FpML 5.x carries syndicated-loan product definitions built with LSTA/LMA input:
 facility types, tranches, accrual options, commitment schedules, LC
 sub-facilities and fee types. The intended build path is ``xsdata`` over the
-published XSDs (see ``scripts/gen_fpml.py``).
-
-    Provenance caveat: fpml.org is not reachable from this build environment,
-    so the element names below are hand-mapped from the FpML 5.x loan product
-    schemas and carry ``verified=False``. Every other standard binding in this
-    project resolves against a vendored source of truth and carries
-    ``verified=True``. Run ``python scripts/gen_fpml.py --verify`` from a
-    network that can reach fpml.org to promote these.
+published XSDs (see ``scripts/gen_fpml.py``). Element names resolve against a
+checked-in index generated from a pinned public mirror of the published FpML
+schemas. Unknown names raise rather than silently becoming plausible-looking
+URIs.
 
 The registry at the bottom is the pipeline's spine: it names every extraction
 target, the standard term each maps to, the field class its confidence
@@ -22,26 +18,43 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from functools import lru_cache
+import json
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from .fibo_map import TermBinding
+from .fibo_map import TermBinding, binding as fibo_binding, gap as fibo_gap
 
-FPML_VERSION = "5.13"
+FPML_VERSION = "5-13-7-rec-1"
 FPML_NAMESPACE = "http://www.fpml.org/FpML-5/confirmation"
-FPML_SOURCE = "https://www.fpml.org/spec/ (loan product schemas)"
+FPML_SOURCE = "https://www.fpml.org/spec/fpml-5-13-7-rec-1/"
+_VENDORED = Path(__file__).parent / "vendored" / "fpml_terms.json"
 
 
-def fpml(term: str, verified: bool = False) -> TermBinding:
-    """Bind to an FpML element name. Unverified until the XSD is reachable."""
+@lru_cache(maxsize=1)
+def _vendored() -> dict:
+    if not _VENDORED.exists():  # pragma: no cover - packaging regression
+        raise RuntimeError(f"{_VENDORED} is missing; run `python scripts/gen_fpml.py --vendor`")
+    return json.loads(_VENDORED.read_text())
+
+
+def fpml(term: str) -> TermBinding:
+    """Bind to a declared FpML element, refusing invented element names."""
+    elements = _vendored()["elements"]
+    if term not in elements:
+        raise KeyError(
+            f"{term!r} is not in the vendored FpML snapshot "
+            f"({len(elements)} elements from {len(_vendored()['schema_files'])} schemas). "
+            "Add the relevant schema to scripts/gen_fpml.py rather than inventing a URI."
+        )
     return TermBinding(
         standard="fpml",
         term=f"fpml:{term}",
         uri=f"{FPML_NAMESPACE}#{term}",
         label=term,
-        verified=verified,
-        gap_reason=None if verified else "hand-mapped; fpml.org unreachable at build time",
+        verified=True,
     )
 
 
@@ -52,17 +65,75 @@ def fpml(term: str, verified: bool = False) -> TermBinding:
 FacilityType = Literal[
     "term_loan", "delayed_draw_term_loan", "revolver", "letter_of_credit"
 ]
+RateOptionType = Literal[
+    "fixed", "floating", "legacy_floating", "accruing_pik", "accruing_fee"
+]
 
 
 class AccrualTerms(BaseModel):
-    """fpml:accrualOptions -- how interest is computed on a tranche."""
+    """Facility rate economics represented by FpML rate-option elements."""
 
+    option_type: RateOptionType = "floating"
     base_rate: str | None = None              # fpml:floatingRateIndex
     spread_pct: Decimal | None = None         # fpml:spread
-    floor_pct: Decimal | None = None          # fpml:rateFloor
+    credit_spread_adjustment_pct: Decimal | None = None  # fpml:spreadAdjustment
+    floor_pct: Decimal | None = None          # fpml:floorRate
+    cap_pct: Decimal | None = None            # fpml:capRate
     day_count: str | None = None              # fpml:dayCountFraction
-    period_months: int | None = None          # fpml:calculationPeriodFrequency
+    payment_frequency: str | None = None       # fpml:paymentFrequency
+    is_compounding_balance: bool | None = None # fpml:isCompoundingBalance
+    period_months: int | None = None          # normalized convenience value
     alternate_base_rate_spread_pct: Decimal | None = None
+
+
+class PikTerms(BaseModel):
+    """Payment-in-kind economics, not flattened into ordinary cash margin."""
+
+    rate_pct: Decimal | None = None            # fpml:accruingPikOption
+    spread_pct: Decimal | None = None          # fpml:pikSpread
+    start_date: date | None = None
+    end_date: date | None = None
+    capitalization_frequency: str | None = None
+
+
+class CommitmentTerms(BaseModel):
+    """Current/original commitments and draw optionality."""
+
+    current_amount: Decimal | None = None      # fpml:currentCommitment
+    original_amount: Decimal | None = None     # fpml:originalCommitment
+    unavailable_amount: Decimal | None = None  # fpml:unavailableToUtilizeAmount
+    must_draw_by_date: date | None = None      # fpml:mustDrawByDate
+    refusal_allowed: bool | None = None        # fpml:refusalAllowed
+    scheduled_adjustment: bool | None = None   # fpml:scheduled
+    pik_adjustment: bool | None = None         # fpml:pik
+
+
+class FacilityClassification(BaseModel):
+    """Legal/economic classification retained at facility level."""
+
+    feature: str | None = None                 # fpml:feature (bridge/acquisition/...)
+    lien: str | None = None                    # fpml:lien
+    seniority: str | None = None               # fpml:seniority
+    governing_law: str | None = None           # fpml:governingLaw
+    multi_currency: bool | None = None          # fpml:multiCurrency
+    draw_currencies: list[str] = Field(default_factory=list)
+
+
+class CreditRating(BaseModel):
+    """Rating and issuer classification without conflating the two."""
+
+    agency: str | None = None
+    rating: str | None = None                  # fpml:creditRating
+    credit_quality: str | None = None          # fpml:creditQuality
+    industry_classification: str | None = None # fpml:classification
+
+
+class PartyReferences(BaseModel):
+    borrower: str | None = None
+    co_borrowers: list[str] = Field(default_factory=list)
+    agent: str | None = None
+    lc_issuing_banks: list[str] = Field(default_factory=list)
+    guarantors: list[str] = Field(default_factory=list)
 
 
 class ScheduleRow(BaseModel):
@@ -124,44 +195,104 @@ class AmortizationSchedule(BaseModel):
 
 
 class FeeTerms(BaseModel):
-    commitment_fee_pct: Decimal | None = None     # fpml:commitmentFee
+    commitment_fee_pct: Decimal | None = None     # fpml:accruingFeeOption
     ticking_fee_pct: Decimal | None = None
     lc_participation_fee_pct: Decimal | None = None
-    fronting_fee_pct: Decimal | None = None       # fpml:lcIssuanceFee
+    fronting_fee_pct: Decimal | None = None       # fpml:accruingFeeOption
 
 
 class Facility(BaseModel):
-    """fpml:facility -- one tranche of the credit."""
+    """One tranche, combining FpML economics with FIBO semantics."""
 
     facility_id: str                              # fpml:facilityIdentifier
-    facility_type: FacilityType                   # fpml:facilityType
+    facility_type: FacilityType                   # FpML substitution element
     commitment_amount: Decimal | None = None      # fpml:totalCommitmentAmount
     currency: str = "USD"                         # fpml:currency
-    effective_date: date | None = None            # fpml:effectiveDate
+    effective_date: date | None = None            # fpml:startDate
     maturity_date: date | None = None             # fpml:maturityDate
     accrual: AccrualTerms = Field(default_factory=AccrualTerms)
+    rate_options: list[AccrualTerms] = Field(default_factory=list)
+    pik: PikTerms | None = None
+    commitment: CommitmentTerms = Field(default_factory=CommitmentTerms)
+    classification: FacilityClassification = Field(default_factory=FacilityClassification)
+    parties: PartyReferences = Field(default_factory=PartyReferences)
+    ratings: list[CreditRating] = Field(default_factory=list)
     fees: FeeTerms = Field(default_factory=FeeTerms)
     amortization: AmortizationSchedule | None = None
-    sublimit_of: str | None = None                # fpml:lcSubFacility parent
+    sublimit_of: str | None = None                # FIBO sub-facility relationship
     actus_mapping: dict[str, Any] | None = None   # ActusMapping, or None + reason
 
 
 def facility_bindings() -> dict[str, TermBinding]:
     return {
         "facility_id": fpml("facilityIdentifier"),
-        "facility_type": fpml("facilityType"),
+        "term_loan": fpml("termLoan"),
+        "delayed_draw_term_loan": fpml("delayedDraw"),
+        "revolver": fpml("revolver"),
+        "letter_of_credit": fpml("letterOfCreditFacility"),
         "commitment_amount": fpml("totalCommitmentAmount"),
+        "current_commitment": fpml("currentCommitment"),
+        "original_commitment": fpml("originalCommitment"),
+        "unavailable_commitment": fpml("unavailableToUtilizeAmount"),
         "currency": fpml("currency"),
         "maturity_date": fpml("maturityDate"),
-        "effective_date": fpml("effectiveDate"),
-        "accrual": fpml("accrualOptions"),
+        "effective_date": fpml("startDate"),
+        "floating_rate_option": fpml("floatingRateOption"),
+        "legacy_floating_rate_option": fpml("legacyFloatingRateOption"),
+        "pik_option": fpml("accruingPikOption"),
         "base_rate": fpml("floatingRateIndex"),
         "spread": fpml("spread"),
+        "credit_spread_adjustment": fpml("spreadAdjustment"),
+        "floor": fpml("floorRate"),
+        "cap": fpml("capRate"),
         "day_count": fpml("dayCountFraction"),
-        "commitment_schedule": fpml("facilityCommitmentSchedule"),
-        "commitment_fee": fpml("commitmentFee"),
-        "lc_issuance_fee": fpml("lcIssuanceFee"),
-        "lc_sub_facility": fpml("lcSubFacility"),
+        "payment_frequency": fpml("paymentFrequency"),
+        "commitment_schedule": fpml("commitmentSchedule"),
+        "accruing_fee": fpml("accruingFeeOption"),
+        "lien": fpml("lien"),
+        "seniority": fpml("seniority"),
+        "feature": fpml("feature"),
+        "governing_law": fpml("governingLaw"),
+        "multi_currency": fpml("multiCurrency"),
+        "borrower": fpml("borrowerPartyReference"),
+        "guarantor": fpml("guarantorPartyReference"),
+        "agent": fpml("agentPartyReference"),
+        "must_draw_by_date": fpml("mustDrawByDate"),
+        "evergreen_option": fpml("evergreenOption"),
+        "credit_rating": fpml("creditRating"),
+        "credit_quality": fpml("creditQuality"),
+        "classification": fpml("classification"),
+    }
+
+
+def standards_bindings() -> dict[str, list[TermBinding]]:
+    """Conceptual fields with complementary FpML and FIBO bindings.
+
+    FpML describes the operational loan record; FIBO describes what the
+    entities and relationships mean. A missing term in either standard stays a
+    documented gap instead of being force-fit.
+    """
+    return {
+        "term_loan": [fpml("termLoan"), fibo_binding("fibo-fbc-dae-dbt:CreditFacility")],
+        "revolver": [fpml("revolver"), fibo_binding("fibo-fbc-dae-dbt:CreditFacility")],
+        "commitment": [fpml("currentCommitment"), fibo_binding("fibo-fnd-agr-agr:Commitment")],
+        "floating_rate": [fpml("floatingRateOption"), fibo_binding("fibo-fbc-dae-dbt:FloatingInterestRate")],
+        "lien": [fpml("lien"), fibo_binding("fibo-loan-ln-ln:LenderLienPosition")],
+        "borrower": [fpml("borrowerPartyReference"), fibo_binding("fibo-fbc-dae-dbt:Borrower")],
+        "guarantor": [fpml("guarantorPartyReference"), fibo_binding("fibo-fbc-dae-gty:Guarantor")],
+        "credit_rating": [fpml("creditRating"), fibo_binding("fibo-fbc-dae-crt:CreditRating")],
+        "industry_classification": [
+            fpml("classification"),
+            fibo_binding("fibo-fnd-arr-cls:IndustrySectorClassificationScheme"),
+        ],
+        "pik": [
+            fpml("accruingPikOption"),
+            fibo_gap("FIBO has no dedicated payment-in-kind loan accrual term"),
+        ],
+        "seniority": [
+            fpml("seniority"),
+            fibo_gap("FIBO models lien position, but no equivalent facility seniority field"),
+        ],
     }
 
 
@@ -233,6 +364,8 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         # -- parties ---------------------------------------------------------
         _spec("borrower.legal_name", "the identity of the Borrower", "text",
               "parties", 4, "fibo-fbc-dae-dbt:Borrower", "fibo"),
+        _spec("guarantor.legal_name", "the identity of each Guarantor", "text",
+              "parties", 3, "fibo-fbc-dae-gty:Guarantor", "fibo"),
         _spec("holdings.legal_name", "the identity of Holdings", "text",
               "parties", 3, "fibo-fnd-agr-ctr:ContractParty", "fibo"),
         _spec("administrative_agent.legal_name", "the Administrative Agent",
@@ -245,51 +378,88 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "parties", 2, None, "fibo", verified_term=False),
         # -- dates -----------------------------------------------------------
         _spec("closing_date", "the Closing Date", "date", "dates", 5,
-              "fpml:effectiveDate", "fpml", verified_term=False,
+              "fpml:effectiveDate", "fpml",
               anchors=["Closing Date"]),
         _spec("initial_term_loan.maturity_date",
               "the maturity date of the Initial Term Loans", "date", "dates", 5,
-              "fpml:maturityDate", "fpml", verified_term=False,
+              "fpml:maturityDate", "fpml",
               anchors=["Initial Term Loan Maturity Date"]),
         _spec("revolver.maturity_date",
               "the maturity date of the Revolving Credit Facility", "date",
-              "dates", 5, "fpml:maturityDate", "fpml", verified_term=False,
+              "dates", 5, "fpml:maturityDate", "fpml",
               anchors=["Revolving Credit Maturity Date"]),
         # -- economic terms --------------------------------------------------
         _spec("initial_term_loan.commitment",
               "the aggregate principal amount of the Initial Term Loans",
               "money", "economic_terms", 5, "fpml:totalCommitmentAmount", "fpml",
-              verified_term=False, anchors=["Initial Term Loan Commitment"],
+              anchors=["Initial Term Loan Commitment"],
               sections=["2.01"]),
         _spec("delayed_draw.commitment",
               "the aggregate Delayed Draw Term Loan Commitments", "money",
               "economic_terms", 4, "fpml:totalCommitmentAmount", "fpml",
-              verified_term=False, anchors=["Delayed Draw Term Loan Commitment"]),
+              anchors=["Delayed Draw Term Loan Commitment"]),
         _spec("revolver.commitment",
               "the aggregate Revolving Credit Commitments", "money",
               "economic_terms", 5, "fpml:totalCommitmentAmount", "fpml",
-              verified_term=False, anchors=["Revolving Credit Commitment"]),
+              anchors=["Revolving Credit Commitment"]),
         _spec("lc_sublimit", "the Letter of Credit Sublimit", "money",
-              "economic_terms", 3, "fpml:lcSubFacility", "fpml",
-              verified_term=False, sections=["2.05"]),
+              "economic_terms", 3, "fpml:letterOfCreditFacility", "fpml",
+              sections=["2.05"]),
         _spec("libor_floor_pct", "the LIBO Rate floor", "percent",
-              "economic_terms", 5, "fpml:rateFloor", "fpml", verified_term=False,
+              "economic_terms", 5, "fpml:floorRate", "fpml",
               anchors=["LIBO Rate"]),
         _spec("applicable_margin.eurodollar_top_level_pct",
               "the highest Eurodollar Applicable Margin in the pricing grid",
               "percent", "economic_terms", 5, "fpml:spread", "fpml",
-              verified_term=False, anchors=["Applicable Margin"],
+              anchors=["Applicable Margin"],
               sections=["2.12"]),
         _spec("commitment_fee_pct", "the unused commitment fee", "percent",
-              "economic_terms", 4, "fpml:commitmentFee", "fpml",
-              verified_term=False, sections=["2.09"]),
+              "economic_terms", 4, "fpml:accruingFeeOption", "fpml",
+              sections=["2.09"]),
         _spec("fronting_fee_pct", "the letter of credit fronting fee", "percent",
-              "economic_terms", 2, "fpml:lcIssuanceFee", "fpml",
-              verified_term=False, sections=["2.05"]),
+              "economic_terms", 2, "fpml:accruingFeeOption", "fpml",
+              sections=["2.05"]),
         _spec("ticking_fee_pct",
               "the ticking fee on undrawn delayed draw commitments", "percent",
-              "economic_terms", 3, "fpml:commitmentFee", "fpml",
-              verified_term=False, sections=["2.09"]),
+              "economic_terms", 3, "fpml:accruingFeeOption", "fpml",
+              sections=["2.09"]),
+        # -- FpML/FIBO structural depth ------------------------------------
+        _spec("facility.feature", "the facility feature or purpose classification",
+              "text", "administrative", 2, "fpml:feature", "fpml"),
+        _spec("facility.lien", "the facility lien position", "text",
+              "economic_terms", 4, "fpml:lien", "fpml"),
+        _spec("facility.seniority", "the facility seniority or ranking", "text",
+              "economic_terms", 4, "fpml:seniority", "fpml"),
+        _spec("facility.governing_law", "the governing law of the facility", "text",
+              "administrative", 2, "fpml:governingLaw", "fpml"),
+        _spec("facility.multi_currency", "whether the facility permits multiple currencies",
+              "bool", "economic_terms", 3, "fpml:multiCurrency", "fpml"),
+        _spec("facility.evergreen_option", "any evergreen extension option",
+              "bool", "economic_terms", 3, "fpml:evergreenOption", "fpml"),
+        _spec("delayed_draw.must_draw_by_date", "the last date a delayed draw may be made",
+              "date", "dates", 4, "fpml:mustDrawByDate", "fpml"),
+        _spec("delayed_draw.refusal_allowed", "whether a delayed draw can be refused",
+              "bool", "economic_terms", 3, "fpml:refusalAllowed", "fpml"),
+        _spec("accrual.credit_spread_adjustment_pct",
+              "the credit spread adjustment added to the benchmark", "percent",
+              "economic_terms", 5, "fpml:spreadAdjustment", "fpml",
+              anchors=["Credit Spread Adjustment"]),
+        _spec("accrual.cap_pct", "the cap on the applicable base or all-in rate",
+              "percent", "economic_terms", 4, "fpml:capRate", "fpml"),
+        _spec("pik.rate_pct", "the payment-in-kind interest rate", "percent",
+              "economic_terms", 5, "fpml:accruingPikOption", "fpml",
+              anchors=["PIK Interest"]),
+        _spec("pik.spread_pct", "the payment-in-kind spread", "percent",
+              "economic_terms", 5, "fpml:pikSpread", "fpml",
+              anchors=["PIK Interest"]),
+        _spec("rating.value", "the borrower or facility credit rating", "text",
+              "economic_terms", 3, "fpml:creditRating", "fpml"),
+        _spec("rating.agency", "the credit rating agency", "text", "parties", 2,
+              "fibo-fnd-arr-rt:RatingAgency", "fibo"),
+        _spec("rating.credit_quality", "the investment-grade credit quality classification",
+              "text", "economic_terms", 3, "fpml:creditQuality", "fpml"),
+        _spec("borrower.industry_classification", "the borrower's industry classification",
+              "text", "administrative", 1, "fpml:classification", "fpml"),
         _spec("amortization.quarterly_amount",
               "the quarterly principal amortization payment", "money",
               "economic_terms", 5, "actus:arrayNextPrincipalRedemptionPayment",
@@ -401,16 +571,24 @@ def fields_in_class(field_class: str) -> list[FieldSpec]:
 
 
 def provenance() -> dict:
+    v = _vendored()
+    composed = {
+        concept: [binding.model_dump() for binding in bindings]
+        for concept, bindings in standards_bindings().items()
+    }
     return {
         "standard": "FpML",
         "publisher": "ISDA",
         "version": FPML_VERSION,
         "namespace": FPML_NAMESPACE,
         "source": FPML_SOURCE,
-        "verified": False,
+        "mirror_commit": v["mirror_commit"],
+        "schema_files": v["schema_files"],
+        "elements_available": len(v["elements"]),
+        "composed_with_fibo": composed,
+        "verified": True,
         "note": (
-            "fpml.org was unreachable from the build environment; loan product "
-            "element names are hand-mapped from FpML 5.x and marked "
-            "verified=False. Run scripts/gen_fpml.py --verify to promote."
+            "Element names resolve against a checked-in index generated from "
+            "the published schemas at a pinned public mirror commit."
         ),
     }

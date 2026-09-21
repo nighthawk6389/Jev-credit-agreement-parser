@@ -139,11 +139,3 @@ untestable_in_this_environment:
       lower than production would be, and the orphan sweep is carrying more
       weight than it would with a real extractor behind it.
     remedy: set ANTHROPIC_API_KEY and run with --backend anthropic.
-
-  - id: FPML_SCHEMAS
-    families: [F06_structure, F07_benchmark]
-    reason: fpml.org is unreachable, so loan product element names are unverified.
-    consequence: >
-      FpML standard_term values carry verified=false. Output is internally
-      consistent but may not be comparable to another system's FpML mapping.
-    remedy: python scripts/gen_fpml.py --verify
