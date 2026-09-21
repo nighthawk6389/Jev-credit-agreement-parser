@@ -66,6 +66,34 @@ construction a **base-rate** floor, which is the distinction that matters: at a
 SOFR of 0.05% with a 1.00% floor and a 5.00% margin, a base-rate floor yields
 6.00% and an all-in floor yields 5.05%.
 
+### The field registry's anchors are named after the fixture
+
+`initial_term_loan.maturity_date` anchors on the phrase **"Initial Term Loan
+Maturity Date"**, which is what the synthetic Meridian fixture calls it. Across
+the corpus:
+
+| defined term | documents |
+| --- | --- |
+| Latest Maturity Date | 14 |
+| Term Loan Maturity Date | 9 |
+| Latest Term Loan Maturity Date | 6 |
+| Stated Maturity Date | 6 |
+| Revolving Credit Maturity Date | 5 |
+| Final Maturity Date | 4 |
+| …40 further spellings | |
+| **Initial Term Loan Maturity Date** | **2** |
+
+**44 distinct defined terms end in "Maturity Date"**, and the one the registry
+anchors on is in 2 documents out of 103. Health Catalyst writes simply
+`" Maturity Date ": July 16, 2029`, so the rule cannot fire and the field
+routes to review — the F10 assertion it fails is measuring exactly this.
+
+This is the mechanism behind "recall collapsed from roughly thirty fields of
+thirty-eight to between zero and three". It is not a missing anchor; it is a
+tail with 44 members and no upper bound, on one field, and the same shape
+repeats for margin, floor and commitment. Adding the forty-fifth spelling is
+the work this project decided not to do.
+
 ### "DIP" decides nothing
 
 `DIP Financing` appears in **36** documents. **Three** are DIP facilities. The

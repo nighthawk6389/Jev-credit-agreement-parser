@@ -692,6 +692,12 @@ def _review_queue(fields: dict[str, ExtractedField]) -> list[dict[str, Any]]:
             "validation_confidence": field.validation_confidence,
             "why": field.notes,
             "span": field.spans[0].model_dump() if field.spans else None,
+            # Separate keys because they answer different questions: "span" is
+            # the text a value was read from, "review_hint" is where to start
+            # looking when there is no value yet.
+            "review_hint": (
+                field.review_hint.model_dump() if field.review_hint else None
+            ),
         }
         for name, field in fields.items()
         if field.status in ("needs_review", "conflicted")

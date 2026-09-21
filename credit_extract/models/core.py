@@ -295,6 +295,15 @@ class ExtractedField(BaseModel, Generic[T]):
     criticality: int = Field(default=3, ge=1, le=5)
     #: Set when status is not_applicable_to_archetype: which archetype, and why.
     archetype_note: str | None = None
+    #: Where to start looking when the extractor came back empty and the
+    #: negative-space validator did not believe the field is absent. This is a
+    #: whole chunk -- ten thousand characters, not a quotation -- so it is kept
+    #: out of ``spans``, which means "the text this value was read from". A
+    #: region that size in the citation slot reads as a precise reference to
+    #: whatever the region happens to begin with, which on one real agreement
+    #: pointed a reader at the Junior Indebtedness definition for the maturity
+    #: date. A hint is worth having; a hint wearing a citation's clothes is not.
+    review_hint: Span | None = None
 
     @model_validator(mode="after")
     def _at_least_one_variant(self) -> "ExtractedField[T]":
