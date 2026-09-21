@@ -182,3 +182,21 @@ assertions:
       as Aspen's with a date welded to the front, which is a useful control --
       a rule that keys off "the date on which the conditions specified in
       Section 4.01 are satisfied" and declines will decline here too, wrongly.
+
+  - id: latham_is_not_a_second_lien
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Added after the fact, when the classifier's junior-lien signal was found
+      to be inverted. Latham says "second lien" zero times, "second priority"
+      zero times and "junior lien" eighteen times, and was classified a second
+      lien term loan at 0.70 on the strength of the third number alone.
+
+      Eighteen is the highest junior-lien count in the corpus and every one of
+      them is this agreement describing debt that ranks behind it. The volume
+      is the tell: a genuine second lien facility has little occasion to
+      discuss debt junior to itself, while a first lien agreement of this size
+      negotiates the subject at length. The signal ran in the wrong direction
+      and its strength ran in the wrong direction too.

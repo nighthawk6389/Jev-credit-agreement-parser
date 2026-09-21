@@ -1,0 +1,74 @@
+# Tier 2 assertions: Athena Funding III LLC (Blue Owl Technology Finance
+# Corp.), Amendment No. 1 to Loan Financing and Servicing Agreement, dated as
+# of September 11, 2026 (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# The purest warehouse in the corpus and the one that states the case:
+#
+#     "collateral obligation"   777 occurrences
+#     "borrowing base"           80 occurrences
+#     "ebitda"                   17 occurrences
+#
+# Seven hundred and seventy-seven references to the assets being funded. This
+# is a facility against a pool of loans, and it classifies as abl_revolver at
+# 0.85 on "borrowing base" and "advance rate" -- the same two phrases that
+# correctly classify Winnebago's recreational-vehicle revolver and Tailored
+# Brands' retail ABL in this same batch.
+#
+# Two decisive families fire here, not one: recurring_revenue also hits, on
+# "recurring revenue loan", which is a category of asset the pool may hold
+# rather than a description of this facility. abl_revolver wins two signals to
+# one, so the tie-break that would have sent an ambiguous document to the
+# model never runs. The margin between "classified confidently" and "sent for
+# a second opinion" is one phrase.
+
+document: blue_owl_athena_funding_2026
+corpus_name: E_blue-owl-technology-finance-corp-otf_2026-09-15_0001193125-26-391950_d74167dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: athena_funding_is_not_an_asset_based_revolver
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: archetype
+    expect: unknown
+    note: >
+      Expected to fail until the classifier changes, and recorded rather than
+      repaired, because this is the held-out side.
+
+      The error is not that abl_revolver is an imprecise label for a
+      warehouse. It is that abl_revolver rules nav_tests inapplicable, and
+      nav_tests is the group a warehouse's coverage and overcollateralisation
+      tests belong to. The archetype chosen on the strength of the borrowing
+      base suppresses the tests the borrowing base is measured by.
+
+      unknown, not nav_or_subscription: the nav_or_subscription profile is for
+      a fund-level line against uncalled capital or portfolio NAV, and this is
+      an SPV against a pool of collateral obligations. Its decisive vocabulary
+      -- "net asset value", "uncalled capital", "subscription facility",
+      "portfolio investments" -- does not describe this deal either. The
+      corpus has three of these facilities and no profile that fits them, so
+      the honest answer is that the classifier should decline, and the
+      register should carry a gap rather than a wrong box.
+
+  - id: athena_funding_collateral_vocabulary_is_about_the_pool
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_status
+    target: borrowing_base.advance_rate_inventory
+    expect: absent_from_document
+    note: >
+      An advance rate against inventory is what an asset-based revolver has.
+      This facility advances against collateral obligations, so the field is
+      affirmatively not here -- absent_from_document, not needs_review and not
+      external_reference.
+
+      It is the same question the collateral-vocabulary veto already answers
+      on the fit side for Golub's cik1901612: whose balance sheet the words
+      are on. Here the answer runs the other way -- the veto stops suppression
+      firing wrongly, and what this document needs is for the archetype not to
+      have been chosen in the first place.

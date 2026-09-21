@@ -1,0 +1,49 @@
+# Tier 2 assertions: The Bank of N.T. Butterfield & Son Limited, 2026 Proxy
+# Statement (Exhibit 99.1), filed August 14, 2026.
+#
+# Fit side, never read during development. It is a proxy statement, and it is
+# the document that refutes every structural heuristic anyone would reach for
+# before reading:
+#
+#     887,336 characters      111 sections      0 Events of Default
+#
+# For comparison, the real credit agreements in this corpus run 636,000
+# (Compass Diversified, 149 sections), 746,000 (Vivid Seats' second exhibit),
+# 852,000 (nScale, 130 sections), 867,000 (Accelevation, 174 sections) and
+# 944,000 (Latham). This proxy is longer than four of the five and has more
+# sections than two of them. Size does not separate them. Section count does
+# not separate them. Having a table of contents, numbered headings, defined
+# terms in quotation marks and signature blocks does not separate them.
+#
+# It also contains contract language, because it carries a scheme of
+# arrangement: "credit agreement or any other agreement or instrument to which
+# such Crown Party is a party or by which such Crown Party or such Crown
+# Party's properties may be affected or bound" is a no-conflicts
+# representation of exactly the kind a credit agreement carries, and the word
+# "borrower" appears in a discussion of mortgage default risk.
+#
+# What separates it is one thing: it never declares an Event of Default,
+# because nothing in it can be defaulted on. That is the whole of the guard,
+# and this document is the reason the guard tests for that rather than for
+# length, structure, headings or contract vocabulary.
+
+document: butterfield_proxy_2026
+corpus_name: Q_bank-of-n-t-butterfield-son-ltd-ntb_2026-08-14_0001653242-26-000083_regal-agmproxycompiled
+source: real
+tier: 2
+
+assertions:
+
+  - id: butterfield_proxy_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      The largest non-agreement in the corpus and the one with the most
+      agreement-like shape. Greenfire, Rezolve, JRD Unico and McGraw Hill are
+      all short enough that a length test would have caught them; this one is
+      not, and a length test would have caught Compass Diversified instead.
+
+      Asserted under second_lien because that is the profile every ambiguous
+      long document in this corpus used to land in.

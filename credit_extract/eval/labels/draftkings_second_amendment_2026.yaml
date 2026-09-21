@@ -1,0 +1,90 @@
+# Tier 2 assertions: DraftKings Inc. / DK Crown Holdings Inc., Second
+# Amendment dated as of August 25, 2026 (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 891,491 characters, 148 sections, and three definitions worth pinning.
+#
+# The Floor is the cleanest instance in the corpus of the distinction F07's
+# floor member exists for:
+#
+#   "Floor" shall mean (a) with respect to ABR, a rate of interest equal to
+#   1.00% per annum and (b) with respect to Term SOFR, a rate of interest
+#   equal to 0.00% per annum.
+#
+# One defined term, two benchmarks, two different numbers. Any answer that is
+# a single percentage is wrong here regardless of which number it picks, and
+# 1.00% -- the larger and the first -- is the one a reader scanning for a
+# floor would take. Aveanna in this same batch is the control: two floors,
+# both 0.00%, where collapsing them to one number is harmless and therefore
+# teaches nothing.
+
+document: draftkings_second_amendment_2026
+corpus_name: B_draftkings-inc-dkng_2026-08-25_0001104659-26-100812_tm2623632d1-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: draftkings_has_two_floors_for_two_benchmarks
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      The SOFR floor is 0.00% and the ABR floor is 1.00%, and the field asks
+      for the benchmark floor, so 0.00% is the answer. 1.00% is the near-miss
+      and it is the attractive one: it appears first in the definition, it is
+      the non-zero number, and it is the figure a summary would report as
+      "the floor".
+
+      Hornbeck is the third arrangement -- a floor stated for the revolving
+      loans only, with the term loans unfloored -- and Iridium the fourth.
+      Between them the corpus now covers a single floor, two floors with two
+      numbers, two floors with one number, and a floor scoped to one facility.
+
+  - id: draftkings_closing_date_gives_the_event_and_then_the_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-11-07
+    note: >
+      '"Closing Date" shall mean the date on which the conditions in Section
+      4.02 are satisfied or waived and the Revolving Credit Facility becomes
+      effective, which is November 7, 2024.'
+
+      The event first and the date last, after a comma, at the end of a
+      44-word sentence. Latham is the mirror -- "August 20, 2026, the date on
+      which the conditions specified in Section 4.01 were satisfied" -- with
+      the date first.
+
+      The pair is the point. A rule that stops reading once it has matched the
+      conditions-satisfied language resolves Latham and fails here; a rule
+      that takes the first date in the definition fails Latham's siblings.
+      Aspen and Constellation Brands give the event with no date at all, so
+      the family of four covers every arrangement the corpus contains.
+
+  - id: draftkings_sweep_is_defined_as_its_own_complement
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: needs_review
+    note: >
+      '"Retained Percentage" shall mean, with respect to any Excess Cash Flow
+      Period, (a) 100% minus (b) the Required Percentage with respect to such
+      Excess Cash Flow Period.'
+
+      The sweep is not stated; what is stated is the complement of the sweep,
+      in terms of a Required Percentage defined elsewhere. So the number a
+      reader wants is reachable only by resolving a second defined term and
+      then subtracting -- and the document offers a percentage, in the right
+      register, in a definition whose name contains "Percentage", that is the
+      exact arithmetic inverse of the answer.
+
+      needs_review rather than a value: the chain is real and resolvable, but
+      nothing in this filing settles it, and a confident answer here has a
+      50% chance of being the retained share reported as the swept share.

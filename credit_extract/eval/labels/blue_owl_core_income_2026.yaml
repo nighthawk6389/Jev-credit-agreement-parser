@@ -1,0 +1,75 @@
+# Tier 2 assertions: Core Income Funding VII LLC (Blue Owl Credit Income
+# Corp.), Amendment No. 2 to Credit and Security Agreement, dated as of
+# August 20, 2026 (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# A BDC warehouse: a special-purpose borrower funding a pool of collateral
+# loans, with the pool's composition tested rather than the borrower's
+# earnings. It classifies as abl_revolver at 0.85 on "borrowing base" and
+# "advance rate", which are the right words for the wrong reason -- in an
+# asset-based revolver they measure receivables and inventory against advance
+# rates, and here they measure eligible collateral loans against the same.
+#
+# The consequence is specific and in the wrong direction. abl_revolver rules
+# nav_tests inapplicable, and a warehouse's tests are exactly the nav_tests
+# group. So the archetype that fits the vocabulary suppresses the fields the
+# document actually has.
+#
+# This is the third document in the corpus with the shape -- Golub's
+# cik1901612 on the fit side, Athena Funding III in this same batch -- which
+# is what makes it a class rather than an instance.
+
+document: blue_owl_core_income_2026
+corpus_name: A_blue-owl-credit-income-corp_2026-08-25_0001193125-26-365212_d31641dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: blue_owl_core_income_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-05-21
+    note: >
+      '"Closing Date" means May 21, 2024.'
+
+      Stated outright, on an amendment dated 20 August 2026. The two-year gap
+      is the trap the Accelevation joinder has in miniature and Aveanna has in
+      full: the document's own date is the salient one and the defined term
+      points somewhere else entirely.
+
+  - id: blue_owl_core_income_floor_is_defined_as_whatever_the_agreement_says
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_status
+    target: libor_floor_pct
+    expect: needs_review
+    note: >
+      '"Floor" means, with respect to any Eligible Currency, the benchmark
+      rate floor, if any, provided in this Agreement initially (as of the
+      execution of this Agreement, the modification, amendment or renewal of
+      this Agreement or otherwise) with respect to the applicable initial
+      Benchmark for such Eligible Currency.'
+
+      The definition defines the term as whatever the agreement provides,
+      which is not a definition. It is a standard LSTA benchmark-replacement
+      form, so the same sentence appears in Winnebago, Bain Capital, Tailored
+      Brands and New Fortress Energy -- four more documents in this batch --
+      and it is the single most common Floor definition in the corpus.
+
+      Two of those five resolve it in the next sentence: New Fortress adds
+      "The Floor shall be 1.00% per annum with respect to the Term Loans" and
+      Bain adds "Commencing on the Closing Date, the Floor ...". The other
+      three do not, within the filing. So the right answer is not a number and
+      not absent_from_document -- the term is defined, used, and its value is
+      genuinely undetermined by the text. needs_review is the only honest
+      terminal state: it is the one that does not claim to have settled
+      anything, and it is deliberately not a confident status, so it neither
+      earns credit nor spends the family's error budget.
+
+      A pipeline that returns 0.00% here, on the grounds that the definition
+      says the floor may be zero, has invented a rate.

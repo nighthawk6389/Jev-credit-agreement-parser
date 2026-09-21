@@ -30,20 +30,46 @@ assertions:
     member: schedule_omitted_from_filing
     kind: field_status
     target: applicable_margin.eurodollar_top_level_pct
-    expect: external_reference
+    expect: needs_review
     note: >
-      28,594 characters of amendment with no pricing grid in them. The
-      Applicable Margin is a defined term of the Credit Agreement being
-      amended, and that agreement is not in the harvest.
+      CORRECTED. This assertion first read external_reference and that was
+      wrong, by the labelling guide's own rule:
 
-      external_reference rather than absent_from_document: the margin exists,
-      is knowable, and is in a document this one names and does not contain.
-      Reporting absence would say this facility has no margin.
+        **`external_reference` needs the pointer quoted.** If you cannot quote
+        the sentence that points elsewhere, you have an absence or a
+        not-found, not an external reference.
 
-      It is the ordinary case for an amendment and the corpus has not had a
-      clean instance of it. BrightSpring and Crane NXT are amendments too and
-      both restate their pricing in full, which is why their labels are about
-      superseded grids rather than missing ones. This one restates nothing.
+      The phrase "Applicable Margin" occurs **zero times** in this amendment.
+      There is no pointer to quote. I labelled what I knew about the deal --
+      that a credit agreement has a margin and that this one's base agreement
+      is not in the harvest -- rather than what the document says, which is
+      the same mistake the Health Catalyst EBITDA labels made and the reason
+      the guide carries that rule at all.
+
+      What the pipeline returns is absent_from_document, and that is also
+      wrong, in the other direction: 28,594 characters amending Sections of an
+      agreement it does not contain cannot affirmatively establish that the
+      facility has no margin. Absence confirmed across this document's chunks
+      is a true statement about these chunks and a false one about the deal.
+
+      needs_review is the only status that claims what is actually known. It
+      is not a confident status, so it neither earns credit nor spends the
+      family's budget, which is the right accounting for a field nobody --
+      pipeline or labeller -- can settle from this filing.
+
+      The general line the corpus now draws, across the documents labelled in
+      this pass: a filing that is a *partial view of an agreement existing
+      elsewhere* (this amendment, Air T's note, nScale's Amendment No. 3)
+      cannot support absence, and supports external_reference only where it
+      quotes a pointer -- Air T's "the Applicable Margin (as defined in the
+      Credit Agreement)" does, and this does not. A filing that is *not an
+      agreement at all* (the McGraw Hill release, the Butterfield proxy) is a
+      different case: there absence is decidable and true, because there is no
+      elsewhere for the value to be.
+
+      BrightSpring and Crane NXT are amendments that restate their pricing in
+      full, which is why their labels are about superseded grids rather than
+      missing ones. This one restates nothing, and so settles nothing.
 
   - id: comtech_has_a_subordinated_facility_filed_beside_it
     family: F02_precedence

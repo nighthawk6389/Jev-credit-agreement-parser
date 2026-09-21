@@ -1,0 +1,68 @@
+# Tier 2 assertions: Horizon Funding II, LLC, Second Amended and Restated Note
+# Funding Agreement dated as of September 2, 2026, between the Issuer and
+# Teachers Insurance and Annuity Association of America, Pacific Life
+# Insurance Company and The Lincoln National Life Insurance Company as Initial
+# Purchasers (Exhibit 10.5).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# The companion of horizon_technology_2026, which is the Sale and Servicing
+# Agreement filed as Exhibit 10.4 of the same submission. Between them the
+# filing carries the two halves of a securitisation -- the vehicle that buys
+# the loans and the note purchase that funds it -- and neither half is a
+# credit agreement.
+#
+# 41,202 characters, 30 sections, one Event of Default, nine references to a
+# borrowing base. The Event of Default count puts it below the non-agreement
+# guard's floor of two, so it declines as not-an-agreement; that happens to be
+# the right outcome and, as with nScale and Vivid Seats on the fit side, for
+# the wrong reason. This document is an agreement. It is just not a loan.
+#
+# It is also the fourth document in the corpus where "borrowing base" occurs
+# without an asset-based revolver behind it -- after the two Blue Owl
+# warehouses and Elmet's investor rights agreement -- and the only one of the
+# four that escapes classification, by an accident of how few times it says
+# "Event of Default".
+
+document: horizon_note_funding_2026
+corpus_name: G_horizon-technology-finance-corp-hrzn-htfc_2026-09-09_0001437749-26-029978_ex-1014139
+source: real
+tier: 2
+
+assertions:
+
+  - id: horizon_note_funding_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      Right answer, and the margin is one sentence wide. Nine borrowing base
+      references would classify this as abl_revolver at 0.70 the moment a
+      second Event of Default appears -- and a Second Amended and Restated
+      agreement gaining one clause on its next restatement is an ordinary
+      event, not a hypothetical.
+
+      So the guard's floor is doing two jobs here and is unfit for one of
+      them. It correctly excludes documents with no defaults at all; it
+      excludes this one by coincidence, and the coincidence is what stands
+      between a note purchase agreement and a confident ABL classification.
+
+  - id: horizon_note_purchasers_are_not_lenders
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: administrative_agent.legal_name
+    expect: absent_from_document
+    note: >
+      Three insurance companies as Initial Purchasers, an Issuer, and no
+      administrative agent, because there is no syndicate and no loan. The
+      parties to a note funding agreement occupy positions that have no
+      counterpart in the field registry.
+
+      absent_from_document is the correct status and the assertion exists to
+      keep it from becoming external_reference. There is no credit agreement
+      elsewhere with an agent this document is deferring to; the role simply
+      does not exist in this structure, which is a fact about the deal rather
+      than about the filing.

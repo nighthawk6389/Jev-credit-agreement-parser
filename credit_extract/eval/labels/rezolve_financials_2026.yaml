@@ -1,0 +1,63 @@
+# Tier 2 assertions: Rezolve AI plc, FINANCIAL STATEMENTS (Exhibit 99.4),
+# filed September 1, 2026.
+#
+# Fit side, never read during development. 60,446 characters, one section,
+# zero Events of Default. It is in the corpus and it is not a credit
+# agreement, which is the label -- and it is a strictly harder case than
+# Greenfire, because it names the amendment:
+#
+#   credit facilities of $50.0 million to finance future acquisitions if drawn
+#   down before March 27, 2023. Additionally, the maturity date for all debt
+#   facilities was extended to February 28, 2025. On April 26, 2024, the
+#   Company signed an amendment agreement (Amendment #7) to its credit
+#   agreement.
+#
+# A facility size, a drawdown deadline, a maturity date, an amendment number
+# and an amendment date -- five extractable values in three sentences, every
+# one of them true, every one of them about a document that is not here. It
+# is the same $50.0 million figure Greenfire's footnote carries, which is
+# coincidence, but the coincidence is instructive: a facility size in a
+# financial statement note looks exactly like a facility size.
+#
+# Five of the 107 documents in the frozen split are like this. Together they
+# are the negative set the guard needs, and they are not interchangeable:
+# Greenfire is a business acquisition report, this one a set of financial
+# statements, JRD Unico an acquisition target's financials, McGraw Hill an
+# earnings release, Butterfield a proxy statement. Each fails a different test
+# a reader might propose.
+
+document: rezolve_financials_2026
+corpus_name: E_rezolve-ai-plc-rzlv-rzlvw_2026-09-01_0001193125-26-378541_rzlv-ex99-4
+source: real
+tier: 2
+
+assertions:
+
+  - id: rezolve_financials_have_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Zero Events of Default, so the guard declines before any vocabulary is
+      counted. That ordering is the whole design: the question "what kind of
+      deal is this" is only answerable once "is this a deal" has been answered
+      yes, and the classifier used to answer the second question first.
+
+  - id: rezolve_facility_size_belongs_to_another_document
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: revolver.commitment
+    expect: external_reference
+    note: >
+      "credit facilities of $50.0 million" is stated, correctly quoted, and
+      not this document's term. The agreement it belongs to has been amended
+      seven times and none of the seven is in the filing.
+
+      Paired deliberately with greenfire_facility_size_belongs_to_another_
+      document, which pins the same status on the same figure in a different
+      kind of filing. Two documents, two regulators, one number, and in
+      neither case does the corpus contain the agreement -- which is what
+      external_reference is for and why absent_from_document would be a lie
+      in both directions at once.

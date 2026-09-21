@@ -1,0 +1,61 @@
+# Tier 2 assertions: Comtech Telecommunications Corp., Amendment No. 4 to
+# Subordinated Credit Agreement, dated as of July 30, 2026 (Exhibit 10.2).
+#
+# Fit side, never read during development. This is the second exhibit of the
+# filing whose first exhibit is already labelled as comtech_amendments_2026,
+# and the pair is a document-set trap built out of nothing but numbering:
+#
+#   Exhibit 10.1  AMENDMENT NO. 5 TO CREDIT AGREEMENT              28,594 chars
+#   Exhibit 10.2  AMENDMENT NO. 4 TO SUBORDINATED CREDIT AGREEMENT 39,607 chars
+#
+# Same borrower, same date, same submission, consecutive exhibit numbers,
+# amendment numbers that run downward. Everything an assembler keys on says
+# these belong to one chain, and they do not: they amend two different
+# agreements, one senior and one subordinated, each with its own amendment
+# history. Ordering them by amendment number puts No. 5 after No. 4 and makes
+# the senior amendment look like the operative version of the subordinated
+# facility.
+#
+# BRC Group is the same failure with a different tell -- two filings sharing a
+# CIK whose amended section numbers do not exist in each other. Here the
+# section numbers would not help, because both amend a credit agreement and
+# both use ordinary credit agreement section numbering. What separates them is
+# one word in the title.
+
+document: comtech_subordinated_2026
+corpus_name: L_comtech-telecommunications-corp-de-cmtl_2026-08-03_0000023197-26-000084_ex102comtech-subordinatedc
+source: real
+tier: 2
+
+assertions:
+
+  - id: comtech_subordinated_is_not_the_senior_amendment
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: text_present
+    target: "AMENDMENT NO. 4 TO SUBORDINATED CREDIT AGREEMENT"
+    expect: true
+    note: >
+      Asserted as text rather than as a chain finding because the proposition
+      is about this document alone: it says on its face which agreement it
+      amends and which number it carries, and any grouping that loses that has
+      lost it from a string that is present in the first 300 characters.
+
+      The chain-level claim -- that these two exhibits must not fold into one
+      set -- belongs with the pair, and BRC already carries it. What this
+      pins is that the evidence needed to keep them apart is not subtle,
+      recovered or inferred. It is in the title.
+
+  - id: comtech_subordinated_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      A subordinated credit agreement amendment is the closest thing in the
+      corpus to a document that ought to classify as second lien, and it does
+      not, because it never says so: "second lien" and "second priority" both
+      occur zero times, and subordination here is contractual rather than
+      lien-based. The classifier declining is right, and it is right for a
+      reason worth keeping -- payment subordination and lien subordination are
+      different things that the word "subordinated" does not distinguish.

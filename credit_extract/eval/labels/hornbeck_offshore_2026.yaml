@@ -116,3 +116,33 @@ assertions:
       floored at zero and the term loans are unfloored, which is a third
       arrangement after "one floor for everything" and Iridium's "two floors,
       two numbers".
+
+  - id: hornbeck_is_not_the_second_lien_it_refers_to
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Added after the fact, and the hardest of the four junior-lien
+      misclassifications to see. Hornbeck says "second lien" 45 times and
+      "Second Lien Credit Agreement" 35 times, so on a count it looks like the
+      one document in the corpus that really is a second lien deal.
+
+      It is not. Every one of the 35 is a reference to a separate agreement,
+      in the recurring phrase "this Agreement, the Second Lien Credit
+      Agreement" -- a first lien facility enumerating its sibling. The first
+      occurrence is 83,475 characters in, inside an EBITDA add-back for fees
+      relating to "the offering or incurrence of, or ongoing administration
+      of this Agreement, the Second Lien Credit Agreement, any other credit
+      facilities or debt instruments". The document's own pricing settles it:
+      a five-level grid at 2.75-3.75% over SOFR against total net leverage of
+      0.50x to 2.50x, which is not second lien pricing.
+
+      So the corpus contains no second lien agreement at all, and the three
+      phrases the profile treats as decisive have between them classified
+      five documents and been right about none. "Junior lien" has been
+      demoted; the other two survive because they at least describe the
+      document that carries them -- except when, as here, they name a
+      different document. Greenfire's single "second lien credit agreement"
+      in a financial statement footnote is the same failure caught by the
+      non-agreement guard instead.

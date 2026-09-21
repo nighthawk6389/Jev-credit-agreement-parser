@@ -1,0 +1,74 @@
+# Tier 2 assertions: Compass Group Diversified Holdings LLC, Sixth Amendment
+# to Credit Agreement dated as of August 6, 2026 -- filed twice.
+#
+# Fit side, never read during development. The corpus contains this amendment
+# under two accession numbers, and the two copies are the same document:
+#
+#   0001345126-26-000061  Exhibit 10.4  636,384 chars  149 sections
+#   0001345126-26-000062  Exhibit 10.1  636,384 chars  149 sections
+#
+# Five characters differ between them, at offsets 6, 8, 19, 47 and 113. All
+# five are the digit of the exhibit number -- 10.4 against 10.1 -- inside the
+# EDGAR header line. Every one of the 636,271 characters of operative text is
+# identical, and so is every section boundary.
+#
+# This is the duplicate case that a content hash does not catch, and it is not
+# a contrived one: the two filings are an ordinary consequence of attaching
+# the same amendment to two submissions. A pipeline that deduplicates on hash
+# processes it twice, pays twice, and if the two runs disagree anywhere --
+# through a model tier, a sampling temperature, a timeout -- reports two
+# different answers for one document with no way to tell which is which.
+#
+# The companion exhibit is already labelled as compass_diversified_2026 and
+# carries the SOFR Adjustment assertion. This label deliberately asserts
+# something else, because asserting the same fact twice against the same bytes
+# would inflate the count without testing anything.
+
+document: compass_diversified_duplicate_2026
+corpus_name: K_compass-diversified-holdings-codi-codi-pa-codi-pb-codi_2026-08-10_0001345126-26-000062_exhibit101-sixthcreditfaci
+source: real
+tier: 2
+
+assertions:
+
+  - id: compass_maturity_rolls_backward_not_forward
+    family: F08_units
+    member: ratio_formatting
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2028-01-12
+    note: >
+      '"Maturity Date" means with respect to the Aggregate Revolving
+      Commitment and the Term Loan, January 12, 2028; provided, however, that
+      if such date is not a Business Day, the applicable Maturity Date shall
+      be the next preceding Business Day.'
+
+      January 12, 2028 is a Wednesday, so the proviso does not bite and the
+      stated date is the answer. What the proviso does is set the business day
+      convention, and it sets it to *preceding* -- the value rolls backward
+      into the prior business day, not forward into the next one.
+
+      Following is the overwhelmingly common convention and the one a reader
+      supplies without noticing they have supplied it. Preceding is the one
+      written here. The date extracted today is right either way; the
+      convention is the part that is carried into any downstream schedule, and
+      it is one word buried after a semicolon in a definition whose headline
+      value is unambiguous. That combination -- a right answer sitting on top
+      of a term that is easy to read past -- is what makes it worth pinning
+      on the copy rather than repeating the SOFR Adjustment.
+
+  - id: compass_duplicate_carries_the_same_sofr_adjustment
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: text_present
+    target: "0.10% (10.00 basis points)"
+    expect: true
+    note: >
+      The same string, at the same offset, in both copies. Asserted here as
+      the tripwire on the duplicate itself: if these two documents ever stop
+      agreeing about this value, the disagreement is in the pipeline rather
+      than in the corpus, because the bytes cannot disagree.
+
+      That is a use for a duplicate that is worth more than deduplicating it.
+      Two identical documents processed independently are a free determinism
+      check, and the corpus supplies one by accident.

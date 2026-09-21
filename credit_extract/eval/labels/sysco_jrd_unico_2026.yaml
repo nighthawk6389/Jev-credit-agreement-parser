@@ -1,0 +1,67 @@
+# Tier 2 assertions: JRD Unico, Inc. and Affiliates, Combined Financial
+# Statements for December 27, 2025 and December 28, 2024, filed by Sysco
+# Corporation as Exhibit 99.1 on September 14, 2026.
+#
+# Fit side, never read during development. 82,093 characters, eleven sections,
+# zero Events of Default. It is an acquisition target's audited financials
+# filed by the acquirer, and it is the most credit-agreement-like non-agreement
+# in the corpus by vocabulary alone:
+#
+#   ... EBITDA ratio, fixed charge ratio and incurrence of debt ratio.
+#
+#   In April 2018, the Company issued $600,000,000 of Senior Variable Rate
+#   Notes ("2018 Private Placement Notes"). The 2018 Private Placement Notes
+#   were issued in two tranches: Series A notes in the amount of $225,000,000
+#   bear interest, paid quarterly ...
+#
+#   Proceeds from revolving credit facility ... 307,500,000
+#
+# Three covenant names, a tranche structure, two facility sizes and a
+# revolver drawdown. Anything looking for covenant vocabulary, tranches or
+# facility sizes finds all of them here and every one belongs to JRD Unico's
+# own borrowings, not to Sysco and not to any agreement in this filing.
+#
+# The filer trap sits on top of it. Sysco's own credit agreement amendment is
+# in the corpus too, under a different accession, and is labelled as
+# sysco_2026. Grouping by filer pairs an acquirer's credit agreement with an
+# acquisition target's balance sheet and produces a set whose covenant is
+# taken from one company and whose facility is taken from another.
+
+document: sysco_jrd_unico_2026
+corpus_name: M_sysco-corp-syy_2026-09-14_0001104659-26-107510_tm2625144d3-ex99-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: sysco_jrd_unico_financials_have_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Zero Events of Default, so the guard declines. The vocabulary that would
+      otherwise be counted is unusually complete -- an EBITDA ratio, a fixed
+      charge ratio, an incurrence test, senior notes in two series and a
+      revolver -- and none of the archetype profiles' decisive phrases happen
+      to be among it, so the answer would be unknown either way today. That is
+      luck and not design, which is why the assertion is worth keeping: it is
+      the document where the guard has the least margin.
+
+  - id: sysco_jrd_unico_covenant_belongs_to_the_target
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: financial_covenant.level
+    expect: external_reference
+    note: >
+      "EBITDA ratio, fixed charge ratio and incurrence of debt ratio" names
+      three covenants and gives the level of none of them. They are JRD
+      Unico's covenants under JRD Unico's private placement notes, described
+      in a footnote to JRD Unico's financial statements.
+
+      This is the pairing that makes the assertion worth having: Sysco's own
+      amendment, in the same corpus, has an interest coverage covenant whose
+      level reads "3.00 to 1.00" and which the field cannot hold. One document
+      has a level the field must refuse and the other has covenant names with
+      no level at all, and both are filed by Sysco within ten days.

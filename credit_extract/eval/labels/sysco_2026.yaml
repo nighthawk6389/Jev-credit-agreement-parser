@@ -1,0 +1,66 @@
+# Tier 2 assertions: Sysco Corporation, credit agreement as amended (Exhibit
+# 10.1), September 2026.
+#
+# Fit side, never read during development. Fourth redacted filing in the
+# corpus, and its maturity is three tranches deep with two of them stated as
+# durations:
+#
+#   "Maturity Date" means, (i) with respect to the Revolving Facility, the
+#   Revolver Maturity Date, (ii) with respect to the Tranche A Term Facility,
+#   the date six (6) years from the First Amendment Effective Date and (iii)
+#   with respect to the Tranche A-1 Term Facility, the date eight (8) years
+#   from the [same date] ...
+#
+# Two maturities expressed as "N years from" a defined amendment date, in
+# words and numerals, on a facility whose revolver defers to a fourth defined
+# term. StepStone's five-year anniversary resolves because its chain ends at
+# the cover; these end at a First Amendment Effective Date, which this exhibit
+# does not fix.
+
+document: sysco_2026
+corpus_name: I_sysco-corp-syy_2026-09-04_0000950142-26-002498_eh260826448-ex1001
+source: real
+tier: 2
+
+assertions:
+
+  - id: sysco_covenant_is_interest_coverage_not_leverage
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'Section 6.02. Ratio of Consolidated EBITDA to Consolidated Interest
+      Expense. The Parent Borrower will not permit the ratio of Consolidated
+      EBITDA to Consolidated Interest Expense ... to be less than 3.00 to
+      1.00.'
+
+      EBITDA over interest, floored at 3.00 -- an interest coverage ratio
+      written the way a leverage covenant is usually written, with EBITDA in
+      the numerator rather than the denominator. Seventh covenant shape in the
+      corpus that cannot go in this field.
+
+      It is the most dangerous of the seven for this field, because the
+      section heading names Consolidated EBITDA and the level is a plain
+      "3.00 to 1.00". Both the vocabulary and the format match a leverage cap
+      exactly; only the direction of the fraction and the word "less" separate
+      them, and reporting 3.00 as a maximum leverage level inverts the
+      covenant.
+
+  - id: sysco_term_maturities_are_durations
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: null
+    note: >
+      Six years from the First Amendment Effective Date for Tranche A, eight
+      for Tranche A-1, and this exhibit does not date that term. So the field
+      has no answer, and unlike the undated-event documents it has no answer
+      for an arithmetic reason: the offset is known and the origin is not.
+
+      Third shape for a deferred maturity in the corpus. Aspen is five years
+      after an undated Funding Date; StepStone is a five-year anniversary of a
+      Closing Date that resolves to the cover; this is a duration from an
+      amendment whose effective date lives elsewhere.

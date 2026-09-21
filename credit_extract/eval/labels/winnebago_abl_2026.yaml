@@ -1,0 +1,87 @@
+# Tier 2 assertions: Winnebago Industries, Inc., credit agreement (Exhibit
+# 10.1), filed August 21, 2026 with identified information excluded.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# A real asset-based revolver -- 53 references to a borrowing base, an FCCR
+# test, no term loan -- and the classifier gets it right at 0.70. It is in
+# this batch as the positive control for the two warehouses and the Elmet
+# investor rights agreement, which the same decisive phrase classifies
+# wrongly. Four documents, one signal, two right answers.
+#
+# Its maturity springs, and it springs on an instrument that may not exist:
+#
+#   "Maturity Date" means the earliest to occur of (i) August 20, 2031, (ii)
+#   the date on which the Commitments are reduced to zero or otherwise
+#   terminated pursuant to the terms hereof, (iii) the date that is ninety-one
+#   (91) days prior to the maturity date of any Term Loans/Notes Facility, if
+#   any Term [Loans/Notes Facility is then outstanding] ...
+#
+# and its financial covenant only applies during a test period:
+#
+#   Section 6.12. Fixed Charge Coverage Ratio. During any FCCR Test Period,
+#   the Borrowers will not permit the Fixed Charge Coverage Ratio as of the
+#   last day of any period of four fiscal quarters ending during such FCCR
+#   Test Period, to be less than 1.00 to 1.00.
+
+document: winnebago_abl_2026
+corpus_name: C_winnebago-industries-inc-wgo_2026-08-21_0001104659-26-099676_tm2621191d1-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: winnebago_is_an_asset_based_revolver
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: abl_revolver
+    note: >
+      The positive control, and the reason the Elmet and warehouse assertions
+      in this batch are not an argument for abandoning the signal. "Borrowing
+      base" occurs 53 times here and every one of them is this facility's own,
+      against this borrower's own receivables and inventory.
+
+      What separates it from Elmet is not the count -- Elmet's three
+      occurrences would still have classified at 0.70 -- but whose assets are
+      being advanced against, which is the question the collateral veto asks
+      on the fit side and the classifier does not ask at all.
+
+  - id: winnebago_covenant_only_binds_inside_a_test_period
+    family: F04_absence
+    member: springing_covenant_only
+    kind: field_value
+    target: financial_covenant.level
+    expect: "1.00 to 1.00"
+    note: >
+      "During any FCCR Test Period, the Borrowers will not permit the Fixed
+      Charge Coverage Ratio ... to be less than 1.00 to 1.00."
+
+      A level that exists and binds only sometimes, which is the arrangement
+      F04's springing member exists for. It is also a coverage ratio, so the
+      test is a floor rather than a ceiling -- the third covenant direction
+      in the corpus after leverage ceilings and Sysco's interest coverage.
+
+      The near-miss is reporting nothing, on the grounds that the covenant is
+      conditional. 1.00 to 1.00 is the level; when it applies is a separate
+      fact and belongs in a separate field, not in the absence of this one.
+
+  - id: winnebago_maturity_can_spring_ninety_one_days_early
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-20
+    note: >
+      August 20, 2031 is the stated date and the first branch of an "earliest
+      to occur" list whose third branch is 91 days before some other
+      facility's maturity, "if any Term Loans/Notes Facility is then
+      outstanding".
+
+      Unlike Cumberland Farms, the stated date is the right answer here: the
+      springing branch is conditioned on an instrument the agreement does not
+      say exists, so nothing in the document displaces 2031-08-20. That is the
+      distinction worth pinning -- a springing maturity is not automatically
+      unresolvable, and treating every "earliest to occur" as needs_review
+      would refuse an answer this document gives.

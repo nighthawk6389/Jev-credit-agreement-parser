@@ -1,0 +1,94 @@
+# Tier 2 assertions: Somnigroup International Inc., Amendment No. 5 dated as
+# of July 27, 2026 (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 725,803 characters, 152 sections, and a drafting convention that appears
+# nowhere else in the corpus: this agreement defines terms with a colon rather
+# than with "means" or "shall mean".
+#
+#   "Closing Date": October 10, 2023.
+#   "Maturity Date": (x) solely with respect to the 2025 Refinancing Term B
+#   Facility, the seventh anniversary of the Amendment No. 3 Effective Date
+#   and (y) with respect to any other applicable Facility, the fifth
+#   anniversary of the Amendment No. 5 Effective Date.
+#   "ECF Percentage": as of the date of determination, (a) if the Consolidated
+#   First Lien Leverage Ratio ... is greater than 3.50:1.00, 50%, (b) if ...
+#
+# Every other agreement in the corpus writes '"Term" means ...'. This one
+# writes '"Term": ...'. A definition finder anchored on the verb finds none of
+# this document's several hundred defined terms, and the failure is total
+# rather than partial -- it is not that some definitions are missed, it is
+# that the document appears to have no definitions at all.
+#
+# Its maturities are the second novelty: both are anniversaries of *amendment*
+# effective dates, and the two branches count from different amendments. The
+# Term B matures seven years after Amendment No. 3; everything else matures
+# five years after Amendment No. 5. Neither anniversary is computable from
+# this exhibit, because neither amendment's effective date is stated in it.
+
+document: somnigroup_amendment_5_2026
+corpus_name: B_somnigroup-international-inc-sgi_2026-07-27_0001206264-26-000092_exhibit101amendmentno5to20
+source: real
+tier: 2
+
+assertions:
+
+  - id: somnigroup_defines_terms_with_a_colon
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "\" Closing Date \": October 10, 2023."
+    expect: true
+    note: >
+      The convention, pinned as a string. If the normaliser ever changes the
+      spacing around quotation marks this assertion breaks, which is the
+      intended behaviour: the whole question here is whether the definition's
+      surface form survives ingestion intact, because the surface form is all
+      that distinguishes a definition from a list entry.
+
+      Asserted under F11 rather than F09 deliberately. The definitional
+      content is ordinary; what is unusual is how it is rendered, and a
+      rendering that a parser cannot see is a layout failure whatever it does
+      to meaning downstream.
+
+  - id: somnigroup_closing_date_is_stated_without_a_verb
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    kind: field_value
+    target: closing_date
+    expect: 2023-10-10
+    note: >
+      October 10, 2023, defined by a colon. This is the test that matters: the
+      value is unambiguous, stated outright, and reachable only by a reader
+      that accepts a colon as a definitional operator.
+
+      A miss here is a miss on a stated date, which is the cheapest kind of
+      failure to diagnose and the easiest to overlook, because "closing date
+      not found" looks identical whether the document omits it, defers it, or
+      states it in a form the parser does not recognise. Hillman and Aspen
+      defer it; Somnigroup states it; all three would report nothing.
+
+  - id: somnigroup_maturities_count_from_two_different_amendments
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_status
+    target: initial_term_loan.maturity_date
+    expect: external_reference
+    note: >
+      '"Maturity Date": (x) solely with respect to the 2025 Refinancing Term B
+      Facility, the seventh anniversary of the Amendment No. 3 Effective Date
+      and (y) with respect to any other applicable Facility, the fifth
+      anniversary of the Amendment No. 5 Effective Date.'
+
+      Two anniversaries, of two different amendments, neither of whose
+      effective dates this exhibit fixes. Amendment No. 5 is the document a
+      reader is holding and even its own effective date is a defined term
+      rather than the 27 July 2026 on its cover.
+
+      external_reference, not absent_from_document: the maturities are fully
+      specified and the dates they count from live in documents the filing
+      does not contain. Sysco's is the same construction counting from a First
+      Amendment Effective Date, and StepStone's five-year anniversary is the
+      one that resolves, because its chain ends at a date on the cover.

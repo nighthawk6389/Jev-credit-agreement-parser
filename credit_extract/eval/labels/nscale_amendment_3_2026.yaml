@@ -1,0 +1,83 @@
+# Tier 2 assertions: nScale Services UK Ltd, Amendment No. 3 to Credit
+# Agreement and Consent and Waiver No. 1 to Debenture, dated as of April 29,
+# 2026 (Exhibit 10.17).
+#
+# Fit side, never read during development. 21,527 characters, zero sections,
+# twelve [***] redactions, and two instruments in one exhibit:
+#
+#   AMENDMENT NO. 3 TO CREDIT AGREEMENT (this "Amendment") ... which amends
+#   that certain Credit Agreement (as amended by that certain Amendment No. 1
+#   ... dated as of March 12, 2026 and Amendment No. 2 ... dated as of March
+#   30, 2026 ...), dated as of February 11, 2026 ... and CONSENT AND WAIVER
+#   NO. 1 TO DEBENTURE (this "Consent and Waiver", and together with this
+#   Amendment, this "Agreement"), dated as of April 29, 2026 ... which waives
+#   certain obligations under the Debenture, dated as of March 31, 2026
+#
+# So "this Agreement" is defined to mean two documents at once, amending a
+# Credit Agreement of 11 February and waiving under a Debenture of 31 March,
+# and the exhibit's sibling in the same filing -- already labelled as
+# nscale_2026 -- is Amendment No. 2 to a *Revolving Credit and Guaranty*
+# Agreement dated 30 June.
+#
+# Laid out by date, the filing's amendment numbers run 1, 2, 3 (Credit
+# Agreement, to 29 April), 1 (Debenture, 29 April), 2 (Revolving Credit and
+# Guaranty, 30 June). Three separate agreements, three separate sequences,
+# one filing, and a later document carrying a lower number than an earlier
+# one. Comtech is the two-agreement version of this; nScale is the three.
+
+document: nscale_amendment_3_2026
+corpus_name: A_nscale-ltd_2026-09-18_0001193125-26-395475_ck0002110365-ex10-17
+source: real
+tier: 2
+
+assertions:
+
+  - id: nscale_amendment_3_defines_this_agreement_as_two_instruments
+    family: F09_definitional_depth
+    member: conflicting_definition_across_documents
+    kind: text_present
+    target: "together with this Amendment, this \" Agreement \""
+    expect: true
+    note: >
+      The self-definition is the trap. Every other document in the corpus uses
+      "this Agreement" to mean the thing you are reading; this one defines it
+      to mean the thing you are reading plus a separate waiver under a
+      separate deed. A reader that resolves "this Agreement" to the document
+      boundary is wrong here, and wrong in a way no other document in the
+      corpus punishes.
+
+      The target string carries the normaliser's spacing around the quotation
+      marks, which is what the operative text holds.
+
+  - id: nscale_amendment_3_amends_an_agreement_not_in_the_filing
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: closing_date
+    expect: external_reference
+    note: >
+      Four dates are on the face of this exhibit -- 11 February, 12 March, 30
+      March, 31 March -- and none of them is this document's closing date,
+      because this document does not close anything. They are the dates of the
+      Credit Agreement it amends, of the two prior amendments it is stacked
+      on, and of the Debenture it waives under. The Credit Agreement itself is
+      not in the filing.
+
+      The near-miss is 11 February 2026, the Credit Agreement's date, which is
+      the one a reader reaching for "the agreement's date" would take. It is a
+      real date belonging to a real document that is somewhere else, which is
+      external_reference and not absent_from_document. Constellation Brands is
+      the same mistake made in the other direction, with a cross-referenced
+      date filed as this agreement's own.
+
+  - id: nscale_amendment_3_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      One Event of Default, so the non-agreement guard declines it -- the
+      second document in the corpus where that floor is wrong about a real
+      agreement, alongside Vivid Seats' Amendment No. 7. No archetype
+      vocabulary fires either, so the answer is right twice over and for one
+      good reason.

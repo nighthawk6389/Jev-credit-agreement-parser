@@ -1,0 +1,79 @@
+# Tier 2 assertions: Accelevation Intermediate LLC, credit agreement dated as
+# of January 2, 2025 (Exhibit 10.1), filed September 2, 2026.
+#
+# Fit side, never read during development. A MidCap Financial Trust / Monroe
+# Capital direct lending deal: 867,000 characters, 174 sections, a 0.75% Floor,
+# a three-level grid at 4.50-5.00% over the Benchmark Rate, and a Consolidated
+# Total Debt to Consolidated EBITDA covenant at 8.50:1.00.
+#
+# The classifier called it a second lien term loan at 0.70.
+#
+# The phrase "second lien" occurs zero times in the document. The whole
+# classification rested on one decisive signal, "junior lien", which occurs
+# three times:
+#
+#   1. "Exhibit H-2 | Form of Junior Lien Intercreditor Agreement" -- in the
+#      index of exhibit forms, a form this deal has not signed;
+#   2. '"Junior Debt" shall mean any Indebtedness ... that is Subordinated
+#      Indebtedness, junior lien secured Indebtedness or unsecured
+#      Indebtedness' -- a definition of what this facility is senior to;
+#   3. "in the case of Indebtedness secured by Liens on the Collateral on a
+#      junior lien basis with the Liens on the Collateral securing the
+#      Obligations" -- an incurrence basket for debt junior to the Obligations.
+#
+# All three describe debt that ranks behind this agreement. They are evidence
+# the document is senior, read as evidence it is junior. A first lien agreement
+# is precisely the document that has to carry the phrase, because it is the one
+# that has to say what it permits beneath it.
+#
+# The corpus makes this decisive: "junior lien" drove four classifications and
+# was wrong in all four (this document, Latham, Hornbeck, and one held-out
+# agreement counted but not read). Its record is 0 for 4. So the signal moved
+# to supporting, where it is reported and does not decide.
+
+document: accelevation_2026
+corpus_name: A_accelevation-holdings-corp_2026-09-02_0001628280-26-060083_exhibit101-sx1
+source: real
+tier: 2
+
+assertions:
+
+  - id: accelevation_is_not_a_second_lien
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Second in the Greenfire class and the first one on a real agreement.
+      Greenfire was a confident archetype on a document that had no facility
+      at all; this is a confident *wrong* archetype on a facility that is
+      unambiguously first lien, and it is the more dangerous of the two
+      because nothing about the document invites suspicion. It is 867,000
+      characters of a real credit agreement, it classifies at 0.70, and above
+      0.50 the second_lien profile starts marking borrowing_base,
+      recurring_revenue and nav_tests fields not_applicable_to_archetype -- a
+      confident status -- on a deal whose seniority it has inverted.
+
+      unknown is the honest answer and not a defeat: no profile's decisive
+      vocabulary fires, the residual has only two of the three supporting
+      signals it needs, and declining is the outcome the machinery already
+      reaches on half the real agreements here.
+
+  - id: accelevation_floor_is_seventy_five_basis_points
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.75%"
+    note: >
+      '"Floor" shall mean 0.75% per annum.'
+
+      A bare definition with no benchmark named in it, which is the form that
+      makes the base-versus-all-in question unanswerable from the definition
+      alone: 0.75% is a floor on something, and which something is settled
+      several sections away where Term SOFR and ABR are constructed. Air T's
+      note is the opposite rendering -- "the greater of (a) 5.00%, and (b) the
+      sum of (i) the Applicable Margin plus (ii) the Index" -- an all-in floor
+      that never uses the word Floor. The two together are the pair F07 needs:
+      a named floor whose subject is elsewhere, and an unnamed floor whose
+      subject is in the same sentence.

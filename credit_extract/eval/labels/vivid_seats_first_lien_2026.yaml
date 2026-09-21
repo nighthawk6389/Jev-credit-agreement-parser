@@ -1,0 +1,93 @@
+# Tier 2 assertions: Vivid Seats / Hoya Midco, LLC, First Lien Credit
+# Agreement as conformed (Exhibit 10.2), filed August 4, 2026.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 746,042 characters and 124 sections, the conformed agreement behind the
+# Amendment No. 7 filed beside it as Exhibit 10.1 -- which is on the fit side
+# and labelled there. One filing, two exhibits, both sides of the split.
+#
+# Its financial covenant does three things at once, in one sentence:
+#
+#   Section 6.11 Financial Performance Covenant. As of the last day of each
+#   fiscal quarter of Holdings (commencing with the fiscal quarter ending on
+#   September 30, 2026), solely to the extent that the aggregate amount of
+#   Revolving Exposure outstanding as of the close of business on the last day
+#   of such fiscal quarter (excluding Letters of Credit in an aggregate amount
+#   of up to $20,000,000) exceeds 35% of the aggregate amount of all Revolving
+#   Commitments in effect as of such date, the Borrower shall not permit the
+#   First Lien Net Leverage Ratio as of the end of such fiscal quarter ending
+#   (i) on or after September 30, 2026 through (but excluding) September 30,
+#   2027 to exceed 4.00 to 1.00 and (ii) on or after September 30, 2027 to
+#   exceed 3.50 to 1.00. For the avoidance of doubt, compliance with this 165
+#
+# It springs on revolver usage over 35%, it starts on a stated quarter, and it
+# steps down on a stated date. Three conditions, two levels, one clause, and
+# the clause ends mid-sentence with a page number -- "compliance with this
+# 165" -- where "this Section 6.11" should be.
+#
+# Four numbers are in reach for a field that holds one: 35%, $20,000,000,
+# 4.00 to 1.00 and 3.50 to 1.00. The last two are both real covenant levels
+# and which one is current depends on today's date.
+
+document: vivid_seats_first_lien_2026
+corpus_name: L_vivid-seats-inc-seat-seatw_2026-08-04_0001193125-26-331507_seat-ex10-2
+source: real
+tier: 2
+
+assertions:
+
+  - id: vivid_seats_opening_covenant_level_is_four_times
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.opening_level
+    expect: "4.00 to 1.00"
+    note: >
+      The level that binds from the first test period, 30 September 2026,
+      through 29 September 2027.
+
+      opening_level and final_level exist for exactly this and the corpus has
+      not had a clean two-step before. The near-miss is 3.50 to 1.00, which is
+      the level a reader arrives at by taking the last ratio in the sentence,
+      and which will in fact be correct from 30 September 2027 -- so an
+      extractor that is wrong today becomes right by the passage of time
+      without anything about it improving.
+
+  - id: vivid_seats_covenant_final_level_is_three_and_a_half
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.final_level
+    expect: "3.50 to 1.00"
+    note: >
+      The second step, from 30 September 2027. Asserted alongside the opening
+      level rather than instead of it, because a single level field filled
+      with either number is a half-truth and the pair is the only honest
+      record of a stepdown.
+
+  - id: vivid_seats_is_a_cash_flow_term_loan
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: cash_flow_term_loan
+    note: >
+      "Second lien" occurs zero times here and "junior lien" twenty-two, and
+      before the junior-lien demotion this document classified as a second
+      lien term loan at 0.70 -- the fourth and last of that signal's failures,
+      and the only one on the held-out side.
+
+      It is recorded here with the discipline that matters: the demotion was
+      decided on the three fit-side documents, Accelevation, Latham and
+      Hornbeck, whose evidence is in their own labels and is sufficient on its
+      own. This document was counted in the corpus-wide survey that found
+      them -- vocabulary counts only, no reading -- and the survey is the one
+      place holdout text touched the decision. Saying so is the point of
+      saying it; the number this assertion produces is worth less than a
+      fit-side one and should be read as confirmation, not as evidence.
+
+      It now classifies cash_flow_term_loan at 0.86 on the residual, with
+      three supporting signals: consolidated ebitda, term loan, leverage
+      ratio. Which is what it is -- a first lien cash-flow term loan with a
+      springing revolver covenant, exactly as its title says.

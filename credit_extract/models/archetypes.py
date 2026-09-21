@@ -314,9 +314,18 @@ PROFILES: dict[str, ArchetypeProfile] = {
             expected_groups=["ebitda_covenants", "term_amortization", "mfn"],
             inapplicable_groups=["borrowing_base", "recurring_revenue",
                                  "nav_tests"],
-            decisive_signals=["second lien credit agreement", "junior lien",
-                              "second priority"],
-            supporting_signals=["second lien", "intercreditor agreement",
+            # "junior lien" was decisive here and went 0 for 4 on the corpus.
+            # It is the wrong direction: the document that needs the phrase is
+            # the *senior* one, because a first lien agreement has to describe
+            # the junior debt it permits and the intercreditor form it would
+            # sign. Accelevation, Latham and Hornbeck all classified second
+            # lien on it while saying "second lien" 0, 0 and 45 times -- and
+            # Hornbeck's 45 are all references to a separate Second Lien
+            # Credit Agreement, in the phrase "this Agreement, the Second Lien
+            # Credit Agreement". A second lien facility says so about itself.
+            decisive_signals=["second lien credit agreement", "second priority"],
+            supporting_signals=["second lien", "junior lien",
+                                "intercreditor agreement",
                                 "first lien obligations"],
             criteria=(
                 "a second lien facility subordinated by an intercreditor "

@@ -1,0 +1,95 @@
+# Tier 2 assertions: NFE FLNG 2 Parent LLC (New Fortress Energy Inc.), credit
+# agreement (Exhibit 10.3), filed September 11, 2026.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# A project financing for a floating LNG facility, and the document that
+# resolves the circular Floor definition four other held-out agreements leave
+# open:
+#
+#   "Floor": the benchmark rate floor (which may be zero), if any, provided
+#   for in this Agreement with respect to Term SOFR or any Benchmark
+#   Replacement as determined for any Class of Loans. The Floor shall be 1.00%
+#   per annum with respect to the Term Loans.
+#
+# Two sentences. The first defines the term as whatever the agreement
+# provides, which is no definition. The second provides it. So the same
+# paragraph contains both the failure and its repair, and the repair is in the
+# sentence after the one that ends the definition -- outside the quotation
+# marks, outside the "means" clause, in text a definition extractor has
+# already stopped reading.
+#
+# Its maturity is an anniversary of a closing date that never resolves, and
+# rolls backward:
+#
+#   "Maturity Date": with respect to the Term Loans, the third anniversary of
+#   the Closing Date; provided that if such date is not a Business Day, then
+#   the Maturity Date shall be the immediately preceding Business Day.
+#
+#   "Closing Date": the date on which the conditions specified in Section 4.1
+#   are satisfied (or waived).
+
+document: new_fortress_flng2_2026
+corpus_name: F_new-fortress-energy-inc-nfe_2026-09-11_0001749723-26-000118_a103nfe-flng2xcreditagreem
+source: real
+tier: 2
+
+assertions:
+
+  - id: new_fortress_floor_is_resolved_by_the_next_sentence
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_value
+    target: libor_floor_pct
+    expect: "1.00%"
+    note: >
+      1.00%, and the only place it is stated is the sentence after the
+      definition ends.
+
+      This is the sharpest test of definitional scope in the corpus. A parser
+      that takes a definition to run from the opening quotation mark to the
+      first full stop gets "the benchmark rate floor, if any, provided for in
+      this Agreement" and returns nothing, correctly by its own rule and
+      wrongly about the deal. A parser that reads to the next defined term
+      gets 1.00%.
+
+      Bain Capital in this same batch has the identical construction with the
+      resolving sentence beginning "Commencing on the Closing Date"; Blue Owl
+      Core Income, Winnebago and Tailored Brands have the first sentence with
+      no second. So of the five documents sharing this standard form, two
+      resolve in trailing prose and three do not resolve at all -- and the
+      difference is invisible to anything that stops at the full stop.
+
+  - id: new_fortress_closing_date_is_an_event
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: closing_date
+    expect: absent_from_document
+    note: >
+      '"Closing Date": the date on which the conditions specified in Section
+      4.1 are satisfied (or waived).' The eleventh undated closing date, and
+      the colon convention again -- Somnigroup is not alone in it after all,
+      though Somnigroup is the only one that uses it for a stated date.
+
+  - id: new_fortress_maturity_rolls_backward
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_status
+    target: initial_term_loan.maturity_date
+    expect: absent_from_document
+    note: >
+      The third anniversary of a closing date the document does not fix, so
+      the maturity is not computable -- and absent_from_document rather than
+      external_reference, because the chain terminates inside this filing at
+      Section 4.1 rather than pointing to a document that is elsewhere.
+
+      The business day proviso is the part worth recording for its own sake:
+      "the immediately preceding Business Day", the third instance of a
+      backward-rolling convention in the corpus after Compass Diversified and
+      nVent Electric. Three documents, three different drafting firms, all
+      rolling backward, against a market convention that rolls forward. The
+      convention is not extracted by anything today; what this pins is that
+      when it is, the corpus already disagrees with the assumption a reader
+      would bring.

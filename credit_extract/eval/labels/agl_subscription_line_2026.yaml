@@ -1,0 +1,104 @@
+# Tier 2 assertions: AGL Private Credit Income Fund, credit agreement dated
+# October 18, 2024 (Exhibit 10.1), filed September 9, 2026.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength. This one matters more than the rest of the batch for that reason,
+# because of what it is.
+#
+# It is a subscription line -- a capital call facility secured on the Funds'
+# uncalled capital commitments:
+#
+#   "Capital Contribution" means the amount of cash actually contributed by an
+#   Investor to the applicable Fund with respect to its Uncalled Capital
+#   Commitment in response to any Drawdown Notice ... in accordance with the
+#   applicable Fund's applicable Governing Agreement and/or Subscription
+#   Agreement[s]
+#
+# "Uncalled capital" occurs 31 times. That is the exact shape the blind-spot
+# register names as untested and says nothing in the corpus has read:
+#
+#   What remains is the subscription line proper. Both labelled documents lend
+#   against acquired assets. A facility secured on uncalled capital
+#   commitments -- where the credit is the limited partners' rather than the
+#   portfolio's -- is still a shape nothing here has read.
+#
+# The harvest contained one all along. It is on the held-out side, so it can
+# close the gap only as a test and never as material to build against, and
+# that is worth stating plainly rather than treating as an inconvenience: the
+# blind spot the register describes remains open for construction and is now
+# closed for measurement.
+#
+# The classifier returns unknown at 0.00, and the reason is arithmetic:
+#
+#   "uncalled capital"     decisive of nav_or_subscription, first at 41,542
+#   detection window       30,000
+#   "borrowing base"       decisive of abl_revolver, inside the window
+#   "s&p and moody"        decisive of investment_grade, inside the window
+#
+# Its own decisive vocabulary is 11,542 characters past where the classifier
+# stops reading, and the two families that do fire are both wrong and cancel
+# each other. Right answer, and nothing about the mechanism is right.
+
+document: agl_subscription_line_2026
+corpus_name: R_agl-private-credit-income-fund_2026-09-09_0001193125-26-386441_ck0002011498-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: agl_is_a_subscription_line
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: archetype
+    expect: nav_or_subscription
+    note: >
+      Expected to fail today, and recorded rather than repaired.
+
+      This is the assertion the blind-spot register's F06_nav_or_subscription_
+      line entry has been waiting for. Both previously labelled fund
+      facilities -- Star Mountain's BDC warehouse and StepStone's SPV -- lend
+      against acquired assets, and the register says so explicitly. This one
+      lends against the limited partners' promises, which is a different
+      credit, and the profile that exists for it has never been exercised on a
+      real document.
+
+      What it takes to pass is not new vocabulary. "Uncalled capital" is
+      already decisive of nav_or_subscription and is already in this document
+      31 times; it is simply not in the first 30,000 characters. The
+      Accelevation pair on the fit side makes the same point without needing
+      this document: a classification that depends on where a phrase sits is
+      a classification of the document's front matter.
+
+  - id: agl_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means 0.00%.' Six words, no benchmark, no conditions -- the
+      shortest Floor definition in the corpus, in the document with the most
+      unusual structure. The two facts are unrelated and that is the useful
+      part: the difficulty of a deal and the difficulty of its definitions do
+      not travel together, and a pipeline that routes by deal complexity will
+      route this one wrong in both directions at once.
+
+  - id: agl_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-10-18
+    note: >
+      October 18, 2024, on the cover page, two years before the filing.
+
+      The cover is also where this document's layout problem lives. A Word
+      field code -- DOCPROPERTY "DocID" \* MERGEFORMAT USActive 64201697.6 --
+      sits immediately beneath the date, and it recurs 181 times through the
+      text as a page footer, so a document identifier and a revision number
+      appear between paragraphs on every page of a 586,411-character
+      agreement.
+
+      That makes this the cleanest test of whether page furniture displaces a
+      real value: the field code is adjacent to the answer, numeric, and
+      repeated more often than any actual term in the document.

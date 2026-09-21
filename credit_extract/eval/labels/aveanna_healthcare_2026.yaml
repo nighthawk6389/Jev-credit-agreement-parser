@@ -1,0 +1,103 @@
+# Tier 2 assertions: Aveanna Healthcare Holdings Inc., credit agreement as
+# amended through the Twelfth Amendment (Exhibit 10.1), filed August 13, 2026.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 966,663 characters and 191 sections, the longest agreement in the corpus
+# outside Cumberland Farms, and it carries two constructions that are worth
+# more than its size.
+#
+# The first is a leverage grid with a ratings override stapled to it:
+#
+#   Pricing Level | Consolidated First Lien Net Leverage Ratio | ABR | Term
+#   I   > 3.90 to 1.00              2.25%   3.25%
+#   II  <= 3.90 but > 3.40          2.00%   3.00%
+#   III <= 3.40                     1.75%   2.75%
+#
+#   Notwithstanding the foregoing, the Applicable Margin with respect to the
+#   2026 Term Loans and the Revolving Loans shall be reduced by 0.25% upon the
+#   Borrower obtaining a rating of at least B2 or B[+] ...
+#
+# The table is complete, internally consistent, and wrong by 25 basis points
+# once the rating is obtained. Everything a table-reading pass needs is in the
+# table, and the sentence that overrides it begins with the word the
+# precedence rules exist for.
+#
+# The second is a covenant that is springing, facility-scoped and
+# amendment-dated at once:
+#
+#   Solely with respect to the Revolving Credit Facility, the Borrower will
+#   not permit the Consolidated First Lien Net Leverage Ratio, as of the last
+#   day of any Test Period (commencing with the Test Period ending on the last
+#   day of the first full fiscal quarter ending after the Twelfth Amendment
+#   Effective Date) to exceed 8.00 to 1.00. Notwithstanding the foregoing,
+#   this Section 10.9 shall only be i[n effect] ...
+#
+# 8.00 to 1.00 is a real level that binds one facility, starts on a date
+# defined by an amendment, and is then qualified by a second notwithstanding.
+
+document: aveanna_healthcare_2026
+corpus_name: D_aveanna-healthcare-holdings-inc-avah_2026-08-13_0001193125-26-347842_avah-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: aveanna_grid_is_overridden_by_a_ratings_stepdown
+    family: F02_precedence
+    member: notwithstanding_override
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "3.25%"
+    note: >
+      3.25% is Pricing Level I's Term Benchmark margin and it is the top-level
+      figure the field asks for. The assertion is here for what sits beneath
+      it: the 0.25% ratings reduction does not change the top of the grid, it
+      changes what is actually charged, and a pipeline that reports 3.25%
+      without carrying the override has reported a number that is right about
+      the table and incomplete about the deal.
+
+      Which is the honest state of this field's definition, and worth pinning
+      before the rest of the ladder is built rather than after.
+
+  - id: aveanna_sofr_adjustment_is_zero
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.00%"
+    note: >
+      '"Applicable SOFR Adjustment" shall mean, with respect to Term SOFR,
+      0.00% per annum.'
+
+      The second zero adjustment stated as a defined term, after BrightSpring,
+      and the pair matters more than either alone: both are real definitions
+      of a real term whose value is nothing. A string search for "SOFR
+      Adjustment" finds them and a rule that treats a hit as evidence of a
+      paid spread reports a credit spread adjustment on two deals that have
+      none.
+
+      Held against the three that do pay one -- Compass Diversified and
+      Hornbeck at 0.10%, LL Flooring -- and the two where the phrase means
+      something else entirely: Sanmina's SONIA and CORRA adjustments, real and
+      in the wrong currency, and SanDisk's Central Bank Rate and Japanese
+      Prime Rate Adjustments, which are rate-construction components.
+
+  - id: aveanna_closing_date_is_nine_years_before_the_amendment
+    family: F05_versioning
+    member: superseded_by_amendment_and_restatement
+    kind: field_value
+    target: closing_date
+    expect: 2017-03-16
+    note: >
+      '"Closing Date" shall mean March 16, 2017.' On a document filed in 2026,
+      amended twelve times, whose operative tranche is called the 2026 Term
+      Loans.
+
+      The widest gap in the corpus between a stated Closing Date and the
+      filing that carries it, and the clearest case that the Closing Date is
+      not the date of the deal a reader is looking at. Three other dates in
+      this document compete for that role -- the Twelfth Amendment Effective
+      Date, the 2026 Term Loan funding, the filing date -- and the defined
+      term names none of them.

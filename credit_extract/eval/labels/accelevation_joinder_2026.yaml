@@ -1,0 +1,66 @@
+# Tier 2 assertions: Accelevation, Joinder Agreement and First Amendment to
+# Credit Agreement dated as of September 5, 2025 (Exhibit 10.2), filed in the
+# same submission as the credit agreement it amends.
+#
+# Fit side, never read during development. 892,000 characters against the
+# agreement's 867,000: the amendment carries the whole conformed text behind a
+# 25,000-character wrapper, so the two documents are very nearly the same
+# document.
+#
+# They contain the same three occurrences of "junior lien", in the same order,
+# in the same sentences. The classifier called Exhibit 10.1 a second lien term
+# loan at 0.70 and this one unknown at 0.00.
+#
+# The difference is arithmetic. Decisive vocabulary is searched in the first
+# 30,000 characters, and the amendment's wrapper pushes the exhibit index --
+# where "Form of Junior Lien Intercreditor Agreement" sits -- past the end of
+# the window. The classifier was not reading a different deal; it was reading
+# a different 30,000 characters.
+#
+# That is worth a label of its own even though the signal has since been
+# demoted, because the window did not go away. Every decisive phrase is still
+# searched in a prefix, and any document that arrives with a preamble in front
+# of it is a document the classifier reads from a different starting point.
+# Conformed amendments are the normal case here, not the exception: Wheels Up,
+# Hornbeck, Compass Diversified and nScale all file one.
+
+document: accelevation_joinder_2026
+corpus_name: A_accelevation-holdings-corp_2026-09-02_0001628280-26-060083_exhibit102-sx1
+source: real
+tier: 2
+
+assertions:
+
+  - id: accelevation_joinder_agrees_with_the_agreement_it_conforms
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Paired with accelevation_is_not_a_second_lien. Before the junior-lien
+      demotion these two assertions had different answers on near-identical
+      text and only one of them was wrong; the pair pins that they now agree,
+      and that a regression has to break both to pass.
+
+      The general proposition this stands for: two documents whose operative
+      text is the same should classify the same, and a classification that
+      moves when a preamble is prepended is a classification of the preamble's
+      position.
+
+  - id: accelevation_joinder_carries_the_same_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-01-02
+    note: >
+      '"Closing Date" shall mean January 2, 2025.'
+
+      The amendment is dated September 5, 2025 and conforms an agreement whose
+      Closing Date is January 2, 2025, and both dates are on its face. The
+      trap is that the later date is the one in the title and the first one a
+      reader meets; the Closing Date is 19 characters inside a definition 60
+      pages in. Wheels Up is the same shape with the amendment's own date
+      winning, so the two documents disagree about which date a reader should
+      reach for, which is the point: the answer is not "the later date" or
+      "the title date" but the defined term.

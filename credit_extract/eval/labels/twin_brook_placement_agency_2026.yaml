@@ -1,0 +1,60 @@
+# Tier 2 assertions: Twin Brook CLO 2024-1 LLC and Twin Brook Capital Funding
+# XXXIII, LLC, Purchase and Placement Agency Agreement with Morgan Stanley &
+# Co. LLC and KeyBanc Capital Markets Inc., dated as of August 19, 2026
+# (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# The companion of twin_brook_clo_2026, the Supplemental Indenture filed as
+# Exhibit 10.2 of the same submission. This is the underwriting half: an
+# engagement letter to banks, addressed to them by name and street address,
+# opening "Ladies and Gentlemen".
+#
+# 100,056 characters, 18 sections, zero Events of Default, seven references to
+# collateral obligations. It declines, correctly and for the right reason.
+#
+# It is here because the filing is the clearest instance in the corpus of a
+# document set whose members are different *kinds* of document. Comtech's two
+# exhibits are both amendments; nScale's are both amendments; the Accelevation
+# pair are an agreement and its amendment. These two are a trust indenture and
+# a placement agency agreement, filed together, about one transaction, sharing
+# a borrower name and a date and nothing else structural. Any assembler that
+# groups on the filing and then treats the group as versions of one agreement
+# has combined an indenture with a bank engagement letter.
+
+document: twin_brook_placement_agency_2026
+corpus_name: A_tpg-twin-brook-capital-income-fund_2026-08-25_0001628280-26-058914_exhibit101-purchaseandplac
+source: real
+tier: 2
+
+assertions:
+
+  - id: twin_brook_placement_agency_has_no_archetype
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: archetype
+    expect: unknown
+    note: >
+      Zero Events of Default, so the guard declines before vocabulary is
+      counted. Seven references to collateral obligations would not have been
+      enough to classify it anyway, which makes this the least marginal of the
+      batch's declines -- worth having precisely as the easy case against
+      which Horizon's one-Event-of-Default margin can be measured.
+
+  - id: twin_brook_placement_agency_names_banks_not_lenders
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: text_present
+    target: "PURCHASE AND PLACEMENT AGENCY AGREEMENT"
+    expect: true
+    note: >
+      The title, asserted as the thing that distinguishes this exhibit from
+      its sibling indenture. Both were filed on 19 August 2026 by the same
+      fund about the same CLO; what separates them is on the face of each.
+
+      The proposition is the one the Comtech label makes on the fit side, in
+      a harder setting: there, two amendments to two different agreements had
+      to be told apart by one word in a title. Here the two documents are not
+      even the same species, and a set assembled on filer and date still folds
+      them.

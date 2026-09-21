@@ -1,0 +1,65 @@
+# Tier 2 assertions: SB Energy (Big Five Intermediate Holdco 2, LLC), Credit
+# Agreement dated as of January 24, 2024 (Exhibit 10.6).
+#
+# Fit side, never read during development -- and deliberately the twin of the
+# Exhibit 10.5 facility, which is HOLDOUT and reached the labelling queue by a
+# glob that matched one character differently.
+#
+# SB Energy filed two credit agreements in one accession: Big Five Intermediate
+# Holdco 1 as Exhibit 10.5 and Holdco 2 as Exhibit 10.6. Same date, same
+# lenders' structure, same drafting -- '"Floor" means a rate of interest equal
+# to zero percent (0%)', '"Closing Date" means the date upon which all
+# conditions set forth in Section 5.1 are satisfied or waived' -- and opposite
+# sides of the frozen split.
+#
+# That makes this the fit-side project financing the corpus needed. The
+# project_finance profile had no real example at all until Exhibit 10.5, and
+# an archetype assertion on a holdout document can only ever test a rule,
+# never inform one. This one can do both.
+
+document: sb_energy_holdco2_2026
+corpus_name: N_sb-energy-inc_2026-09-01_0001628280-26-059639_exhibit106-creditagreement
+source: real
+tier: 2
+
+assertions:
+
+  - id: sb_energy_holdco2_is_project_finance
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: project_finance
+    note: >
+      Second exercise of this profile and the first on the fit side. LC
+      Tranches, FERC, the Federal Power Act, a holdco in a solar structure.
+
+      Recorded against the F06 borrowing-base member because the family
+      register still has no project_finance member -- the fifth archetype in
+      that position, after investment grade, LMA, venture debt and the Holdco
+      1 twin.
+
+  - id: sb_energy_holdco2_closing_date_is_an_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: closing_date
+    expect: null
+    note: >
+      '"Closing Date" means the date upon which all conditions set forth in
+      Section 5.1 are satisfied or waived.' The ninth document in the corpus
+      whose Closing Date is an undated event, and word for word its twin's.
+
+      January 24, 2024 is on the cover of both exhibits and is the execution
+      date of neither facility's closing.
+
+  - id: sb_energy_holdco2_floor_is_zero_percent_in_words
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means a rate of interest equal to zero percent (0%).' Words
+      then numeral, no decimal places -- identical to the twin, which is what
+      a pair of sibling facilities drafted together should look like and is
+      worth asserting precisely because it is unremarkable.

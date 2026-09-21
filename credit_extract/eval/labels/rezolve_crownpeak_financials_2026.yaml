@@ -1,0 +1,59 @@
+# Tier 2 assertions: Crownpeak Intermediate Holdings, Inc. and Subsidiaries,
+# consolidated financial statements for the years ended January 31, 2026 and
+# 2025, filed by Rezolve AI plc as Exhibit 99.3 on September 1, 2026.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# The sibling of rezolve_financials_2026, which is Exhibit 99.4 of the same
+# submission and sits on the fit side. The split assigned the two halves of
+# one filing to opposite sides, which is worth saying plainly: the hash rule
+# does not know that two exhibits came in together, and neither exhibit is
+# harmed by it, because neither is a credit agreement.
+#
+# What distinguishes this one is whose financial statements they are. Exhibit
+# 99.4 is Rezolve's; this is Crownpeak's -- a company Rezolve is acquiring.
+# The filer name on the document is Rezolve and the entity the numbers belong
+# to is Crownpeak, and nothing in the exhibit's own text says Rezolve at all.
+#
+# That makes it the second target-financials case after Sysco's JRD Unico, and
+# the two of them together are the reason the harvest's filer name is not a
+# safe key for anything. Three companies appear in these two filings -- the
+# acquirer, the target, and in Rezolve's case the acquirer again under its own
+# exhibit -- and a pipeline that groups by filer folds all of them into one.
+
+document: rezolve_crownpeak_financials_2026
+corpus_name: A_rezolve-ai-plc-rzlv-rzlvw_2026-09-01_0001193125-26-378541_rzlv-ex99-3
+source: real
+tier: 2
+
+assertions:
+
+  - id: rezolve_crownpeak_financials_have_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Zero Events of Default, one section, 71,477 characters of audited
+      accounts. The guard declines it before any vocabulary is counted, which
+      is the sixth time in this corpus and the fourth different kind of
+      document it has declined -- acquisition report, earnings release, proxy
+      statement, financial statements.
+
+  - id: rezolve_crownpeak_borrower_is_not_the_filer
+    family: F01_integrity
+    member: undefined_term_used
+    kind: text_present
+    target: "CROWNPEAK INTERMEDIATE HOLDINGS, INC. AND SUBSIDIARIES"
+    expect: true
+    note: >
+      The entity named on the face of the document, against a filing indexed
+      under Rezolve AI plc. Asserted as text because there is no field for it:
+      borrower.legal_name would be the closest, and filling it here would
+      assert that Crownpeak is a borrower under an agreement, which it is not.
+
+      The proposition is narrower and more useful -- that the document names
+      its own subject, and that the name is not the filer's. Any identity a
+      pipeline attaches from the harvest filename is wrong about this
+      document, and the correction is in the first line of the exhibit.

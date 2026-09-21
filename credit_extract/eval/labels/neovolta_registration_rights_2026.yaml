@@ -1,0 +1,47 @@
+# Tier 2 assertions: NeoVolta Inc., Registration Rights Agreement (Exhibit
+# 10.02), filed September 4, 2026, alongside the securities purchase agreement
+# already labelled as neovolta_2026.
+#
+# Fit side, never read during development. Zero Events of Default, so the
+# non-agreement guard declines it. What makes this one worth its own label is
+# what the guard stopped:
+#
+#     decisive vocabulary: warrant to purchase  ->  venture_debt at 0.70
+#
+# Without the guard this Registration Rights Agreement classifies as venture
+# debt, confidently, on one phrase. The venture_debt profile then rules its
+# inapplicable groups not_applicable_to_archetype -- a confident status -- for
+# a document that grants registration rights and lends nothing.
+#
+# Greenfire is the document the guard was written for, and it is the weaker
+# example, because there the classification at least came from a facility
+# described in a footnote. Here there is no facility at all. "Warrant to
+# purchase" is ordinary equity-issuance vocabulary and appears in every
+# warrant, subscription agreement and registration rights agreement ever
+# written; it is decisive of venture debt only among documents already known
+# to be credit agreements. That is exactly the conditional the guard supplies,
+# and this document is the proof that the conditional was load-bearing rather
+# than decorative.
+
+document: neovolta_registration_rights_2026
+corpus_name: G_neovolta-inc-neov-neovw_2026-09-04_0001683168-26-006967_neovolta-ex1002
+source: real
+tier: 2
+
+assertions:
+
+  - id: neovolta_registration_rights_have_no_archetype
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: archetype
+    expect: unknown
+    note: >
+      The second confident misclassification the guard prevents and the first
+      one it prevents on vocabulary that would still fire today. Greenfire's
+      "second lien credit agreement" was one occurrence in a footnote;
+      "warrant to purchase" here is used correctly, in its own register, by a
+      document that simply is not a loan.
+
+      If the guard is ever loosened, this is the assertion that goes red
+      first, and it goes red at 0.70 -- above the suppression threshold, in
+      the family whose members are the ones most often ruled inapplicable.

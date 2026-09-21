@@ -1,0 +1,68 @@
+# Tier 2 assertions: Hillman Solutions Corp., Amendment No. 1 to Credit
+# Agreement, dated as of August 28, 2026 (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 750,595 characters and 120 sections carrying a conformed agreement, and its
+# Closing Date is the shape that never resolves:
+#
+#   "Closing Date" means the date on which the conditions specified in Section
+#   4.01 are satisfied (or waived in accordance with Section 9.02).
+#
+# Word for word the sentence Latham Group carries, minus the four words Latham
+# puts in front of it. Latham reads "August 20, 2026, the date on which the
+# conditions specified in Section 4.01 were satisfied (or waived in accordance
+# with Section 9.02)" -- past tense, with the answer attached. Hillman is
+# present tense with nothing attached, and Section 4.01 is a list of
+# deliverables, not a date.
+#
+# So the two documents share a drafting form and differ in whether it
+# resolves, and the difference is eight characters and a tense. Aspen
+# Technology is the third instance and it does not resolve either. Any rule
+# that learns "conditions specified in Section 4.01" as a pattern learns a
+# pattern that is right a third of the time on the documents that use it.
+
+document: hillman_solutions_2026
+corpus_name: A_hillman-solutions-corp-hlmn_2026-09-03_0001822492-26-000144_ex101-hillmanxamendmentno1
+source: real
+tier: 2
+
+assertions:
+
+  - id: hillman_closing_date_is_an_event_with_no_date
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: closing_date
+    expect: absent_from_document
+    note: >
+      absent_from_document rather than external_reference, and the choice is
+      the whole content of the assertion. Section 4.01 is in this filing; it
+      is a list of conditions, and satisfying them is an event that happened
+      on a day the document does not record. Nothing is missing from the
+      filing, so there is no other document to point at.
+
+      This is the tenth undated closing date in the corpus and the pattern is
+      now firm enough to state: a closing date expressed as the satisfaction
+      of conditions is not recoverable from the agreement, and the correct
+      answer is that the agreement does not contain it. The failure mode to
+      guard is a pipeline reaching for the amendment's own date -- 28 August
+      2026, in the first sentence -- which is a real date attached to the
+      wrong term.
+
+  - id: hillman_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means a rate of interest equal to 0.00%.'
+
+      Stated, unconditional, benchmark-agnostic, and the simplest Floor
+      definition in the corpus -- which makes it the control for the four
+      documents in this same held-out batch that define Floor as "the
+      benchmark rate floor, if any, provided in this Agreement". Same defined
+      term, same section of the same standard form, and one of them says a
+      number while the others say "whatever this agreement provides".

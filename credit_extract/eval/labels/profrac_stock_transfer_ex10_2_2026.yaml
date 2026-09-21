@@ -1,0 +1,67 @@
+# Tier 2 assertions: ProFrac GDM, LLC and Farris C. Wilks, Stock Transfer
+# Agreement dated as of September 11, 2026 (Exhibit 10.2).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# The second of two Stock Transfer Agreements in one filing. Exhibit 10.1 is
+# already labelled as profrac_stock_transfer_2026 on the fit side; this is its
+# near-twin:
+#
+#   Exhibit 10.1   31,073 chars   Stock Transfer Agreement, 11 September 2026
+#   Exhibit 10.2   30,848 chars   Stock Transfer Agreement, 11 September 2026
+#
+# Same date, same form, 225 characters apart, different parties and different
+# share counts -- this one transfers 987,313 shares of Flotek Industries
+# common stock from ProFrac GDM, LLC to Farris C. Wilks.
+#
+# It is the third kind of near-duplicate the corpus has now produced, and the
+# three are worth setting side by side, because a deduplication rule that
+# handles one mishandles the others:
+#
+#   Compass Diversified   the same document, twice, 5 characters apart, all 5
+#                         of them in the EDGAR header -- a true duplicate that
+#                         a content hash misses
+#   KBR 13 and 14         the same agreement, two years and one amendment
+#                         apart -- versions, where the later supersedes
+#   ProFrac 10.1 and 10.2 two different transactions on one form -- not
+#                         duplicates and not versions, and near-identical by
+#                         every similarity measure
+#
+# Only the first should be collapsed. Collapsing the third loses a
+# transaction; treating the third as versions makes one of them superseded,
+# which is false about both.
+
+document: profrac_stock_transfer_ex10_2_2026
+corpus_name: L_profrac-holding-corp-acdc_2026-09-16_0001104659-26-108302_tm2625564d1-ex10-2
+source: real
+tier: 2
+
+assertions:
+
+  - id: profrac_ex10_2_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Zero Events of Default, every vocabulary probe empty. A share transfer
+      between a company and an individual, and the seventh non-agreement in
+      the corpus.
+
+  - id: profrac_ex10_2_is_a_different_transaction_from_exhibit_10_1
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: text_present
+    target: "987,313 shares"
+    expect: true
+    note: >
+      The share count is the fact that separates the two exhibits, and it is
+      the only kind of fact that can: they share a date, a form, a length to
+      within a percent, and most of their sentences.
+
+      Asserted as text rather than as a chain finding because the claim is
+      about this document alone -- that it carries a specific, checkable
+      quantity that its twin does not. A deduplicator working on similarity
+      has no access to that distinction; a reader has it in the first
+      paragraph.

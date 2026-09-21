@@ -1,0 +1,119 @@
+# Tier 2 assertions: nVent Electric plc / Hoffman Schroff Holdings, Inc.,
+# Term Loan Agreement dated as of September 17, 2026 (Exhibit 4.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# An investment-grade term loan, classified as such at 0.70, and the only
+# document in the corpus whose pricing grid is indexed two ways at once:
+#
+#   Pricing Level | Term Benchmark Spread | ABR Spread | Ticking Fee Rate
+#   Level I       | 0.875%                | 0%         | 0.10%
+#   Level II      | 1.00%                 | 0%         | 0.11%
+#   Level III     | 1.125%                | 0.125%     | 0.125%
+#   Level IV      | 1.25%                 | 0.25%      | 0.15%
+#   Level V       | 1.50%                 | 0.50%      | 0.20%
+#
+#   For purposes hereof: (i) Pricing Level I, Leverage Level 1 and Ratings
+#   Level A are equivalent and correspond to each other, (ii) Pricing Level
+#   II, Leverage Level 2 and R[atings Level ...]
+#
+# Three parallel ladders -- pricing, leverage and ratings -- declared
+# equivalent row by row in prose beneath the table. The table itself carries
+# neither the leverage bands nor the ratings; both are supplied by a sentence
+# that reads like a definitional aside.
+#
+# Two further things in the same grid. The ABR spread is 0% for the top two
+# levels and 0.125% for the third, so a column reader meets two zeroes before
+# a real number. And a page number is flattened into the middle of the table
+# header -- "Field: Page; Sequence: 6; Options: NewSection; Value: 6 Field:
+# Sequence; Type: Arabic; Name: PageNo 6 Field: /Sequence Field: /Page" --
+# sitting between the sentence that introduces the grid and the grid itself.
+
+document: nvent_term_loan_2026
+corpus_name: M_nvent-electric-plc-nvt_2026-09-17_0001104659-26-108580_tm2625610d1-ex4-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: nvent_is_investment_grade
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: archetype
+    expect: investment_grade
+    note: >
+      Correct, and the third positive control in this batch after Winnebago
+      and Tailored Brands. A ticking fee, a ratings-indexed grid, a single
+      maximum net leverage covenant at 3.75 to 1.00 with a right to step it up
+      twice in five years, and no security package -- an unsecured
+      investment-grade term loan, and the classifier says so.
+
+  - id: nvent_grid_top_level_is_the_cheapest
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "0.875%"
+    note: >
+      Level I pays 0.875% over the Term Benchmark, and Level I is the best
+      row here -- the same direction as Hornbeck and the opposite of KBR,
+      whose Level 1 is leverage above 4.25:1.00 at 2.25%.
+
+      Three documents, three grids, and the corpus now has both conventions
+      twice over. There is no reading of "Level 1" that is right about all
+      three, which is what makes the level number useless as a key and the
+      leverage band the only thing that carries meaning across documents.
+
+      Except here, where the leverage band is not in the table at all: it is
+      in the sentence that maps Pricing Level I to Leverage Level 1 and
+      Ratings Level A. So the one piece of information that generalises is the
+      one this grid leaves out of its own rows.
+
+  - id: nvent_covenant_may_be_stepped_up_twice
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75 to 1.00"
+    note: >
+      "Section 6.01 Maximum Net Leverage Ratio. The Parent shall not permit
+      the Net Leverage Ratio on the last day of any period of four consecutive
+      fiscal quarters of the Parent to exceed 3.75 to 1.00; provided, that (i)
+      the Borrower may, by written notice to the Administrative Agent for
+      distribution to the Lenders and not more than two times during any five
+      consecutive year term of t[his Agreement] ..."
+
+      3.75 to 1.00 is the covenant and it is also not the whole story: the
+      borrower holds an option, exercisable twice in five years by notice
+      alone, to raise it. The level is a value; the option is a separate fact
+      about how firm that value is, and there is no field for it.
+
+      The stepdowns the F10 member is named for move a level on a schedule the
+      agreement fixes. This one moves on the borrower's election, which is a
+      different thing and the more dangerous one to report as settled --
+      nothing in the document says whether the option has been exercised.
+
+  - id: nvent_maturity_rolls_backward
+    family: F08_units
+    member: ratio_formatting
+    kind: field_status
+    target: initial_term_loan.maturity_date
+    expect: absent_from_document
+    note: >
+      '"Maturity Date" means the date that occurs on the third anniversary of
+      the Term Loan Funding Date; provided, however, if such date is not a
+      Business Day, the Maturity Date shall be the next preceding Business
+      Day.'
+
+      The Term Loan Funding Date is a defined term this exhibit does not fix,
+      so the third anniversary is not computable and the maturity is not in
+      the document. absent_from_document rather than external_reference: the
+      funding date is an event under this agreement, not a term of another
+      one.
+
+      The backward roll is the second instance of the convention in this batch
+      and the third in the corpus, after Compass Diversified and New Fortress
+      Energy. Compass's date is stated and lands on a Wednesday, so the
+      proviso is inert there and the convention is pure metadata; here it
+      would decide the answer if the anniversary ever resolved.

@@ -1,0 +1,108 @@
+# Tier 2 assertions: Cumberland Farms Ltd., Second Amendment to Syndicated
+# Facility Agreement, dated as of June 23, 2026 (Exhibit 10.5).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 1,194,418 characters -- the largest document in the corpus by a quarter of a
+# million -- and it contains the only genuinely circular definition found so
+# far:
+#
+#   "Applicable ECF Percentage" means, for any Excess Cash Flow Period: (q)
+#   50%, if the Consolidated First Lien Net Leverage Ratio (determined on a
+#   Pro Forma Basis after giving effect to the prepayment that would be
+#   required by Section 2.05(b)(i), assuming an Applicable ECF Percentage of
+#   50%) as of [the last day of such period] ...
+#
+# The sweep percentage depends on a leverage ratio computed after applying the
+# prepayment that the sweep percentage requires. The drafter saw the loop and
+# cut it with "assuming an Applicable ECF Percentage of 50%" -- a stipulated
+# seed value that makes the definition terminate. Strip that parenthetical and
+# the term has no value at all.
+#
+# It also carries a proviso that overrides its own pricing grid:
+#
+#   Pricing Level | Consolidated First Lien Net Leverage Ratio | Commitment Fee
+#   1 | Greater than 4.75:1.00                        | 0.50%
+#   2 | <= 4.75:1.00 but greater than 4.25:1.00       | 0.375%
+#   3 | <= 4.25:1.00                                  | 0.25%
+#
+#   provided, however, that "Pricing Level 1" above shall apply without regard
+#   to the Consolidated First Lien Net Leverage Ratio on and after the third
+#   Business Day after the date on [which a Compliance Certificate is due and
+#   not delivered] ...
+#
+# The grid maps a ratio to a fee, and the proviso pins the answer to the
+# worst level while disregarding the ratio entirely. A table-reading pass
+# recovers the mapping perfectly and still returns the wrong fee whenever the
+# proviso is live.
+
+document: cumberland_farms_syndicated_2026
+corpus_name: J_cumberland-farms-ltd-cmby_2026-09-04_0001193125-26-382176_d113224dex105
+source: real
+tier: 2
+
+assertions:
+
+  - id: cumberland_ecf_percentage_is_defined_in_terms_of_itself
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_value
+    target: excess_cash_flow.sweep_pct
+    expect: "50%"
+    note: >
+      50% is the top of the ladder and the seed the definition stipulates for
+      its own circularity, which makes it the one number the definition
+      supplies twice and the only one recoverable without resolving the
+      leverage test.
+
+      What is worth recording is why the circle closes. The prepayment under
+      Section 2.05(b)(i) changes the ratio, and the ratio selects the
+      percentage that sizes the prepayment. The parenthetical breaks it by
+      fiat. A definition-graph walk that treats the parenthetical as ordinary
+      qualifying text -- which it looks like -- either loops or reports the
+      term unresolved, and the one thing it must not do is silently pick the
+      first percentage it meets.
+
+  - id: cumberland_commitment_fee_grid_is_overridden_by_its_proviso
+    family: F02_precedence
+    member: table_overrides_definition
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.50%"
+    note: >
+      Pricing Level 1, and the assertion is deliberately the level the proviso
+      forces rather than the level a ratio would select, because the proviso
+      makes Level 1 the answer in the one state a filing cannot rule out: the
+      Compliance Certificate not having been delivered.
+
+      Aveanna is the companion in this batch with the override running the
+      other way -- a notwithstanding that lowers the margin below the table.
+      Between them the two documents show that the table is neither a floor
+      nor a ceiling on the truth, and that precedence has to be read in both
+      directions.
+
+  - id: cumberland_maturity_springs_on_other_debt
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_status
+    target: revolver.maturity_date
+    expect: needs_review
+    note: >
+      '"Maturity Date" means (a) with respect to the Revolving Credit
+      Facility, the earlier of (i) five year anniversary of the Closing Date;
+      provided that if on any date prior to the five year anniversary of the
+      Closing Date (any such date, a "Reference Date"), any Springing
+      Indebtedness remains outstanding ...'
+
+      The Closing Date is stated -- February 10, 2026 -- so the five-year
+      anniversary resolves to 10 February 2031 arithmetically. It is still not
+      the maturity date, because the springing branch can pull it earlier and
+      whether it does depends on facts outside the document.
+
+      needs_review is the honest state and 2031-02-10 is the confident wrong
+      answer available to anyone who resolves the anniversary and stops at the
+      semicolon. Tailored Brands and Winnebago in this same batch spring on
+      the same structure -- 91 days before some other instrument's maturity --
+      so three of the twenty held-out documents have a maturity that is not
+      the date they state.

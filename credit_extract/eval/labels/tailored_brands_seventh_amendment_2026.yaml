@@ -1,0 +1,91 @@
+# Tier 2 assertions: Tailored Brands, Inc., Seventh Amendment to Credit
+# Agreement, dated as of July 21, 2026 (Exhibit 10.1).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# 767,116 characters and 300 sections -- the most sections of any document in
+# the corpus, twice Accelevation's 174 and more than the 199 of Cumberland
+# Farms, which is half a million characters longer. Section count and length
+# are not the same measurement and this document is the proof.
+#
+# It is an asset-based revolver, correctly classified at 0.70 on 121
+# references to a borrowing base, and it is a post-restructuring facility:
+# the negative covenants bind amendments to "the Confirmation Order, the
+# Canadian Confirmation Order or Approved Plan", which are bankruptcy
+# instruments, in a company that emerged from Chapter 11. There is a `dip`
+# archetype in the register and this document is not one -- an exit facility
+# and a debtor-in-possession facility share a vocabulary and nothing else,
+# and no decisive DIP phrase fires here, which is the right outcome.
+#
+# Its Floor is the circular standard form, multi-currency:
+#
+#   "Floor" means the benchmark rate floor, if any, provided in this Agreement
+#   (as of the execution of this Agreement, the modification, amendment or
+#   renewal of this Agreement or otherwise) with respect to the Term SOFR
+#   Rate, Canadian Prime Rate or the Adjusted Term CORRA Rate, as applicable.
+
+document: tailored_brands_seventh_amendment_2026
+corpus_name: K_tailored-brands-inc-de-menw_2026-08-31_0001213900-26-095715_ea028501707ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: tailored_brands_is_an_asset_based_revolver
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: abl_revolver
+    note: >
+      The second positive control in this batch. Winnebago and Tailored Brands
+      are what "borrowing base" is supposed to catch, and they are caught; the
+      Elmet investor rights agreement and the two warehouses are what it
+      catches by mistake. Five documents, one signal, and the corpus now says
+      what its precision is.
+
+  - id: tailored_brands_maturity_springs_ninety_one_days_early
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-07-21
+    note: >
+      '"Maturity Date" means July 21, 2031 (the "Scheduled Maturity Date");
+      provided that, if on the date that is 91 days prior to the final
+      scheduled maturity (as such final scheduled maturity may be extended or
+      otherwise modified, including in connection with any applicable
+      Refinancing Indebtedness) ...'
+
+      July 21, 2031 -- five years to the day from the amendment -- and the
+      proviso does not displace it on the face of the document.
+
+      The construction is worth recording because it names the stated date a
+      second time, as "Scheduled Maturity Date", and then defines the real
+      Maturity Date in terms of it. So there are two defined terms, one
+      value, and a springing branch between them; a reader resolving
+      "Maturity Date" who follows the proviso first arrives at an instrument
+      whose maturity this document does not state.
+
+      Winnebago springs on the same 91-day structure and Cumberland Farms on
+      its Springing Indebtedness, which makes three of twenty held-out
+      documents with a conditional maturity -- and the three resolve
+      differently: two to their stated date, one to needs_review.
+
+  - id: tailored_brands_floor_covers_three_benchmarks_and_names_none
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_status
+    target: libor_floor_pct
+    expect: needs_review
+    note: >
+      The standard circular form, applied across Term SOFR, the Canadian Prime
+      Rate and Adjusted Term CORRA "as applicable", with no resolving sentence
+      after it.
+
+      Multi-currency makes the circularity worse rather than the same: even if
+      a floor were stated somewhere in the agreement, "the benchmark rate
+      floor provided in this Agreement with respect to ... as applicable"
+      resolves to a different value per currency, and the field holds one
+      number. Sanmina is the fit-side document that punishes the same
+      assumption on credit spread adjustments.

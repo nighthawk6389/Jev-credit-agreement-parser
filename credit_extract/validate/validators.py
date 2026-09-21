@@ -265,6 +265,39 @@ def rescue_orphans(
 # Validator C -- negative-space confirmation
 # ---------------------------------------------------------------------------
 
+#: How far into a document its own title is expected to be.
+_TITLE_WINDOW = 600
+
+#: "AMENDMENT NO. 5 TO CREDIT AGREEMENT" and its variants. The gaps allow
+#: periods, because the amendment's own number carries one and an earlier
+#: version of this pattern excluded them and matched nothing at all.
+_AMENDS_RE = re.compile(
+    r"\bAMENDMENT\b[\s\S]{0,70}?\bTO\b[\s\S]{0,60}?\bAGREEMENT\b", re.I
+)
+
+_DEFINES_RE = re.compile(r"\"\s*(?:means|shall mean|:\s)", re.I)
+
+#: A conformed amendment reproduces the agreement it amends and so defines
+#: hundreds of terms; a bare one defines almost none. On the 100-document
+#: harvest the split is not close -- every bare amendment has 11 or fewer
+#: definitional operators and the smallest conformed one has 198 -- so the
+#: threshold sits in a gap eighteen times its own width and no document in the
+#: corpus lands near it.
+_CARRIES_ITS_TERMS = 60
+
+
+def _amends_an_agreement_it_does_not_carry(doc: Any) -> bool:
+    """True for a bare amendment: it names an agreement and reproduces none of it.
+
+    Absence means something different in such a document. Every term the
+    amendment leaves alone is still operative and still has a value, in text
+    the filing does not contain, so "not here" is not "not in the deal".
+    """
+    text = getattr(doc, "text", "") or ""
+    if not _AMENDS_RE.search(text[:_TITLE_WINDOW]):
+        return False
+    return len(_DEFINES_RE.findall(text)) < _CARRIES_ITS_TERMS
+
 
 def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
     """Affirmatively confirm absence, chunk by chunk, combined in Python.
@@ -328,7 +361,27 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         # first is absence, and confirming the second would be a silent error
         # with a probability printed next to it.
         untypable = field.qualifiers.get("untypable_value")
-        if untypable:
+        if _amends_an_agreement_it_does_not_carry(ctx.doc):
+            # The third reason a field can be empty, and the one the corpus
+            # found last. Comtech's Amendment No. 5 amends sections of a credit
+            # agreement the filing does not contain; "Applicable Margin" occurs
+            # zero times in it. Absence confirmed across these chunks is a true
+            # statement about these chunks and a false one about the facility,
+            # which has a margin -- in a document that is somewhere else.
+            #
+            # external_reference is not available either, because the amendment
+            # quotes no pointer: the labelling guide requires one, and Air T's
+            # note is the contrast that has it ("the Applicable Margin (as
+            # defined in the Credit Agreement)").
+            field.status = "needs_review"
+            field.validation_confidence = probability
+            field.notes = (
+                "this document amends an agreement it does not carry, so "
+                f"absence is not confirmable from it; scored {probability:.2f} "
+                "across its chunks and that is a fact about the amendment, "
+                "not about the facility"
+            )
+        elif untypable:
             field.status = "needs_review"
             field.validation_confidence = probability
             field.notes = (

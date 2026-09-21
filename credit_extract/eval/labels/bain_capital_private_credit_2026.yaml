@@ -1,0 +1,91 @@
+# Tier 2 assertions: Bain Capital Private Credit, credit agreement (Exhibit
+# 10.1), filed August 14, 2026.
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength.
+#
+# A fund-level facility against a pool of Collateral Loans, 703,940 characters
+# and 164 sections, and the one document in the corpus where the classifier's
+# ambiguity branch does the right thing:
+#
+#     second_lien    fires on "second priority"
+#     abl_revolver   fires on "advance rate"
+#     -> two archetypes at one signal each -> unknown, sent to the model
+#
+# It says "second lien" nine times and "second priority" once. On any other
+# tie-break -- first match wins, highest count wins, longest phrase wins -- it
+# would have been classified confidently. It is unknown because two families
+# tied at one, which is luck rather than judgement, and worth recording as
+# such: the corpus contains exactly one document that benefits from the
+# ambiguity rule, and it benefits by accident.
+#
+# Its Floor is the circular standard form with a resolving second sentence,
+# the same construction as New Fortress Energy:
+#
+#   "Floor" means the benchmark rate floor, if any, provided in this Agreement
+#   initially (as of the execution of this Agreement, the modification,
+#   amendment or renewal of this Agreement or otherwise) - 34 - with respect
+#   to Term SOFR or any Benchmark Replacement. Commencing on the Closing Date,
+#   the F[loor] ...
+#
+# with a page number -- "- 34 -" -- flattened into the middle of the sentence,
+# between "or otherwise)" and "with respect to Term SOFR".
+
+document: bain_capital_private_credit_2026
+corpus_name: H_bain-capital-private-credit_2026-08-14_0001193125-26-349812_ck0001899017-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: bain_capital_ties_and_declines
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Right answer, fragile reason. "Second priority" is decisive of
+      second_lien and fires here inside a fund facility's lien-priority
+      language; a second family fires at the same strength; the tie sends the
+      document to the model, which has no key and so returns unknown.
+
+      The assertion is worth keeping precisely because the mechanism is
+      incidental. If either family's vocabulary list changes by one phrase,
+      this document classifies confidently, and the change that does it will
+      look unrelated to this document.
+
+  - id: bain_capital_page_number_sits_inside_a_definition
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "or otherwise)\n\n- 34 -\n\nwith respect to"
+    expect: true
+    note: >
+      A page number on its own line in the middle of a sentence, in the
+      middle of a defined term's definition, surviving normalisation intact
+      -- and with paragraph breaks around it, so it splits the definition
+      into two blocks for anything that segments on blank lines.
+
+      Every layout assertion so far has been about tables -- a grid rendered
+      as text, a footnote modifying a table, a page number landing in KBR's
+      pricing grid. This is the same defect in running prose, where there are
+      no cell boundaries to make it visible. The string is asserted present
+      rather than absent deliberately: it is what the operative text holds
+      today, and any cleanup that removes it should have to change this
+      assertion on purpose.
+
+      AGL Private Credit in this same batch carries the worse version -- a
+      Word field code, a document ID and a page number spliced between "after
+      the" and "occurrence of an Event of Default".
+
+  - id: bain_capital_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-05-08
+    note: >
+      '"Closing Date" means May 8, 2026.' Stated, three months before the
+      filing, and the control for the Floor assertion above: the same document
+      that leaves a rate open states a date outright, so a failure on the
+      Floor cannot be blamed on the document being uniformly evasive.

@@ -1,0 +1,65 @@
+# Tier 2 assertions: Vivid Seats / Hoya Midco, LLC, Amendment No. 7 to First
+# Lien Credit Agreement dated as of June 23, 2026 (Exhibit 10.1).
+#
+# Fit side, never read during development. 15,098 characters, 13 sections, and
+# one occurrence of "Event of Default" in the whole document.
+#
+# That last number is the label. The non-agreement guard declines any document
+# with fewer than two Events of Default, on the reasoning that a credit
+# agreement cannot avoid the phrase. This is a real amendment to a real credit
+# agreement and it says it once, because a short amendment inherits its
+# defaults instead of restating them. The floor of two is wrong about this
+# document and about nScale's Amendment No. 3, which also says it once.
+#
+# Neither is currently harmed: both decline on vocabulary as well, so the
+# guard is not what produces the answer, and the answer is right. The floor is
+# a latent error rather than an active one, and the honest thing is to write
+# it down as such rather than to discover it later on a document where the
+# vocabulary does fire.
+#
+# Raising the floor was considered and rejected: at zero the guard stops
+# catching Greenfire, Rezolve, McGraw Hill, the Butterfield proxy and the JRD
+# Unico financials, which is five confident misclassifications traded for two
+# latent ones. The floor stays at two and the exposure is recorded here.
+
+document: vivid_seats_amendment_7_2026
+corpus_name: L_vivid-seats-inc-seat-seatw_2026-08-04_0001193125-26-331507_seat-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: vivid_seats_amendment_is_an_agreement_with_one_default
+    family: F04_absence
+    member: no_financial_covenant
+    kind: text_present
+    target: "AMENDMENT NO. 7 TO FIRST LIEN CREDIT AGREEMENT"
+    expect: true
+    note: >
+      Pins the document's identity against the guard that currently rejects
+      it. It is titled an amendment to a first lien credit agreement, it is
+      signed, and it is operative; the one thing it does not do is repeat the
+      Events of Default it already has.
+
+      Asserted as text because the guard has no field. If the floor is ever
+      revisited, this is the string that says what was being excluded.
+
+  - id: vivid_seats_amendment_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      The right answer reached by the wrong route. The guard declines it as
+      not-an-agreement, which is false; no archetype vocabulary fires either,
+      which is true. A fifteen-thousand-character amendment carries too little
+      of the deal to be placed in a family, so unknown is correct whichever
+      test produces it -- but only one of the two tests would still be correct
+      on a longer amendment.
+
+      Note also the title: "FIRST LIEN CREDIT AGREEMENT", in the first 300
+      characters and inside the detection window. The phrase "first lien
+      obligations" is a second_lien supporting signal, and a classifier that
+      let title vocabulary decide would read this document's own seniority as
+      evidence of the opposite -- the same inversion that "junior lien"
+      produced on Accelevation.

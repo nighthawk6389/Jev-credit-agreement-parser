@@ -1,0 +1,89 @@
+# Tier 2 assertions: McGraw Hill, Inc., fiscal first quarter 2027 earnings
+# press release (Exhibit 99.1), filed August 13, 2026.
+#
+# Fit side, never read during development. 42,052 characters, five sections,
+# zero Events of Default, and 44 occurrences of "EBITDA" -- more than any
+# other non-agreement in the corpus and more than several of the real
+# agreements:
+#
+#   Adjusted EBITDA (1) of $207.0 million, representing an Adjusted EBITDA
+#   margin (1) of 37.7%, an increase of 192 basis points versus prior year.
+#   Continued commitment to gross debt reduction, progressing toward the
+#   Company's 2.0-2.5x net leverage target.
+#
+#   ... Term Loan Facility | (3,293) ...
+#
+# Adjusted EBITDA, an EBITDA margin, a basis point figure, a net leverage
+# range and a term loan facility, in one paragraph and one cash flow line. It
+# is the densest concentration of credit vocabulary in the corpus per
+# character, and there is no agreement anywhere in it.
+#
+# The basis point figure is the sharpest part. "192 basis points" is a
+# year-over-year change in a margin percentage. Every other bps figure in the
+# corpus is a spread or an adjustment -- Compass Diversified's "0.10% (10.00
+# basis points)", Hornbeck's 0.10% Term SOFR Adjustment -- so any rule that
+# reads bps as a pricing term reads a margin improvement as a credit spread.
+# The negatives are what make the F08 positives mean anything, and this is the
+# hardest negative available: correct units, correct magnitude, wrong quantity
+# entirely.
+#
+# The "2.0-2.5x net leverage target" is the same shape one register up. It is
+# a management aspiration written in exactly the form a covenant level takes,
+# in a document with no covenant.
+
+document: mcgraw_hill_press_release_2026
+corpus_name: Q_mcgraw-hill-inc-mh_2026-08-13_0001951070-26-000038_mh-2026630xpressreleaseex9
+source: real
+tier: 2
+
+assertions:
+
+  - id: mcgraw_hill_press_release_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      Zero Events of Default, so the guard declines it before the 44 EBITDA
+      mentions are counted. Of the five non-agreements this is the one whose
+      vocabulary most resembles a leveraged loan, and the one where "count the
+      credit vocabulary" as a test fails hardest.
+
+  - id: mcgraw_hill_basis_points_are_not_a_spread
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "an increase of 192 basis points versus prior year" measures the change
+      in an Adjusted EBITDA margin. There is no spread, no adjustment and no
+      benchmark in this document, so the right status is absent_from_document
+      rather than external_reference: unlike Rezolve's facility or Air T's
+      Applicable Margin, there is no other agreement this value belongs to.
+      It is not a pricing term at all.
+
+      Held alongside the three real 0.10% adjustments the corpus does contain
+      -- Compass Diversified, Hornbeck, LL Flooring -- and the three documents
+      that punish a string search for one: BrightSpring, where "Term SOFR
+      Adjustment" is 0.00%; Sanmina, where the adjustments are real, non-zero
+      and in the wrong currency; SanDisk, where they are rate-construction
+      components rather than spreads. This is the fourth negative and the only
+      one outside an agreement.
+
+  - id: mcgraw_hill_leverage_target_is_not_a_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      "progressing toward the Company's 2.0-2.5x net leverage target" is
+      written the way a covenant level is written, names the ratio a covenant
+      would name, and binds no one.
+
+      Sysco is the pair: a covenant that exists and whose level the field
+      cannot hold, against a level the field could hold perfectly and which
+      is not a covenant. Between them they cover both directions of the F04
+      mistake, and a rule that reads either one correctly by pattern alone
+      reads the other one wrong.

@@ -367,3 +367,104 @@ def test_a_document_that_is_not_an_agreement_gets_no_archetype():
         "accelerate."
     )
     assert detect_deterministic(agreement).archetype != "unknown"
+
+
+def test_junior_lien_does_not_make_a_first_lien_agreement_second_lien():
+    """"Junior lien" was decisive of second_lien and went 0 for 4 on the corpus.
+
+    The signal runs backwards. A first lien agreement is the document that has
+    to carry the phrase, because it is the one that has to describe the debt it
+    permits beneath itself -- in a permitted-debt basket, in the definition of
+    Junior Debt, and in the index of intercreditor forms it might one day sign.
+    A second lien facility calls itself one.
+
+    Accelevation, Latham, Hornbeck and one held-out agreement all classified
+    second_lien at 0.70 on this signal while saying "second lien" 0, 0, 45 and
+    0 times. Hornbeck's 45 are all references to a *separate* Second Lien
+    Credit Agreement, in the phrase "this Agreement, the Second Lien Credit
+    Agreement", which is the same inversion one level up.
+    """
+    from credit_extract.models.archetypes import (
+        PROFILES, _reads_like_an_agreement, detect_deterministic,
+    )
+
+    profile = PROFILES["second_lien"]
+    assert "junior lien" not in profile.decisive_signals
+    assert "junior lien" in profile.supporting_signals
+
+    senior = (
+        "CREDIT AGREEMENT dated as of January 2, 2025. Exhibit H-2 Form of "
+        "Junior Lien Intercreditor Agreement. \"Junior Debt\" shall mean any "
+        "Indebtedness for borrowed money that is Subordinated Indebtedness, "
+        "junior lien secured Indebtedness or unsecured Indebtedness. In the "
+        "case of Indebtedness secured by Liens on the Collateral on a junior "
+        "lien basis with the Liens securing the Obligations, the Consolidated "
+        "Senior Secured Debt to Consolidated EBITDA Ratio shall not exceed "
+        "8.50:1.00. Section 10. Upon an Event of Default the Administrative "
+        "Agent may accelerate. Any Event of Default is continuing until waived."
+    )
+    # The guard has to pass, or the demotion is not what is being tested.
+    assert _reads_like_an_agreement(senior)
+    assert detect_deterministic(senior).archetype != "second_lien"
+
+    # A facility that says what it is still classifies.
+    junior = senior.replace(
+        "CREDIT AGREEMENT dated", "SECOND LIEN CREDIT AGREEMENT dated"
+    )
+    assert detect_deterministic(junior).archetype == "second_lien"
+
+
+def test_a_bare_amendment_cannot_confirm_absence():
+    """Comtech's Amendment No. 5 produced the corpus's fourth silent error.
+
+    It amends sections of a credit agreement the filing does not contain, and
+    the phrase "Applicable Margin" occurs zero times in it. Validator C scored
+    absence across its chunks, cleared the threshold, and reported
+    absent_from_document -- a true statement about 28,594 characters of
+    amendment and a false one about a facility that has a margin.
+
+    A conformed amendment carries the agreement it amends and so defines
+    hundreds of terms; a bare one defines almost none. On the harvest the gap
+    is eighteen times the threshold's distance from either side: every bare
+    amendment has 11 or fewer definitional operators, and the smallest
+    conformed amendment has 198.
+    """
+    from credit_extract.validate.validators import (
+        _amends_an_agreement_it_does_not_carry as bare,
+    )
+
+    class Doc:
+        def __init__(self, text): self.text = text
+
+    amendment = Doc(
+        "Exhibit 10.1 Execution Version AMENDMENT NO. 5 TO CREDIT AGREEMENT "
+        "This AMENDMENT NO. 5 TO CREDIT AGREEMENT (this \"Amendment\") is "
+        "entered into as of July 30, 2026, among the Borrower, the Lenders "
+        "and the Administrative Agent. Section 2.1 of the Credit Agreement is "
+        "hereby amended by replacing clause (b) in its entirety."
+    )
+    assert bare(amendment), "the amendment's own number carries a period"
+
+    # A conformed amendment reproduces the agreement, so absence means something.
+    conformed = Doc(
+        amendment.text
+        + "".join(
+            f' "Defined Term {n}" means the meaning given in this Section.'
+            for n in range(80)
+        )
+    )
+    assert not bare(conformed)
+
+    # A credit agreement is not an amendment at all, whatever it defines.
+    agreement = Doc(
+        "CREDIT AGREEMENT dated as of January 2, 2025 among the Borrower and "
+        "the Lenders. \"Floor\" shall mean 0.75% per annum."
+    )
+    assert not bare(agreement)
+
+    # The title has to be the document's own, not a mention 40 pages in.
+    late = Doc(
+        "CREDIT AGREEMENT dated as of January 2, 2025. " + "x" * 2000
+        + " AMENDMENT NO. 1 TO CREDIT AGREEMENT may be entered into hereafter."
+    )
+    assert not bare(late)

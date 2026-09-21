@@ -1,0 +1,83 @@
+# Tier 2 assertions: The Elmet Group Co., Investor Rights Agreement dated
+# September 14, 2026, by and between the Company and the United States
+# Department of War (Exhibit 10.3).
+#
+# HELD OUT. Read once, to write this label, and no code was changed on its
+# strength. What it found is recorded as a measured holdout error, not repaired
+# quietly.
+#
+# The classifier returns abl_revolver at 0.70 on an equity investor rights
+# agreement, on one phrase. The document defines a borrowing base without
+# having one:
+#
+#   "Borrowing Base" means, as of any date of determination, with respect to
+#   borrowings under a credit facility with lenders ... the aggregate lending
+#   value to be ascribed to the assets of the Company and its Subsidiaries
+#   against which such lenders are committed to provide loans ... using
+#   customary practices and standards for determining U.S.-based asset-based
+#   borrowing base revolving loans ...
+#
+# and then uses it once, in a debt basket:
+#
+#   ... in an aggregate principal amount up to the greater of (x) $200 million
+#   and (y) 105% of the Borrowing Base of such facility, which in no event
+#   shall exceed $500 million ...
+#
+# "Eligible accounts" occurs zero times. "Lender" occurs four times, all of
+# them about hypothetical future lenders. There is no facility, no commitment
+# and no advance here; the government is taking equity in a tungsten producer
+# and reserving how much asset-based debt the company may later raise.
+#
+# It clears the non-agreement guard with five Events of Default, because an
+# investor rights agreement has defaults like any contract. So this is the
+# third distinct route to a confident wrong archetype, after Greenfire (not an
+# agreement, caught) and Accelevation (an agreement, wrong family): an
+# agreement that is not a credit agreement and says enough credit words to be
+# sorted into one.
+
+document: elmet_investor_rights_2026
+corpus_name: Q_elmet-group-co-elmt_2026-09-14_0001213900-26-099734_ea030468201ex10-3
+source: real
+tier: 2
+
+assertions:
+
+  - id: elmet_investor_rights_have_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      The fourth silent error the corpus has produced and the first found on
+      the held-out side. It is expected to fail until the classifier changes,
+      and the failure is the measurement: a confident classification at 0.70,
+      above the suppression threshold, on a document with no facility.
+
+      The suppression it enables is the part that matters. abl_revolver rules
+      term_amortization, recurring_revenue, nav_tests and pik_mechanics
+      not_applicable_to_archetype -- four groups reported as settled because
+      an equity agreement mentioned a borrowing base in a covenant about
+      somebody else's future loan.
+
+      Deliberately not fixed here. The fix belongs in the fit-side work, and
+      the fit side already holds the evidence it needs: Greenfire, Neovolta
+      and Accelevation all show decisive vocabulary describing a document
+      other than the one carrying it. This label exists so that when the fix
+      lands, the holdout is what confirms it rather than what shaped it.
+
+  - id: elmet_borrowing_base_belongs_to_a_facility_that_does_not_exist
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: borrowing_base.advance_rate_accounts
+    expect: absent_from_document
+    note: >
+      absent_from_document rather than external_reference, and the distinction
+      is the whole point of the F03 split. Rezolve's $50 million and Air T's
+      Applicable Margin are real terms of real agreements that happen not to
+      be in the filing. Elmet's Borrowing Base is a definition of what a
+      borrowing base would be measured as, under a facility nobody has yet
+      agreed to, with no advance rate, no eligible asset class and no lender.
+
+      There is no other document to point at. Reporting external_reference
+      here would assert the existence of an agreement that does not exist.

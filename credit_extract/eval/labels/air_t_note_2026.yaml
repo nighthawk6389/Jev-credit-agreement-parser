@@ -1,0 +1,85 @@
+# Tier 2 assertions: Air T, Inc., Amended and Restated Revolving Credit Note
+# dated as of September 1, 2026 (Exhibit 10.2).
+#
+# Fit side, never read during development. 19,547 characters, zero sections,
+# nine joint-and-several borrowers and one lender, Alerus Financial. It is not
+# a credit agreement. It is the instrument a credit agreement is evidenced by,
+# and almost every term in it is somewhere else:
+#
+#   FOR VALUE RECEIVED, on the Revolving Credit Termination Date (as defined
+#   in the Credit Agreement hereinafter defined) the undersigned ... jointly
+#   and severally promise to pay to the order of ALERUS FINANCIAL ... the
+#   principal sum of TWENTY FIVE MILLION AND NO/100THS DOLLARS (U.S.
+#   $25,000,000.00) or, if less, the aggregate unpaid principal amount of all
+#   Revolving Credit Loans (as defined in the Credit Agreement hereinafter
+#   defined) made by the Lender to the Borrowers pursuant to the Credit
+#   Agreement.
+#
+# It is also the document that shows what the non-agreement guard does and
+# does not do. The guard declines any document with fewer than two Events of
+# Default; this note has six, so it passes as an agreement. What saves the
+# answer is that no archetype's vocabulary fires, not the guard. A promissory
+# note is a document with defaults and remedies and no deal terms, and the
+# guard was never built to separate those two things -- it was built to throw
+# out business acquisition reports and earnings releases. Recording that here
+# is the point: the guard's floor is a floor on default language, and default
+# language is exactly what a note has.
+
+document: air_t_note_2026
+corpus_name: L_air-t-inc-airt-airtp_2026-09-04_0000353184-26-000098_a102arrevolvingcreditnot
+source: real
+tier: 2
+
+assertions:
+
+  - id: air_t_note_has_no_archetype
+    family: F06_structure
+    member: second_lien
+    kind: archetype
+    expect: unknown
+    note: >
+      A note has no archetype because a note has no structure: no covenant, no
+      borrowing base, no amortisation schedule, no pricing grid. Everything
+      that would place it in one deal family or another is in the Credit
+      Agreement it refers to and the filing does not contain.
+
+      Unlike Greenfire and the four other non-agreements here, this one clears
+      the Event of Default floor. It is the honest counter-example to the
+      guard and the reason the guard is not the whole answer.
+
+  - id: air_t_margin_is_defined_in_a_document_not_filed
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: external_reference
+    note: >
+      "a fluctuating annual rate of interest equal to the greater of (a)
+      5.00%, and (b) the sum of (i) the Applicable Margin (as defined in the
+      Credit Agreement), plus (ii) the Index".
+
+      The margin is named, used in an arithmetic expression, and never given a
+      number. absent_from_document would be wrong: the term is present and
+      operative, it is the other document that is missing. This is the same
+      distinction the F03 split exists for, on a document where it is the
+      normal case rather than the exception -- a note is external reference all
+      the way down.
+
+  - id: air_t_floor_is_an_all_in_rate
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "5.00%"
+    note: >
+      "the greater of (a) 5.00%, and (b) the sum of (i) the Applicable Margin
+      ... plus (ii) the Index".
+
+      5.00% floors the whole rate, margin included -- the all-in side of the
+      base-versus-all-in distinction, and the only clean instance of it in the
+      corpus. The document never uses the word "Floor", so a rule that looks
+      for the defined term finds nothing here, and a rule that reports any
+      floor it finds reports 5.00% as if it were a benchmark floor, which
+      would be roughly seven times the usual figure and in the wrong place in
+      the rate build-up. Accelevation is the mirror: a defined "Floor" of
+      0.75% whose subject is sections away.
