@@ -1,11 +1,18 @@
 # Extraction architecture review and path forward
 
 Drafted 2026-09-20 against `main` at `212d7ab`; corrected 2026-09-21 against
-`9d1ceeb`, after PR #3 merged. Three claims in the original did not survive
-being checked against the code, and each is marked **Correction** where it
+`9d1ceeb`, after PR #3 merged; corrected again 2026-09-21 against `c4b05c4`,
+after PR #6 merged and the corpus was fully labelled. Claims that did not
+survive being checked against the code are marked **Correction** where they
 appeared rather than quietly deleted — a review whose errors are edited out is
-harder to trust than one that shows them. The strategy is unchanged; two of
-the three were arguments for things the repository already does.
+harder to trust than one that shows them.
+
+The strategy is unchanged. What has changed is how much of the review is still
+outstanding work: of the five recommendations in *What should change*, §2 and
+§3 have been implemented since the draft, §4's premise has inverted, and §1
+stands untouched and is now the one to act on. A review that is mostly overtaken
+within a day is a good outcome for the repository and a reason to read its
+figures with the date attached.
 
 ## Executive decision
 
@@ -69,24 +76,77 @@ It reported:
 - live Jev, live Anthropic extraction, and real-corpus labels as unresolved
   environmental or evidence gaps.
 
-Those figures still hold on `9d1ceeb`. The four failures are worth naming
-because they are the report's most informative rows: F07 benchmark 2 pass / 1
-fail, F08 units 2 / 2, and **F10 conditionality 0 pass / 1 fail** — the
-family's only assertion. None is a silent error; all four route to review,
-which is why the headline reads zero while three families are measurably not
-working. Read the pass/fail columns, not the headline alone.
+Those figures held on `9d1ceeb`. The four failures were worth naming because
+they were the report's most informative rows: F07 benchmark 2 pass / 1 fail,
+F08 units 2 / 2, and **F10 conditionality 0 pass / 1 fail** — the family's
+only assertion. None was a silent error; all four routed to review, which is
+why the headline read zero while three families were measurably not working.
+Read the pass/fail columns, not the headline alone.
 
-The zero-silent-error result is useful but narrow. A wrong or missing result
-routed to review is not counted as a silent error. That is the correct safety
-metric for auto-confirmation, but it is not extraction recall and it does not
-show that the system returns enough usable fields. The README is explicit that
-real-document recall fell from roughly 30 of 38 fields on synthetic fixtures
-to between zero and three on the initially labelled real documents.
+> **Correction — the evidence base has grown by an order of magnitude, and the
+> headline is no longer zero.** Every figure above is stale, including the one
+> this review leans on hardest. On `claude/credit-agreement-extraction-952py3`
+> at `932223f` — 21 commits past `c4b05c4`, carrying the labelling work and not
+> yet merged — the same command reports:
+>
+> ```
+> 105 document(s) and 85 mutant(s), 464 assertions (365 real / 99 synthetic)
+>
+> of 176 propositions asserted confidently, 3 were wrong (1.70% silent error rate)
+>   F06_structure  athena_funding_is_not_an_asset_based_revolver  expected unknown, got abl_revolver
+>   F06_structure  elmet_investor_rights_have_no_archetype        expected unknown, got abl_revolver
+>   F06_structure  horizon_servicing_agreement_has_no_archetype   expected unknown, got abl_revolver
+>
+>   holdout        120 assertions, 31 confident, 2 wrong
+>   fit            195 assertions, 18 confident, 1 wrong
+>   contaminated    50 assertions, 32 confident, 0 wrong
+> ```
+>
+> The shape to read is not the 1.70%. The count of confident propositions went
+> from 57 to 176 while the error count went from 0 to 3: the pipeline did not
+> get worse, the evidence base started measuring a class it previously could
+> not see, and a zero measured over 57 propositions was never the same claim as
+> a zero measured over 176. Ten of the eleven families are at zero, and the
+> three failures are one defect — decisive archetype vocabulary that describes
+> a facility other than the document's.
+>
+> The named rows have moved with it: F07 benchmark is now 5 pass / 57 fail, F08
+> units 4 / 18, F10 conditionality 18 / 36, F11 layout 19 / 1. The original
+> reading survives and is now much larger in absolute terms — none of those
+> failures is a silent error, all route to review, and the fail column is
+> dominated by absences the corpus asserts and the deterministic tier cannot
+> reach. "Six undersampled families" is now three and they are named: F03
+> (disclosure_letter, fee_letter, sponsor_model), F06
+> (nav_or_subscription_line, unitranche_with_aal), F09
+> (term_defined_in_other_loan_document).
+>
+> One line has to be added to the advice, because the split now exists: read
+> the pass/fail columns, and then read the split. A confident answer measured
+> on a document its author read while building the pipeline is worth less than
+> one measured on a document they did not, and the report now separates them.
 
-The 100-document EDGAR corpus is a valuable stratified test population, but it
-is mostly unlabelled. It reveals crashes, drafting diversity, and checks that
-fire implausibly often. It cannot measure field accuracy until humans label
-the expected values and evidence.
+The zero-silent-error result was useful but narrow, and the same caveat applies
+to the 1.70%. A wrong or missing result routed to review is not counted as a
+silent error. That is the correct safety metric for auto-confirmation, but it is
+not extraction recall and it does not show that the system returns enough usable
+fields. The README is explicit that real-document recall fell from roughly 30 of
+38 fields on synthetic fixtures to between zero and three on the initially
+labelled real documents. **Nothing in this repository measures recall yet**,
+which is the gap the ablation in Phase 2 exists to close.
+
+> **Correction — the corpus is no longer mostly unlabelled.** The paragraph
+> below said it could not measure field accuracy until humans label the expected
+> values and evidence. All 100 documents in the frozen split now carry Tier 2
+> labels, plus the 11 contaminated ones. The labelling found eight filings in
+> the harvest that are not credit agreements at all — a proxy statement, an
+> earnings release, three sets of financial statements, a registration rights
+> agreement and two stock transfers — and four defects, three fixed and one
+> open as the F06 failures above. What it does *not* yet do is measure recall:
+> Tier 2 assertions are propositions about particular fields, not a count of how
+> many of the 37 critical fields a run returns.
+
+The 100-document EDGAR corpus is a valuable stratified test population. It
+reveals crashes, drafting diversity, and checks that fire implausibly often.
 
 The current thresholds are fitted to 24 synthetic documents using
 `OfflineJev`. Most classes are not statistically certified at their configured
@@ -154,6 +214,16 @@ substring from free-form text. Replace that boundary with schema-constrained
 output from a provider or a maintained extraction library. Preserve the
 existing rule that a non-null value without a locatable quote is discarded.
 
+> **Correction — done, and it was not this review that prompted it.** The
+> adapter no longer parses free text. The schema is sent as
+> `output_config.format` (`passes.py:530` and `:588`), provider-enforced, which
+> is what this section asked for; the comment at `passes.py:440` records what
+> it replaced. The second sentence was already the rule and still is: a
+> non-null value without a locatable quote is discarded.
+>
+> The section's remaining value is the boundary it draws, not the work it
+> proposes. Nothing here is outstanding.
+
 ### 3. Give the passes distinct jobs
 
 Passes today differ by *view* — the same specs asked of structural,
@@ -190,6 +260,14 @@ first model.
     design this repository does not have, and rewriting `plan_passes` would
     replace a solved problem with the same problem.
 
+    Correction, second pass. The targeted re-read this section recommends is
+    also built. Tier 4 runs: `prompts/__init__.py:266` builds the re-read
+    prompt for a chunk the orphan sweep flagged, and `recorded.py:199`
+    supplies `reread_findings` — Tier 4's other half, what a chunk says that
+    has no field at all. Of the five numbered stages above, the only one still
+    unbuilt is the optional verifier model, and it is the one the section
+    itself says to keep only if an ablation earns it.
+
 ### 4. Decouple the internal schema from standards export
 
 FpML, FIBO, and ACTUS are valuable, but they do different jobs:
@@ -209,14 +287,41 @@ The standards projection in
 [PR #3](https://github.com/nighthawk6389/Jev-credit-agreement-parser/pull/3)
 is useful infrastructure, and it **merged** after this review was drafted. Its
 benefit should be measured as mapping coverage and interoperability,
-separately from extraction accuracy — and on that measure the gap is now
-concrete rather than hypothetical. `Facility`, `PikTerms`, `CommitmentTerms`,
-`FacilityClassification`, `CreditRating` and `PartyReferences` are all defined
-in `fpml_model.py`, and `grep -rn "Facility(" credit_extract/` returns nothing
-outside the tests: the pipeline emits a flat `fields` dictionary and never
-constructs one. Forty FpML element names are verified against pinned schemas
-and **zero of them are populated by a real run**, which is exactly the
-distinction this section draws.
+separately from extraction accuracy — and on that measure the gap was, for a
+while, concrete rather than hypothetical. `Facility`, `PikTerms`,
+`CommitmentTerms`, `FacilityClassification`, `CreditRating` and
+`PartyReferences` were all defined in `fpml_model.py`, and
+`grep -rn "Facility(" credit_extract/` returned nothing outside the tests: the
+pipeline emitted a flat `fields` dictionary and never constructed one. Forty
+FpML element names were verified against pinned schemas and **zero of them were
+populated by a real run**, which was exactly the distinction this section
+draws.
+
+> **Correction — the gap is closed, and closing it inverted the evidence.**
+> `models/export.py:130` now constructs a `Facility`, through a `_Builder` that
+> records provenance per element and withholds rather than guesses. A run on
+> the gold fixture reports:
+>
+> ```
+>   fpml facilities (3):
+>     revolver (revolver): 10 element(s) populated, 15 withheld
+>     initial_term_loan (term_loan): 10 element(s) populated, 15 withheld
+>     delayed_draw (delayed_draw_term_loan): 10 element(s) populated, 15 withheld
+> ```
+>
+> The recommendation stands and its argument has changed sides. The interesting
+> half is now the 15, not the 10. `cli.py:183` prints the *reasons* elements
+> were withheld rather than summing them, because an element left empty because
+> its value is in a fee letter is not the same fact as an element left empty
+> because the agreement has no such term — and FpML has no way to say which.
+> That is the decoupling this section argues for, arrived at from the opposite
+> direction: the export is not incomplete for want of plumbing, it is
+> deliberately incomplete because the standard cannot carry the distinction the
+> internal schema makes.
+>
+> So the sentence to keep is "a standards mapping is complete only when a real
+> pipeline result populates and serializes it", and the sentence to add is that
+> a mapping which populates everything it is asked for is not thereby correct.
 
 ### 5. Simplify validation until each tier proves incremental value
 
@@ -387,9 +492,15 @@ until an ingestion or validation replacement wins on the frozen corpus.
    would flatter the result. 27 of the 100 harvested documents are held out,
    stratified, assigned by hash of the name and re-derived in CI so no
    document can change sides later.
-2. **Real labels, batch 1**: label 10 diverse documents with
+2. ~~**Real labels, batch 1**: label 10 diverse documents with
    `python -m credit_extract.eval.label`, following
-   `docs/labelling_guide.md`.
+   `docs/labelling_guide.md`.~~ — done, and overshot. Every document in the
+   frozen split carries Tier 2 labels, 100 of 100, plus the 11 contaminated
+   ones. Asking for ten was the right size for a first batch and the wrong
+   size for the thing the batch was for: ten documents cannot tell you which
+   of a family's failures are the pipeline's and which are the corpus's, and
+   the eight filings in the harvest that turn out not to be credit agreements
+   would all have been missed by any sample of ten.
 3. **Model baseline**: integrate schema-constrained grounded extraction with no
    custom semantic validators beyond citation checking.
 4. **Ablation harness**: compare current, model-only, and hybrid pipelines on
@@ -400,3 +511,17 @@ until an ingestion or validation replacement wins on the frozen corpus.
 That ordering makes the next architectural decision evidence-driven. The
 repository already has enough machinery; it needs ground truth and a strong
 baseline more than another layer.
+
+Steps 3 and 4 are now unblocked and step 4 is the one that matters, because it
+is where recall gets measured for the first time. Two constraints shape it:
+
+- **No live model.** `ANTHROPIC_API` is an unresolved blind spot in this
+  environment, so a model arm can only replay `RecordedBackend` readings. The
+  harness has to report which documents it could actually run the model on
+  rather than averaging over the ones it could not.
+- **The metric has to be recall, not only silent errors.** The family report
+  answers "of the propositions asserted confidently, how many were wrong",
+  which is the right safety question and says nothing about how many of the 37
+  critical fields a run returns. An ablation scored on the family report alone
+  would rank a pipeline that answers nothing above one that answers most things
+  and errs once.
