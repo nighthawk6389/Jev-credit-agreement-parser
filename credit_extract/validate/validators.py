@@ -482,6 +482,21 @@ _FEES_UNDER_FEE_LETTER_RE = re.compile(
     r"(?:a|the|any)\s+Fee Letter",
     re.IGNORECASE,
 )
+#: The stronger evidence, and the one the pair above misses. A fee rate whose
+#: own definition says it is set out in the fee letter names the fee and points
+#: at the document in the same sentence -- no inference from a defined term
+#: somewhere and a payment clause somewhere else. Star Mountain's BDC warehouse
+#: is the case: it defines "Fee Letters" in the plural, so the singular
+#: "Fee Letter" means pattern never matched, while the rate itself reads
+#: '"Non-Utilization Fee Rate" ... means the "Non-Utilization Fee Rate" as set
+#: forth in such Lender's Fee Letter.' A rule bought narrow for precision
+#: should still take evidence this direct.
+_FEE_RATE_IN_FEE_LETTER_RE = re.compile(
+    r'"\s*[A-Z][A-Za-z\- ]{0,40}Fee(?:\s+Rate)?\s*"[^.]{0,160}?'
+    r"(?:means|shall mean)[^.]{0,200}?"
+    r"(?:set forth|specified|set out|provided for)\s+in[^.]{0,60}?Fee Letter",
+    re.IGNORECASE,
+)
 
 
 def fee_letter_governs_fees(doc: NormalizedDocument) -> str | None:
@@ -502,6 +517,13 @@ def fee_letter_governs_fees(doc: NormalizedDocument) -> str | None:
     it.
     """
     text = doc.text
+    # Either the rate's own definition points at the letter, which needs no
+    # corroboration because it names the fee and the document together...
+    direct = _FEE_RATE_IN_FEE_LETTER_RE.search(text)
+    if direct is not None:
+        return " ".join(text[direct.start(): direct.end() + 20].split())
+    # ...or the agreement defines the letter in one place and says the fees are
+    # payable under it in another, which takes both halves to mean anything.
     if not _FEE_LETTER_DEFINED_RE.search(text):
         return None
     match = _FEES_UNDER_FEE_LETTER_RE.search(text)

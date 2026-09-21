@@ -514,3 +514,30 @@ def test_the_client_actually_points_where_the_route_says(monkeypatch):
     assert "api.anthropic.com" in str(direct.base_url)
     assert direct.api_key == "fake-direct-key"
     assert isinstance(gateway, anthropic.Anthropic)
+
+
+def test_a_fee_rate_defined_by_its_fee_letter_is_external_on_its_own():
+    """The rule added for Martin Marietta needs a singular '"Fee Letter"
+    means' plus a separate clause saying the fees are payable under it. A BDC
+    warehouse that defines "Fee Letters" in the plural put the evidence
+    somewhere better -- in the rate's own definition, which names the fee and
+    the document in one sentence -- and the rule missed it entirely.
+    """
+    from credit_extract.ingest.normalize import ingest as _ingest
+    from credit_extract.validate.validators import fee_letter_governs_fees
+
+    root = Path(__file__).resolve().parents[1]
+    corpus = root / "corpus" / "edgar" / "work" / "edgar_corpus" / "raw"
+    star = next(corpus.glob("H_star-mountain*"), None)
+    if star is None:
+        pytest.skip("the harvested corpus is not on disk")
+
+    found = fee_letter_governs_fees(_ingest(star))
+    assert found and "Non-Utilization Fee Rate" in found
+
+    # And it stays silent where it should: Essential Properties' arranger fees
+    # are payable under a lower-case, undefined "fee letter", and its own
+    # Facility Fee is priced in a grid inside the agreement.
+    eprt = next(corpus.glob("I_essential-properties*"), None)
+    if eprt is not None:
+        assert fee_letter_governs_fees(_ingest(eprt)) is None

@@ -42,6 +42,16 @@ untestable_from_public_filings:
       silent error, so the rule buys precision with recall and the other 49
       stay in review rather than being guessed at.
 
+      Star Mountain's BDC warehouse is the second labelled case and it shows
+      what that recall cost looks like: it defines "Fee Letters" in the
+      plural, so the singular pattern never matched, while the rate itself
+      reads '"Non-Utilization Fee Rate" ... means the "Non-Utilization Fee
+      Rate" as set forth in such Lender's Fee Letter.' A fee rate whose own
+      definition points at the letter names the fee and the document in one
+      sentence and needs no corroboration, so it is now sufficient on its
+      own. That route fires on 1 of the 100 harvested documents, which is the
+      basis on which a rule bought narrow for precision may be widened at all.
+
       What stays untestable is the content: no filing anywhere states the
       number, so a pipeline claiming to have resolved one is wrong by
       construction and nothing in the corpus can catch that.
@@ -85,10 +95,21 @@ untestable_from_public_filings:
       corpus/edgar holds six subscription, NAV and CLO warehouse facilities,
       and eight agreements overall use capital-commitment or NAV vocabulary.
     consequence: >
-      Archetype dispatch now has examples, and they are unlabelled. A NAV line
-      misread as a cash-flow term loan would be covenanted on EBITDA it does
-      not have, which is the failure this entry exists for -- the six
-      documents make it visible rather than fixing it.
+      One of the six is now labelled -- Star Mountain's Sixth Amendment, a BDC
+      borrowing against its own portfolio of loan assets -- and the failure
+      this entry was written for turns out to be sharper than the entry
+      guessed. It is not that a fund-level facility has no EBITDA to be
+      covenanted on. EBITDA is all over the document: it is the Obligors',
+      the portfolio companies', and it sets advance rates. '"Advance Rate"
+      means, (i) with respect to First Lien Loan Assets for which the
+      applicable Obligor has EBITDA of: (1) greater than $20,000,000, 70.0%'.
+      So a pipeline trained on corporate credit agreements finds a covenant
+      threshold and a receivables advance rate exactly where it expects them,
+      and both belong to somebody else's balance sheet. Eight assertions pin
+      it; the deterministic tier passes 6 and the checked-in reading 8. What
+      is still untested is the other five documents and the subscription-line
+      shape specifically -- this one is a warehouse, which is the same family
+      and not the same deal.
 
   - id: F09_term_defined_in_other_loan_document
     family: F09_definitional_depth
