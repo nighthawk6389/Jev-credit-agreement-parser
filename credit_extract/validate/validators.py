@@ -234,14 +234,20 @@ def rescue_orphans(
     orphans: list[OrphanChunk],
     reread,
     graph=None,
-) -> int:
+) -> list[Any]:
     """Tier 4: targeted re-read of each orphan chunk.
 
     ``reread`` is a callable ``(chunk) -> list[Candidate]``. When none is
     available the orphans stay in the report as unreviewed rather than being
     quietly dropped, because an unexplained orphan is itself the finding.
+
+    Returns the candidates, which the caller folds into the record. It used to
+    return a count and drop them: a tier that re-reads a passage, finds the
+    field the first pass missed, marks the orphan "rescued" and then throws
+    the value away is doing the expensive half of the work and none of the
+    useful half.
     """
-    rescued = 0
+    rescued: list[Any] = []
     by_id = {c.chunk_id: c for c in ctx.chunks}
     for orphan in orphans:
         chunk = by_id.get(orphan.chunk_id)
@@ -251,7 +257,7 @@ def rescue_orphans(
         if found:
             orphan.resolution = "rescued"
             orphan.rescued_fields = sorted({c.field for c in found})
-            rescued += 1
+            rescued.extend(found)
     return rescued
 
 
@@ -317,7 +323,21 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
             backend=ctx.session.backend.name,
             notes="minimum absence probability across all chunks",
         ))
-        if probability >= threshold:
+        # A field can be empty because the document says nothing, or because
+        # the extractor read something this field's type cannot hold. Only the
+        # first is absence, and confirming the second would be a silent error
+        # with a probability printed next to it.
+        untypable = field.qualifiers.get("untypable_value")
+        if untypable:
+            field.status = "needs_review"
+            field.validation_confidence = probability
+            field.notes = (
+                f"stated as {untypable!r} and not absent: the extractor read a "
+                "value this field's type cannot carry, so the record holds no "
+                "number and the document holds one. Absence was scored at "
+                f"{probability:.2f} and is not the question here"
+            )
+        elif probability >= threshold:
             field.status = "absent_from_document"
             field.validation_confidence = probability
             field.notes = (
@@ -333,9 +353,12 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
                 "probably missed it -- escalate"
             )
             if name in witness:
-                field.spans = [witness[name]]
+                # The witness is a chunk, not a quotation, so it goes in
+                # review_hint rather than spans. See ExtractedField.review_hint.
+                field.review_hint = witness[name]
                 field.notes += (
-                    f" (strongest signal near offset {witness[name].start})"
+                    f" (strongest signal in the chunk at offset "
+                    f"{witness[name].start})"
                 )
     return min_absence
 
@@ -444,9 +467,69 @@ def validator_d_overrides(
 
 
 _EXTERNAL_HINTS = (
-    "Sponsor Model", "Disclosure Letter", "as separately agreed",
+    "Sponsor Model", "Disclosure Letter", "Fee Letter", "as separately agreed",
     "Schedule", "Exhibit", "Annex",
 )
+
+#: A defined Fee Letter, and the sentence that makes it govern the fees. Both
+#: are required: an agreement can mention a fee letter in a boilerplate list of
+#: Loan Documents without any fee actually living there.
+_FEE_LETTER_DEFINED_RE = re.compile(
+    r'"\s*Fee Letter\s*"\s*(?:means|shall mean)', re.IGNORECASE
+)
+_FEES_UNDER_FEE_LETTER_RE = re.compile(
+    r"fees?\s+(?:payable|due and payable|owing)\s+(?:pursuant to|under)\s+"
+    r"(?:a|the|any)\s+Fee Letter",
+    re.IGNORECASE,
+)
+#: The stronger evidence, and the one the pair above misses. A fee rate whose
+#: own definition says it is set out in the fee letter names the fee and points
+#: at the document in the same sentence -- no inference from a defined term
+#: somewhere and a payment clause somewhere else. Star Mountain's BDC warehouse
+#: is the case: it defines "Fee Letters" in the plural, so the singular
+#: "Fee Letter" means pattern never matched, while the rate itself reads
+#: '"Non-Utilization Fee Rate" ... means the "Non-Utilization Fee Rate" as set
+#: forth in such Lender's Fee Letter.' A rule bought narrow for precision
+#: should still take evidence this direct.
+_FEE_RATE_IN_FEE_LETTER_RE = re.compile(
+    r'"\s*[A-Z][A-Za-z\- ]{0,40}Fee(?:\s+Rate)?\s*"[^.]{0,160}?'
+    r"(?:means|shall mean)[^.]{0,200}?"
+    r"(?:set forth|specified|set out|provided for)\s+in[^.]{0,60}?Fee Letter",
+    re.IGNORECASE,
+)
+
+
+def fee_letter_governs_fees(doc: NormalizedDocument) -> str | None:
+    """The quote establishing that this deal's fees live in a Fee Letter.
+
+    Validator E can only speak about fields that already carry a span, because
+    it reads the sentence the figure sits in. A fee fixed by a fee letter has
+    no figure and therefore no sentence, so the validator built to say "this
+    value is elsewhere" cannot fire on the case it was built for. Martin
+    Marietta's Eighteenth Amendment names a Fee Letter twelve times, defines
+    it, conditions closing on its delivery, and states no rate anywhere; the
+    commitment fee came back as an ordinary missing field.
+
+    The rule stays deliberately narrow because ``external_reference`` is a
+    settled status and a wrong one is a silent error. A fee letter governs
+    fees and nothing else, so this answers only for fee fields, and only when
+    the agreement both defines the letter and says the fees are payable under
+    it.
+    """
+    text = doc.text
+    # Either the rate's own definition points at the letter, which needs no
+    # corroboration because it names the fee and the document together...
+    direct = _FEE_RATE_IN_FEE_LETTER_RE.search(text)
+    if direct is not None:
+        return " ".join(text[direct.start(): direct.end() + 20].split())
+    # ...or the agreement defines the letter in one place and says the fees are
+    # payable under it in another, which takes both halves to mean anything.
+    if not _FEE_LETTER_DEFINED_RE.search(text):
+        return None
+    match = _FEES_UNDER_FEE_LETTER_RE.search(text)
+    if match is None:
+        return None
+    return " ".join(text[match.start(): match.end() + 60].split())
 
 
 def _sentence_window(doc: NormalizedDocument, span: Span, cap: int = 900) -> str:
@@ -515,9 +598,41 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
     """
     forced: list[str] = []
     document_omits = document_omits_schedules(ctx.doc)
+    fee_letter_quote = fee_letter_governs_fees(ctx.doc)
+
     for name, field in ctx.fields.items():
         spec = ctx.specs.get(name)
-        if not field.spans or spec is None:
+        if spec is None:
+            continue
+        if not field.spans:
+            if (
+                fee_letter_quote
+                and field.value is None
+                and field.status not in ("external_reference", "confirmed")
+                and "fee" in name
+            ):
+                field.external_document = "Fee Letter"
+                field.external_kind = "by_design"
+                field.status = "external_reference"
+                field.validation_source = "E_external_dependency"
+                field.notes = (
+                    "no rate is stated in this agreement; the fees are payable "
+                    "under the Fee Letter, which is never filed -- so this is "
+                    "external by design and not a figure that was missed"
+                )
+                field.record(ValidationEvent(
+                    validator="E_external_dependency",
+                    question=(
+                        "Are the fees for this facility fixed by a Fee Letter "
+                        "rather than by this agreement?"
+                    ),
+                    jev_type="python",
+                    result="by_design",
+                    passed=True,
+                    backend="deterministic",
+                    notes=fee_letter_quote,
+                ))
+                forced.append(name)
             continue
         already_external = field.status == "external_reference"
         if already_external and field.external_kind is not None:

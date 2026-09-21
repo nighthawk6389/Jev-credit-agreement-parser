@@ -70,6 +70,23 @@ jobs:
       - name: FpML terms resolve
         run: python scripts/gen_fpml.py --check
 
+      # The holdout is only a holdout while nobody can move a document into it
+      # or out of it after seeing what that document says. The assignment is a
+      # function of the document names, so this recomputes it and fails on any
+      # edit -- which is the entire mechanism. It also catches a labelled
+      # document that belongs to no side, because an assertion whose split is
+      # unknown cannot be reported as held out or as fitted.
+      - name: The document split still holds
+        run: python -m credit_extract.eval.split --check
+
+      # A checked-in model reading is only worth scoring if it was made before
+      # that document's labels, by a reader who had not seen them. Otherwise
+      # the score measures self-consistency and reads like recall, which is
+      # worse than having no number at all. The flag is in the file and this
+      # is what stops one flipped to false from being quietly scored.
+      - name: Recorded model readings are scorable
+        run: python -m credit_extract.extract.recorded --check
+
   packaging:
     # `pip install -e .` hides two whole classes of bug, and both were live
     # here: an undeclared runtime dependency that happened to be in the dev

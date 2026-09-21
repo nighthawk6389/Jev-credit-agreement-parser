@@ -190,14 +190,26 @@ def parse_pricing_grid_text(doc: NormalizedDocument) -> list[dict[str, Any]]:
         margins = [Decimal(m) for m in re.findall(r"(\d+\.\d+)%", match.group("margins"))]
         if not margins:
             continue
+        band = match.group("band")
         row: dict[str, Any] = {
             "cells": [
-                match.group("level"), match.group("band"),
+                match.group("level"), band,
                 *[f"{m}%" for m in margins],
             ],
             "span": doc.span(match.start(), match.end()),
-            "eurodollar rate": margins[0],
         }
+        if "%" in band:
+            # The band swallowed percentage columns, so the row has more
+            # columns than the two this parser can name and the trailing one
+            # is not the Eurodollar margin. On the investment-grade grid this
+            # was found on -- four margin columns, revolver and term loan
+            # against SOFR and base rate -- it is the base rate spread, and
+            # naming it the Eurodollar margin put 0.550% into a field whose
+            # answer is 1.550% at 0.93 confidence, outranking every other
+            # tier. A row whose layout is unknown is emitted without a claim.
+            out.append(row)
+            continue
+        row["eurodollar rate"] = margins[0]
         if len(margins) > 1:
             row["base rate"] = margins[1]
         out.append(row)
@@ -286,30 +298,188 @@ class ExtractionBackend(Protocol):
         ...
 
 
+class ExtractionFailed(RuntimeError):
+    """The model tier could not answer, which is not the same as finding nothing.
+
+    Every subclass exists so that one specific way of getting no fields back
+    stops looking like the document being silent about them. The caller may
+    still choose to continue -- a chunk that refuses is not a reason to abandon
+    a 500,000-character agreement -- but it has to choose, and the choice is
+    recorded rather than implied by an empty list.
+    """
+
+
+class ExtractionRefused(ExtractionFailed):
+    """A safety classifier declined the chunk."""
+
+
+class ExtractionTruncated(ExtractionFailed):
+    """The response hit ``max_tokens`` mid-answer."""
+
+
+class ExtractionUnparseable(ExtractionFailed):
+    """The response was not the JSON the schema constrains it to."""
+
+
+#: What the model is constrained to return. Passed as ``output_config.format``
+#: so the API enforces the shape; the prompt describes the *meaning* of each
+#: field and the schema guarantees the envelope, which is the division of
+#: labour that keeps a parser out of the middle of it.
+EXTRACTION_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "fields": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "field": {"type": "string"},
+                    # A null value with a quote is how the model reports an
+                    # external reference; a null value with no quote is how it
+                    # reports "not in this chunk", which the orphan sweep and
+                    # the negative-space validator take from here.
+                    "value": {"type": ["string", "null"]},
+                    "quote": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "external_document": {"type": ["string", "null"]},
+                    # The measurement convention a bare number does not carry:
+                    # which EBITDA a percentage is measured against, per annum
+                    # against per quarter, the scale a table header sets.
+                    "qualifiers": {
+                        "type": "object",
+                        "additionalProperties": {"type": "string"},
+                    },
+                    "notes": {"type": ["string", "null"]},
+                },
+                # Every property is required and the optional ones are nullable
+                # instead. That is how the documented schemas are written, and
+                # the prompt's response shape has to match this exactly: a key
+                # the schema forbids is a 400, and a key the schema requires and
+                # the prompt never mentions is a field the model leaves out.
+                "required": [
+                    "field", "value", "quote", "confidence",
+                    "external_document", "qualifiers", "notes",
+                ],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["fields"],
+    "additionalProperties": False,
+}
+
+
+@dataclass(frozen=True)
+class Route:
+    """Where the model tier sends its requests, and under whose spelling.
+
+    The Messages API is the same wherever it is served from, so a route is not
+    a second backend -- it is a base URL, a credential and a naming rule. One
+    class keeps the prompt, the schema, the failure handling and the candidate
+    construction identical whichever way the request leaves the building,
+    which is the only way a measurement taken through one is comparable to a
+    measurement taken through the other.
+    """
+
+    name: str
+    #: None means the SDK's own default, which is api.anthropic.com.
+    base_url: str | None
+    #: Tried in order; the first one set wins.
+    key_vars: tuple[str, ...]
+    #: Prepended to the model id when it does not already carry a slash.
+    model_prefix: str = ""
+
+    def credential(self) -> str | None:
+        for var in self.key_vars:
+            value = os.environ.get(var)
+            if value:
+                return value
+        return None
+
+    def model_id(self, model: str) -> str:
+        return model if "/" in model or not self.model_prefix else (
+            f"{self.model_prefix}{model}"
+        )
+
+    def billed_model(self, model: str) -> str:
+        """The model id to price, which is not always the one on the wire."""
+        return model.split("/")[-1]
+
+
+#: Straight to Anthropic.
+DIRECT = Route(name="anthropic", base_url=None, key_vars=("ANTHROPIC_API_KEY",))
+
+#: Through Vercel's AI Gateway, which speaks the Messages API at
+#: https://ai-gateway.vercel.sh/v1/messages and takes the same x-api-key
+#: header the SDK already sends, so the SDK needs a base URL and a different
+#: credential and nothing else. Two things do differ and both are handled
+#: here rather than left to surprise a reader: the gateway names models
+#: creator-first, as anthropic/claude-opus-5, and a prefixed id would miss
+#: the price table and be costed at the fallback rate.
+VERCEL = Route(
+    name="vercel",
+    base_url="https://ai-gateway.vercel.sh",
+    key_vars=("AI_GATEWAY_API_KEY", "VERCEL_AI_GATEWAY_API_KEY"),
+    model_prefix="anthropic/",
+)
+
+ROUTES: dict[str, Route] = {route.name: route for route in (DIRECT, VERCEL)}
+
+
 class AnthropicBackend:
     """Tier 4/5: a real LLM pass.
 
-    Requires ``ANTHROPIC_API_KEY``. The prompt demands a verbatim quote for
-    every value; any value whose quote cannot be located in the chunk is
-    dropped rather than stored without provenance.
-    """
+    Needs a credential for whichever :class:`Route` it is on --
+    ``ANTHROPIC_API_KEY`` by default, ``AI_GATEWAY_API_KEY`` through Vercel.
+    The prompt demands a verbatim quote for every value; any value whose quote
+    cannot be located in the chunk is dropped rather than stored without
+    provenance.
 
-    name = "anthropic"
+    The response shape is constrained by the API rather than negotiated in
+    prose. An earlier version asked for JSON in the prompt and then pulled the
+    first JSON-looking substring out of free text with a greedy regex,
+    returning an empty candidate list when that failed to parse -- so a
+    truncated response, a refusal, or a model that wrapped its answer in
+    commentary all arrived at the caller as "this chunk contains none of these
+    fields". That is the one confusion this repository exists to prevent, and
+    it was sitting in the tier meant to do the hard extraction.
+    """
 
     def __init__(
         self,
-        model: str = "claude-sonnet-5",
+        model: str = "claude-opus-5",
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: int = 16_000,
+        effort: str = "high",
+        route: Route = DIRECT,
     ) -> None:
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        #: Part of the backend's identity, because thresholds are fitted per
+        #: backend and ``load_thresholds`` refuses a mismatch. A set fitted
+        #: against one route should not be applied to another without somebody
+        #: deciding that it may be.
+        self.route = route
+        self.name = route.name
+        #: This was "medium" on the theory that extraction is a reading task
+        #: against text already in front of the model. The held-out documents
+        #: say otherwise: the mistakes that matter here are not failures to
+        #: find the clause, they are failures to pick the right branch of a
+        #: definition that resolves four ways, the right column of a grid that
+        #: has four, or the operative figure out of a recital that also names
+        #: the superseded one. That is reasoning about a document, and each
+        #: wrong answer is a silent error. No live run has measured the
+        #: difference -- there is no key in this environment -- so this is an
+        #: argument rather than a result, and a measurement should replace it.
+        self.effort = effort
         self._client = None
 
     def with_temperature(self, temperature: float) -> "AnthropicBackend":
         """A sibling backend at a different temperature, sharing the client."""
-        clone = AnthropicBackend(self.model, temperature, self.max_tokens)
+        clone = AnthropicBackend(
+            self.model, temperature, self.max_tokens, self.effort, self.route
+        )
         clone._client = self._client
         return clone
 
@@ -322,9 +492,19 @@ class AnthropicBackend:
                     "the anthropic package is required for LLM passes; "
                     "install it or run with --backend offline"
                 ) from exc
-            if not os.environ.get("ANTHROPIC_API_KEY"):
-                raise RuntimeError("ANTHROPIC_API_KEY is not set")
-            self._client = anthropic.Anthropic()
+            key = self.route.credential()
+            if not key:
+                raise RuntimeError(
+                    f"no credential for the {self.route.name} route; set "
+                    + " or ".join(self.route.key_vars)
+                )
+            # base_url is passed explicitly rather than left to the
+            # ANTHROPIC_BASE_URL environment variable, so which endpoint a run
+            # talked to is a property of the run and not of the shell it
+            # happened to start in.
+            self._client = anthropic.Anthropic(
+                api_key=key, base_url=self.route.base_url
+            ) if self.route.base_url else anthropic.Anthropic(api_key=key)
         return self._client
 
     def extract(
@@ -335,14 +515,22 @@ class AnthropicBackend:
         context: str,
         pass_id: str,
     ) -> tuple[list[Candidate], CostLedger]:
-        from .prompts import build_extraction_prompt
+        from .prompts import EXTRACTION_SYSTEM, build_extraction_prompt
 
         client = self._ensure_client()
         prompt = build_extraction_prompt(chunk.text, specs, context)
         response = client.messages.create(
-            model=self.model,
+            model=self.route.model_id(self.model),
             max_tokens=self.max_tokens,
-            temperature=self.temperature,
+            # The system prompt existed in the prompts module and was never
+            # sent, so the one instruction that frames the whole task -- a
+            # confident wrong answer is worse than no answer -- reached the
+            # model in no request this repository has ever built.
+            system=EXTRACTION_SYSTEM,
+            output_config={
+                "effort": self.effort,
+                "format": {"type": "json_schema", "schema": EXTRACTION_SCHEMA},
+            },
             messages=[{"role": "user", "content": prompt}],
         )
         ledger = CostLedger(
@@ -350,13 +538,121 @@ class AnthropicBackend:
             llm_input_tokens=response.usage.input_tokens,
             llm_output_tokens=response.usage.output_tokens,
             llm_cost_usd=_anthropic_cost(
-                self.model, response.usage.input_tokens, response.usage.output_tokens
+                self.route.billed_model(self.model),
+                response.usage.input_tokens,
+                response.usage.output_tokens,
             ),
         )
+        if response.stop_reason == "refusal":
+            # A decline is not an empty document. Say so and let the caller
+            # decide; swallowing it would report every field in this chunk as
+            # absent on the strength of a safety classifier.
+            detail = getattr(response, "stop_details", None)
+            raise ExtractionRefused(
+                f"the model declined to read this chunk "
+                f"({getattr(detail, 'category', None) or 'no category given'})"
+            )
+        if response.stop_reason == "max_tokens":
+            raise ExtractionTruncated(
+                f"the response hit max_tokens ({self.max_tokens}); the field "
+                "list for this chunk is incomplete and reporting it as-is "
+                "would understate what the chunk contains"
+            )
         text = "".join(
             block.text for block in response.content if block.type == "text"
         )
         return _parse_llm_payload(text, doc, chunk, specs, pass_id), ledger
+
+
+    def reread_findings(
+        self, doc: NormalizedDocument, chunk: Chunk, captured: list[str] | None = None
+    ) -> list["Finding"]:
+        """Tier 4's other half: what this passage says that has no field.
+
+        ``build_reread_prompt`` has existed in the prompts module since the
+        ladder was written and nothing ever called it, so the half of tier 4
+        that answers in the document's vocabulary rather than the registry's
+        had no producer at all. Same discipline as extraction: a quote that
+        cannot be located in the chunk is a fabrication and the finding is
+        dropped, so a finding in a report is always a passage a reader can go
+        and read.
+        """
+        from ..models.core import Finding
+        from .prompts import EXTRACTION_SYSTEM, build_reread_prompt
+
+        client = self._ensure_client()
+        response = client.messages.create(
+            model=self.route.model_id(self.model),
+            max_tokens=self.max_tokens,
+            system=EXTRACTION_SYSTEM,
+            output_config={
+                "effort": self.effort,
+                "format": {"type": "json_schema", "schema": FINDINGS_SCHEMA},
+            },
+            messages=[{
+                "role": "user",
+                "content": build_reread_prompt(chunk.text, captured or []),
+            }],
+        )
+        if response.stop_reason in ("refusal", "max_tokens"):
+            # An orphan that could not be re-read stays unreviewed, which is
+            # the state it was already in. Nothing is claimed either way.
+            return []
+        text = "".join(b.text for b in response.content if b.type == "text")
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            return []
+        out: list[Finding] = []
+        for item in payload.get("findings", []):
+            span = chunk.locate(doc, item.get("quote") or "")
+            if span is None:
+                continue
+            out.append(Finding(
+                kind=item.get("kind") if item.get("kind") in _FINDING_KINDS else "other",
+                name=item.get("finding") or "unnamed",
+                summary=item.get("summary") or "",
+                span=span,
+                confidence=float(item.get("confidence", 0.5)),
+                external_document=item.get("external_document"),
+            ))
+        return out
+
+
+#: The kinds ``Finding`` accepts; anything else lands in "other".
+_FINDING_KINDS = frozenset({
+    "payment_obligation", "restriction", "override", "threshold", "date",
+    "other",
+})
+
+#: The re-read's response shape, held to the same contract as extraction:
+#: every property required, the optional ones nullable.
+FINDINGS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "findings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "finding": {"type": "string"},
+                    "kind": {"type": "string"},
+                    "quote": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "external_document": {"type": ["string", "null"]},
+                },
+                "required": [
+                    "finding", "kind", "quote", "summary", "confidence",
+                    "external_document",
+                ],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["findings"],
+    "additionalProperties": False,
+}
 
 
 #: Published per-million-token prices, input/output.
@@ -401,18 +697,26 @@ def _parse_llm_payload(
     specs: list[FieldSpec],
     pass_id: str,
 ) -> list[Candidate]:
-    """Turn a model response into candidates, dropping anything unprovenanced."""
-    match = re.search(r"\[.*\]|\{.*\}", text, re.DOTALL)
-    if not match:
-        return []
+    """Turn a model response into candidates, dropping anything unprovenanced.
+
+    Raises rather than returning an empty list when the envelope is wrong.
+    ``output_config.format`` makes that a should-not-happen, and a
+    should-not-happen that returns "no fields here" is how a whole chunk of a
+    credit agreement goes quietly missing.
+    """
     try:
-        payload = json.loads(match.group(0))
-    except json.JSONDecodeError:
-        return []
-    if isinstance(payload, dict):
-        payload = payload.get("fields", [])
-    if not isinstance(payload, list):
-        return []
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ExtractionUnparseable(
+            f"the response is not JSON despite output_config.format: {exc}; "
+            f"first 200 characters were {text[:200]!r}"
+        ) from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("fields"), list):
+        raise ExtractionUnparseable(
+            "the response parsed but is not the documented envelope; expected "
+            f"an object with a 'fields' array, got {type(payload).__name__}"
+        )
+    payload = payload["fields"]
     by_name = {spec.name: spec for spec in specs}
     out: list[Candidate] = []
     for item in payload:
@@ -430,6 +734,23 @@ def _parse_llm_payload(
             # not contain is a fabrication, so the value goes in the bin rather
             # than into the record without provenance.
             continue
+        notes = item.get("notes")
+        qualifiers = dict(item.get("qualifiers") or {})
+        if written is not None and str(written).strip() and value is None:
+            # The reader found a value and the field's declared kind could not
+            # hold it -- a covenant written as "60%" against a field typed as a
+            # ratio, say. Coercing anyway would invent a number and dropping it
+            # silently says the document is silent, which it is not. Keep the
+            # candidate valueless so nothing is asserted, carry the written
+            # form for the reader, and flag it for the validators: "no value"
+            # and "no provision" are different facts and only one of them is
+            # true here.
+            qualifiers["untypable_value"] = str(written).strip()
+            notes = (
+                f"stated as {str(written).strip()!r}, which this field's "
+                f"{spec.kind} type cannot hold"
+                + (f"; {notes}" if notes else "")
+            )
         out.append(
             Candidate(
                 field=name,
@@ -439,8 +760,8 @@ def _parse_llm_payload(
                 pass_id=pass_id,
                 segmentation=chunk.segmentation,
                 external_document=item.get("external_document"),
-                qualifiers=item.get("qualifiers") or {},
-                notes=item.get("notes"),
+                qualifiers=qualifiers,
+                notes=notes,
                 quantity=(
                     parse_quantity(str(written), prefer=spec.kind)
                     or quantity_for(value, spec.kind, as_written=str(written))
@@ -826,6 +1147,19 @@ class LayeredBackend:
         vary = getattr(self.model, "with_temperature", lambda _t: self.model)
         return LayeredBackend(self.deterministic, vary(temperature))
 
+    def reread_findings(self, doc: NormalizedDocument, chunk: Chunk):
+        """Delegate tier 4's prose half to the model tier, which alone has one.
+
+        Naming an obligation is not something a pattern does, so the rules
+        layer has no such method and this returns nothing without a model
+        behind it. Delegating rather than inheriting matters: the pipeline
+        looks for this method on whatever backend it was handed, and every
+        model-backed run hands it one of these wrappers -- so without this the
+        findings half was unreachable through the only path that reaches it.
+        """
+        ask = getattr(self.model, "reread_findings", None)
+        return ask(doc, chunk) if ask is not None else []
+
     def extract(
         self,
         doc: NormalizedDocument,
@@ -866,6 +1200,11 @@ class PassResult:
     cost: CostLedger
     chunks_seen: int
     contributing_chunks: set[str]
+    #: Chunks the model tier could not read, and why. An empty list is the
+    #: normal case and says so; a non-empty one means some of the document was
+    #: never considered by the extractor, which a reader has to know before
+    #: taking any absence in this run at face value.
+    unread_chunks: list[str] = dc_field(default_factory=list)
 
     def by_tier(self) -> dict[str, int]:
         """Distinct fields each tier settled.
@@ -932,6 +1271,7 @@ def run_passes(
     candidates: list[Candidate] = []
     cost = CostLedger()
     contributing: set[str] = set()
+    unread: list[str] = []
     seen = 0
 
     if include_tables:
@@ -952,9 +1292,18 @@ def run_passes(
             context = ""
             if graph is not None and chunk.segmentation == "definitional":
                 context = graph.context_for(chunk.label)
-            found, spent = worker.extract(
-                doc, chunk, specs, context, pass_id=f"{backend.name}:{pass_id}"
-            )
+            try:
+                found, spent = worker.extract(
+                    doc, chunk, specs, context, pass_id=f"{backend.name}:{pass_id}"
+                )
+            except ExtractionFailed as exc:
+                # One chunk that could not be read is not a reason to abandon a
+                # 500,000-character agreement, but it is also not a chunk that
+                # contained none of these fields. Record which chunk and why,
+                # and let the report say so; the orphan sweep still runs over
+                # it, so the text is not silently dropped from consideration.
+                unread.append(f"{chunk.chunk_id}: {exc}")
+                continue
             cost.merge(spent)
             if found:
                 contributing.add(chunk.chunk_id)
@@ -964,6 +1313,7 @@ def run_passes(
         cost=cost,
         chunks_seen=seen,
         contributing_chunks=contributing,
+        unread_chunks=unread,
     )
 
 

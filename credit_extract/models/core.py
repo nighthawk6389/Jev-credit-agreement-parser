@@ -295,6 +295,15 @@ class ExtractedField(BaseModel, Generic[T]):
     criticality: int = Field(default=3, ge=1, le=5)
     #: Set when status is not_applicable_to_archetype: which archetype, and why.
     archetype_note: str | None = None
+    #: Where to start looking when the extractor came back empty and the
+    #: negative-space validator did not believe the field is absent. This is a
+    #: whole chunk -- ten thousand characters, not a quotation -- so it is kept
+    #: out of ``spans``, which means "the text this value was read from". A
+    #: region that size in the citation slot reads as a precise reference to
+    #: whatever the region happens to begin with, which on one real agreement
+    #: pointed a reader at the Junior Indebtedness definition for the maturity
+    #: date. A hint is worth having; a hint wearing a citation's clothes is not.
+    review_hint: Span | None = None
 
     @model_validator(mode="after")
     def _at_least_one_variant(self) -> "ExtractedField[T]":
@@ -516,6 +525,27 @@ class InvariantViolation(BaseModel):
         return f"[{self.severity}] {self.invariant}: {self.message}"
 
 
+class Finding(BaseModel):
+    """Something the agreement says that no field in the registry can hold.
+
+    The review queue shows fields, so an obligation, a threshold or a
+    conditional that has no field is invisible in every report this project
+    has produced -- and the orphan sweep exists precisely because that text is
+    there. A finding is how it becomes visible: a quote, a kind, and a
+    sentence, carrying no pretence of being a value.
+    """
+
+    kind: Literal[
+        "payment_obligation", "restriction", "override", "threshold", "date",
+        "other",
+    ] = "other"
+    name: str
+    summary: str
+    span: Span
+    confidence: float = 0.5
+    external_document: str | None = None
+
+
 class OrphanChunk(BaseModel):
     """Text that scored high on the orphan sweep but produced no fields."""
 
@@ -527,6 +557,9 @@ class OrphanChunk(BaseModel):
     score: float = 0.0
     resolution: Literal["unreviewed", "rescued", "benign"] = "unreviewed"
     rescued_fields: list[str] = Field(default_factory=list)
+    #: What the re-read found here that no field could carry. An orphan with
+    #: findings is explained; one with none is still the finding.
+    findings: list[Finding] = Field(default_factory=list)
 
 
 class ConflictRecord(BaseModel):

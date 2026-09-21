@@ -20,7 +20,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov>=5.0"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "anthropic>=0.40"]
+# The model tier, on either route. Optional because the whole pipeline runs
+# without it -- the deterministic tiers, the recorded replay and every gate in
+# CI need no key and no network -- and undeclared it was not installable at
+# all: `_ensure_client` raised a helpful message naming a package that no
+# extra provided. The Vercel route needs the same SDK; a gateway that speaks
+# the Messages API is reached with the Messages client and a base URL.
+llm = ["anthropic>=0.40"]
 
 [project.scripts]
 credit-extract = "credit_extract.cli:main"
@@ -38,6 +45,10 @@ credit_extract = [
     # report reads the blind-spot register.
     "eval/*.yaml",
     "eval/labels/*.yaml",
+    # Checked-in model readings. --backend recorded resolves these by document
+    # name and refuses rather than falling back, so a wheel without them turns
+    # the model tier into an error instead of a quiet downgrade to the rules.
+    "extract/recordings/*.json",
     # The FIBO and ACTUS snapshots. fibo() and actus_term() raise on a term
     # that is not in them, which is the whole point -- an invented URI cannot
     # ship -- so without these files every extraction raises instead.

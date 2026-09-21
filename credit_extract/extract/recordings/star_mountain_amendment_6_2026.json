@@ -1,0 +1,107 @@
+{
+  "document": "star_mountain_amendment_6_2026",
+  "corpus_name": "H_star-mountain-lower-middle-market-capital-corp_2026-08-19_0001193125-26-356397_ck0001786835-ex10-1",
+  "model": "read by hand, by the same reader who later wrote the labels",
+  "recorded_on": "2026-09-21",
+  "recorded_before_labels": true,
+  "note": "Sixth Amendment to a Loan and Servicing Agreement, with the conformed agreement attached. A business development company borrowing against its own loan portfolio: Star Mountain as Borrower and Servicer, Webster Bank as collateral and administrative agent. Stratum H, fund-level. Read end to end before any label for this document existed; as with the other recordings the same reader wrote the labels afterwards, so their agreement is self-consistency and not a model recall figure. This is the shape the blind-spot register has been warning about without an example: the word EBITDA appears throughout and never once refers to the borrower's. It is the portfolio companies' EBITDA, and it sets advance rates.",
+  "fields": [
+    {
+      "field": "borrower.legal_name",
+      "value": "STAR MOUNTAIN LOWER MIDDLE-MARKET CAPITAL CORP.",
+      "quote": "STAR MOUNTAIN LOWER MIDDLE-MARKET CAPITAL CORP. , a Delaware corporation (together with its successors and assigns in such capacity, the \" Borrower \")",
+      "confidence": 0.95,
+      "qualifiers": {
+        "entity_type": "business development company"
+      },
+      "external_document": null,
+      "notes": "The Borrower is also the Servicer. It is a fund, not an operating company, and it has no EBITDA of its own anywhere in this agreement."
+    },
+    {
+      "field": "administrative_agent.legal_name",
+      "value": "WEBSTER BANK, N.A.",
+      "quote": "WEBSTER BANK, N.A. (f/k/a STERLING NATIONAL BANK),  as the Administrative Agent and the Swing Lender",
+      "confidence": 0.9,
+      "qualifiers": {
+        "roles": "collateral agent and administrative agent, one party"
+      },
+      "external_document": null,
+      "notes": "Named with a former name attached -- f/k/a Sterling National Bank -- which a name extractor will happily carry into the record as part of the legal name."
+    },
+    {
+      "field": "revolver.commitment",
+      "value": null,
+      "quote": "\" Maximum Facility Amount \" means the Aggregate Commitments as then in effect, which amount on the Closing Date shall equal the Initial Commitment and may be increased pursuant to Section 2.18 to $350,000,000",
+      "confidence": 0.7,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": "The facility size is not stated. It is the Aggregate Commitments as then in effect, which on the Closing Date equalled the Initial Commitment -- a term this conformed text does not put a figure to -- and $350,000,000 is the ceiling an accordion could raise it to, not the size. Recording $350,000,000 here would report the most the facility could ever become as the amount committed. After the Revolving Period the same defined term means something different again: the aggregate Advances Outstanding."
+    },
+    {
+      "field": "revolver.maturity_date",
+      "value": "July 3, 2029",
+      "quote": "\" Scheduled Maturity Date \" means July 3 , 2029 .",
+      "confidence": 0.7,
+      "qualifiers": {
+        "which_date": "Scheduled Maturity Date, not the Scheduled Commitment Termination Date"
+      },
+      "external_document": null,
+      "notes": "Two dates a year apart and both are real: the Scheduled Commitment Termination Date is July 3, 2028, when the Revolving Period ends and availability stops, and the Scheduled Maturity Date is July 3, 2029, when the debt is due. A reader looking for when the revolver ends has a defensible route to either. The Final Maturity Date is in turn the earliest of the Scheduled Maturity Date, an automatic Event of Default and a declaration, so this is a ceiling as well as a date."
+    },
+    {
+      "field": "applicable_margin.eurodollar_top_level_pct",
+      "value": "2.30%",
+      "quote": "\" Applicable Spread \" means (i) 2.30%, plus (ii) following the occurrence and during the continuance of an Event of Default, 2.00%.",
+      "confidence": 0.75,
+      "qualifiers": {
+        "per": "per annum",
+        "grid": "none; a single spread"
+      },
+      "external_document": null,
+      "notes": "No grid at all: one spread, flat. The 2.00% in the same sentence is the default-rate increment and is additive, so the highest number the clause can produce is 4.30% and neither 2.00% nor 4.30% is the margin this field asks for."
+    },
+    {
+      "field": "commitment_fee_pct",
+      "value": null,
+      "quote": "\" Non-Utilization Fee Rate \" with respect to any Lender, means the \"Non-Utilization Fee Rate\" as set forth in such Lender's Fee Letter.",
+      "confidence": 0.9,
+      "external_document": "Fee Letter (one per Lender)",
+      "qualifiers": {
+        "fee_type": "non-utilization fee, charged on the undrawn commitment"
+      },
+      "notes": "The undrawn-commitment fee for this facility, and its rate is in a document that is not filed -- one per Lender, so there may not even be a single rate. This is the fee-letter case in its most direct form: the rate's own definition names the fee and points at the letter in the same sentence."
+    },
+    {
+      "field": "facility.seniority",
+      "value": "senior secured",
+      "quote": "SECTION 2.12 | | Grant of a Security Interest",
+      "confidence": 0.6,
+      "qualifiers": {
+        "collateral": "the Borrower's portfolio of Loan Assets, not operating assets"
+      },
+      "external_document": null,
+      "notes": "Secured on the loan portfolio itself. The collateral is other people's debt, which is what makes the advance-rate machinery below the substance of the deal rather than a detail of it."
+    },
+    {
+      "field": "borrowing_base.advance_rate_accounts",
+      "value": null,
+      "quote": "\" Advance Rate \" means,  (i)  with respect to First Lien Loan Assets for which the applicable Obligor has EBITDA of:  (1) greater than $20,000,000, 70.0 %;  (2) greater than $10,000,000 but less than or equal to $20,000,000, 67.5 %;  (3) less than or equal to $10,000,000, 62.5%;",
+      "confidence": 0.8,
+      "qualifiers": {
+        "advanced_against": "Loan Assets, not accounts receivable or inventory",
+        "keyed_on": "the Obligor's EBITDA and the lien position of the asset"
+      },
+      "notes": "There is an advance rate, several of them, and none of them belongs in this field. The registry's advance-rate fields are shaped for a corporate ABL that lends against receivables and inventory; here the collateral is loan assets and the rate is a function of the borrower's borrowers -- the Obligor's EBITDA, and whether the asset is first lien or first lien last out. Filing 70.0% under advance_rate_accounts would describe a facility secured on receivables that does not exist. The portfolio-level figure is the Weighted Average Advance Rate, which is computed per asset and has no field at all.",
+      "external_document": null
+    },
+    {
+      "field": "facility.governing_law",
+      "value": "New York",
+      "quote": "THIS AGREEMENT SHALL, IN ACCORDANCE WITH SECTION 5-1401 OF THE GENERAL OBLIGATIONS LAW OF THE STATE OF NEW YORK, BE GOVERNED BY THE LAWS OF THE STATE OF NEW YORK.",
+      "confidence": 0.9,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": null
+    }
+  ]
+}

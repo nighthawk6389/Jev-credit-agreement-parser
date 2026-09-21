@@ -42,7 +42,10 @@ from .models.core import (
     Condition, CostLedger, DocumentReport, ExtractedField, InvariantViolation,
     Variant,
 )
-from .models.archetypes import ArchetypeDetection, inapplicable_fields
+from .models.archetypes import (
+    ArchetypeDetection, inapplicable_fields, suppression_vetoes,
+)
+from .models.export import FacilityExport, build_facilities, export_summary
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.pricing import Pricing, parse_pricing
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
@@ -70,6 +73,11 @@ class ExtractionResult(BaseModel):
     amortization: AmortizationSchedule | None = None
     actus_mappings: dict[str, ActusMapping] = Field(default_factory=dict)
     standards: dict[str, Any] = Field(default_factory=dict)
+    #: The extracted record in the FpML-shaped facility model, plus an account
+    #: of every element withheld and why. Forty FpML element names in this
+    #: repository are verified against pinned schemas and, until this existed,
+    #: none of them was ever populated by a run.
+    facilities: list[FacilityExport] = Field(default_factory=list)
     archetype: ArchetypeDetection = Field(default_factory=ArchetypeDetection)
     #: The rate, decomposed. A CSA folded into the margin overstates the yield
     #: and then overstates every MFN comparison made against it.
@@ -302,7 +310,8 @@ def run_pipeline(
     # after extraction would mean validating fields this deal kind cannot have.
     archetype = detect_archetype(doc, session)
     profile = archetype.profile
-    not_applicable = inapplicable_fields(profile, list(fields))
+    not_applicable = inapplicable_fields(profile, list(fields), doc.text)
+    vetoes = suppression_vetoes(profile, doc.text)
     for name, reason in not_applicable.items():
         field = fields[name]
         if field.value is not None:
@@ -352,8 +361,16 @@ def run_pipeline(
 
     V.validator_a_span_support(ctx)
     orphans = V.validator_b_orphan_sweep(ctx)
-    if reread is not None and orphans:
-        V.rescue_orphans(ctx, orphans, reread, graph)     # tier 4
+    if reread is None:
+        reread = _default_reread(doc, extraction_backend, fields, graph)
+    rescued = V.rescue_orphans(ctx, orphans, reread, graph) if orphans else []
+    tier4 = _fill_from_rescue(fields, rescued)             # tier 4
+    # Tier 4's other half. A rescued *field* answers the sweep in the record's
+    # own vocabulary; a finding answers it in the document's. The review queue
+    # only ever shows fields, so an obligation the registry has no slot for
+    # has been invisible in every report this project has produced -- which is
+    # the exact text the sweep flags and then could say nothing about.
+    findings = _collect_findings(doc, extraction_backend, orphans, sweep)
     V.validator_e_external_dependency(ctx)
     V.validator_c_negative_space(ctx)
     overrides = V.validator_d_overrides(ctx, OVERRIDE_SUBJECTS)
@@ -366,6 +383,8 @@ def run_pipeline(
     )
     if operative is not None:
         _attribute_spans(fields, operative)
+
+    facilities = build_facilities(fields)
 
     # -- report --------------------------------------------------------------
     cost = CostLedger()
@@ -409,7 +428,9 @@ def run_pipeline(
             }
             for pair in overrides if pair.overrides
         ],
-        review_queue=_review_queue(fields),
+        review_queue=_review_queue(
+            fields, [c for c in reconciliation.conflicts if not c.resolved]
+        ),
         chain=_chain_report(document_set, operative, amendment_verdicts),
         archetype=archetype.model_dump(),
         blind_spots=_blind_spot_notice(archetype),
@@ -434,6 +455,34 @@ def run_pipeline(
                 ) or "nothing extracted"
             ),
             f"chunks swept: {len(sweep)}",
+            # How much of the verified FpML mapping this run actually earned.
+            # Zero is a real answer and the one the deterministic tier gives:
+            # a facility appears only where its commitment is settled, and a
+            # tranche nobody established the size of is a tranche nobody
+            # established.
+            "fpml export: " + ", ".join(
+                f"{k}={v}" for k, v in export_summary(facilities).items()
+                if k != "withheld_by_reason"
+            ),
+            # Tier 4, which had never run: the ladder describes a targeted
+            # re-read of the chunks the sweep flagged and nothing supplied one.
+            # A line that reads "0 rescued" over a hundred orphans is a
+            # statement about the pattern set, and it is worth printing.
+            f"orphan re-read (tier 4): {len(orphans)} chunk(s) flagged, "
+            + (f"{len(tier4)} field(s) recovered -- {', '.join(tier4)}"
+               if tier4 else "nothing recovered")
+            + (f"; {findings} finding(s) with no field to hold them"
+               if findings else ""),
+            # Empty on every offline run and on any healthy model run. When it
+            # is not empty, part of the document was never read by the
+            # extractor, and no absence in this report can be taken at face
+            # value until a reader knows that.
+            "chunks the extractor could not read: " + (
+                "; ".join(extracted.unread_chunks[:5])
+                + (f" (+{len(extracted.unread_chunks) - 5} more)"
+                   if len(extracted.unread_chunks) > 5 else "")
+                if extracted.unread_chunks else "none"
+            ),
             f"override findings: "
             f"{sum(1 for o in overrides if o.overrides)} of {len(overrides)} tested",
             f"fibo gaps: {sorted(fibo_map.gaps())}",
@@ -441,6 +490,10 @@ def run_pipeline(
             f"archetype: {archetype.archetype} ({archetype.basis}, "
             f"{archetype.confidence:.2f}) -- {archetype.note}",
             f"fields inapplicable to this archetype: {len(not_applicable)}",
+            "archetype suppression vetoed by the document: " + (
+                ", ".join(f"{g} ({p!r})" for g, p in sorted(vetoes.items()))
+                if vetoes else "none"
+            ),
             f"pricing: {pricing.describe()}",
         ],
     )
@@ -453,6 +506,7 @@ def run_pipeline(
         amortization=schedule,
         actus_mappings=mappings,
         archetype=archetype,
+        facilities=facilities,
         pricing=pricing,
         document=doc,
         definition_graph=graph,
@@ -679,19 +733,182 @@ def _status_counts(fields: dict[str, ExtractedField]) -> dict[str, int]:
     return counts
 
 
-def _review_queue(fields: dict[str, ExtractedField]) -> list[dict[str, Any]]:
-    """Fields a human should look at, most economically material first."""
+def _collect_findings(
+    doc: NormalizedDocument,
+    backend: ExtractionBackend,
+    orphans: list[Any],
+    chunks: list[Chunk],
+) -> int:
+    """Ask the backend what each flagged passage says, in the document's terms.
+
+    Optional on the backend: a tier that cannot answer in prose simply does
+    not, and the orphan stays unreviewed, which is the honest state and was
+    already the state before this existed. The deterministic backend has no
+    such method and never will -- naming an obligation is not something a
+    pattern does.
+    """
+    ask = getattr(backend, "reread_findings", None)
+    if ask is None:
+        return 0
+    by_id = {chunk.chunk_id: chunk for chunk in chunks}
+    total = 0
+    # The structural and sliding segmentations both cover the document, so a
+    # passage sits in at least two chunks and its finding would be reported
+    # once per chunk. For a value that duplication is signal -- reconciliation
+    # reads it as independent support -- but a finding has no reconciliation
+    # behind it, so the same sentence would simply be printed three times.
+    # Identity is the offsets it occupies.
+    seen: set[tuple[str, int, int]] = set()
+    for orphan in orphans:
+        chunk = by_id.get(orphan.chunk_id)
+        if chunk is None:
+            continue
+        try:
+            found = ask(doc, chunk)
+        except Exception:  # noqa: BLE001 - a failed re-read is not a failed run
+            continue
+        fresh = []
+        for finding in found:
+            key = (finding.name, finding.span.start, finding.span.end)
+            if key in seen:
+                continue
+            seen.add(key)
+            fresh.append(finding)
+        found = fresh
+        if not found:
+            continue
+        orphan.findings = found
+        if orphan.resolution == "unreviewed":
+            # Explained, but not by a field. "rescued" would claim the record
+            # now carries it, and it does not -- nothing in the registry can.
+            orphan.resolution = "benign"
+        total += len(found)
+    return total
+
+
+def _default_reread(
+    doc: NormalizedDocument,
+    backend: ExtractionBackend,
+    fields: dict[str, ExtractedField],
+    graph: Any = None,
+) -> Callable[[Chunk], list[Candidate]]:
+    """Tier 4's callable, when the caller supplies none.
+
+    The ladder documents a targeted re-read that fires only on chunks the
+    orphan sweep flagged, and nothing ever supplied one, so the tier had never
+    run: on one held-out agreement the sweep found 118 passages that say
+    something no field captured and then the pipeline moved on.
+
+    The re-read asks the extraction question again over one chunk, with the
+    fields that are still empty -- which is a different question from the one
+    the main passes asked, because those walk whole segmentations and, behind
+    ``LayeredBackend``, only ever show the model what the rules left. For the
+    deterministic backend it is the same rules over the same text and finds
+    nothing, which is not a disappointment: it is the measurement. Those 118
+    passages are ones the patterns cannot explain, and running them again says
+    so rather than leaving the tier's absence to be mistaken for a clean sweep.
+    """
+    def reread(chunk: Chunk) -> list[Candidate]:
+        specs = [
+            FIELD_REGISTRY[name] for name, field in fields.items()
+            if field.value is None and name in FIELD_REGISTRY
+        ]
+        if not specs:
+            return []
+        context = ""
+        if graph is not None and chunk.segmentation == "definitional":
+            context = graph.context_for(chunk.label)
+        try:
+            found, _ = backend.extract(doc, chunk, specs, context, "reread")
+        except Exception:  # noqa: BLE001 - a failed rescue is not a failed run
+            return []
+        return found
+
+    return reread
+
+
+def _fill_from_rescue(
+    fields: dict[str, ExtractedField], rescued: list[Candidate]
+) -> list[str]:
+    """Put a rescued value into the field it names, if that field is empty.
+
+    Never into a field that already has one: a single re-read of a single
+    chunk has none of the independent support the main passes are built to
+    produce, so it is evidence enough to answer a question nobody answered and
+    not enough to overturn an answer. The status says so -- these arrive at
+    ``needs_review`` and cannot be confirmed here -- and so does the note,
+    because a value that came from the orphan sweep was found by a different
+    route than the rest of the record and a reader should be told which.
+    """
+    filled: list[str] = []
+    best: dict[str, Candidate] = {}
+    for candidate in rescued:
+        if candidate.value is None or candidate.span is None:
+            continue
+        field = fields.get(candidate.field)
+        if field is None or field.value is not None:
+            continue
+        current = best.get(candidate.field)
+        if current is None or candidate.confidence > current.confidence:
+            best[candidate.field] = candidate
+    for name, candidate in best.items():
+        field = fields[name]
+        # Span before value: the variant validates on assignment and a value
+        # without provenance is rejected, which is the rule doing its job.
+        field.variants[0].spans = [candidate.span]
+        field.variants[0].value = candidate.value
+        field.variants[0].quantity = candidate.quantity
+        field.status = "needs_review"
+        field.variants[0].extraction_confidence = candidate.confidence
+        field.notes = (
+            "found by the orphan sweep's re-read of "
+            f"{candidate.span.section_id or 'an unattributed passage'}, on one "
+            "chunk and one pass; the main passes over every segmentation did "
+            "not produce it, so it has no independent support and is not "
+            "eligible to be confirmed from here"
+        )
+        filled.append(name)
+    return sorted(filled)
+
+
+def _review_queue(
+    fields: dict[str, ExtractedField],
+    conflicts: list[Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Fields a human should look at, most economically material first.
+
+    A conflicted field has no value, and printing one anyway is how a reader
+    ends up quoting a number the pipeline never asserted. Eleven candidate
+    closing dates at equal weight resolve to whichever the reconciler happened
+    to order first; the record says "conflicted" and the queue said
+    "= 2019-11-26" three characters later. The competing values go in their
+    own key and the single value stays empty.
+    """
+    competing = {
+        c.field: [str(item.get("value")) for item in c.candidates]
+        for c in (conflicts or [])
+    }
     queue = [
         {
             "field": name,
             "status": field.status,
             "criticality": field.criticality,
             "criticality_label": field.criticality_label,
-            "value": str(field.value) if field.value is not None else None,
+            "value": (
+                None if field.status == "conflicted"
+                else str(field.value) if field.value is not None else None
+            ),
+            "competing_values": competing.get(name, []),
             "extraction_confidence": field.extraction_confidence,
             "validation_confidence": field.validation_confidence,
             "why": field.notes,
             "span": field.spans[0].model_dump() if field.spans else None,
+            # Separate keys because they answer different questions: "span" is
+            # the text a value was read from, "review_hint" is where to start
+            # looking when there is no value yet.
+            "review_hint": (
+                field.review_hint.model_dump() if field.review_hint else None
+            ),
         }
         for name, field in fields.items()
         if field.status in ("needs_review", "conflicted")

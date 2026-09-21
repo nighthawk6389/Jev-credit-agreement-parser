@@ -66,6 +66,70 @@ construction a **base-rate** floor, which is the distinction that matters: at a
 SOFR of 0.05% with a 1.00% floor and a 5.00% margin, a base-rate floor yields
 6.00% and an all-in floor yields 5.05%.
 
+### Eighteen of the hundred are not credit agreements
+
+Found by trying to label one. The smallest held-out document, chosen because
+it could be read end to end, turned out to be a **Stock Transfer Agreement** —
+a share-for-debt exchange that mentions a term loan credit agreement and is not
+one. Checking the rest:
+
+| what it actually is | documents |
+| --- | --- |
+| financial statements | 3 |
+| earnings press release | 2 |
+| Stock Transfer Agreement | 2 |
+| indenture (supplemental, and a CLO indenture) | 2 |
+| Warrant, Registration Rights, Investor Rights, Equity Purchase, Placement Agency | 5 |
+| Note Purchase Agreement (convertible PIK note) | 1 |
+| Amendment to a Sale and Servicing Agreement | 1 |
+| Business Acquisition Report | 1 |
+| proxy statement | 1 |
+
+**18 of 100**, spread across nine strata, 15 on the fit side and 3 in the
+holdout. The harvest selected on filing metadata and stratum keywords, which
+is how a proxy statement that discusses a credit facility ends up filed as
+one.
+
+This does not invalidate the corpus — it is still 82 real agreements and
+amendments across 18 strata — but it changes three numbers that get quoted.
+The holdout is 24 usable documents, not 27. Any recall figure averaged over
+the whole corpus is diluted by documents where every field is correctly
+absent. And "100 stratified credit agreements" should read "100 stratified
+filings, 82 of them credit agreements or amendments to one".
+
+A classifier is not the fix. The fix is a reviewed list, because the
+distinction is a judgement — a Note Purchase Agreement for a PIK note carries
+real debt terms and still is not a credit agreement, and no keyword settles
+that.
+
+### The field registry's anchors are named after the fixture
+
+`initial_term_loan.maturity_date` anchors on the phrase **"Initial Term Loan
+Maturity Date"**, which is what the synthetic Meridian fixture calls it. Across
+the corpus:
+
+| defined term | documents |
+| --- | --- |
+| Latest Maturity Date | 14 |
+| Term Loan Maturity Date | 9 |
+| Latest Term Loan Maturity Date | 6 |
+| Stated Maturity Date | 6 |
+| Revolving Credit Maturity Date | 5 |
+| Final Maturity Date | 4 |
+| …40 further spellings | |
+| **Initial Term Loan Maturity Date** | **2** |
+
+**44 distinct defined terms end in "Maturity Date"**, and the one the registry
+anchors on is in 2 documents out of 103. Health Catalyst writes simply
+`" Maturity Date ": July 16, 2029`, so the rule cannot fire and the field
+routes to review — the F10 assertion it fails is measuring exactly this.
+
+This is the mechanism behind "recall collapsed from roughly thirty fields of
+thirty-eight to between zero and three". It is not a missing anchor; it is a
+tail with 44 members and no upper bound, on one field, and the same shape
+repeats for margin, floor and commitment. Adding the forty-fifth spelling is
+the work this project decided not to do.
+
 ### "DIP" decides nothing
 
 `DIP Financing` appears in **36** documents. **Three** are DIP facilities. The
@@ -189,3 +253,351 @@ path today; that path is served by `OfflineJev`, a lexical stand-in, which is
 why it does not help here. This is a credential-shaped gap, not a pattern one,
 and the numbers above are the argument against trying to close it with more
 keywords.
+
+## What happened the first time a model tier's output ran through the pipeline
+
+There is no `ANTHROPIC_API_KEY` in this environment, so the tier meant to do
+the hard extraction had never run, and every recall number here measured
+anchored patterns. That was recorded as a blind spot and treated as a caveat.
+It was not a caveat. Nothing downstream of extraction had ever been fed a
+model's answers, and it showed.
+
+The reading was made by hand, checked in as JSON with a verbatim quote for
+every value, and replayed through the identical path by `--backend recorded`:
+Essential Properties Realty Trust's Eighth Amendment, stratum I, held out by
+the frozen split, 522,738 normalized characters, read before any label for it
+existed. 24 fields, every quote locating in the document.
+
+The first replay did not produce a report. It raised
+`decimal.InvalidOperation` three frames inside the range invariant, because
+`bool` is `int` in Python and `Decimal("False")` raises rather than returning
+anything. Three registry fields are booleans and no run in the project's
+history had populated one. **Any populated boolean field took the whole report
+down.**
+
+Behind that, four more, each of which had been invisible for the same reason:
+
+* **A covenant written as a percentage was reported as no covenant.** The
+  Consolidated Leverage Ratio covenant is "60%" — a REIT covenant is debt over
+  asset value, not a multiple of EBITDA — and the field is typed as a ratio.
+  Coercion returned `None`, reconciliation flattened the candidate to "passes
+  reported the field present but produced no value" and dropped the span it
+  cited, and the negative-space check wrote "the extractor probably missed it"
+  over the top. The extractor had quoted the section correctly. A value the
+  record cannot hold now keeps its citation, carries the written form, and is
+  not eligible to be confirmed absent.
+* **The review queue printed a value for fields the pipeline refused to
+  resolve.** `closing_date` has eleven candidates at equal weight on this
+  document — the amendment date, the restatement date, the defined Closing
+  Date and eight recited amendment dates — and the queue read
+  `closing_date = 2019-11-26` three characters after the word `conflicted`.
+  Conflicted fields now print their competing values and no single one.
+* **A base rate spread was filed as the Eurodollar margin.** The text
+  pricing-grid parser assumes two margin columns. Investment-grade grids have
+  four — revolver and term loan, against SOFR and base rate — and it named the
+  last one the Eurodollar margin: 0.550% into a criticality-5 field at 0.93
+  confidence, outranking every other tier, where the answer is 1.550%. It now
+  reads the rows and declines to name a column it cannot identify.
+* **An invariant had an unexamined case.** `citations_cite_a_value` holds that
+  a span on a valueless field is not a citation of anything, which was written
+  from evidence: the offending spans were whole chunks of 8,379 characters and
+  up, against 162 for any real citation. The covenant above cites 112
+  characters and states a value the field cannot carry. That is a third case,
+  alongside external references, and it is now exempt.
+
+On the 19 assertions labelled for that document the deterministic tier passes
+10 and the replay passes 17, with no silent error either way. **That is not a
+measurement of model recall and must not be quoted as one** — the same reader
+wrote the reading and the labels, so agreement between them is
+self-consistency. It measures something else, which nobody had measured: given
+correct extractions with correct citations, does the machinery carry them to a
+correct record. Before this week, on five counts, it did not.
+
+The ordering that makes such a number mean anything is enforced rather than
+documented. A recording carries `recorded_before_labels`, CI fails on one that
+claims otherwise, and the honest thing to do with a reading made after the
+labels is to throw it away.
+
+### Where the corpus knowledge actually lands
+
+Everything above is a fact about how these agreements are drafted, and the
+deterministic tier is the wrong place to put most of it. Anchoring a rule on
+"the top row of a pricing grid" or "the first branch of a defined term" is how
+the wrong column got reported as the Eurodollar margin in the first place: the
+patterns are cheap and exact on the easy fields and silently wrong on the hard
+ones, which is the whole reason the escalation ladder exists.
+
+So the findings are written into the extraction prompt, as rules with the
+drafting that motivates them. Twenty-four of them, in five groups — what counts
+as a value, which value when the excerpt offers more than one, how to write it
+down, when not to write one, and what belongs in notes rather than in the
+number. Each carries its example verbatim, because a rule stated abstractly
+gets skimmed and the drafting is the part that generalises to the next
+agreement:
+
+* `"Term Loan Maturity Date": (a) with respect to the Initial Term Loans, ...`
+  — never take the first branch because it is first.
+* `that certain $300,000,000 Revolving Credit Agreement, dated as of June 25,
+  2018` — a figure in a recital describing a prior agreement is not this
+  agreement's, and it can sit a few lines from the $1,300,000,000 that replaced
+  it.
+* `September 16 15 , 2026 2027` — if a blackline survives ingestion, the
+  operative value is the replacement.
+* `"22.5 bps", not "22.5"` — a grid quoted in basis points against a field
+  measured in percent is a hundredfold error that reads as an ordinary number.
+* `may be a positive or negative value or zero` — benchmark replacement
+  machinery is drafting against the day the benchmark is discontinued, not a
+  spread the facility pays today. That distinction is what made the credit
+  spread adjustment check fire on forty correctly-drafted agreements.
+* `the 180th day after the Fifth Amendment Effective Date` — an agreement's
+  date is not the date it became effective, so arithmetic from it is a guess
+  with a calculation in front of it.
+
+The tests in `tests/test_prompts.py` assert the drafting, not the rule. A
+rewrite that keeps "watch out for superseded figures" and drops the recital is
+the rewrite that stops working, and it should fail.
+
+Two defects in the request itself turned up while writing them, both of the
+never-run kind:
+
+**The prompt and the schema were not the same contract.** `EXTRACTION_SCHEMA`
+goes to the API as `output_config.format`, so the response is constrained to
+it. The prompt showed a bare JSON array where the schema requires a `fields`
+object, and asked for a `qualifiers` key that the schema's
+`additionalProperties: false` forbade — a 400 on one side, a silently dropped
+instruction on the other, and `qualifiers` is what carries the measurement
+convention a bare number does not. Three properties also sat outside
+`required`; every documented structured-output schema lists all of them and
+makes the optional ones nullable instead. A test now compares the two key sets
+directly.
+
+**The system prompt was never sent.** `EXTRACTION_SYSTEM` was defined in the
+prompts module and no request ever passed it, so the one instruction framing
+the whole task — a confident wrong answer is worse than no answer — reached the
+model in no request this repository has ever built.
+
+## A second held-out reading, and four more defects
+
+Aspen Technology / Emerson Electric, stratum P, December 2022. Bilateral
+acquisition financing between a company and its controlling shareholder: one
+lender, no administrative agent, no arranger, no revolver, $630,000,000 drawn
+once and amortised over twenty quarters. Picked because F07 was the worst row
+in the table at 3 pass / 6 fail, and it carries the complete post-LIBOR
+waterfall.
+
+The first document found five defects. This one found four more, and none of
+them needed the labels — all four were visible from reading the source and
+running the pipeline over it.
+
+### A heading style that made a whole agreement look structureless
+
+Every heading pattern in `detect_sections` anchors to the start of a line. Some
+filers' HTML puts the entire agreement in one flow, with no line break before
+any heading. On this document that meant **1 section detected out of 198
+present**. Three consequences, all silent:
+
+* every cross-reference in the document was unresolvable, so the F01 check
+  produced **56 errors on a perfectly well-formed agreement** — the kind of
+  false-positive rate that teaches a reader to skip the section;
+* the structural segmentation, one of the three independent views the pass
+  planner relies on, **collapsed to a single chunk**;
+* `section_hints` in the field registry had nothing to point at.
+
+Case is what separates a heading from a reference in that house style: the
+headings read `SECTION 2.07. Repayment of Loans` and the references read
+`Section 2.07`. In this filing all 198 upper-case occurrences were headings and
+all 239 references were mixed case, with no overlap either way. An inline rule
+gated on the anchored patterns having already failed takes the count to 102
+sections and 114 structural chunks, and the violations from 60 to 13 — of which
+the two remaining cross-reference errors are real (`Section 18.1` points at an
+Article this agreement does not have, and `Section 2.1` is a typo for `2.01`).
+
+### A percentage that became a dollar amount
+
+`parse_money("1.250% of the initial principal amount")` returned
+`Decimal("1.250")`. The regex found the first number and never looked at the
+unit. Amortisation is routinely drafted as a percentage of initial principal
+per instalment — it is drafted that way here, four times over — so the field
+would have carried a quarterly payment of **one dollar twenty-five** against a
+real first instalment of **$7,875,000**, with a citation behind it. That is the
+shape of a silent error, not of a miss. A percentage is no longer an amount.
+
+### An invariant that had outgrown its own premise
+
+`citations_cite_a_value` held that a span on a valueless field cites nothing.
+It was written from evidence: the offending spans were whole chunks, 8,379
+characters and up, against 162 for any real citation. Two things had happened
+since. The chunk-wide hints moved to `review_hint`, so they no longer reach
+`spans` at all. And a model tier began producing the opposite case — a field
+with no value and a short, real quotation that is precisely the evidence for
+having none:
+
+```
+"Maturity Date" means, with respect to each Facility, the date that is
+five (5) years after the Funding Date.
+```
+
+A reader following that span gets exactly the passage that explains the empty
+field. The check now tests the thing that separated the two cases all along and
+states it rather than inferring it: a stored span must be short enough to be a
+quotation. The original regression still fires; an evidenced absence no longer
+does. It had **no test at all**, which is why the change broke nothing.
+
+### Tier 4 had never run
+
+The escalation ladder documents a targeted re-read that fires only on chunks
+the orphan sweep flagged. `run_pipeline` accepted a `reread` callable,
+`rescue_orphans` used it, `build_reread_prompt` existed — and **no caller ever
+supplied one**. The tier had never executed on any document. It also discarded
+what it found: the candidates were used to mark the orphan "rescued" and then
+dropped, which is the expensive half of the work and none of the useful half.
+
+It is wired now, with a default that re-asks the extraction question over one
+flagged chunk with the fields that are still empty, and rescued values reach
+the record at `needs_review` — never confirmed, because one chunk and one pass
+has none of the independent support the main passes are built to produce, and
+never over a value the passes already agreed on.
+
+Under the deterministic backend it recovers nothing, on any document, and that
+is the measurement rather than a disappointment: `orphan re-read (tier 4): 94
+chunk(s) flagged, nothing recovered` says that ninety-four passages of this
+agreement say something the pattern set cannot explain, and now says it in the
+report instead of leaving the tier's absence to be mistaken for a clean sweep.
+
+### What the document itself says
+
+On its twelve assertions the deterministic tier passes 8 and the checked-in
+reading passes 12. The two fields that make it worth labelling are the two with
+no answer:
+
+| field | what the agreement says |
+| --- | --- |
+| `closing_date` | *the date on which the conditions specified in Section 4.01 are satisfied* |
+| `initial_term_loan.maturity_date` | *the date that is five (5) years after the Funding Date* |
+
+The Funding Date is itself *the date such initial Loan is funded*. Neither event
+is dated anywhere in the filing. The cover says December 23, 2022, which is the
+execution date and the answer to neither question — and it is the answer both
+fields will attract, from a reader that takes the nearest date and, for the
+maturity, adds five to it.
+
+## What F05's seven failures actually are
+
+F05_versioning has been the largest block of failures in the report for some
+time -- 17 pass, 7 fail -- and nobody had looked at which seven. They are:
+
+| document | assertions | shape |
+| --- | --- | --- |
+| Air T Amendment No. 7 | 5 | value present in the text, extractor returns nothing |
+| Essential Properties Eighth Amendment | 2 | one the same, one an eleven-way date conflict |
+
+**None is a silent error.** All seven are routed to review, which is the
+outcome the design asks for when the pipeline does not know. And one of the
+seven -- Essential Properties' `revolver.commitment` -- the checked-in model
+reading already gets right, at $1,300,000,000. So F05 is not a versioning
+mechanism that is broken. It is the same recall gap as every other family,
+measured on documents where the amendment restates the terms rather than
+naming them in a definitions article.
+
+### A real defect behind it, which does not close it
+
+All five Air T values sit inside restated blocks:
+
+```
+Section 7.12(b) of the Original Agreement is hereby amended in its entirety
+to read as follows: " (b) Permit the Leverage Ratio to be greater than
+3.00 to 1.00 at any Measurement Date."
+```
+
+The whole restated section is inside double quotes, so every defined term
+*inside* it drops to single quotes -- `'Revolving Credit Termination Date'
+means the earliest to occur of (a) August 27, 2029`. The definition graph
+required double quotes, so on this document it found **3 terms in 73,805
+characters against 19 actually present**, and the closure it hands the model
+tier as `DEFINED TERMS IN SCOPE` was three lines long.
+
+Fixed, and the graph goes from 3 terms to 26. The corpus says how narrow this
+is: **15,075 double-quoted definitions against 19 single-quoted, and all 19 in
+that one filing.**
+
+It also **changes none of the seven assertions**, and that is worth stating
+plainly rather than letting the fix and the family be mentioned in the same
+breath. The values come from the rules tier, which anchors on phrases and not
+on the graph. What improved is the context the model tier receives on that
+document, which is unmeasured because the model tier has never run.
+
+### Why these five can never be measured against a recording
+
+Air T has labels and no recording, and it cannot have one. A recording must be
+made before that document's labels exist, by a reader who has not seen them;
+its labels were written in batch 1. Any recording made now would be
+contaminated, and `recorded_before_labels: true` on it would be a lie the CI
+gate is specifically there to catch.
+
+So the five are reachable by exactly two routes: a live model run, or a second
+reader who has not seen the labels. That is the ordering rule working as
+designed, and it is the cost of the rule -- worth naming, because the
+alternative is a number that looks like recall and is not.
+
+## The half of the orphan sweep that could not speak
+
+The escalation ladder ends with a targeted re-read of the chunks the orphan
+sweep flagged. That re-read has two halves and only one of them had anywhere
+to go.
+
+The first half answers in the registry's vocabulary: *this passage carries the
+commitment fee, and here it is*. That is now wired, and under the deterministic
+backend it recovers nothing on any document tried, which is a statement about
+the pattern set.
+
+The second half answers in the document's: *this passage creates an obligation,
+and no field you have can hold it*. `build_reread_prompt` has existed in the
+prompts module since the ladder was written, with exactly that shape — and
+nothing ever called it, and `OrphanChunk` had nowhere to put an answer if
+anything had. So the review queue shows fields, an obligation with no field is
+invisible, and the sweep that exists to find precisely that text could flag it
+and then say nothing about it.
+
+Findings are the answer: a quote, a kind and a sentence, carrying no pretence
+of being a value. Two real ones from Aspen, recorded from passages the sweep
+had flagged and left unexplained:
+
+> **Covenants may be frozen to the GAAP in effect before any change.** Either
+> party may, by notice, require any provision of an accounting or financial
+> nature to be read on the GAAP in effect immediately before a change —
+> including a new rule such as Topic 606 — and the freeze holds until the
+> notice is withdrawn. Every covenant level in the agreement is therefore
+> quoted against an accounting basis either side can move.
+
+> **The borrower chooses which amortisation instalments a prepayment
+> retires.** The printed schedule — 1.250% of initial principal for eight
+> quarters, then 1.875%, 2.500%, 3.125% — is an opening position rather than a
+> fixture.
+
+Neither is a field. Neither was reportable before. Both change what the
+numbers in the record mean.
+
+Three details are load-bearing:
+
+* **A finding with an unlocatable quote is dropped**, exactly as a value is. A
+  finding in a report is always a passage a reader can go and read.
+* **`LayeredBackend` delegates.** The pipeline looks for the method on whatever
+  backend it was handed and every model-backed run hands it a wrapper, so
+  without delegation the findings half was unreachable through the only path
+  that reaches it. It was, for the first run after it was written.
+* **Findings are deduplicated by offset.** The structural and sliding
+  segmentations both cover the document, so a passage sits in at least two
+  chunks. For a value that duplication is signal — reconciliation reads it as
+  independent support — but nothing reconciles findings, so the same sentence
+  was printed three times.
+
+An orphan with findings is marked `benign` rather than `rescued`: the record
+does not now carry the thing, and nothing in the registry can.
+
+### What this does to the ordering rule
+
+Nothing, and the reason is the reason for the rule. A recording's `fields`
+must predate that document's labels because a score against labels written by
+the same reader measures self-consistency. Nothing scores findings — no
+assertion in the corpus tests one, and there is no number for them to inflate.
+The Aspen findings were added after its labels and the recording says so.

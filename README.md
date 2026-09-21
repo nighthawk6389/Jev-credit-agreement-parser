@@ -35,7 +35,7 @@ one. Whatever no tier settles is still caught by the orphan sweep.
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev]"   # add [llm] for the model tier on either route
 
 # Extract, with the offline backends -- no API keys, no network.
 credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
@@ -44,9 +44,17 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 233 tests
+pytest -q                                          # 318 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
+
+# Labelling a new agreement.
+python -m credit_extract.eval.split --show         # which side each document is on
+python -m credit_extract.eval.label <document>     # scaffold a label file to correct
+
+# The model tier without a key: replay a reading that was checked in.
+python -m credit_extract.extract.recorded --check  # which readings are scorable
+credit-extract extract <document> --backend recorded
 ```
 
 Against the live services:
@@ -54,7 +62,53 @@ Against the live services:
 ```bash
 export ANTHROPIC_API_KEY=... JEV_API_KEY=...
 credit-extract extract agreement.htm --backend anthropic --jev api --out result.json
+
+# The same model tier through Vercel's AI Gateway, which speaks the Messages
+# API. One key, and the gateway's own model catalogue behind it.
+export AI_GATEWAY_API_KEY=...
+credit-extract extract agreement.htm --backend vercel --out result.json
 ```
+
+`anthropic` and `vercel` are one tier over two routes, not two backends. A
+`Route` is a base URL, a credential and a naming rule; the prompt, the schema,
+the failure handling and the candidate construction are the same object either
+way, which is what makes a measurement taken through one comparable to a
+measurement taken through the other. The gateway names models creator-first
+(`anthropic/claude-opus-5`) and the id is stripped again before pricing, so a
+run through it is not quietly costed at the fallback rate. Thresholds are
+fitted per backend and the backend name follows the route, so a set fitted
+against one is not silently applied to the other.
+
+### The model tier, without a model
+
+`--backend recorded` puts a checked-in reading where the model would sit. A
+reader reads the document, writes each extraction with a verbatim quote into
+`credit_extract/extract/recordings/`, and the backend replays it through the
+identical path: the same quote location, so a quote that is not in the chunk is
+dropped as a fabrication exactly as a live one would be, then the same
+reconciliation, validators and statuses. It refuses rather than falling back
+when no recording covers the document, because a silent fall back to the rules
+would report the rules' recall as the model tier's.
+
+The prompt that tier receives is where the corpus findings live: twenty-four
+rules in five groups, each carrying the drafting that motivates it, from
+`"Term Loan Maturity Date": (a) with respect to the Initial Term Loans, ...`
+through `"22.5 bps", not "22.5"` to `may be a positive or negative value or
+zero`. `docs/corpus_findings.md` says why they belong there rather than in the
+deterministic tier, and `tests/test_prompts.py` asserts the drafting rather
+than the rule -- a rewrite that keeps the principle and drops the example is
+the rewrite that stops working.
+
+One rule makes the result worth anything, and it is enforced: **a recording must
+be made before that document's labels exist, by a reader who has not seen
+them.** Each file carries `recorded_before_labels` and CI fails on a recording
+that claims otherwise. Where the same reader writes both, as with the one
+checked in, agreement between them is self-consistency and must not be quoted
+as model recall -- what it measures is whether correct extractions with correct
+citations survive to a correct record. On the first document run this way they
+did not: see the `ANTHROPIC_API` entry in the blind-spot register for the five
+defects that found, from a boolean field crashing the whole report to a base
+rate spread being filed as the Eurodollar margin.
 
 ## What it produces
 
@@ -306,6 +360,74 @@ Run it yourself:
 python scripts/run_corpus.py --limit 10      # unzips corpus/edgar on demand
 ```
 
+### The split, and the first held-out document
+
+Every real assertion here used to be on a filing that was read while the parser
+was being written, so the figures described fit rather than generalisation. The
+split is frozen **before the labels exist** — the only moment it can be frozen
+honestly, because afterwards a labeller knows which side would flatter the
+result. All 100 harvested documents are assigned by SHA-256 of the document
+name, stratified so every deal type contributes: **27 held out, 73 fittable**,
+plus 11 pinned to the fit side as already-read.
+
+The first held-out document was labelled the moment the split existed, and it
+paid for the machinery immediately. **Air T Amendment No. 7** is a bilateral
+facility carrying a revolver, a term loan and an accordion. Its borrowing base
+led the classifier to an asset-based revolver, which rules term-loan fields
+inapplicable; the extractor had separately missed the Consolidated Term Loan's
+maturity, because the registry anchors on a phrase this agreement does not use.
+Suppression fires only on fields the extractor left empty — so the two misses
+composed, and a term loan maturing **27 August 2031** was reported as
+`not_applicable_to_archetype`: a settled answer, and wrong.
+
+Neither half was invisible on its own. A field in review is visible; an
+unreliable archetype is in the blind-spot register. It is the composition that
+is silent, and no fixture would have produced it. Archetype suppression is now
+vetoed by the document: a field group the text plainly discusses stays
+applicable whatever the classifier concluded, and the report names the phrase
+that vetoed it. The same document also produced a false positive —
+`one-quarter of one percent (0.25%)` read as a numeral mismatch — and a
+mutation that cannot apply to an amendment, since an amendment's
+cross-references point into a base agreement it does not contain.
+
+Two more held-out documents followed, chosen for the families the report
+called undersampled. **Schneider National** is in the credit-spread-adjustment
+stratum and has no credit spread adjustment — `Adjusted Term SOFR Rate` means
+the Term SOFR Rate, and the only "adjustment" in 417,000 characters is the
+benchmark-replacement boilerplate every post-2022 agreement carries. Its
+pricing grid is quoted in basis points against a percentage-typed field, so a
+reader who takes `22.5` as written reports a 22.5% fee on an undrawn
+$350,000,000 revolver. Its maturity springs from 2031 back to 2029 on a
+condition inside the borrower's control.
+
+**Martin Marietta's Eighteenth Amendment** is a blackline that moves both
+headline terms — the facility limit from $400m to $500m and the termination
+date from September 2026 to September 2027 — and the ingester excises all
+thirteen struck runs correctly, which four assertions now pin. Labelling it
+found that **Validator E could never fire on the case it exists for**: it
+reads the sentence a figure sits in, so it only ran on fields that already
+had a span, and a fee fixed by a fee letter has no figure. That agreement
+names a Fee Letter twelve times and states no rate anywhere; the commitment
+fee came back as an ordinary missing field rather than as external by design.
+
+F04, F07 and F08 left the undersampled list as a result. F02, F03 and F10
+have not.
+
+```bash
+python -m credit_extract.eval.split --check   # recomputes and compares; CI runs it
+```
+
+The assignment is a function of the names, so a document cannot change sides
+after its labels turn out inconvenient — the edit is visible and the build
+rejects it. [`docs/labelling_guide.md`](docs/labelling_guide.md) is the
+contract for writing the labels themselves: which fields, what counts as the
+right answer on a multi-tranche deal, and how to choose between
+`absent_from_document` and "I could not find it", which are not the same claim.
+`python -m credit_extract.eval.label <document>` scaffolds a file filled in
+with what the extractor currently says and the text it read each value from,
+every line marked `VERIFY`; the loader refuses a file that still carries the
+marker, so a scaffold cannot be mistaken for ground truth.
+
 The four in `corpus/real/` are the ones with Tier 2 labels:
 
 | filing | what it is | what it found |
@@ -405,6 +527,8 @@ credit_extract/
               precedence.py     notwithstanding / subject to, as a directed graph
   extract/    passes.py         deterministic + LLM backends, pass planning
               reconcile.py      agreement, conflict, single-pass suspicion
+              recorded.py       a model reading, checked in and replayed
+              recordings/       one JSON per document read that way
               prompts/          extraction and re-read prompts
   validate/   jev.py            System One client, batching, budget, offline stand-in
               validators.py     A-G
@@ -413,9 +537,12 @@ credit_extract/
               calibrate.py      fitting, Wilson bounds, held-out scoring
   eval/       trap_families.yaml  the eleven families -- single source of truth
               blind_spots.yaml    what has no testable examples, and why
+              split.yaml          frozen fit/holdout assignment, derived not chosen
               labels/             Tier 2 assertions, one file per document
               families.py         registers, coverage, consistency check
               assertions.py       assertion kinds and evaluation
+              split.py            derives and re-checks the document split
+              label.py            scaffolds a label file from a run
               mutations.py        Tier 3: inject a defect, check it is found
               family_report.py    the gated report
               gold/               fixture + corpus generator

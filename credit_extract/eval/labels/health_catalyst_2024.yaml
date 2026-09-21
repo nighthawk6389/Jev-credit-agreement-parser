@@ -138,6 +138,24 @@ assertions:
       Extension Amendment, solely with respect to any Extended Loans governed
       thereby.' The extension is a conditional variant, not a different date.
 
+      This assertion FAILS today, and the reason is worth keeping written
+      down rather than rediscovering. The registry anchors the field on
+      "Initial Term Loan Maturity Date", which is what the synthetic Meridian
+      fixture calls it and which occurs zero times in this agreement -- Health
+      Catalyst writes '" Maturity Date ": July 16, 2029' at offset 134,387,
+      using the colon convention. So the rule cannot fire, the field routes to
+      needs_review, and nothing is asserted wrongly; this is a recall miss,
+      not a silent error, which is why the family reads 0 pass / 1 fail while
+      the silent-error rate stays at zero.
+
+      Do not fix it by adding "Maturity Date" to the anchors. Across the 103
+      corpus documents there are 44 distinct defined terms ending in "Maturity
+      Date" -- "Latest Maturity Date" in 14 documents, "Term Loan Maturity
+      Date" in 9, "Stated Maturity Date" in 6 -- and the registry's anchor
+      occurs in 2. The next agreement will spell it a forty-fifth way. That
+      tail is what the model tier is for, so the assertion stays red on
+      purpose, as the measurement of a gap a credential closes.
+
   # -- coverage ------------------------------------------------------------
   - id: hc_uncaptured_content_is_swept
     family: F01_integrity

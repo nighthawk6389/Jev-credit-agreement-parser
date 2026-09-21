@@ -1,0 +1,172 @@
+# Tier 2 assertions: Star Mountain Lower Middle-Market Capital Corp., Sixth
+# Amendment to Loan and Servicing Agreement, 2026.
+#
+# Held out by the frozen split before any label for it existed. Stratum H,
+# fund-level, and it is the example the blind-spot register has been asking
+# for in as many words:
+#
+#   A NAV line misread as a cash-flow term loan would be covenanted on EBITDA
+#   it does not have, which is the failure this entry exists for -- the six
+#   documents make it visible rather than fixing it.
+#
+# This is one of the six. A business development company borrows against its
+# own portfolio of loan assets; Webster Bank is collateral agent,
+# administrative agent, swing lender and sole lead arranger, and for most of
+# the facility's life the only lender. The Borrower is also the Servicer.
+#
+# These labels were produced by a model reading the source text, not by a
+# credit analyst; every assertion quotes the passage it rests on.
+#
+# The trap is sharper than the register anticipated. It is not that EBITDA is
+# missing -- the word is everywhere. It is that every occurrence belongs to
+# somebody else:
+#
+#   "Advance Rate" means, (i) with respect to First Lien Loan Assets for which
+#   the applicable Obligor has EBITDA of: (1) greater than $20,000,000, 70.0%;
+#   (2) greater than $10,000,000 but less than or equal to $20,000,000, 67.5%;
+#   (3) less than or equal to $10,000,000, 62.5%
+#
+# That is the EBITDA of the companies this fund has lent to, and it sets how
+# much the bank will lend against each loan. A pipeline that takes
+# $20,000,000 for a covenant threshold, or 70.0% for a receivables advance
+# rate, has produced a confident, cited, entirely wrong description of the
+# deal -- and both figures are exactly where a reader trained on corporate
+# credit agreements would look.
+
+document: star_mountain_amendment_6_2026
+corpus_name: H_star-mountain-lower-middle-market-capital-corp_2026-08-19_0001193125-26-356397_ck0001786835-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  # -- F06 structure: the fund-level facility the register had no example of -
+
+  - id: star_advance_rate_is_not_a_receivables_rate
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: borrowing_base.advance_rate_accounts
+    expect: null
+    note: >
+      There is an advance rate here, several of them, and none belongs in this
+      field. The registry's advance-rate fields are shaped for a corporate ABL
+      lending against receivables and inventory. Here the collateral is loan
+      assets and the rate is a function of the borrower's borrowers -- the
+      Obligor's EBITDA, and whether the asset is first lien or first lien last
+      out. 70.0% under advance_rate_accounts would describe a facility secured
+      on receivables that does not exist.
+
+  - id: star_has_no_inventory_to_advance_against
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: borrowing_base.advance_rate_inventory
+    expect: null
+    note: >
+      A fund holds no inventory. The field must stay empty, and it is the
+      easier half of the pair: nothing in the document uses the word, so this
+      fails only if the extractor reaches for the nearest percentage.
+
+  - id: star_ebitda_in_this_document_is_never_the_borrowers
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: text_present
+    target: "with respect to First Lien Loan Assets for which the applicable Obligor has EBITDA of"
+    expect: true
+    note: >
+      The passage that makes the whole trap. EBITDA appears throughout this
+      agreement and every occurrence is an Obligor's -- a portfolio company's
+      -- never the Borrower's, which has none. This pins the clause so that an
+      ingester change which drops it fails here, and so that the reason this
+      document is in the corpus is stated rather than implied.
+
+  - id: star_no_ebitda_covenant_on_a_fund
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: financial_covenant.level
+    expect: null
+    note: >
+      The covenants in this facility are a Borrowing Base test, a Minimum
+      Equity Amount and concentration limits. There is no leverage covenant
+      measured against the Borrower's EBITDA, because the Borrower has none.
+      $20,000,000 and $10,000,000 sit in the Advance Rate definition as
+      obligor thresholds and are the two figures a leverage-covenant reader
+      would land on.
+
+  # -- F03: the fee letter, in its most direct form ------------------------
+
+  - id: star_non_utilization_fee_rate_is_in_the_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_external_kind
+    target: commitment_fee_pct
+    expect: by_design
+    note: >
+      '"Non-Utilization Fee Rate" with respect to any Lender, means the
+      "Non-Utilization Fee Rate" as set forth in such Lender's Fee Letter.'
+      The undrawn-commitment fee for this facility, with its rate in a
+      document that is not filed -- one per Lender, so there may not even be a
+      single rate.
+
+      This is the case the rule added for Martin Marietta missed. That rule
+      needs a singular '"Fee Letter" means' and a separate clause saying the
+      fees are payable under it; this agreement defines "Fee Letters" in the
+      plural and puts the evidence somewhere better, in the rate's own
+      definition, which names the fee and the document in one sentence. The
+      rule now takes that as sufficient on its own. It fires on 1 of the 100
+      harvested documents, so the widening costs essentially nothing in
+      precision -- which is the only basis on which external_reference, a
+      settled status, should ever be widened.
+
+  # -- F10: a facility size that is a ceiling, and two maturities ----------
+
+  - id: star_facility_size_is_not_the_accordion_cap
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: revolver.commitment
+    expect: null
+    note: >
+      '"Maximum Facility Amount" means the Aggregate Commitments as then in
+      effect, which amount on the Closing Date shall equal the Initial
+      Commitment and may be increased pursuant to Section 2.18 to
+      $350,000,000'. The size is not stated: it is the Aggregate Commitments
+      as then in effect, and $350,000,000 is the ceiling an accordion could
+      raise them to. Reporting $350,000,000 reports the most the facility
+      could ever become as the amount committed. The same defined term means
+      something different again after the Revolving Period -- the aggregate
+      Advances Outstanding -- so one term carries three meanings across the
+      life of the deal.
+
+  - id: star_maturity_is_a_year_after_availability_ends
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-07-03
+    note: >
+      Two dates a year apart and both are real. The Scheduled Commitment
+      Termination Date is July 3, 2028, when the Revolving Period ends and
+      availability stops; the Scheduled Maturity Date is July 3, 2029, when
+      the debt is due. A reader looking for "when the revolver ends" has a
+      defensible route to either, and only one of them is the maturity. The
+      Final Maturity Date is in turn the earliest of that date, an automatic
+      Event of Default and a declaration, so this is a ceiling as well.
+
+  - id: star_default_increment_is_not_the_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: 2.30
+    note: >
+      '"Applicable Spread" means (i) 2.30%, plus (ii) following the occurrence
+      and during the continuance of an Event of Default, 2.00%.' No grid at
+      all: one flat spread. The 2.00% in the same sentence is the default-rate
+      increment and is additive, so the largest number the clause can produce
+      is 4.30% and neither that nor 2.00% is the margin. A reader taking the
+      highest percentage in the definition -- which is what "top level" means
+      on every other document in this corpus -- gets the wrong one here
+      precisely because there are no levels.

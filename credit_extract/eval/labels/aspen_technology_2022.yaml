@@ -1,0 +1,224 @@
+# Tier 2 assertions: Aspen Technology, Inc. / Emerson Electric Co., Credit
+# Agreement dated as of December 23, 2022.
+#
+# Held out by the frozen split before any label for it existed. Stratum P,
+# legacy benchmark with a replacement waterfall, and it is a shape the corpus
+# had no labelled example of: a bilateral acquisition financing between a
+# company and its own controlling shareholder. One lender, no administrative
+# agent, no arranger, no revolver, no syndicate. $630,000,000 drawn once and
+# amortised over twenty quarters.
+#
+# These labels were produced by a model reading the source text, not by a
+# credit analyst; every assertion quotes the passage it rests on.
+#
+# Picked for F07, which the per-family table reports at 3 pass / 6 fail -- the
+# worst row in the report. It earns the pick twice over: the benchmark
+# machinery here is the complete post-LIBOR waterfall, and the two most
+# critical fields in the document have no answer at all.
+#
+#   "Closing Date" means the date on which the conditions specified in
+#   Section 4.01 are satisfied
+#
+#   "Maturity Date" means, with respect to each Facility, the date that is
+#   five (5) years after the Funding Date.
+#
+# Neither event is dated anywhere in the agreement, and the Funding Date is
+# itself defined as "the date such initial Loan is funded". The cover says
+# December 23, 2022, which is the execution date and the answer to neither
+# question. A pipeline that reports December 23, 2022 as the Closing Date, or
+# adds five years to it for the maturity, has answered a different question
+# under this field's name -- and would do it with a citation attached.
+
+document: aspen_technology_2022
+corpus_name: P_aspen-technology-inc-azpn_2022-12-30_0001897982-22-000058_aspen-emersoncreditagree
+source: real
+tier: 2
+
+assertions:
+
+  # -- F07 benchmark: the waterfall, and what is not a spread ---------------
+
+  - id: aspen_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: null
+    note: >
+      This facility pays no credit spread adjustment. The only spread
+      adjustment in the document is the Benchmark Replacement Adjustment --
+      "the spread adjustment, or method for calculating or determining such
+      spread adjustment, (which may be a positive or negative value or zero)
+      that has been selected by the Lender and the Borrower" -- which applies
+      on the day the benchmark is replaced and not before. This is the
+      drafting that made csa_not_silently_zero fire on forty correctly-drafted
+      agreements before it was narrowed, and here it sits inside the full
+      waterfall, which makes it the cleanest negative case in the corpus.
+
+  - id: aspen_benchmark_waterfall_is_present
+    family: F07_benchmark
+    member: benchmark_replacement_waterfall
+    kind: text_present
+    target: "the first alternative set forth in the order below that can be determined by the Lender"
+    expect: true
+    note: >
+      Two rungs: Daily Simple SOFR first, then a rate selected by the parties
+      plus the Benchmark Replacement Adjustment, with the whole result floored
+      at the Floor. The ordering is the substance -- a pipeline that reads the
+      second rung as the operative rate reports a negotiated rate where the
+      agreement specifies an observable one.
+
+  - id: aspen_floor_is_zero_and_is_stated
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: 0
+    note: >
+      '"Floor" means 0.0%.' A defined term three words long, and it floors the
+      Benchmark -- including any Benchmark Replacement -- rather than the
+      all-in rate. Zero stated deliberately is not an absent floor, and this
+      is the shortest possible example of the distinction.
+
+  - id: aspen_top_of_the_grid_is_the_worst_leverage
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: 1.75
+    note: >
+      "Level I Less than or equal to 1.50 to 1.00 1.25% 0.25% Level II Greater
+      than 1.50 to 1.00, but less than or equal to 2.50 to 1.00 1.50% 0.50%
+      Level III Greater than 2.50 to 1.00 1.75% 0.75%". The highest SOFR
+      margin is 1.75%, at the worst leverage level, which the grid prints
+      last. 1.25% is the first figure a reader meets and is the answer to a
+      different question. 0.75% is the ABR margin on the same row.
+
+  - id: aspen_the_grid_survives_as_flat_text
+    family: F11_layout
+    member: grid_rendered_as_text
+    kind: text_present
+    target: "Level III Greater than 2.50 to 1.00 1.75% 0.75%"
+    expect: true
+    note: >
+      This document contains no HTML tables at all -- not the pricing grid,
+      not the amortisation schedule, not the commitment schedule. Every grid
+      is a run of words inside a sentence, and the level, the leverage band
+      and both margins arrive with nothing but spaces between them. Any reader
+      that reaches for table markup finds nothing here, and the two grids that
+      matter are among the most economically material things in the agreement.
+      This pins the rendering, so an ingester change that reflows or splits
+      the row fails here rather than in a margin.
+
+  # -- F10 conditionality: two fields whose answer is an undated event ------
+
+  - id: aspen_closing_date_is_an_event_not_a_date
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_status
+    target: closing_date
+    expect: conflicted
+    note: >
+      '"Closing Date" means the date on which the conditions specified in
+      Section 4.01 are satisfied (or waived in accordance with Section 9.02).'
+      Section 4.01 adds that the Lender shall notify the Borrower of the
+      Closing Date and that such notice is conclusive and binding -- so the
+      date exists, in a notice that is not part of this filing. The agreement
+      is dated as of December 23, 2022 on its cover; that is the execution
+      date, and it is the answer this field will attract.
+
+      What is being tested is that no date in this document is confirmed here.
+      Conflicted is what the pipeline currently produces and is one honest way
+      to decline; needs_review would be another. If reconciliation ever
+      resolves this field to a single date, this assertion must be replaced by
+      one checking that the resolved value is null -- not deleted.
+
+  - id: aspen_maturity_is_five_years_after_an_undated_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: null
+    note: >
+      '"Maturity Date" means, with respect to each Facility, the date that is
+      five (5) years after the Funding Date.' The Funding Date is defined in
+      Section 4.02 as "the date such initial Loan is funded", conditional on
+      the Closing Date having occurred. Five years after an undated event is
+      an undated event. December 23, 2027 is arithmetic performed on the wrong
+      number, and it is the answer a date-plus-term reader produces.
+
+  - id: aspen_covenant_steps_up_on_a_designated_acquisition
+    family: F10_conditionality
+    member: covenant_conversion_on_junior_debt
+    kind: text_present
+    target: "or, during a Leverage Specified Period, 4.00 to 1.0 as of the last day of any such Fiscal Quarter"
+    expect: true
+    note: >
+      The leverage covenant is 3.5 to 1.0 except during a Leverage Specified
+      Period, which is two consecutive fiscal quarters following an
+      acquisition of $100,000,000 or more that the Borrower designates, at
+      most twice after the Closing Date and never within four quarters of a
+      previous one. A record holding 3.5 is right today and wrong for up to
+      four of the next twenty quarters, and the scalar cannot say which.
+
+  # -- F08 units: a schedule in percentages against a money-typed field -----
+
+  - id: aspen_amortisation_is_a_percentage_of_principal
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: amortization.quarterly_amount
+    expect: null
+    note: >
+      "Installment Principal Amount (per installment) 1-8 1.250% of the
+      initial principal amount 9-12 1.875% ... 13-16 2.500% ... 17-20 3.125%
+      ... Maturity Date Remaining principal balance". The field is typed as
+      money and the document gives a percentage of a base, four times over, so
+      no single quarterly amount exists. Reading the figure as written gave a
+      quarterly payment of $1.25 against a real first instalment of
+      $7,875,000 -- the parser took the first number and never looked at the
+      per-cent sign. The field must stay empty, with the schedule visible in
+      review, rather than carry a number that is wrong by six orders of
+      magnitude and cites a real passage.
+
+  # -- F04 absence: roles that do not exist in a bilateral loan -------------
+
+  - id: aspen_has_no_revolver
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_value
+    target: revolver.commitment
+    expect: null
+    note: >
+      There is no revolving facility. Section 2.06 terminates all Commitments
+      on the Funding Date once the borrowing is made, and Section 2.01 gives
+      the Lender a single obligation to make one Loan. The revolver fields are
+      correctly absent rather than unfound, and an archetype that supplies a
+      revolver here would be furnishing a facility the agreement does not
+      create.
+
+  - id: aspen_commitment_is_the_whole_facility
+    family: F01_integrity
+    member: dropped_table_rows
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: 630000000
+    note: >
+      "The initial aggregate amount of the Lender's Commitment is
+      $630,000,000." The recitals state the same figure as the aggregate
+      principal amount of the Loans, financing part of the cash consideration
+      for the Acquisition and the Refinancing. Two independent statements of
+      one number in a document with no tables, so neither depends on table
+      parsing.
+
+  - id: aspen_governing_law
+    family: F02_precedence
+    member: later_section_overrides_earlier
+    kind: field_value
+    target: facility.governing_law
+    expect: New York
+    note: >
+      Section 9.09(a). Stated once, in lower case, in the middle of a
+      paragraph that continues into jurisdiction and service of process -- not
+      in the block capitals most agreements use, which is where a
+      capitals-anchored reader looks.
