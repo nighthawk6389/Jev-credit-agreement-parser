@@ -271,6 +271,68 @@ def test_every_fpml_registry_term_resolves_to_a_schema_declaration():
     assert all(fpml(term).verified for term in terms)
 
 
+#: FpML splits its declarations across schemas, and this project binds a loan
+#: concept to an element the loan schema does not declare four times. Each one
+#: reads correctly against the element's own documentation -- a party's industry
+#: sector, an INVG/NIVG credit quality, a credit rating, an ISDA floating rate
+#: option -- but "the name exists somewhere in three schemas" is a weak thing to
+#: rest a mapping on, and it is the only thing fpml() checks. Pinning the
+#: exceptions means the next loan field that resolves against an unrelated
+#: asset-class element has to be argued for here rather than passing quietly.
+CROSS_SCHEMA_BINDINGS = {
+    "classification": {"fpml-shared-5-13.xsd"},
+    "creditQuality": {"fpml-asset-5-13.xsd"},
+    "creditRating": {"fpml-shared-5-13.xsd", "fpml-asset-5-13.xsd"},
+    "floatingRateIndex": {"fpml-shared-5-13.xsd", "fpml-asset-5-13.xsd"},
+}
+
+
+def test_a_loan_binding_outside_the_loan_schema_is_named_not_assumed():
+    from credit_extract.models.fpml_model import declaration, mapped_terms
+
+    outside = {
+        term: set(declaration(term)["schemas"])
+        for term in mapped_terms()
+        if "fpml-loan-5-13.xsd" not in declaration(term)["schemas"]
+    }
+    assert outside == CROSS_SCHEMA_BINDINGS, (
+        "a mapped term stopped resolving in the loan schema, or a new one "
+        "never did; say which schema declares it and why that is the right "
+        "element before adding it above"
+    )
+
+
+def test_the_snapshot_records_where_each_element_came_from():
+    from credit_extract.models.fpml_model import declaration
+
+    spread_adjustment = declaration("spreadAdjustment")
+    assert "fpml-loan-5-13.xsd" in spread_adjustment["schemas"]
+    assert any("credit spread" in d for d in spread_adjustment["descriptions"])
+
+    # The index merges same-named declarations from different scopes, so this
+    # entry is two elements wearing one name. provenance() says so rather than
+    # letting the count read as 851 distinct concepts.
+    delayed_draw = declaration("delayedDraw")
+    assert len(delayed_draw["types"]) > 1, "merged scopes are the documented caveat"
+
+
+def test_every_fibo_registry_term_resolves_to_the_vendored_snapshot():
+    from credit_extract.models.fibo_map import binding
+    from credit_extract.models.fpml_model import FIELD_REGISTRY
+
+    terms = {
+        spec.standard_term
+        for spec in FIELD_REGISTRY.values()
+        if spec.standard_term and spec.standard_term.startswith("fibo")
+    }
+    assert terms
+    # rating.agency resolves only because vendor_standards.py vendors
+    # FND/Arrangements/Ratings.rdf. Trimming that list would otherwise leave a
+    # registry entry pointing at a CURIE no snapshot contains.
+    assert "fibo-fnd-arr-rt:RatingAgency" in terms
+    assert all(binding(term).verified for term in terms)
+
+
 def test_fpml_and_fibo_are_complementary_not_competing_mappings():
     from credit_extract.models.fpml_model import standards_bindings
 
