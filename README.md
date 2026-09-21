@@ -11,6 +11,10 @@ that matters. Every design decision here is optimized for that 5%. A pipeline
 that scores 95% and doesn't know which 5% it missed is worth less than one that
 scores 92% and flags the rest.
 
+New here? [`docs/orientation.md`](docs/orientation.md) is the short version:
+what the project optimises for, the difference between a label and a recording,
+and why the trap families are an instrument rather than a goal.
+
 ```
 ingest → normalize → segment (3 ways) → definition graph → extract (N passes)
        → reconcile → Jev validate → invariant check → calibrate → report
@@ -553,6 +557,7 @@ credit_extract/
 config/thresholds.json          fitted, versioned, CI-asserted
 corpus/real/                    four SEC filings, read in detail and labelled
 corpus/edgar/                   100 more, stratified, zipped, unlabelled
+docs/orientation.md             start here: goals, labels vs recordings, families
 docs/corpus_findings.md         what those 100 say about the pipeline
 scripts/                        vendor_standards.py, fetch_corpus.py, gen_fpml.py
 ```
