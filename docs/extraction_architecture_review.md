@@ -337,6 +337,35 @@ each tier has a measured contribution. For every tier, record:
 
 Remove or merge a tier if it does not improve held-out results.
 
+> **Correction — measured, and the first answer runs the other way.**
+> [`docs/ablation.md`](ablation.md) records every quantity this section asks
+> for, and the result on the first three documents is that the stack is
+> cheaper to keep than the section assumes.
+>
+> `current` (all seven validators) and `hybrid` (A, B, C only) are identical on
+> recall, review rate and confident propositions, and differ by exactly one
+> silent error. The disagreement names it: Star Mountain's non-utilization fee
+> rate, where **Validator E** turns a confident wrong answer into a settled
+> correct `external_reference`. The blind-spot register already records that
+> E's rule fires on 1 of the 100 harvested documents; what the ablation adds is
+> what happens when it does.
+>
+> So a rule that almost never fires is not thereby cheap to remove, and "remove
+> a tier if it does not improve held-out results" needs the corollary this
+> repository's own error budget implies: a tier that prevents one silent error
+> per hundred documents, for a tenth of a cent each, has paid for itself under
+> a budget of zero.
+>
+> What the ablation has *not* shown is that D, F and G earn their place.
+> Nothing in the comparison separates them — `current` and `hybrid` differ by E
+> alone on these three documents — so they are untested rather than disproved,
+> and deleting them on this evidence would be the same mistake in reverse.
+>
+> The one number that does support the section's thesis: the Jev validators are
+> nearly the whole bill. `model_only` runs at $0.0011 a document against
+> `current`'s $0.0972, and 7.3 seconds against 18.2. The stack is not free and
+> it is not nearly free; it is most of the cost of a run.
+
 ## Recommended target architecture
 
 ```text
@@ -501,27 +530,49 @@ until an ingestion or validation replacement wins on the frozen corpus.
    of a family's failures are the pipeline's and which are the corpus's, and
    the eight filings in the harvest that turn out not to be credit agreements
    would all have been missed by any sample of ten.
-3. **Model baseline**: integrate schema-constrained grounded extraction with no
-   custom semantic validators beyond citation checking.
-4. **Ablation harness**: compare current, model-only, and hybrid pipelines on
-   identical inputs and metrics.
+3. ~~**Model baseline**: integrate schema-constrained grounded extraction with
+   no custom semantic validators beyond citation checking.~~ — done, as the
+   `model_only` arm: the model tier alone with validator A.
+4. ~~**Ablation harness**: compare current, model-only, and hybrid pipelines on
+   identical inputs and metrics.~~ — done, `python -m
+   credit_extract.eval.ablation`, written up in
+   [`docs/ablation.md`](ablation.md). Four arms rather than three: the fourth
+   is `deterministic`, and it is the one that mattered most.
 5. **Hybrid implementation**: implement only the stages the ablation proves
-   valuable.
+   valuable. **On the current evidence that is not a subtraction.** See the
+   correction to §5 above: the only stage the ablation has separated is
+   Validator E, and it separated in favour of keeping it.
 
 That ordering makes the next architectural decision evidence-driven. The
 repository already has enough machinery; it needs ground truth and a strong
 baseline more than another layer.
 
-Steps 3 and 4 are now unblocked and step 4 is the one that matters, because it
-is where recall gets measured for the first time. Two constraints shape it:
+Both constraints that shaped step 4 held, and both are visible in what it
+built:
 
 - **No live model.** `ANTHROPIC_API` is an unresolved blind spot in this
-  environment, so a model arm can only replay `RecordedBackend` readings. The
-  harness has to report which documents it could actually run the model on
-  rather than averaging over the ones it could not.
+  environment, so a model arm replays `RecordedBackend` readings. There are
+  three recordings, so the comparison covers three documents and drops the
+  other hundred — for *every* arm, not for the model arms only, because
+  scoring one arm on a hundred documents and another on three and printing
+  both in one table compares two populations. A model arm with no recording
+  gets no backend at all rather than a fallback to the deterministic one,
+  which would have made the model arms *be* the deterministic arm and
+  manufactured the finding that the model tier changes nothing.
 - **The metric has to be recall, not only silent errors.** The family report
   answers "of the propositions asserted confidently, how many were wrong",
   which is the right safety question and says nothing about how many of the 37
-  critical fields a run returns. An ablation scored on the family report alone
-  would rank a pipeline that answers nothing above one that answers most things
-  and errs once.
+  critical fields a run returns. It is monotone in silence: a pipeline that
+  answers nothing scores a perfect zero. So the ablation prints recall beside
+  it and refuses to print either alone.
+
+> **What it found that changes this document.** The `deterministic` arm — rules
+> only, every validator — returns **7.2%** of the critical fields where the
+> layered pipeline returns **23.4%**, and 11 confident propositions against 20.
+>
+> That is not a proposal. It is the gap between the pipeline as designed and
+> the pipeline as every run in this repository has actually executed it: there
+> is no API key here, so the family report, all 464 assertions and the whole
+> blind-spot register are measured on the deterministic arm. The evidence base
+> is sound and has never seen two thirds of the pipeline's recall. Every figure
+> quoted in the Evidence section above should be read with that attached.
