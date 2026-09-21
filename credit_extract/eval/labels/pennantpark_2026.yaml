@@ -1,0 +1,110 @@
+# Tier 2 assertions: PennantPark Private Income Fund, CIBC-PPIF Loan and
+# Security Agreement, Closing Date October 1, 2025.
+#
+# Fit side, never read during development. Deliberately the counterpart to
+# StepStone SPV Facility VII: the same kind of deal -- a fund borrowing against
+# a portfolio of loan assets, priced by advance rate rather than by leverage --
+# with the one difference that matters for extraction. StepStone's Advance Rate
+# is a three-word definition pointing at a Schedule B that was never filed.
+# PennantPark's is in the document:
+#
+#   "Advance Rate": As follows: (a) with respect to any Broadly Syndicated
+#   Loans, eighty percent (80.00%); (b) with respect to First Lien Loans for
+#   which the applicable Obligor has EBITDA greater than or equal to
+#   $50,000,000, seventy-five percent (75.00%); (c) with respect to First Lien
+#   Loans for which the applicable Obligor has EBITDA ...
+#
+# So the pair separates "this pipeline cannot find an advance rate" from "this
+# filing does not contain one", which no single document can.
+#
+# It also puts the portfolio-EBITDA trap inside the advance rate itself. The
+# $50,000,000 in limb (b) is a threshold on somebody else's earnings, sitting
+# in the definition that sets this facility's leverage, and both numbers in the
+# clause -- the 75.00% and the $50,000,000 -- are the kind a pipeline trained on
+# corporate credit agreements expects to find together in a covenant.
+
+document: pennantpark_2026
+corpus_name: H_pennantpark-private-income-fund_2026-09-02_0001193125-26-380472_ck0002089126-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: pennantpark_advance_rate_is_in_the_document
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: borrowing_base.advance_rate_accounts
+    expect: "80.00%"
+    note: >
+      80.00% for Broadly Syndicated Loans, the highest rate in the ladder and
+      the first limb of the definition.
+
+      The assertion exists to be contrasted with StepStone, where the same
+      field is external_reference because the schedule holding the rate was
+      not filed. Both are fund-level facilities, both are 2026, both price by
+      advance rate, and the difference between a value and an external
+      reference is entirely whether the filer attached the schedule.
+
+      75.00% is the second limb and the near miss. It is keyed to the
+      obligor's EBITDA being at or above $50,000,000, which is a threshold on
+      a portfolio company's earnings and not on anything the borrower owns --
+      the fifth document in the corpus where EBITDA sits on somebody else's
+      balance sheet, and the first where it does so inside the definition that
+      sets the facility's own leverage.
+
+  - id: pennantpark_facility_amount
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$200,000,000"
+    note: >
+      '"Facility Amount": As of any date, an amount equal to the lesser of (a)
+      $200,000,000 and (b) the aggregate principal amount of the Commitments
+      provided by the Administrative Agent and the Lenders as of such date;
+      provided that the Facility Amount may be increased pursuant to Section
+      2.18 or decreased pursuant to Section 2.3(c)'.
+
+      A "lesser of" where StepStone's Maximum Facility Amount is a "plus" --
+      $250,000,000 plus New Commitments. Same economic role, opposite
+      construction: this one is a cap that actual commitments may sit below,
+      that one is a floor that new commitments may raise.
+
+  - id: pennantpark_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-10-01
+    note: >
+      '"Closing Date": October 1, 2025.' A bare date, and the only one of the
+      three fund facilities in the corpus to give one outright -- StepStone
+      resolves "the date of this Agreement" in one hop and Owl Rock states
+      September 2, 2026 the same way this does.
+
+      Worth pinning because the fee structure around it does not resolve. The
+      Fee Letter is defined as 'that certain Fee Letter, dated as of the
+      Closing Date, between the Administrative Agent, the Borrower and the
+      Collateral Manager and ... each additional Fee Letter executed between
+      any Lender, the Borrower and the Collateral Manager' -- collective,
+      open-ended, and unfiled. Nineteen references to a fee letter in one
+      agreement, the most in the corpus, and no rate anywhere. There is no
+      registry field for the Collateral Agent Fee, so nothing here asserts
+      it; the register's F03 fee_letter entry is the right place for that gap
+      and it already says the content side is untestable by construction.
+
+  - id: pennantpark_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.0%"
+    note: >
+      '"Floor": A rate of interest equal to 0.0%.'
+
+      One decimal place, where most of the corpus writes 0.00% and Valvoline
+      writes the word "zero". Three renderings of the same rate across
+      eighteen documents, which is the whole of what this field has to
+      survive before the interesting cases -- Iridium's two different floors
+      and Hornbeck's revolver-only proviso -- even arise.

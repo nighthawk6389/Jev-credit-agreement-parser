@@ -1,0 +1,95 @@
+# Tier 2 assertions: Lifetime Brands, Inc., ABL Amendment No. 3, dated as of
+# August 2026.
+#
+# Fit side, never read during development. The corpus's first genuinely
+# redacted filing, and the reason F03 has a redacted_from_filing member at all.
+# The exhibit opens with the notice --
+#
+#   CERTAIN INFORMATION CONTAINED IN THIS EXHIBIT, MARKED BY [***], HAS BEEN
+#   EXCLUDED FROM THIS EXHIBIT BECAUSE THE REGISTRANT HAS DETERMINED THAT IT IS
+#   BOTH NOT MATERIAL ...
+#
+# -- and then does it thirteen times. Two of the thirteen are structural rather
+# than incidental:
+#
+#   " Loan Documents " [***] 44
+#   SECTION 3.05. Properties ; [***] 109
+#
+# The first is a defined term whose entire definition is redacted. "Loan
+# Documents" is referenced throughout the agreement and the definition graph
+# will hold an entry with a name, a page number and no body -- which is not the
+# same as an undefined term, and is not the same as a term defined elsewhere.
+# The second redacts part of a section heading, so the table of contents and
+# the section itself disagree about what Section 3.05 is called.
+#
+# Until now the register's F03 entry for this member has said the case is
+# untestable. It is testable; it was simply not in the labelled set.
+
+document: lifetime_brands_abl_2026
+corpus_name: C_lifetime-brands-inc-lcut_2026-08-20_0000874396-26-000046_ablamendmentno3
+source: real
+tier: 2
+
+assertions:
+
+  - id: lifetime_loan_documents_definition_is_redacted
+    family: F03_external_reference
+    member: redacted_from_filing
+    kind: text_present
+    target: "[***]"
+    expect: true
+    note: >
+      Thirteen redaction markers, declared at the top of the exhibit under the
+      SEC's not-material-and-competitively-harmful exclusion. The assertion is
+      deliberately on the marker rather than on a field: what matters first is
+      that the pipeline can tell it is reading a redacted document at all,
+      because every downstream judgement about absence is unsafe until it
+      does.
+
+      A field that comes back empty in this agreement has three possible
+      causes and the marker is what separates the third from the first two:
+      the term is not there, the extractor missed it, or the registrant
+      removed it and said so.
+
+  - id: lifetime_has_no_leverage_covenant
+    family: F04_absence
+    member: springing_covenant_only
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'SECTION 6.13. Fixed Charge Coverage Ratio. During any FCCR Test Period,
+      the Borrowers will not permit the Fixed Charge Coverage Ratio as of the
+      last day of any period of four fiscal quarters ending during such FCCR
+      Test Period, to be less than 1.10 to 1.00.'
+
+      The only financial covenant, it is a coverage floor rather than a
+      leverage cap, and it is springing -- it binds during an FCCR Test Period
+      and not otherwise. Same answer as Cooper-Standard and for the same
+      structural reason: an ABL sizes credit by the borrowing base, which
+      occurs 81 times here, so there is nothing for a leverage cap to do.
+
+      1.10 to 1.00 is the number to avoid reporting in this field. It is a
+      real covenant level, correctly cited, and it caps nothing -- it floors a
+      different ratio in the opposite direction.
+
+  - id: lifetime_maturity_has_a_springing_override
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-17
+    note: >
+      '"Maturity Date" means the earliest of (i) August 17, 2031, (ii) the
+      Springing Maturity Date and (iii) any date on which the Commitments are
+      reduced to zero or otherwise terminated pursuant to the terms hereof.'
+
+      2031-08-17 is the answer: limb (iii) is a termination event with no
+      date, and limb (ii) is a springing maturity that accelerates only if
+      other debt matures first, so neither is a scheduled date today.
+
+      "Earliest of" is the construction to watch. StepStone's maturity is "the
+      earlier of" a scheduled date and acceleration and resolves the same way;
+      the difference here is that the middle limb is itself a defined term
+      that could resolve to a date, so a reader has to establish that it has
+      not rather than that it cannot.

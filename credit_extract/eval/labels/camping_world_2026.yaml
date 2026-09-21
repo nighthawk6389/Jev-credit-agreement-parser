@@ -1,0 +1,98 @@
+# Tier 2 assertions: Camping World Holdings, Inc., Amended and Restated Credit
+# Agreement dated as of August 25, 2026 -- a real-estate-backed facility with
+# Original Mortgage Loans, Delayed Draw Loans and Property Holding Companies.
+#
+# Fit side, never read during development. Kept for a defect in the filing's
+# rendering that no other document in the corpus has, and that defeats a field
+# nothing else defeats.
+#
+# The years are split. The filer's tooling puts markup inside the digits, and
+# what survives ingestion is:
+#
+#   Dated as of August 25 , 202 6
+#   "Closing Date " means August 25, 202 6 .
+#   "Maturity Date" means ... August 25 , 20 31
+#   that certain Credit Agreement, dated October 27 , 202 2
+#
+# Ten split years in the document. The string "August 25, 2026" does not occur
+# in the normalized text at all -- not once -- so a date parser looking for a
+# four-digit year finds "202" followed by a space and a "6", and either fails
+# or reads the year as 202.
+#
+# This is not a blackline, not a table and not a heading style, so none of
+# F11's members names it. The assertions below are ordinary field assertions
+# and the defect is the reason they fail: the value is stated plainly, in the
+# usual place, in the usual words, and is unreadable.
+
+document: camping_world_2026
+corpus_name: N_camping-world-holdings-inc-cwh_2026-08-31_0001104659-26-103869_cwh-20260825xex10d1
+source: real
+tier: 2
+
+assertions:
+
+  - id: camping_closing_date_survives_split_digits
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-08-25
+    note: >
+      '"Closing Date " means August 25, 202 6 .'
+
+      The definition is as plain as any in the corpus -- a bare date, stated
+      once, in a one-line definition -- and the year arrives as "202 6". The
+      cover says the same thing the same way.
+
+      What makes this worth an assertion rather than a bug report is that the
+      failure is invisible downstream. A pipeline that cannot read the year
+      reports the field as not found, which is the same output it gives for an
+      agreement that defines its Closing Date as an undated event. Aspen,
+      Constellation Brands and Evernorth all legitimately produce nothing
+      here. This one should produce 2026-08-25 and the difference is not
+      observable from the field alone.
+
+  - id: camping_maturity_is_the_original_maturity_date
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: 2031-08-25
+    note: >
+      '"Maturity Date" means, (i) with respect to the Original Mortgage Loans
+      and Delayed Draw Loans, August 25 , 20 31 (the "Original Maturity
+      Date"), and (ii) with respect to any Class of Additional Mortgage Loans,
+      the final maturity date as specified in the applicable Incremental
+      Amendment in respect thereof.'
+
+      Split across the markup twice in one clause -- "August 25 , 20 31" --
+      and this one breaks differently from the Closing Date: the year is cut
+      after two digits rather than three, so a lenient parser that recovers
+      "2026" from "202 6" by concatenation would recover "2031" here only if
+      it also handles "20 31". Two shapes of the same defect in one document.
+
+      Limb (ii) is a genuine deferral: additional classes take their maturity
+      from a future Incremental Amendment, so only the original tranches have
+      a date at all.
+
+  - id: camping_has_no_leverage_covenant
+    family: F04_absence
+    member: springing_covenant_only
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'the Borrowers shall not permit the Consolidated Debt Service Coverage
+      Ratio to be less than 1.10:1.00 for such Test Period.'
+
+      A debt service coverage ratio, which is a floor on cash flow against
+      debt service rather than a cap on debt against earnings, and the only
+      financial covenant in the agreement. Third document in the corpus whose
+      sole covenant cannot go in this field -- after Cooper-Standard and
+      Lifetime Brands, both fixed charge coverage -- and the first where it is
+      a DSCR, which is the covenant a real-estate-backed facility uses.
+
+      1.10:1.00 appears here and in Lifetime Brands as the level of a
+      different ratio in a different agreement, which is a coincidence worth
+      noting: a corpus-wide rule that learned "1.10:1.00 is a coverage floor"
+      would be right twice for the wrong reason.

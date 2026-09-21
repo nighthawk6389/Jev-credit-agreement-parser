@@ -1,0 +1,98 @@
+# Tier 2 assertions: 1-800-Flowers.com, Inc., Third Amendment dated as of
+# September 9, 2026.
+#
+# Fit side, never read during development. Kept for a covenant that is
+# suspended rather than stepped -- a shape the corpus did not have.
+#
+#   "Covenant Relief Period" means, so long as an Optional Covenant Relief
+#   Period Termination Date has not occurred on or prior to such date, the
+#   period commencing on the Second Amendment Effective Date and ending on the
+#   earlier of (x) June 26, 2028 and (y) the date on which a certificate is
+#   delivered pursuant to Section 6.01(c)(X)(i)(B) ...
+#
+#   Financial Covenants. (a) Consolidated Leverage Ratio. OTHER THAN DURING
+#   THE COVENANT RELIEF PERIOD, the Company will not permit the Consolidated
+#   Leverage Ratio to exceed (i) as of the end of the Reference Period ending
+#   on or nearest to June 30, 2023, 2.75 to 1.00, (ii) as of the end of the
+#   Reference Period ending on or nearest to September 30, 2023 and each
+#   subsequent Reference Period ending on or nearest to September 30
+#   thereafter, 3.25 ...
+#
+# Every other conditional covenant in the corpus springs ON a trigger -- Latham
+# on revolver usage, Iridium at 35% of commitments, Hornbeck on any draw,
+# BrightSpring during a Compliance Period. This one is switched OFF for a
+# stated window, and the window is defined by an event that may or may not have
+# happened (an Optional Covenant Relief Period Termination Date) with a
+# long-stop of June 26, 2028.
+#
+# So at the date of this amendment the covenant is probably not in force, and
+# the document does not say so in a form anything can read: whether it binds
+# today depends on whether a certificate was delivered under a subsection
+# reference, which is not in this exhibit.
+
+document: flowers_amendment_3_2026
+corpus_name: M_1-800-flowers-com-inc-flws_2026-09-10_0001084869-26-000024_exhibit101toflws8k09102026
+source: real
+tier: 2
+
+assertions:
+
+  - id: flowers_leverage_covenant_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.25 to 1.00"
+    note: >
+      3.25 to 1.00 is the recurring level: limb (ii) sets it for the Reference
+      Period ending on or nearest to September 30, 2023 "and each subsequent
+      Reference Period ending on or nearest to September 30 thereafter", so it
+      is the level that repeats annually and the only one with no end date.
+      2.75 to 1.00 in limb (i) applies to a single Reference Period in 2023
+      and is spent.
+
+      The ladder is indexed by calendar date rather than by leverage, which
+      inverts the usual reading: in a stepdown grid the level changes because
+      the borrower's leverage changed, and here it changes because time
+      passed. A pipeline that resolves "the level at a given date" by finding
+      the numerically lowest or highest figure gets 2.75, which was correct
+      for one quarter three years before this amendment.
+
+      The covenant is also suspended entirely during the Covenant Relief
+      Period, so this value is the level when it binds and not necessarily the
+      level today. The field holds one ratio and cannot hold "or none", which
+      is why the suspension is recorded here rather than in the value.
+
+  - id: flowers_covenant_relief_period_has_a_long_stop
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: text_present
+    target: "June 26, 2028"
+    expect: true
+    note: >
+      The outer bound of the suspension. Asserted as text rather than as a
+      field because no field in the registry holds "the date a covenant comes
+      back", and losing the date entirely would be worse than recording it in
+      the only form available.
+
+      It is the same shape as Owl Rock's Effective Date -- an event with a
+      dated long-stop, resolving to "no later than" and to no single day --
+      and the two are worth having together because one bounds when a
+      portfolio must be built and the other bounds when a covenant resumes.
+
+  - id: flowers_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      Six occurrences of "spread adjustment", all in the Benchmark Replacement
+      Adjustment. The Floor is "the benchmark rate floor, if any, provided in
+      this Agreement initially ... with respect to the Adjusted Term SOFR Rate
+      or the Adjusted Daily Simple SOFR", and the margin is added to those
+      rates directly.
+
+      Seventh document with this construction. The count is the point: it is
+      the most common drafting in the corpus by a wide margin, so a check that
+      fires on it is wrong far more often than it is right.

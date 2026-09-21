@@ -292,3 +292,40 @@ def test_the_split_file_is_yaml_a_human_can_read():
     assert raw["version"] == 1
     assert raw["holdout_in"] == split_mod.HOLDOUT_IN
     assert set(raw["assignment"].values()) == {"fit", "holdout"}
+
+
+def test_every_label_names_a_document_the_split_knows():
+    """A label whose corpus_name is wrong scores nothing, silently.
+
+    Five label files were written with names copied from console output that
+    truncates at the terminal width, so they ended mid-token --
+    "..._exhibi", "...ablamendmentn", "...vvvcredit". Each one resolved to no
+    document, so every assertion in it was skipped. The per-family table still
+    grew, because other labels in the same batch landed, and the report has no
+    way to say "four documents were asked for and two were found".
+
+    That is the worst failure mode this repository has: not a wrong number, an
+    absent one that looks like a smaller corpus. The frozen split is the
+    authoritative list of harvested documents and is checked in, so this can
+    be enforced without unzipping 143MB.
+    """
+    import yaml
+
+    from credit_extract.eval.split import load_split
+
+    split = load_split()
+    known = set(split.assignment) | set(split.contaminated)
+    assert known, "the frozen split should list the harvested documents"
+
+    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
+    unknown: list[tuple[str, str]] = []
+    for path in sorted(labels.glob("*.yaml")):
+        raw = yaml.safe_load(path.read_text())
+        name = raw.get("corpus_name")
+        if name and name not in known:
+            unknown.append((path.name, name))
+
+    assert not unknown, (
+        "these labels name a document the frozen split does not know, so their "
+        f"assertions never run: {unknown}"
+    )
