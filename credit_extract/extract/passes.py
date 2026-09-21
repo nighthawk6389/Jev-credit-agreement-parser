@@ -342,9 +342,24 @@ EXTRACTION_SCHEMA: dict[str, Any] = {
                     "quote": {"type": "string"},
                     "confidence": {"type": "number"},
                     "external_document": {"type": ["string", "null"]},
+                    # The measurement convention a bare number does not carry:
+                    # which EBITDA a percentage is measured against, per annum
+                    # against per quarter, the scale a table header sets.
+                    "qualifiers": {
+                        "type": "object",
+                        "additionalProperties": {"type": "string"},
+                    },
                     "notes": {"type": ["string", "null"]},
                 },
-                "required": ["field", "value", "quote", "confidence"],
+                # Every property is required and the optional ones are nullable
+                # instead. That is how the documented schemas are written, and
+                # the prompt's response shape has to match this exactly: a key
+                # the schema forbids is a 400, and a key the schema requires and
+                # the prompt never mentions is a field the model leaves out.
+                "required": [
+                    "field", "value", "quote", "confidence",
+                    "external_document", "qualifiers", "notes",
+                ],
                 "additionalProperties": False,
             },
         }
@@ -378,14 +393,21 @@ class AnthropicBackend:
         model: str = "claude-opus-5",
         temperature: float = 0.0,
         max_tokens: int = 16_000,
-        effort: str = "medium",
+        effort: str = "high",
     ) -> None:
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
-        #: Extraction is a reading task against text already in front of the
-        #: model, not a reasoning problem, so it does not need the default
-        #: effort; raise it if a held-out measurement says the recall is there.
+        #: This was "medium" on the theory that extraction is a reading task
+        #: against text already in front of the model. The held-out documents
+        #: say otherwise: the mistakes that matter here are not failures to
+        #: find the clause, they are failures to pick the right branch of a
+        #: definition that resolves four ways, the right column of a grid that
+        #: has four, or the operative figure out of a recital that also names
+        #: the superseded one. That is reasoning about a document, and each
+        #: wrong answer is a silent error. No live run has measured the
+        #: difference -- there is no key in this environment -- so this is an
+        #: argument rather than a result, and a measurement should replace it.
         self.effort = effort
         self._client = None
 
@@ -419,13 +441,18 @@ class AnthropicBackend:
         context: str,
         pass_id: str,
     ) -> tuple[list[Candidate], CostLedger]:
-        from .prompts import build_extraction_prompt
+        from .prompts import EXTRACTION_SYSTEM, build_extraction_prompt
 
         client = self._ensure_client()
         prompt = build_extraction_prompt(chunk.text, specs, context)
         response = client.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
+            # The system prompt existed in the prompts module and was never
+            # sent, so the one instruction that frames the whole task -- a
+            # confident wrong answer is worse than no answer -- reached the
+            # model in no request this repository has ever built.
+            system=EXTRACTION_SYSTEM,
             output_config={
                 "effort": self.effort,
                 "format": {"type": "json_schema", "schema": EXTRACTION_SCHEMA},

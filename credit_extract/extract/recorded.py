@@ -65,6 +65,12 @@ class RecordedField(BaseModel):
     quote: str
     confidence: float = 0.75
     external_document: str | None = None
+    #: The measurement convention a bare number does not carry: which EBITDA a
+    #: percentage is measured against, per annum against per quarter, the scale
+    #: a table header sets. Present because ``EXTRACTION_SCHEMA`` carries it --
+    #: this model is the schema's shape, and a key it cannot hold is a key a
+    #: recording cannot record.
+    qualifiers: dict[str, str] = Field(default_factory=dict)
     notes: str | None = None
 
 

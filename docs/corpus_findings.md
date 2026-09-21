@@ -317,3 +317,61 @@ The ordering that makes such a number mean anything is enforced rather than
 documented. A recording carries `recorded_before_labels`, CI fails on one that
 claims otherwise, and the honest thing to do with a reading made after the
 labels is to throw it away.
+
+### Where the corpus knowledge actually lands
+
+Everything above is a fact about how these agreements are drafted, and the
+deterministic tier is the wrong place to put most of it. Anchoring a rule on
+"the top row of a pricing grid" or "the first branch of a defined term" is how
+the wrong column got reported as the Eurodollar margin in the first place: the
+patterns are cheap and exact on the easy fields and silently wrong on the hard
+ones, which is the whole reason the escalation ladder exists.
+
+So the findings are written into the extraction prompt, as rules with the
+drafting that motivates them. Twenty-four of them, in five groups — what counts
+as a value, which value when the excerpt offers more than one, how to write it
+down, when not to write one, and what belongs in notes rather than in the
+number. Each carries its example verbatim, because a rule stated abstractly
+gets skimmed and the drafting is the part that generalises to the next
+agreement:
+
+* `"Term Loan Maturity Date": (a) with respect to the Initial Term Loans, ...`
+  — never take the first branch because it is first.
+* `that certain $300,000,000 Revolving Credit Agreement, dated as of June 25,
+  2018` — a figure in a recital describing a prior agreement is not this
+  agreement's, and it can sit a few lines from the $1,300,000,000 that replaced
+  it.
+* `September 16 15 , 2026 2027` — if a blackline survives ingestion, the
+  operative value is the replacement.
+* `"22.5 bps", not "22.5"` — a grid quoted in basis points against a field
+  measured in percent is a hundredfold error that reads as an ordinary number.
+* `may be a positive or negative value or zero` — benchmark replacement
+  machinery is drafting against the day the benchmark is discontinued, not a
+  spread the facility pays today. That distinction is what made the credit
+  spread adjustment check fire on forty correctly-drafted agreements.
+* `the 180th day after the Fifth Amendment Effective Date` — an agreement's
+  date is not the date it became effective, so arithmetic from it is a guess
+  with a calculation in front of it.
+
+The tests in `tests/test_prompts.py` assert the drafting, not the rule. A
+rewrite that keeps "watch out for superseded figures" and drops the recital is
+the rewrite that stops working, and it should fail.
+
+Two defects in the request itself turned up while writing them, both of the
+never-run kind:
+
+**The prompt and the schema were not the same contract.** `EXTRACTION_SCHEMA`
+goes to the API as `output_config.format`, so the response is constrained to
+it. The prompt showed a bare JSON array where the schema requires a `fields`
+object, and asked for a `qualifiers` key that the schema's
+`additionalProperties: false` forbade — a 400 on one side, a silently dropped
+instruction on the other, and `qualifiers` is what carries the measurement
+convention a bare number does not. Three properties also sat outside
+`required`; every documented structured-output schema lists all of them and
+makes the optional ones nullable instead. A test now compares the two key sets
+directly.
+
+**The system prompt was never sent.** `EXTRACTION_SYSTEM` was defined in the
+prompts module and no request ever passed it, so the one instruction framing
+the whole task — a confident wrong answer is worse than no answer — reached the
+model in no request this repository has ever built.

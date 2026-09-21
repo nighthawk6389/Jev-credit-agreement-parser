@@ -65,14 +65,21 @@
       "value": "$200,000,000",
       "quote": "Date was $200,000,000.",
       "confidence": 0.6,
-      "notes": "The sentence is 'The aggregate amount of the Initial Term Loan Commitments on the Restatement Effective Date was $200,000,000', and a page break falls inside it, between 'Effective' and 'Date'. The quote is the only side of the break that carries the figure. Past tense: the tranche matured in 2024 and the commitment has terminated."
+      "notes": "The sentence is 'The aggregate amount of the Initial Term Loan Commitments on the Restatement Effective Date was $200,000,000', and a page break falls inside it, between 'Effective' and 'Date'. The quote is the only side of the break that carries the figure. Past tense: the tranche matured in 2024 and the commitment has terminated.",
+      "qualifiers": {
+        "tranche": "Initial Term Loan",
+        "as_of": "the Restatement Effective Date; stated in the past tense"
+      }
     },
     {
       "field": "initial_term_loan.maturity_date",
       "value": "April 12, 2024",
       "quote": "(a) with respect to the Initial Term Loans, April 12, 2024",
       "confidence": 0.85,
-      "notes": "Term Loan Maturity Date is a function of the tranche, not a scalar: (a) Initial April 12, 2024, (b) Second Tranche January 25, 2028, (c) Fourth Amendment August 24, 2027, (d) Fifth Amendment July 11, 2027. Reporting one number for 'the' term loan maturity loses three."
+      "notes": "Term Loan Maturity Date is a function of the tranche, not a scalar: (a) Initial April 12, 2024, (b) Second Tranche January 25, 2028, (c) Fourth Amendment August 24, 2027, (d) Fifth Amendment July 11, 2027. Reporting one number for 'the' term loan maturity loses three.",
+      "qualifiers": {
+        "tranche": "Initial Term Loan"
+      }
     },
     {
       "field": "lc_sublimit",
@@ -85,21 +92,36 @@
       "value": "1.550%",
       "quote": "Credit Rating Level 5 | 1.350% | 0.750% | 1.550% | 0.550%",
       "confidence": 0.6,
-      "notes": "The first reading of this grid recorded 0.675%, the top printed row, and that was wrong: the field is 'the highest Eurodollar Applicable Margin in the pricing grid', and Level 1 is the best rating and so the lowest margin. Corrected before any label for this document existed, against the field's own description rather than against an answer. The grid has four margin columns; 1.550% is the highest Term SOFR figure in any of them, on the term loan facility at Level 5. The revolver-only reading gives 1.350% and the field cannot say which facility it means. Two conditional overlays sit on top: a leverage test at or below 0.35:1.00 moves pricing one level better, and an ESG amendment, if one is ever effectuated, can move the margin by up to 0.02% either way. Neither is in force today."
+      "notes": "The first reading of this grid recorded 0.675%, the top printed row, and that was wrong: the field is 'the highest Eurodollar Applicable Margin in the pricing grid', and Level 1 is the best rating and so the lowest margin. Corrected before any label for this document existed, against the field's own description rather than against an answer. The grid has four margin columns; 1.550% is the highest Term SOFR figure in any of them, on the term loan facility at Level 5. The revolver-only reading gives 1.350% and the field cannot say which facility it means. Two conditional overlays sit on top: a leverage test at or below 0.35:1.00 moves pricing one level better, and an ESG amendment, if one is ever effectuated, can move the margin by up to 0.02% either way. Neither is in force today.",
+      "qualifiers": {
+        "facility": "term loan facility",
+        "benchmark": "Term SOFR",
+        "rating_level": "Credit Rating Level 5, the worst of five",
+        "per": "per annum"
+      }
     },
     {
       "field": "commitment_fee_pct",
       "value": "0.125%",
       "quote": "Credit Rating Level 1 | 0.125%",
       "confidence": 0.5,
-      "notes": "The field is defined as 'the unused commitment fee' and this agreement has none. What it has is a Facility Fee, computed under Section 2.7(a) at the same grid rate on the average daily amount of the Total Revolving Credit Commitment, drawn or not. Recorded here because the registry has no other slot and reporting no fee on a $1.3bn revolver that charges 12.5 to 30 basis points on the whole line would understate the cost of the facility by more than leaving it empty saves. The difference is real money and the note is the only place the record can say so."
+      "notes": "The field is defined as 'the unused commitment fee' and this agreement has none. What it has is a Facility Fee, computed under Section 2.7(a) at the same grid rate on the average daily amount of the Total Revolving Credit Commitment, drawn or not. Recorded here because the registry has no other slot and reporting no fee on a $1.3bn revolver that charges 12.5 to 30 basis points on the whole line would understate the cost of the facility by more than leaving it empty saves. The difference is real money and the note is the only place the record can say so.",
+      "qualifiers": {
+        "basis": "average daily Total Revolving Credit Commitment, drawn or not",
+        "fee_type": "facility fee, not an unused-line fee",
+        "per": "per annum"
+      }
     },
     {
       "field": "financial_covenant.level",
       "value": "60%",
       "quote": "Permit the Consolidated Leverage Ratio as of the last day of any fiscal quarter of the Parent REIT to exceed 60%",
       "confidence": 0.8,
-      "notes": "A REIT leverage covenant is debt over total asset value, so it is quoted as a percentage and not as a multiple of EBITDA. Steps up to 65% for four quarters after a Material Acquisition, on two non-consecutive occasions. Section 7.1 carries five more levels: fixed charge coverage at 1.50 to 1.00, secured debt leverage at 50%, unencumbered leverage at 60%, unencumbered interest coverage at 1.75:1.00."
+      "notes": "A REIT leverage covenant is debt over total asset value, so it is quoted as a percentage and not as a multiple of EBITDA. Steps up to 65% for four quarters after a Material Acquisition, on two non-consecutive occasions. Section 7.1 carries five more levels: fixed charge coverage at 1.50 to 1.00, secured debt leverage at 50%, unencumbered leverage at 60%, unencumbered interest coverage at 1.75:1.00.",
+      "qualifiers": {
+        "measured_against": "Total Asset Value, not EBITDA",
+        "direction": "maximum"
+      }
     },
     {
       "field": "incremental.free_and_clear_amount",
@@ -133,14 +155,20 @@
       "value": "0%",
       "quote": "if, as of any date of determination, Adjusted Term SOFR determined as provided above shall be less than zero, then Adjusted Term SOFR as of such date shall be deemed to be zero",
       "confidence": 0.65,
-      "notes": "A floor of zero is a floor, and it is not the same as no floor. Recorded as 0% rather than left out so the distinction survives. There is no credit spread adjustment: Adjusted Term SOFR is Term SOFR with nothing added."
+      "notes": "A floor of zero is a floor, and it is not the same as no floor. Recorded as 0% rather than left out so the distinction survives. There is no credit spread adjustment: Adjusted Term SOFR is Term SOFR with nothing added.",
+      "qualifiers": {
+        "floors": "Adjusted Term SOFR, not the all-in rate"
+      }
     },
     {
       "field": "delayed_draw.commitment",
       "value": "$450,000,000",
       "quote": "The aggregate amount of the Fifth Amendment Term Loan Commitments on the Fifth Amendment Effective Date is $450,000,000.",
       "confidence": 0.7,
-      "notes": "The Fifth Amendment Term Loan is drawn on Funding Dates and its unfunded commitment expires, which is a delayed draw whatever it is called. The Fourth Amendment Term Loan is a second one, also $450,000,000, expiring 180 days after its own effective date."
+      "notes": "The Fifth Amendment Term Loan is drawn on Funding Dates and its unfunded commitment expires, which is a delayed draw whatever it is called. The Fourth Amendment Term Loan is a second one, also $450,000,000, expiring 180 days after its own effective date.",
+      "qualifiers": {
+        "tranche": "Fifth Amendment Term Loan"
+      }
     },
     {
       "field": "delayed_draw.must_draw_by_date",

@@ -75,6 +75,15 @@ reconciliation, validators and statuses. It refuses rather than falling back
 when no recording covers the document, because a silent fall back to the rules
 would report the rules' recall as the model tier's.
 
+The prompt that tier receives is where the corpus findings live: twenty-four
+rules in five groups, each carrying the drafting that motivates it, from
+`"Term Loan Maturity Date": (a) with respect to the Initial Term Loans, ...`
+through `"22.5 bps", not "22.5"` to `may be a positive or negative value or
+zero`. `docs/corpus_findings.md` says why they belong there rather than in the
+deterministic tier, and `tests/test_prompts.py` asserts the drafting rather
+than the rule -- a rewrite that keeps the principle and drops the example is
+the rewrite that stops working.
+
 One rule makes the result worth anything, and it is enforced: **a recording must
 be made before that document's labels exist, by a reader who has not seen
 them.** Each file carries `recorded_before_labels` and CI fails on a recording
