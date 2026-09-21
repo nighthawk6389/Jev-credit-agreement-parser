@@ -1,0 +1,91 @@
+# Tier 2 assertions: Cumberland Farms Ltd., Credit Agreement (Initial Term
+# Loans and a revolving credit facility).
+#
+# Fit side, never read during development. Kept for one definition, which is
+# the corpus's first deliberate circularity:
+#
+#   "Applicable ECF Percentage" means, for any Excess Cash Flow Period:
+#   (q) 50%, if the Consolidated First Lien Net Leverage Ratio (determined on
+#   a Pro Forma Basis after giving effect to the prepayment that would be
+#   required by Section 2.05(b)(i), ASSUMING AN APPLICABLE ECF PERCENTAGE OF
+#   50%) as of the last day of the fiscal year ... was greater than 4.75 to
+#   1.00; (r) 25%, if the ... Ratio (determined on a Pro Forma Basis after
+#   giving effect to the prepayment ..., ASSUMING AN APPLICABLE ECF PERCENTAGE
+#   OF 25%) ... was ...
+#
+# The term is defined in terms of itself, and not by mistake. Each limb assumes
+# its own percentage in order to test whether that limb applies: you compute
+# leverage as it would stand after a 50% sweep to find out whether the sweep is
+# 50%, and separately as it would stand after a 25% sweep to find out whether
+# it is 25%. The definition resolves by trying its own branches rather than by
+# substitution, which is a closure the definition graph cannot walk -- follow
+# the reference and you are back where you started.
+#
+# F09's circular_definition member has had no real instance until now. The
+# distinction this document draws is that a circular definition is not
+# necessarily a drafting defect: this one is correct, standard in leveraged
+# loans, and would be wrong if it were written any other way.
+
+document: cumberland_farms_2026
+corpus_name: J_cumberland-farms-ltd-cmby_2026-09-04_0001193125-26-382176_d113224dex104
+source: real
+tier: 2
+
+assertions:
+
+  - id: cumberland_ecf_percentage_is_self_referential
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_value
+    target: excess_cash_flow.sweep_pct
+    expect: "50%"
+    note: >
+      50% is the answer: it is the first limb, it applies above 4.75 to 1.00
+      first lien leverage, and it is the top of the ladder.
+
+      What the assertion is really testing is that the circularity does not
+      stop the reader. A closure walk on "Applicable ECF Percentage" reaches
+      "Applicable ECF Percentage" in one hop, and a definition graph that
+      refuses cycles will report this term as unresolvable rather than as 50%.
+      The cycle is deliberate and each branch is self-consistent, so refusing
+      it loses a criticality-4 field on correct drafting.
+
+      Third document in the corpus where this field has a value -- Sanmina
+      writes its 50% inline in the prepayment mechanics, Valvoline hoists it
+      into "Required ECF Percentage" with the step-downs as a proviso, and
+      this one makes the percentage a function of a ratio that is a function
+      of the percentage. Same number, three structures, and only this one is
+      a cycle.
+
+  - id: cumberland_commitment_fee_at_the_top_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.50%"
+    note: >
+      'Pricing Level | Consolidated First Lien Net Leverage Ratio | Applicable
+      Commitment Fee: 1 Greater than 4.75:1.00 0.50%; 2 Equal to or less than
+      4.75:1.00 but greater than 4.25:1.00 0.375%; 3 Equal to or less than
+      4.25:1.00 0.25%.'
+
+      4.75:1.00 is the hinge of both this grid and the ECF ladder above, which
+      is convenient drafting and a hazard for extraction: the same threshold
+      governs a fee and a prepayment, so a value found near it could belong to
+      either. Pricing Level 1 also applies "without regard to the Consolidated
+      First Lien Net Leverage Ratio" whenever a Compliance Certificate is
+      overdue, so the top of the grid is reachable by a filing failure.
+
+  - id: cumberland_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      Six occurrences of "spread adjustment" and none is a rate paid. One is
+      the Benchmark Replacement Adjustment; the others sit in the Central Bank
+      Rate Adjustment, 'the difference (which may be a positive or negative
+      value or zero) of (i) the average of the EURIBOR Rate for the five most
+      recent Business Days', which builds a Euro fallback rate rather than
+      adding a spread. Same construction as SanDisk.

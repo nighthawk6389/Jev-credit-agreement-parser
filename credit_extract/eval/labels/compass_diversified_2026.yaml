@@ -1,0 +1,97 @@
+# Tier 2 assertions: Compass Diversified Holdings, Credit Agreement as amended
+# through the Sixth Amendment dated August 6, 2026.
+#
+# Fit side, never read during development. It is here for one definition, and
+# that definition is the one the whole F07 benchmark family has been missing:
+#
+#   "SOFR Adjustment" means 0.10% (10.00 basis points).
+#
+# and it is operative, not contingent:
+#
+#   "Term SOFR" means: (a) for any Interest Period with respect to a Term SOFR
+#   Loan, the rate per annum equal to the Term SOFR Screen Rate ... in each
+#   case, PLUS THE SOFR ADJUSTMENT for such Interest Period
+#
+# Ten labelled documents assert that this field is absent, zero, or something
+# else wearing its name. Not one of them, until now, has a credit spread
+# adjustment that the borrower actually pays. The consequence is that the
+# family's entire real coverage could be passed by a check that never fires,
+# and nothing in the corpus could tell that apart from a check that reads
+# correctly.
+#
+# The set is now complete, and it is worth listing because the field takes six
+# distinct shapes across the corpus:
+#
+#   Compass Diversified  "SOFR Adjustment" 0.10%, added inside Term SOFR   REAL
+#   BrightSpring         "Term SOFR Adjustment" 0.00%, same construction   ZERO
+#   Sanmina              SONIA 0.0326%, Term CORRA 0.29547%/0.32138%       OTHER CURRENCY
+#   SanDisk              Central Bank Rate / Japanese Prime Rate Adjustment NOT A SPREAD
+#   Aspen, StepStone, Owl Rock, Valvoline, Cumberland, Iridium
+#                        Benchmark Replacement Adjustment only             CONTINGENT
+#   Constellation, Evernorth
+#                        no benchmark machinery at all                     STRUCTURAL
+#
+# A probe on the phrase "credit spread adjustment" returns nothing in every one
+# of them, including this one.
+
+document: compass_diversified_2026
+corpus_name: K_compass-diversified-holdings-codi-codi-pa-codi-pb-codi_2026-08-10_0001345126-26-000061_exhibi
+source: real
+tier: 2
+
+assertions:
+
+  - id: compass_sofr_adjustment_is_ten_basis_points
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.10%"
+    note: >
+      '"SOFR Adjustment" means 0.10% (10.00 basis points).'
+
+      Paid, not contingent. The adjustment is inside the definition of Term
+      SOFR -- the screen rate "plus the SOFR Adjustment for such Interest
+      Period" -- so every Term SOFR Loan in this agreement bears it, and it
+      survives a benchmark transition as well: the fallback is "Daily Simple
+      SOFR plus the SOFR Adjustment".
+
+      0.10% is the ARRC one-month recommendation, which is why it is the value
+      a pipeline is most likely to guess and least likely to have read. The
+      assertion is that it was read: the number is stated once, in a
+      three-word definition, between "SOFR" and "Solvent" in the alphabetical
+      run of defined terms, and nowhere near the interest rate mechanics that
+      use it.
+
+      It is also stated twice over, "0.10% (10.00 basis points)", which is the
+      third document in the corpus to give a rate in both units in one breath
+      and the second to do it for an adjustment.
+
+  - id: compass_mfn_is_delegated_not_set
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_threshold_pct
+    expect: absent_from_document
+    note: >
+      The one occurrence of "most favored nation" does not set a threshold. It
+      delegates: 'the interest rate, interest rate margins, interest rate
+      floors, fees, original issue discount, prepayment premiums,
+      amortization, mandatory prepayments, "most favored nation" pricing
+      protection and final maturity date for such Incremental Term Facility
+      shall be as agreed by the Borrower and the Lenders providing such
+      Incremental Term Facility'.
+
+      So this agreement contemplates MFN protection and fixes none, leaving it
+      to whoever provides an incremental facility later. Absent rather than
+      external_reference, and the line is worth drawing: there is no other
+      document to point at. StepStone's Advance Rate is in Schedule B, which
+      exists and was not filed; this threshold does not exist yet and may
+      never.
+
+      That is a third state for the field beyond the two the corpus had --
+      no MFN at all (Evernorth, Constellation Brands) and an MFN with a
+      number (Iridium, 0.50%) -- and it is the one most likely to be reported
+      as a value, because the sentence contains the term of art and a reader
+      that stops at the phrase will look for a percentage nearby and find the
+      Average Life and maturity conditions that follow it.
