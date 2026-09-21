@@ -464,3 +464,71 @@ def test_a_split_chunk_keeps_its_segmentation():
     assert len(parts) > 1
     assert all(p.segmentation == "definitional" for p in parts)
     assert all(p.label == "Whatever" for p in parts)
+
+
+# ---------------------------------------------------------------------------
+# Definitions as real agreements write them
+# ---------------------------------------------------------------------------
+
+
+def _doc_with(body: str):
+    from credit_extract.ingest.normalize import NormalizedDocument
+
+    return NormalizedDocument(
+        document_id="d", source_path="-", source_format="txt",
+        text="ARTICLE I DEFINITIONS\n\n" + body,
+    )
+
+
+def test_a_definition_written_with_a_colon_is_a_definition():
+    """Ten of twenty-five corpus agreements use it; four almost exclusively.
+
+    At 317 to 491 colon definitions against 5 to 9 written with "means", a
+    parser that only knows "means" sees an empty definitions article.
+    """
+    from credit_extract.graph.definitions import build_definition_graph
+
+    graph = build_definition_graph(_doc_with(
+        '"Floor": 1.00% per annum.\n\n'
+        '"Maturity Date": July 16, 2029, as extended.\n'
+    ))
+    assert set(graph.nodes) == {"Floor", "Maturity Date"}
+
+
+def test_a_term_spaced_inside_its_quotes_is_still_the_term():
+    """EDGAR sets a defined term as its own styled run.
+
+    The quotes and the term arrive as separate nodes, so the normalizer writes
+    `" Floor "`. Requiring the term to start immediately after the quote found
+    one definition in a 189,000-character defined-terms article.
+    """
+    from credit_extract.graph.definitions import build_definition_graph
+
+    graph = build_definition_graph(_doc_with(
+        '" Floor ": 1.00% per annum.\n\n'
+        '" ARR Net Leverage Ratio ": the ratio of Floor to one.\n'
+    ))
+    assert set(graph.nodes) == {"Floor", "ARR Net Leverage Ratio"}
+    assert "Floor" in graph.get("ARR Net Leverage Ratio").uses
+
+
+def test_depth_does_not_change_between_runs():
+    """`uses` is a set, and set order varies under hash randomisation.
+
+    An edge back into a term already on the path contributes nothing, so a
+    different traversal breaks each cycle at a different edge. One real
+    agreement reported 197, 196 and 194 terms at depth three or more on three
+    consecutive runs. A number that moves on identical input is worth less
+    than no number.
+    """
+    from credit_extract.graph.definitions import build_definition_graph
+
+    body = "".join(
+        f'"Term {i}": means Term {i + 1} and Term {(i * 7) % 40}.\n\n'
+        for i in range(40)
+    ) + '"Term 40": means Term 0.\n'
+    runs = {
+        tuple(sorted(build_definition_graph(_doc_with(body)).depths().items()))
+        for _ in range(5)
+    }
+    assert len(runs) == 1, "depths() is not deterministic"

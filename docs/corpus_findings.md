@@ -135,3 +135,57 @@ cannot establish whether any claim is right. The families the coverage report
 calls undersampled are undersampled until these are labelled, and the honest
 reading of every accuracy number in this repository is still that it was
 measured on documents written by the same hand that wrote the parser.
+
+## Archetype dispatch has a measured ceiling, and it is low
+
+The deterministic classifier was returning `unknown` on about 60% of the
+corpus, including **0 of 12** sponsor-backed deals and **0 of 6** broadly
+syndicated term loans — the two strata that are plainly cash-flow term loans.
+Four configurations were measured against the 62 corpus documents whose
+stratum implies an archetype:
+
+| configuration | correct | **confidently wrong** | honest `unknown` |
+| --- | --- | --- | --- |
+| as shipped (all signals read in the first 30k) | 17 | 14 | 31 |
+| supporting signals read document-wide | 25 | 21 | 16 |
+| …and "borrowing base"/"advance rate" made supporting | 21 | 18 | 23 |
+| …and late decisive vocabulary vetoing the residual | 17 | 14 | 31 |
+
+Every configuration trades correct answers against confidently wrong ones at
+roughly one for one. **None is an improvement**, and for this field the trade
+is worse than neutral: an `unknown` archetype leaves every field applicable,
+while a *wrong* one marks applicable fields `not_applicable_to_archetype` and
+suppresses real terms silently.
+
+The diagnosis underneath is structural, not a missing keyword:
+
+* **Decisive vocabulary read early is too sparse.** `DETECTION_WINDOW` is
+  30,000 characters, sized for a 16,000-character fixture. Real agreements run
+  to 500,000 and beyond, and most do not announce their type on the cover in
+  the words we look for.
+* **Decisive vocabulary read late is too noisy.** Over the whole document
+  `second_lien` fires on 19 of 30 instead of 3, `european_lma` on 19 instead
+  of 0, `investment_grade` on 13 instead of 0. Every secured deal mentions
+  second liens in its subordination clause; every agreement defines a debt
+  rating and calls its lenders the Majority Lenders.
+* **Using late vocabulary as a veto instead of a classifier fires on
+  everything**, because essentially every agreement contains some decisive
+  phrase for some archetype somewhere.
+* **"Borrowing base" is not decisive** by this module's own criterion — a
+  decisive phrase appears in one kind of deal and nowhere else, and corporate
+  ABL, BDC warehouses and subscription lines all have borrowing bases. Held
+  decisive it called four of six fund-level facilities corporate revolvers.
+  Made supporting, stratum C collapsed from 6/8 to 0/8, because the phrases
+  that *do* distinguish a corporate ABL — eligible accounts, eligible
+  inventory — live in the borrowing-base definition, deep in the document.
+
+The distinguishing vocabulary is late; the shared vocabulary is early. No
+anchoring rule separates them, which is why the ceiling is where it is.
+
+Classifying a 900,000-character credit agreement by deal type is a semantic
+judgement, and it belongs in the model tier — where the escalation already
+routes it. `detect_deterministic` returning `unknown` hands off to the model
+path today; that path is served by `OfflineJev`, a lexical stand-in, which is
+why it does not help here. This is a credential-shaped gap, not a pattern one,
+and the numbers above are the argument against trying to close it with more
+keywords.

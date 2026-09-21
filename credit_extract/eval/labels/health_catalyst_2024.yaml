@@ -149,3 +149,102 @@ assertions:
       Recall on this document is low and the orphan sweep is what says so.
       This number is a tripwire, not a target: if it moves, either extraction
       improved or the sweep stopped working, and the two must not be confused.
+
+  # -- F09 definitional depth ----------------------------------------------
+  #
+  # F09 was the register's only untested family, which is awkward: it is the
+  # one this project's thesis leads with. A credit agreement is a program
+  # written in English, and extracting a covenant without the chain of
+  # definitions beneath it is extracting a symbol rather than a number.
+  #
+  # It was untested because the graph saw nothing here. On 571,000 characters,
+  # whose defined-terms article alone runs to 189,000, it found ONE term.
+  # EDGAR filings set a defined term as its own styled run, so the quotes and
+  # the term arrive separately and the normalizer writes `" Floor "`, not
+  # `"Floor"` -- and the pattern required the term to begin immediately after
+  # the quote. This agreement also writes its definitions with a colon rather
+  # than "means", which is a drafting convention rather than a variant: ten of
+  # twenty-five corpus agreements use it, four almost exclusively, at 317 to
+  # 491 colon definitions against 5 to 9.
+  #
+  # With both handled the graph finds 361 terms, 880 edges, 197 of them three
+  # or more definitions deep, and 42 circular definitions.
+
+  - id: hcd_leverage_ratio_resolves_to_its_components
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: closure_contains
+    target: ARR Net Leverage Ratio
+    expect:
+      - Consolidated Funded Indebtedness
+      - Unrestricted Cash
+      - LQA Recurring Revenues
+      - Capital Lease Obligations
+    note: >
+      '"ARR Net Leverage Ratio": as of any date of determination, the ratio of
+      (a) (i) Consolidated Funded Indebtedness as of such date minus (ii)
+      Unrestricted Cash on such date to (b) LQA Recurring Revenues ...'
+      Three of the four are named in the definition itself; Capital Lease
+      Obligations is reached only through Consolidated Funded Indebtedness,
+      which is the point of computing a closure rather than reading one line.
+
+  - id: hcd_the_graph_is_deep
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: report_count
+    target: definition_deep_terms
+    expect: 193
+    note: >
+      Terms whose meaning is three or more definitions below the surface. A
+      tripwire on the graph, not a target: if it collapses, the parser has
+      stopped reading this document's drafting convention again.
+
+      This assertion is also how the depth computation was found to be
+      non-deterministic: it returned 197, 196 and 194 on three consecutive
+      runs of the same document, because `uses` is a set whose iteration order
+      varies under hash randomisation, and an edge back into a term already on
+      the path contributes nothing -- so a different traversal broke each
+      cycle at a different edge. 193 is now stable across processes.
+
+  - id: hcd_definitions_are_found_at_all
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: report_count
+    target: definition_terms
+    expect: 361
+    note: one, before the quote-spacing and colon conventions were handled
+
+  - id: hcd_circular_definitions_are_found
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: report_count
+    target: definition_cycles
+    expect: 42
+    note: >
+      '"Accounting Change": is defined in the definition of "GAAP."' and GAAP
+      in turn reads 'In the event that any "Accounting Change" (as defined
+      below) shall occur ...'. Each sends the reader to the other. Ordinary
+      drafting residue, 42 of them in this agreement, and a resolver that
+      follows one without noticing does not terminate.
+
+      Counted, not raised. `definition_graph_cycles` is named in F09's
+      defended_by but is a mechanism producing a statistic, not a registered
+      invariant, so no cycle here reaches the violations list -- a reader sees
+      the count only in verbose output. That is defensible at 42 per document,
+      where raising each one would be the referenced-schedules mistake again;
+      what is not yet built is raising the ones an extraction target's closure
+      actually passes through, which are the ones that bite.
+
+  - id: hcd_external_terms_do_not_reach_a_field
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    kind: report_count
+    target: external_references
+    expect: 0
+    note: >
+      Zero, and that is the honest number rather than a good one. The graph
+      marks "Recurring Revenue" and "Excluded Lender" as reaching outside the
+      agreement, but no extraction target depends on either, so nothing is
+      reported as an external reference. The register keeps this member as a
+      blind spot for exactly that reason: the mechanism is exercised and its
+      effect on a field is not.
