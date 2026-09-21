@@ -1,0 +1,219 @@
+# Tier 2 assertions: Constellation Brands, Inc., Term Loan Credit Agreement
+# dated as of September 18, 2026, with Manufacturers and Traders Trust Company
+# as Administrative Agent.
+#
+# On the FIT side of the frozen split, and picked for that reason. The last two
+# labelling batches both went after held-out documents, which bought a
+# held-out number and left the failures we can see most clearly off-limits to
+# work on: every absent_from_document assertion the report currently fails sits
+# on a holdout document, so the mechanism that would settle a negative could
+# not be built without burning the holdout. This document is the fit-side
+# counterpart. It carries four clean absences and nothing has to be inferred to
+# know they are absences:
+#
+#     most favored nation      0 occurrences
+#     most favoured nation     0
+#     mfn                      0
+#     excess cash flow         0
+#     credit spread adjustment 0
+#     spread adjustment        0
+#
+# in 303,019 characters. Not "the extractor did not find one" -- the vocabulary
+# is not in the document in any form.
+#
+# The CSA line is worth its own sentence. Aspen's facility also pays no credit
+# spread adjustment, but Aspen carries the full post-LIBOR replacement
+# waterfall, so the phrase "spread adjustment" is there and has to be reasoned
+# about. Here there is no waterfall and no phrase. The two documents are the
+# same answer reached from opposite evidence, which is what makes the pair
+# worth having.
+#
+# What the document is: an investment-grade term loan, $300,000,000, priced off
+# the borrower's debt ratings rather than off leverage. Two structural traps:
+#
+#   "Effective Date" means the first date on which the conditions specified
+#   in Section 4.01 are satisfied
+#
+#   "Maturity Date" means, with respect to any Loan, the date that is two
+#   years after the first Funding Date to occur hereunder.
+#
+# Neither event is dated anywhere in the agreement -- the same shape as Aspen,
+# in a completely different deal type. And this one adds a trap Aspen does not
+# have: there IS a date in the document that a reader will attach to the
+# Closing Date, and it belongs to a different agreement.
+#
+#   "Senior Credit Agreement" means the Eleventh Amended and Restated Credit
+#   Agreement dated as of April 28, 2025 among the Company, CB International
+#   Finance S.a r.l. ... and Bank of America, N.A., as administrative agent.
+#
+# The pipeline reports closing_date = 2025-04-28. It is declining -- the status
+# is conflicted, not confirmed, so this is not a silent error -- but the date
+# it is carrying is another agreement's, with a different agent and a different
+# borrower group.
+
+document: constellation_brands_2026
+corpus_name: I_constellation-brands-inc-stz_2026-09-18_0001193125-26-395558_d104366dex41
+source: real
+tier: 2
+
+assertions:
+
+  # -- F04 absence: four terms this agreement does not have ------------------
+
+  - id: stz_no_mfn_threshold
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_threshold_pct
+    expect: absent_from_document
+    note: >
+      No MFN protection. "most favored nation", "most favoured nation" and
+      "mfn" each occur zero times in 303,019 characters. An investment-grade
+      term loan priced off debt ratings has no initial-term-loan yield to
+      protect, so there is nothing for an MFN to reprice -- but the assertion
+      does not rest on that reasoning, it rests on the vocabulary being
+      absent.
+
+  - id: stz_no_mfn_sunset
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_sunset
+    expect: absent_from_document
+    note: >
+      There is no MFN, so there is no sunset on one. Paired with the threshold
+      above deliberately: a pipeline that settles one of these and leaves the
+      other in review is treating the same evidence two ways.
+
+  - id: stz_no_ecf_sweep
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      "excess cash flow" occurs zero times. Section 2.09 has mandatory
+      prepayments and none of them is an ECF sweep -- this is a two-year
+      bridge-shaped term loan for an investment-grade borrower, and the
+      sweeping is done by the Commitment Termination Date rather than by
+      earnings.
+
+  # -- F07 benchmark: no adjustment, and the grid is by rating --------------
+
+  - id: stz_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      Neither "credit spread adjustment" nor the bare "spread adjustment"
+      occurs anywhere. This is a 2026 agreement written natively on Term SOFR,
+      so there is no legacy benchmark to transition from and no adjustment to
+      pay. Contrast Aspen, which reaches the same answer while containing the
+      phrase, inside a Benchmark Replacement definition that applies only on
+      the day the benchmark is replaced. Same value, opposite evidence.
+
+  - id: stz_top_margin_is_the_worst_rating
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.100%"
+    note: >
+      The grid is keyed to Debt Ratings, not leverage, and runs the opposite
+      way round from a leveraged grid: Pricing Level 1 is the BEST rating
+      (A-/A3 or better) at 0.700%, and Level 5 is "BB+/Ba1 or worse" at
+      1.100%. This field wants the highest margin, which is Level 5 -- the
+      last row, here, where in a leverage grid it is usually the first.
+
+      Two ways to get this wrong, both of which the corpus has already
+      produced once. Taking the top printed row gives 0.700%. Taking the
+      right-hand column of the row gives the Base Rate margin, which runs
+      0.000% through 0.100% and is a different rate entirely; that is the
+      0.550%-instead-of-1.550% defect from Essential Properties in a grid
+      whose numbers are small enough that the mistake looks plausible.
+
+  # -- F10 conditionality: two undated events, and a covenant that steps -----
+
+  - id: stz_effective_date_is_an_event_not_a_date
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: closing_date
+    expect: null
+    note: >
+      '"Effective Date" means the first date on which the conditions specified
+      in Section 4.01 are satisfied (or waived in accordance with the terms
+      hereof).' No date. The cover says September 18, 2026, which is the
+      execution date and a different fact.
+
+      Asserted on the value rather than the status, following the instruction
+      left in the Aspen label: where reconciliation attaches a single date to
+      this field, the assertion becomes one that the resolved value is null.
+      It has attached one here, and it is 2025-04-28 -- the date of the
+      Eleventh Amended and Restated Senior Credit Agreement, a different
+      facility with a different administrative agent, named in this document
+      only as a defined term. The status is conflicted, so the pipeline is
+      declining and this is not a silent error; what fails is that the date it
+      is carrying while it declines belongs to somebody else's agreement.
+
+  - id: stz_maturity_is_two_years_after_an_undated_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: null
+    note: >
+      '"Maturity Date" means, with respect to any Loan, the date that is two
+      years after the first Funding Date to occur hereunder.' The Funding Date
+      is not dated either. Two years after an undated event is an undated
+      event, and September 18, 2028 is arithmetic on the execution date, which
+      is not the number the definition names.
+
+      June 18, 2027 does appear in the document and is a real date, but it is
+      limb (iii) of the Commitment Termination Date -- the last day the
+      borrower may draw, not the day it must repay.
+
+  - id: stz_leverage_covenant_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00 to 1.00"
+    note: >
+      'Section 6.09. Financial Covenants. ... (c) The Company will not permit
+      the Consolidated Net Leverage Ratio as of the last day of any Test
+      Period to be greater than 4.00 to 1.00; provided that, for any fiscal
+      quarter ending after the consummation of any Material Acquisition and
+      prior to the end of the fourth fiscal quarter end following such
+      Material Acquisition, such maximum Consolidated Net Leverage Ratio shall
+      be increased to 4.50 to 1.00.'
+
+      4.00 is the standing level and 4.50 is the conditional one, so the
+      answer at an unspecified date is 4.00 to 1.00. Section 6.09(a) sets a
+      Consolidated Interest Coverage Ratio of not less than 2.50 to 1.00 in
+      the immediately preceding sentence; it is a floor rather than a cap,
+      there is no field for it, and it parses exactly as well as 4.00 to 1.00
+      while meaning the opposite -- the same adjacency that sits in the Aspen
+      agreement.
+
+  # -- F06 structure: a two-draw term loan ----------------------------------
+
+  - id: stz_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$300,000,000"
+    note: >
+      "The aggregate amount of the Lenders' Commitments as of the Effective
+      Date is $300,000,000." Stated once, in the last sentence of the
+      Commitment definition, after two sentences about how an individual
+      lender's commitment may be reduced or assigned -- so the per-lender
+      amounts are on Schedule 2.01 and the aggregate is here.
+
+      Filed under delayed_draw_multi_tranche because the Commitment
+      Termination Date contemplates a "second Funding Date to occur
+      hereunder", so this is drawable in two goes and is not a single-draw
+      term loan, though it has no separate delayed-draw tranche.
