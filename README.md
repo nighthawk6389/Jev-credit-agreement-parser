@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 305 tests
+pytest -q                                          # 313 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 

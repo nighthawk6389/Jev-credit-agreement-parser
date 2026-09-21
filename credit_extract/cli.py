@@ -163,6 +163,27 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
             print(f"    [{item['criticality_label']}] {item['field']} {shown}")
             print(f"      {item['why']}")
 
+    if result.facilities:
+        print(f"\n  fpml facilities ({len(result.facilities)}):")
+        for export in result.facilities:
+            f = export.facility
+            print(f"    {f.facility_id} ({f.facility_type}): "
+                  f"{export.populated} element(s) populated, "
+                  f"{len(export.withheld)} withheld")
+        # The withheld count is the interesting half. An element left empty
+        # because its value is in a fee letter is not the same fact as an
+        # element left empty because the agreement has no such term, and the
+        # model this exports into cannot tell them apart -- so the reasons are
+        # printed rather than summed away.
+        external = sorted({
+            element for export in result.facilities
+            for element, why in export.withheld.items()
+            if "in a document" in why
+        })
+        if external:
+            print("    withheld because the value lives elsewhere: "
+                  + ", ".join(external))
+
     results = trap_checks.check_all(result)
     print()
     print("  " + trap_checks.summarize(results).replace("\n", "\n  "))

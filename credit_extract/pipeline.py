@@ -45,6 +45,7 @@ from .models.core import (
 from .models.archetypes import (
     ArchetypeDetection, inapplicable_fields, suppression_vetoes,
 )
+from .models.export import FacilityExport, build_facilities, export_summary
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.pricing import Pricing, parse_pricing
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
@@ -72,6 +73,11 @@ class ExtractionResult(BaseModel):
     amortization: AmortizationSchedule | None = None
     actus_mappings: dict[str, ActusMapping] = Field(default_factory=dict)
     standards: dict[str, Any] = Field(default_factory=dict)
+    #: The extracted record in the FpML-shaped facility model, plus an account
+    #: of every element withheld and why. Forty FpML element names in this
+    #: repository are verified against pinned schemas and, until this existed,
+    #: none of them was ever populated by a run.
+    facilities: list[FacilityExport] = Field(default_factory=list)
     archetype: ArchetypeDetection = Field(default_factory=ArchetypeDetection)
     #: The rate, decomposed. A CSA folded into the margin overstates the yield
     #: and then overstates every MFN comparison made against it.
@@ -372,6 +378,8 @@ def run_pipeline(
     if operative is not None:
         _attribute_spans(fields, operative)
 
+    facilities = build_facilities(fields)
+
     # -- report --------------------------------------------------------------
     cost = CostLedger()
     cost.merge(extracted.cost)
@@ -441,6 +449,15 @@ def run_pipeline(
                 ) or "nothing extracted"
             ),
             f"chunks swept: {len(sweep)}",
+            # How much of the verified FpML mapping this run actually earned.
+            # Zero is a real answer and the one the deterministic tier gives:
+            # a facility appears only where its commitment is settled, and a
+            # tranche nobody established the size of is a tranche nobody
+            # established.
+            "fpml export: " + ", ".join(
+                f"{k}={v}" for k, v in export_summary(facilities).items()
+                if k != "withheld_by_reason"
+            ),
             # Tier 4, which had never run: the ladder describes a targeted
             # re-read of the chunks the sweep flagged and nothing supplied one.
             # A line that reads "0 rescued" over a hundred orphans is a
@@ -481,6 +498,7 @@ def run_pipeline(
         amortization=schedule,
         actus_mappings=mappings,
         archetype=archetype,
+        facilities=facilities,
         pricing=pricing,
         document=doc,
         definition_graph=graph,

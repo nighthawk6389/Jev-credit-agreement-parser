@@ -270,7 +270,16 @@ untestable_in_this_environment:
     consequence: >
       What was lifted is the hand-mapping: the 40 element names this
       repository binds to are no longer invented, all 40 are declared in the
-      pinned schemas, and fpml() raises on a name that is not. Two things
+      pinned schemas, and fpml() raises on a name that is not. A second gap
+      has closed since: those names sat on a Facility model that nothing ever
+      constructed, so zero of the 40 were populated by any run the project had
+      made. models/export.py builds one now, and only from settled fields --
+      an external_reference is withheld with its reason rather than exported
+      as None, because FpML has no element for "this is real and lives
+      elsewhere" and None in that model reads as a term. On Essential
+      Properties the deterministic tier exports no facility at all and the
+      checked-in reading exports three, with 20 elements populated and 58
+      withheld. Two things
       stay unverified, and they are not small. The pin makes the bytes
       reproducible, not authentic -- nothing here checks them against ISDA,
       so a mirror that diverged before the pinned commit would be indexed
