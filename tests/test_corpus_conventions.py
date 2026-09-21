@@ -248,3 +248,36 @@ def test_the_report_says_which_tier_answered():
     result = run_pipeline("credit_extract/eval/gold/fixture_meridian_2017.html")
     note = next(n for n in result.report.notes if n.startswith("extraction by tier"))
     assert "rules=" in note and "tables=" in note
+
+
+def test_a_mutation_does_not_assert_the_fixture_about_a_real_agreement():
+    """Found when Crane NXT's Sixth Amendment was labelled, which is the first
+    corpus document carrying a real amortisation table.
+
+    ``_nested_html_tables`` is an invariance mutation whose two assertions are
+    both about the synthetic fixture's schedule -- its instalment is $376,250,
+    and its dates carry trap 1 so the date invariant is expected to fire. Its
+    shape test was "a table mentioning Payment Date", which every genuine
+    amortisation schedule satisfies. Applied to Crane NXT, whose schedule is
+    stated in percentages of original principal, it wrapped that table and
+    asserted the fixture's money amount and the fixture's date defect about a
+    document that has neither.
+
+    Both assertions are scored confident -- an invariant either fired or it
+    did not -- so the harness produced a silent error out of its own
+    generator, on the one metric the whole project is gated on.
+    """
+    from credit_extract.eval.mutations import apply_all
+
+    real = (
+        '<html><body><table><tr><th>Scheduled Amortization Payment Date</th>'
+        '<th>Amount of Initial Term A Loan Payment</th></tr>'
+        '<tr><td>March 31, 2026</td><td>0.625%</td></tr>'
+        '<tr><td>June 30, 2026</td><td>0.625%</td></tr></table></body></html>'
+    )
+    ids = {result.mutation_id for result in apply_all(real)}
+    assert "nested_html_tables" not in ids
+
+    fixture_shaped = real.replace("0.625%", "$376,250")
+    ids = {result.mutation_id for result in apply_all(fixture_shaped)}
+    assert "nested_html_tables" in ids

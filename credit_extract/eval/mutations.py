@@ -283,6 +283,19 @@ def _thousands_scale(html: str) -> MutationResult | None:
 # ---------------------------------------------------------------------------
 
 
+#: The fixture's quarterly instalment. Both assertions below are about this
+#: one schedule -- the amount is its amount, and the invariant is expected to
+#: fire because the fixture's dates carry trap 1 -- so the mutation may only be
+#: applied to a document that actually contains it. Without that check the
+#: shape test is "a table mentioning Payment Date", which any real amortisation
+#: schedule satisfies: Crane NXT's Sixth Amendment has one stated in
+#: percentages of the original principal, and the mutation wrapped it and then
+#: asserted the fixture's money amount and the fixture's date defect about it.
+#: Both assertions are scored confident, so the second one landed as a silent
+#: error against a document that had done nothing wrong.
+_FIXTURE_INSTALMENT = "376,250"
+
+
 def _nested_html_tables(html: str) -> MutationResult | None:
     """Wrap the payment table in an outer table, as filers' tooling does."""
     match = re.search(
@@ -294,6 +307,9 @@ def _nested_html_tables(html: str) -> MutationResult | None:
             html, re.DOTALL,
         )
     if match is None:
+        return None
+    if _FIXTURE_INSTALMENT not in match.group(0):
+        # An amortisation table, but not the one these assertions describe.
         return None
     wrapped = (
         '<table border="0"><tr><td>' + match.group(0) + "</td></tr></table>"
@@ -309,7 +325,7 @@ def _nested_html_tables(html: str) -> MutationResult | None:
                     note="nesting must not disarm the table invariants"),
             _assert("mut_nested_amount", "F11_layout", "nested_html_tables",
                     "field_value", target="amortization.quarterly_amount",
-                    expect=376250),
+                    expect=int(_FIXTURE_INSTALMENT.replace(",", ""))),
         ],
         note="wrapped the payment table inside an outer single-cell table",
     )

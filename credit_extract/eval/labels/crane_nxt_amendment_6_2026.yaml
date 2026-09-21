@@ -1,0 +1,160 @@
+# Tier 2 assertions: Crane NXT, Co., Sixth Amendment dated as of July 2, 2026,
+# to the Credit Agreement dated as of March 2023, with J.P. Morgan SE as
+# Administrative Agent.
+#
+# Fit side, never read during development. Picked for F08_units, which has the
+# thinnest real coverage of any family that is not a declared blind spot -- six
+# real assertions, four of them failing -- and this document is the case the
+# family was named for. Its entire pricing grid is quoted in basis points and
+# its entire covenant lattice in "x" notation:
+#
+#   Initial Term B Loans
+#     Level | Consolidated First Lien Net Leverage Ratio | Applicable Rate
+#       I   | <= 1.70x                                   | 200.0 bps
+#       II  | >  1.70x                                   | 225.0 bps
+#
+#   Initial Term A Loans, Initial Revolving Loans and Revolving Commitment Fees
+#     Level | Consolidated Total Net Leverage | Rating      | ABR  | Term
+#                                                             Spread  Benchmark
+#       I   | <= 1.00x                        | BBB-/Baa3+  |  50.0 |  150.0
+#       II  | >1.00x but <=2.00x              | BB+/Ba1     |  62.5 |  162.5
+#       III | >2.00x but <=2.75x              | BB/Ba2      |  75.0 |  175.0
+#       IV  | >2.75x but <=3.50x              | BB-/Ba3     | 100.0 |  200.0
+#       V   | >3.50x                          | < BB-/Ba3   | 125.0 |  225.0
+#
+# all in bps. A reader that takes the number at face value reports a margin of
+# 225%, which is not a plausible-looking error and is therefore the easy half.
+# The hard half is that 225.0 bps is 2.25% and 2.25 is also a number that could
+# be read straight off the page from a different grid in a different agreement,
+# so the unit has to be carried rather than guessed at from magnitude.
+#
+# Three other ways to get the margin wrong here, all of which the corpus has
+# produced at least once already:
+#
+#   - the ABR Spread column, which tops out at 125.0 bps. This is the base
+#     rate, not the benchmark rate, and it is the Essential Properties defect
+#     (0.550% filed as the Eurodollar margin where the answer was 1.550%).
+#   - the Revolving Commitment Fee column, 20.0 to 35.0 bps, which is a fee.
+#   - the wrong grid. There are two, keyed to two different leverage ratios --
+#     First Lien Net for the Term B, Total Net for everything else. They happen
+#     to top out at the same 225.0 bps here, so this document will not catch a
+#     pipeline that picks the wrong one; it is recorded because the coincidence
+#     is what makes it not catch it.
+
+document: crane_nxt_amendment_6_2026
+corpus_name: B_crane-nxt-co-cxt_2026-08-05_0000025445-26-000034_cxt-ex101-x20260630
+source: real
+tier: 2
+
+assertions:
+
+  # -- F08 units: a grid in basis points ------------------------------------
+
+  - id: crane_top_margin_is_225_bps_not_225_percent
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.25%"
+    note: >
+      Level V of the Term A/Revolving grid, "> 3.50x" and "Lower than
+      BB-/Ba3", Term Benchmark/RFR Spread 225.0 bps. 225.0 bps is 2.25% per
+      annum.
+
+      The Term B grid tops out at the same 225.0 bps at Level II, so both
+      grids agree on the answer by coincidence rather than by construction.
+      They are keyed to different ratios -- Consolidated First Lien Net
+      Leverage for the Term B and Consolidated Total Net Leverage for the
+      rest -- and a pipeline that reads the wrong one gets the right number
+      here and would not elsewhere.
+
+  - id: crane_margin_unit_is_basis_points
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_unit
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: percent
+    note: >
+      The field is a percent and the document is in bps, so the conversion
+      has to happen somewhere and be recorded as having happened. Asserted
+      separately from the value because the two fail differently: a value
+      assertion alone passes if something divides by 100 for the wrong reason,
+      and a unit that is carried through correctly is the thing that keeps
+      2.25 from being reported against a grid that said 2.25% already.
+
+  # -- F07 benchmark: a credit spread adjustment that sets no rate ----------
+
+  - id: crane_no_credit_spread_adjustment_is_payable
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "credit spread adjustment" occurs twice and neither occurrence sets a
+      rate this facility pays. Both are inside the definition of Effective
+      Yield, which is the measuring stick for the MFN test on an Incremental
+      Term Facility: '... taking into account (a) interest rate margins ...,
+      (b) interest rate floors ... and credit spread adjustments, (c) any
+      amendment to the relevant interest rate margins, and credit spread
+      adjustments and interest rate floors prior to the applicable date of
+      determination ...'.
+
+      So the phrase is here, in the plural, describing what would be counted
+      if some future incremental facility had one. This agreement's own
+      benchmark is Term SOFR with a Floor of 0.00% and no adjustment. It is a
+      third distinct shape for the same answer: Constellation Brands has no
+      such phrase at all, Aspen and StepStone carry it inside Benchmark
+      Replacement machinery that applies on the day the benchmark changes, and
+      this one carries it inside a yield-comparison definition that applies to
+      a facility that does not exist yet.
+
+  - id: crane_benchmark_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means the benchmark rate floor, if any, provided in this
+      Agreement initially ... with respect to the Relevant Rate. For the
+      avoidance of doubt, the initial Floor for each of the Term SOFR, the
+      Adjusted EURIBO Rate, the Daily Simple SOFR and the Daily Simple SONIA
+      is 0.00%.'
+
+      Zero stated deliberately across four benchmarks, not an absent floor.
+      The floor is on the benchmark, not on the all-in rate -- Term SOFR
+      itself is separately floored at zero in its own definition ("if the Term
+      SOFR as so determined would be less than zero, such rate shall be deemed
+      to be zero"), so this document floors the same rate twice in two places
+      and neither one floors the margin.
+
+  # -- F10 conditionality: a covenant keyed to a named acquisition ----------
+
+  - id: crane_covenant_level_before_the_acquisition
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      'Maximum Consolidated Total Net Leverage Ratio. The Company will not
+      permit the Consolidated Total Net Leverage Ratio as of the last day of
+      any Test Period to exceed (i) for each Test Period ending prior to the
+      Fiscal Quarter in which the Second Regolo Acquisition Closing Date
+      occurs, 3.50 to 1.00 and (ii)(A) for the Test Period ending with the
+      Fiscal Quarter in which the Second Regolo Acquisition Closing Date
+      occurs, 5.50 to 1.00 ...'.
+
+      3.50 to 1.00 is the standing level. 5.50 is conditional on a named
+      acquisition closing, and the Second Regolo Acquisition Closing Date is
+      not dated anywhere in this amendment, so the higher level has no date
+      from which it applies. A pipeline that reports 5.50 has taken the
+      largest number in the sentence; one that reports the step-down schedule
+      after it has taken the last.
+
+      Section 9(b) sets a Consolidated Interest Coverage Ratio of not less
+      than 3.00 to 1.00 for Test Periods ending before the same acquisition --
+      a floor, in the same sentence structure, two lines away, and the third
+      instance in this corpus of a coverage floor sitting adjacent to a
+      leverage cap.
