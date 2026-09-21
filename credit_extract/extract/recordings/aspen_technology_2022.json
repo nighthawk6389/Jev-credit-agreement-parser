@@ -4,7 +4,7 @@
   "model": "read by hand, by the same reader who later wrote the labels",
   "recorded_on": "2026-09-21",
   "recorded_before_labels": true,
-  "note": "Bilateral acquisition financing: Emerson Electric lends $630,000,000 to its own affiliate Aspen Technology, one lender, no agent, no revolver, drawn once and amortising. Stratum P, legacy benchmark waterfall. Read end to end before any label for this document existed. As with the Essential Properties recording, the same reader wrote the labels afterwards, so agreement between the two is self-consistency and is not a model recall figure; what it measures is whether correct extractions survive the pipeline. What makes this document worth reading is that its two most critical fields have no answer: the Closing Date is defined as the date conditions are satisfied and the Maturity Date as five years after the date the loan is funded, and neither event is dated anywhere in the agreement. Every date on the page is the wrong answer to both.",
+  "note": "Bilateral acquisition financing: Emerson Electric lends $630,000,000 to its own affiliate Aspen Technology, one lender, no agent, no revolver, drawn once and amortising. Stratum P, legacy benchmark waterfall. Read end to end before any label for this document existed. As with the Essential Properties recording, the same reader wrote the labels afterwards, so agreement between the two is self-consistency and is not a model recall figure; what it measures is whether correct extractions survive the pipeline. What makes this document worth reading is that its two most critical fields have no answer: the Closing Date is defined as the date conditions are satisfied and the Maturity Date as five years after the date the loan is funded, and neither event is dated anywhere in the agreement. Every date on the page is the wrong answer to both. The findings list was added later, after this document's labels existed. That does not touch the ordering rule, which exists because a score against labels written by the same reader is self-consistency: nothing scores findings, they are answers to the orphan sweep rather than claims about a field, and no assertion in the corpus tests one.",
   "fields": [
     {
       "field": "borrower.legal_name",
@@ -29,7 +29,9 @@
       "value": "$630,000,000",
       "quote": "The initial aggregate amount of the Lender's Commitment is $630,000,000.",
       "confidence": 0.95,
-      "qualifiers": {"lenders": "one; Emerson Electric Co."},
+      "qualifiers": {
+        "lenders": "one; Emerson Electric Co."
+      },
       "external_document": null,
       "notes": "The recitals give the same figure as the amount of the Loans, financing part of the cash consideration for the Acquisition and the Refinancing. There is no revolver: Section 2.06 terminates all Commitments on the Funding Date once the borrowing is made, so the revolver fields are correctly absent rather than unfound."
     },
@@ -60,7 +62,10 @@
       "value": "3.5 to 1.0",
       "quote": "the Borrower will not permit the Leverage Ratio to exceed 3.5 to 1.0 as of the last day of any Fiscal Quarter of the Borrower",
       "confidence": 0.85,
-      "qualifiers": {"direction": "maximum", "tested": "quarterly"},
+      "qualifiers": {
+        "direction": "maximum",
+        "tested": "quarterly"
+      },
       "external_document": null,
       "notes": "Steps up to 4.00 to 1.0 during a Leverage Specified Period -- two consecutive fiscal quarters after an acquisition of $100,000,000 or more that the Borrower designates, at most twice after the Closing Date and not within four quarters of a prior one. Section 6.14 adds an Interest Coverage Ratio of not less than 2.5 to 1.0, which is a floor rather than a cap and has no field of its own; a reader looking for a covenant level will find 2.5 to 1.0 parses just as well as 3.5 to 1.0 and means the opposite."
     },
@@ -69,7 +74,9 @@
       "value": "0.0%",
       "quote": "\"Floor\" means 0.0%.",
       "confidence": 0.9,
-      "qualifiers": {"floors": "the Benchmark, including any Benchmark Replacement"},
+      "qualifiers": {
+        "floors": "the Benchmark, including any Benchmark Replacement"
+      },
       "external_document": null,
       "notes": "A defined term in its own right, three words long. Zero stated deliberately, not an absent floor."
     },
@@ -112,6 +119,22 @@
       "qualifiers": {},
       "external_document": null,
       "notes": "One currency, one draw, one lender."
+    }
+  ],
+  "findings": [
+    {
+      "kind": "override",
+      "name": "Covenants may be frozen to the GAAP in effect before any change",
+      "summary": "Either party may, by notice, require any provision of an accounting or financial nature to be interpreted on the GAAP in effect immediately before a change -- including any new rule such as Topic 606 -- and the freeze holds until the notice is withdrawn or the provision amended. Every covenant level in this agreement is therefore quoted against an accounting basis that either side can move, and no field in the registry can hold that.",
+      "quote": "then such provision shall be interpreted on the basis of GAAP and such rule or guidance as in effect and applied immediately prior thereto shall have become effective until such notice shall have been withdrawn or such provision amended in accordance herewith",
+      "confidence": 0.8
+    },
+    {
+      "kind": "payment_obligation",
+      "name": "The borrower chooses which amortisation instalments a prepayment retires",
+      "summary": "A voluntary prepayment is applied against the remaining scheduled instalments in the manner the Borrower specifies. The printed schedule -- 1.250% of initial principal for eight quarters, then 1.875%, 2.500% and 3.125% -- is therefore an opening position rather than a fixture, and which steps survive a prepayment is the Borrower's election. amortization.quarterly_amount cannot express that, and it is already empty here because the schedule is stated as percentages.",
+      "quote": "shall be applied against the remaining scheduled installments of",
+      "confidence": 0.75
     }
   ]
 }

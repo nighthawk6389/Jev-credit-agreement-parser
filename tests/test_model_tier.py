@@ -541,3 +541,93 @@ def test_a_fee_rate_defined_by_its_fee_letter_is_external_on_its_own():
     eprt = next(corpus.glob("I_essential-properties*"), None)
     if eprt is not None:
         assert fee_letter_governs_fees(_ingest(eprt)) is None
+
+
+# ---------------------------------------------------------------------------
+# Tier 4b: the half of the re-read that answers in the document's vocabulary
+# ---------------------------------------------------------------------------
+
+
+def test_a_finding_with_an_unlocatable_quote_is_dropped():
+    """Same discipline as an extraction: a finding in a report is always a
+    passage a reader can go and read."""
+    doc, chunk = _doc_and_chunk()
+    backend = rec.RecordedBackend(_recording(findings=[
+        {"kind": "override", "name": "nowhere", "summary": "x",
+         "quote": "a sentence that is nowhere in this document"},
+    ]))
+    assert backend.reread_findings(doc, chunk) == []
+
+
+def test_a_finding_lands_where_its_quote_is():
+    doc, chunk = _doc_and_chunk()
+    quote = chunk.text.strip()[:50]
+    backend = rec.RecordedBackend(_recording(findings=[
+        {"kind": "override", "name": "a real one", "summary": "it says a thing",
+         "quote": quote},
+    ]))
+    found = backend.reread_findings(doc, chunk)
+    assert len(found) == 1
+    assert found[0].name == "a real one"
+    assert doc.text[found[0].span.start:found[0].span.end].strip() == quote.strip()
+
+
+def test_an_unknown_kind_lands_in_other_rather_than_failing():
+    """The taxonomy is ours, not the document's."""
+    doc, chunk = _doc_and_chunk()
+    backend = rec.RecordedBackend(_recording(findings=[
+        {"kind": "a kind nobody defined", "name": "n", "summary": "s",
+         "quote": chunk.text.strip()[:40]},
+    ]))
+    assert backend.reread_findings(doc, chunk)[0].kind == "other"
+
+
+def test_the_layered_backend_delegates_the_findings_half():
+    """The pipeline looks for this on whatever backend it was handed, and
+    every model-backed run hands it a LayeredBackend -- so without delegation
+    the findings half is unreachable through the only path that reaches it."""
+    from credit_extract.extract.passes import LayeredBackend, OfflineRuleBackend
+
+    doc, chunk = _doc_and_chunk()
+    inner = rec.RecordedBackend(_recording(findings=[
+        {"kind": "threshold", "name": "delegated", "summary": "s",
+         "quote": chunk.text.strip()[:40]},
+    ]))
+    layered = LayeredBackend(OfflineRuleBackend(), inner)
+    assert [f.name for f in layered.reread_findings(doc, chunk)] == ["delegated"]
+    assert LayeredBackend(OfflineRuleBackend()).reread_findings(doc, chunk) == [], (
+        "naming an obligation is not something a pattern does"
+    )
+
+
+def test_the_same_finding_is_not_reported_once_per_overlapping_chunk():
+    """Structural and sliding both cover the document. For a value that
+    duplication is support; for a finding there is no reconciliation behind
+    it, so the same sentence would simply be printed three times."""
+    from credit_extract.pipeline import run_pipeline
+
+    root = Path(__file__).resolve().parents[1]
+    source = root / "credit_extract" / "eval" / "gold" / "fixture_meridian_2017.html"
+
+    class Everywhere:
+        """Answers every chunk with the same finding."""
+
+        name = "stub"
+
+        def extract(self, doc, chunk, specs, context, pass_id):
+            from credit_extract.models.core import CostLedger
+            return [], CostLedger()
+
+        def reread_findings(self, doc, chunk):
+            from credit_extract.models.core import Finding
+            quote = "Consolidated EBITDA"
+            span = chunk.locate(doc, quote)
+            if span is None:
+                return []
+            return [Finding(kind="override", name="one finding",
+                            summary="s", span=span)]
+
+    result = run_pipeline(source, extraction_backend=Everywhere())
+    spans = [(f.span.start, f.span.end)
+             for o in result.report.orphan_chunks for f in o.findings]
+    assert len(spans) == len(set(spans)), spans

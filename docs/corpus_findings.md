@@ -538,3 +538,66 @@ So the five are reachable by exactly two routes: a live model run, or a second
 reader who has not seen the labels. That is the ordering rule working as
 designed, and it is the cost of the rule -- worth naming, because the
 alternative is a number that looks like recall and is not.
+
+## The half of the orphan sweep that could not speak
+
+The escalation ladder ends with a targeted re-read of the chunks the orphan
+sweep flagged. That re-read has two halves and only one of them had anywhere
+to go.
+
+The first half answers in the registry's vocabulary: *this passage carries the
+commitment fee, and here it is*. That is now wired, and under the deterministic
+backend it recovers nothing on any document tried, which is a statement about
+the pattern set.
+
+The second half answers in the document's: *this passage creates an obligation,
+and no field you have can hold it*. `build_reread_prompt` has existed in the
+prompts module since the ladder was written, with exactly that shape — and
+nothing ever called it, and `OrphanChunk` had nowhere to put an answer if
+anything had. So the review queue shows fields, an obligation with no field is
+invisible, and the sweep that exists to find precisely that text could flag it
+and then say nothing about it.
+
+Findings are the answer: a quote, a kind and a sentence, carrying no pretence
+of being a value. Two real ones from Aspen, recorded from passages the sweep
+had flagged and left unexplained:
+
+> **Covenants may be frozen to the GAAP in effect before any change.** Either
+> party may, by notice, require any provision of an accounting or financial
+> nature to be read on the GAAP in effect immediately before a change —
+> including a new rule such as Topic 606 — and the freeze holds until the
+> notice is withdrawn. Every covenant level in the agreement is therefore
+> quoted against an accounting basis either side can move.
+
+> **The borrower chooses which amortisation instalments a prepayment
+> retires.** The printed schedule — 1.250% of initial principal for eight
+> quarters, then 1.875%, 2.500%, 3.125% — is an opening position rather than a
+> fixture.
+
+Neither is a field. Neither was reportable before. Both change what the
+numbers in the record mean.
+
+Three details are load-bearing:
+
+* **A finding with an unlocatable quote is dropped**, exactly as a value is. A
+  finding in a report is always a passage a reader can go and read.
+* **`LayeredBackend` delegates.** The pipeline looks for the method on whatever
+  backend it was handed and every model-backed run hands it a wrapper, so
+  without delegation the findings half was unreachable through the only path
+  that reaches it. It was, for the first run after it was written.
+* **Findings are deduplicated by offset.** The structural and sliding
+  segmentations both cover the document, so a passage sits in at least two
+  chunks. For a value that duplication is signal — reconciliation reads it as
+  independent support — but nothing reconciles findings, so the same sentence
+  was printed three times.
+
+An orphan with findings is marked `benign` rather than `rescued`: the record
+does not now carry the thing, and nothing in the registry can.
+
+### What this does to the ordering rule
+
+Nothing, and the reason is the reason for the rule. A recording's `fields`
+must predate that document's labels because a score against labels written by
+the same reader measures self-consistency. Nothing scores findings — no
+assertion in the corpus tests one, and there is no number for them to inflate.
+The Aspen findings were added after its labels and the recording says so.

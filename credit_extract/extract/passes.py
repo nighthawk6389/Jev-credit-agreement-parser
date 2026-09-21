@@ -564,6 +564,97 @@ class AnthropicBackend:
         return _parse_llm_payload(text, doc, chunk, specs, pass_id), ledger
 
 
+    def reread_findings(
+        self, doc: NormalizedDocument, chunk: Chunk, captured: list[str] | None = None
+    ) -> list["Finding"]:
+        """Tier 4's other half: what this passage says that has no field.
+
+        ``build_reread_prompt`` has existed in the prompts module since the
+        ladder was written and nothing ever called it, so the half of tier 4
+        that answers in the document's vocabulary rather than the registry's
+        had no producer at all. Same discipline as extraction: a quote that
+        cannot be located in the chunk is a fabrication and the finding is
+        dropped, so a finding in a report is always a passage a reader can go
+        and read.
+        """
+        from ..models.core import Finding
+        from .prompts import EXTRACTION_SYSTEM, build_reread_prompt
+
+        client = self._ensure_client()
+        response = client.messages.create(
+            model=self.route.model_id(self.model),
+            max_tokens=self.max_tokens,
+            system=EXTRACTION_SYSTEM,
+            output_config={
+                "effort": self.effort,
+                "format": {"type": "json_schema", "schema": FINDINGS_SCHEMA},
+            },
+            messages=[{
+                "role": "user",
+                "content": build_reread_prompt(chunk.text, captured or []),
+            }],
+        )
+        if response.stop_reason in ("refusal", "max_tokens"):
+            # An orphan that could not be re-read stays unreviewed, which is
+            # the state it was already in. Nothing is claimed either way.
+            return []
+        text = "".join(b.text for b in response.content if b.type == "text")
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            return []
+        out: list[Finding] = []
+        for item in payload.get("findings", []):
+            span = chunk.locate(doc, item.get("quote") or "")
+            if span is None:
+                continue
+            out.append(Finding(
+                kind=item.get("kind") if item.get("kind") in _FINDING_KINDS else "other",
+                name=item.get("finding") or "unnamed",
+                summary=item.get("summary") or "",
+                span=span,
+                confidence=float(item.get("confidence", 0.5)),
+                external_document=item.get("external_document"),
+            ))
+        return out
+
+
+#: The kinds ``Finding`` accepts; anything else lands in "other".
+_FINDING_KINDS = frozenset({
+    "payment_obligation", "restriction", "override", "threshold", "date",
+    "other",
+})
+
+#: The re-read's response shape, held to the same contract as extraction:
+#: every property required, the optional ones nullable.
+FINDINGS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "findings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "finding": {"type": "string"},
+                    "kind": {"type": "string"},
+                    "quote": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "external_document": {"type": ["string", "null"]},
+                },
+                "required": [
+                    "finding", "kind", "quote", "summary", "confidence",
+                    "external_document",
+                ],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["findings"],
+    "additionalProperties": False,
+}
+
+
 #: Published per-million-token prices, input/output.
 ANTHROPIC_PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.00, 25.00),
@@ -1055,6 +1146,19 @@ class LayeredBackend:
             return self
         vary = getattr(self.model, "with_temperature", lambda _t: self.model)
         return LayeredBackend(self.deterministic, vary(temperature))
+
+    def reread_findings(self, doc: NormalizedDocument, chunk: Chunk):
+        """Delegate tier 4's prose half to the model tier, which alone has one.
+
+        Naming an obligation is not something a pattern does, so the rules
+        layer has no such method and this returns nothing without a model
+        behind it. Delegating rather than inheriting matters: the pipeline
+        looks for this method on whatever backend it was handed, and every
+        model-backed run hands it one of these wrappers -- so without this the
+        findings half was unreachable through the only path that reaches it.
+        """
+        ask = getattr(self.model, "reread_findings", None)
+        return ask(doc, chunk) if ask is not None else []
 
     def extract(
         self,

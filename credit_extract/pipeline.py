@@ -365,6 +365,12 @@ def run_pipeline(
         reread = _default_reread(doc, extraction_backend, fields, graph)
     rescued = V.rescue_orphans(ctx, orphans, reread, graph) if orphans else []
     tier4 = _fill_from_rescue(fields, rescued)             # tier 4
+    # Tier 4's other half. A rescued *field* answers the sweep in the record's
+    # own vocabulary; a finding answers it in the document's. The review queue
+    # only ever shows fields, so an obligation the registry has no slot for
+    # has been invisible in every report this project has produced -- which is
+    # the exact text the sweep flags and then could say nothing about.
+    findings = _collect_findings(doc, extraction_backend, orphans, sweep)
     V.validator_e_external_dependency(ctx)
     V.validator_c_negative_space(ctx)
     overrides = V.validator_d_overrides(ctx, OVERRIDE_SUBJECTS)
@@ -464,7 +470,9 @@ def run_pipeline(
             # statement about the pattern set, and it is worth printing.
             f"orphan re-read (tier 4): {len(orphans)} chunk(s) flagged, "
             + (f"{len(tier4)} field(s) recovered -- {', '.join(tier4)}"
-               if tier4 else "nothing recovered"),
+               if tier4 else "nothing recovered")
+            + (f"; {findings} finding(s) with no field to hold them"
+               if findings else ""),
             # Empty on every offline run and on any healthy model run. When it
             # is not empty, part of the document was never read by the
             # extractor, and no absence in this report can be taken at face
@@ -723,6 +731,59 @@ def _status_counts(fields: dict[str, ExtractedField]) -> dict[str, int]:
     for field in fields.values():
         counts[field.status] = counts.get(field.status, 0) + 1
     return counts
+
+
+def _collect_findings(
+    doc: NormalizedDocument,
+    backend: ExtractionBackend,
+    orphans: list[Any],
+    chunks: list[Chunk],
+) -> int:
+    """Ask the backend what each flagged passage says, in the document's terms.
+
+    Optional on the backend: a tier that cannot answer in prose simply does
+    not, and the orphan stays unreviewed, which is the honest state and was
+    already the state before this existed. The deterministic backend has no
+    such method and never will -- naming an obligation is not something a
+    pattern does.
+    """
+    ask = getattr(backend, "reread_findings", None)
+    if ask is None:
+        return 0
+    by_id = {chunk.chunk_id: chunk for chunk in chunks}
+    total = 0
+    # The structural and sliding segmentations both cover the document, so a
+    # passage sits in at least two chunks and its finding would be reported
+    # once per chunk. For a value that duplication is signal -- reconciliation
+    # reads it as independent support -- but a finding has no reconciliation
+    # behind it, so the same sentence would simply be printed three times.
+    # Identity is the offsets it occupies.
+    seen: set[tuple[str, int, int]] = set()
+    for orphan in orphans:
+        chunk = by_id.get(orphan.chunk_id)
+        if chunk is None:
+            continue
+        try:
+            found = ask(doc, chunk)
+        except Exception:  # noqa: BLE001 - a failed re-read is not a failed run
+            continue
+        fresh = []
+        for finding in found:
+            key = (finding.name, finding.span.start, finding.span.end)
+            if key in seen:
+                continue
+            seen.add(key)
+            fresh.append(finding)
+        found = fresh
+        if not found:
+            continue
+        orphan.findings = found
+        if orphan.resolution == "unreviewed":
+            # Explained, but not by a field. "rescued" would claim the record
+            # now carries it, and it does not -- nothing in the registry can.
+            orphan.resolution = "benign"
+        total += len(found)
+    return total
 
 
 def _default_reread(

@@ -35,6 +35,14 @@ than procedural.
     recording carries ``recorded_before_labels``; ``check()`` fails when a
     recording claims otherwise, and the honest thing to do with a recording
     made after the labels is to throw it away.
+
+The ordering governs ``fields`` and not ``findings``, and the reason is the
+reason for the rule rather than an exception to it. The rule exists because a
+score against labels written by the same reader measures self-consistency.
+Nothing scores findings: they answer the orphan sweep in the document's own
+vocabulary, no assertion in the corpus tests one, and there is no number for
+them to inflate. A finding added after the labels is still a passage a reader
+can go and read, which is the whole of what it claims to be.
 """
 
 from __future__ import annotations
@@ -48,11 +56,19 @@ from pydantic import BaseModel, Field
 
 from ..ingest.normalize import NormalizedDocument
 from ..ingest.segment import Chunk
-from ..models.core import CostLedger
+from ..models.core import CostLedger, Finding
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from .passes import Candidate, _parse_llm_payload
 
 RECORDINGS = Path(__file__).parent / "recordings"
+
+#: The kinds ``Finding`` accepts. A recording naming anything else is not
+#: rejected -- the taxonomy is ours, not the document's -- it lands in
+#: "other", which is what the field is for.
+_FINDING_KINDS = frozenset({
+    "payment_obligation", "restriction", "override", "threshold", "date",
+    "other",
+})
 
 
 class RecordedField(BaseModel):
@@ -74,6 +90,24 @@ class RecordedField(BaseModel):
     notes: str | None = None
 
 
+class RecordedFinding(BaseModel):
+    """Something the reader found that no field in the registry can hold.
+
+    The orphan sweep flags passages that say something and produced no field,
+    and until now the re-read that was meant to explain them could only answer
+    in fields -- so an obligation with no field stayed invisible however hard
+    anything looked at it. These are the other half of a reading: a quote, a
+    kind and a sentence, with no pretence of being a value.
+    """
+
+    kind: str = "other"
+    name: str
+    summary: str
+    quote: str
+    confidence: float = 0.6
+    external_document: str | None = None
+
+
 class Recording(BaseModel):
     """What one model read out of one document."""
 
@@ -86,6 +120,10 @@ class Recording(BaseModel):
     recorded_before_labels: bool = False
     note: str = ""
     fields: list[RecordedField] = Field(default_factory=list)
+    #: Answers to the orphan sweep: what this passage says, where no field
+    #: could hold it. Located the same way a field's quote is, so a finding
+    #: whose quote drifted is dropped rather than reported at a wrong offset.
+    findings: list[RecordedFinding] = Field(default_factory=list)
 
     @property
     def by_field(self) -> dict[str, RecordedField]:
@@ -157,6 +195,30 @@ class RecordedBackend:
         # A recording costs nothing to replay, and saying so keeps the cost
         # ledger honest: this run did not spend what a live model pass would.
         return out, CostLedger(deterministic_calls=1)
+
+    def reread_findings(
+        self, doc: NormalizedDocument, chunk: Chunk
+    ) -> list[Finding]:
+        """Tier 4's other half: what this chunk says that has no field.
+
+        Same rule as an extraction. A quote the chunk does not contain is a
+        fabrication and the finding is dropped, so a finding in a report is
+        always a passage a reader can go and read.
+        """
+        out: list[Finding] = []
+        for item in self.recording.findings:
+            span = chunk.locate(doc, item.quote)
+            if span is None:
+                continue
+            out.append(Finding(
+                kind=item.kind if item.kind in _FINDING_KINDS else "other",
+                name=item.name,
+                summary=item.summary,
+                span=span,
+                confidence=item.confidence,
+                external_document=item.external_document,
+            ))
+        return out
 
     def unplaced(self) -> list[str]:
         """Recorded fields that were asked for and whose quote no chunk held.

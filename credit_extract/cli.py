@@ -136,6 +136,16 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
             print(f"    {orphan.chunk_id} [{orphan.top_signal} "
                   f"{orphan.score:.2f}] {snippet}")
 
+    explained = [o for o in report.orphan_chunks if o.findings]
+    if explained:
+        total = sum(len(o.findings) for o in explained)
+        print(f"\n  findings ({total}) -- what those passages say, where no "
+              "field can hold it:")
+        for orphan in explained[:5]:
+            for finding in orphan.findings:
+                print(f"    [{finding.kind}] {finding.name}")
+                print(f"      {finding.summary}")
+
     if report.override_findings:
         print(f"\n  override findings ({len(report.override_findings)}):")
         for finding in report.override_findings[:5]:

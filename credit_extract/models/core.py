@@ -525,6 +525,27 @@ class InvariantViolation(BaseModel):
         return f"[{self.severity}] {self.invariant}: {self.message}"
 
 
+class Finding(BaseModel):
+    """Something the agreement says that no field in the registry can hold.
+
+    The review queue shows fields, so an obligation, a threshold or a
+    conditional that has no field is invisible in every report this project
+    has produced -- and the orphan sweep exists precisely because that text is
+    there. A finding is how it becomes visible: a quote, a kind, and a
+    sentence, carrying no pretence of being a value.
+    """
+
+    kind: Literal[
+        "payment_obligation", "restriction", "override", "threshold", "date",
+        "other",
+    ] = "other"
+    name: str
+    summary: str
+    span: Span
+    confidence: float = 0.5
+    external_document: str | None = None
+
+
 class OrphanChunk(BaseModel):
     """Text that scored high on the orphan sweep but produced no fields."""
 
@@ -536,6 +557,9 @@ class OrphanChunk(BaseModel):
     score: float = 0.0
     resolution: Literal["unreviewed", "rescued", "benign"] = "unreviewed"
     rescued_fields: list[str] = Field(default_factory=list)
+    #: What the re-read found here that no field could carry. An orphan with
+    #: findings is explained; one with none is still the finding.
+    findings: list[Finding] = Field(default_factory=list)
 
 
 class ConflictRecord(BaseModel):
