@@ -42,3 +42,36 @@ assertions:
       Absent rather than not_applicable_to_archetype: the classifier returns
       abl_revolver at 0.85 here, which is wrong, and suppression off a wrong
       archetype is exactly the path the register calls the worst one.
+
+  - id: horizon_servicing_agreement_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      Added when the whole corpus was labelled and this document turned out to
+      be the fit side's instance of a defect the held-out side shows twice.
+
+      It classifies as abl_revolver at 0.85, on "borrowing base" and "advance
+      rate", and it is a Sale and Servicing Agreement -- it governs the sale of
+      loans to an issuer and their servicing afterwards. The borrowing base
+      and the advance rate are the pool's, not this document's, and there is
+      no facility here to be asset-based. Above 0.50 the profile rules
+      term_amortization, recurring_revenue, nav_tests and pik_mechanics
+      not_applicable_to_archetype, a confident status, on an instrument that
+      has none of those because it is not a loan.
+
+      Evernorth is the contrast that shows what the test is not. Its Note
+      Purchase Agreement mentions a lender exactly once, against 238 holders
+      and 7 trustees, and its holdco_pik classification is right -- because
+      "pik interest" describes this instrument's own economics. A count of
+      lenders would decline Evernorth and is therefore not the discriminator,
+      however cleanly it separates this document from the real agreements
+      (26 mentions here against 404 for the lowest of them).
+
+      The question is the one the suppression veto already asks field by field
+      and the classifier does not ask at all: whose facility do these words
+      describe. Recorded here rather than repaired, because a keyword veto
+      narrow enough to spare Evernorth and wide enough to catch this is the
+      kind of edge-case tuning the deterministic tier is supposed to leave to
+      the model.
