@@ -4,11 +4,14 @@
   "modules": [
     "LOAN/LoansGeneral/Loans.rdf",
     "FBC/DebtAndEquities/Debt.rdf",
+    "FBC/DebtAndEquities/CreditRatings.rdf",
     "FBC/DebtAndEquities/Guaranty.rdf",
     "FBC/ProductsAndServices/FinancialProductsAndServices.rdf",
     "FBC/ProductsAndServices/ClientsAndAccounts.rdf",
     "FBC/FinancialInstruments/FinancialInstruments.rdf",
     "FND/Parties/Parties.rdf",
+    "FND/Arrangements/ClassificationSchemes.rdf",
+    "FND/Arrangements/Ratings.rdf",
     "FND/ProductsAndServices/ProductsAndServices.rdf",
     "FND/ProductsAndServices/PaymentsAndSchedules.rdf",
     "FND/Agreements/Agreements.rdf",
@@ -46,6 +49,7 @@
     "fibo-be-oac-cpty": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/ControlParties/",
     "fibo-be-oac-exec": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/Executives/",
     "fibo-be-oac-opty": "https://spec.edmcouncil.org/fibo/ontology/BE/OwnershipAndControl/OwnershipParties/",
+    "fibo-fbc-dae-crt": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/",
     "fibo-fbc-dae-dbt": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/",
     "fibo-fbc-dae-gty": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Guaranty/",
     "fibo-fbc-fct-breg": "https://spec.edmcouncil.org/fibo/ontology/FBC/FunctionalEntities/BusinessRegistries/",
@@ -57,9 +61,13 @@
     "fibo-fnd-acc-cur": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/",
     "fibo-fnd-agr-agr": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/",
     "fibo-fnd-agr-ctr": "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Contracts/",
+    "fibo-fnd-arr-arr": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Arrangements/",
     "fibo-fnd-arr-asmt": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Assessments/",
+    "fibo-fnd-arr-cls": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/ClassificationSchemes/",
     "fibo-fnd-arr-doc": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/",
     "fibo-fnd-arr-lif": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/",
+    "fibo-fnd-arr-rep": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/",
+    "fibo-fnd-arr-rt": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/",
     "fibo-fnd-dt-bd": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/BusinessDates/",
     "fibo-fnd-dt-fd": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/",
     "fibo-fnd-dt-oc": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/",
@@ -78,6 +86,150 @@
     "fibo-loan-ln-ln": "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/Loans/"
   },
   "terms": {
+    "fibo-fbc-dae-crt:CreditInquiry": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditInquiry",
+      "label": "credit inquiry",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditInquiryType": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditInquiryType",
+      "label": "credit inquiry type",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditMessage": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditMessage",
+      "label": "credit message",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditMessageType": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditMessageType",
+      "label": "credit message type",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditQuality": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditQuality",
+      "label": "credit quality",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditRating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditRating",
+      "label": "credit rating",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditRatingAgency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditRatingAgency",
+      "label": "credit rating agency",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditRatingModel": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditRatingModel",
+      "label": "credit rating model",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditRatingModelType": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditRatingModelType",
+      "label": "credit score model type",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditRatingScale": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditRatingScale",
+      "label": "credit rating scale",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditReport": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditReport",
+      "label": "CreditReport",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditReportCategory": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditReportCategory",
+      "label": "credit report category",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditReportProduct": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditReportProduct",
+      "label": "credit report product",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditTradeline": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditTradeline",
+      "label": "credit tradeline",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditWatchDirection": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditWatchDirection",
+      "label": "credit watch direction",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:CreditWatchOutlook": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/CreditWatchOutlook",
+      "label": "credit watch outlook",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:InstrumentCreditRating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/InstrumentCreditRating",
+      "label": "instrument credit rating",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:InvestmentCreditRating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/InvestmentCreditRating",
+      "label": "investment credit rating",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:OrganizationCreditRating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/OrganizationCreditRating",
+      "label": "organization credit rating",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:ShortTermCreditRating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/ShortTermCreditRating",
+      "label": "short term credit rating",
+      "kind": "Class",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:concernsParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/concernsParty",
+      "label": "concerns party",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:hasCoveragePeriod": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/hasCoveragePeriod",
+      "label": "has coverage period",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:hasWatchDirection": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/hasWatchDirection",
+      "label": "watch direction",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
+    "fibo-fbc-dae-crt:hasWatchOutlook": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/CreditRatings/hasWatchOutlook",
+      "label": "watch outlook",
+      "kind": "ObjectProperty",
+      "module": "FBC/DebtAndEquities/CreditRatings.rdf"
+    },
     "fibo-fbc-dae-dbt:Accrual": {
       "uri": "https://spec.edmcouncil.org/fibo/ontology/FBC/DebtAndEquities/Debt/Accrual",
       "label": "accrual",
@@ -2549,6 +2701,138 @@
       "label": "supersedes",
       "kind": "ObjectProperty",
       "module": "FND/Agreements/Contracts.rdf"
+    },
+    "fibo-fnd-arr-cls:IndustrySectorClassificationScheme": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/ClassificationSchemes/IndustrySectorClassificationScheme",
+      "label": "industry sector classification scheme",
+      "kind": "Class",
+      "module": "FND/Arrangements/ClassificationSchemes.rdf"
+    },
+    "fibo-fnd-arr-cls:IndustrySectorClassifier": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/ClassificationSchemes/IndustrySectorClassifier",
+      "label": "industry sector classifier",
+      "kind": "Class",
+      "module": "FND/Arrangements/ClassificationSchemes.rdf"
+    },
+    "fibo-fnd-arr-rt:QualitativeRatingScore": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/QualitativeRatingScore",
+      "label": "qualitative rating score",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:QuantitativeRatingScore": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/QuantitativeRatingScore",
+      "label": "quantitative rating score",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:Rating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/Rating",
+      "label": "Rating",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingAgency": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingAgency",
+      "label": "rating agency",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingAssessmentActivity": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingAssessmentActivity",
+      "label": "rating assessment activity",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingAssessmentEvent": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingAssessmentEvent",
+      "label": "rating assessment event",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingIssuer": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingIssuer",
+      "label": "rating issuer",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingParty",
+      "label": "rating party",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingReport": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingReport",
+      "label": "rating report",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingScale": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingScale",
+      "label": "RatingScale",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingScalePublisher": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingScalePublisher",
+      "label": "rating scale publisher",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:RatingScore": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/RatingScore",
+      "label": "rating score",
+      "kind": "Class",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:hasBestMeasure": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/hasBestMeasure",
+      "label": "has best measure",
+      "kind": "DatatypeProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:hasMeasureWithinScale": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/hasMeasureWithinScale",
+      "label": "has measure within scale",
+      "kind": "DatatypeProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:hasRating": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/hasRating",
+      "label": "has rating",
+      "kind": "ObjectProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:hasRatingScore": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/hasRatingScore",
+      "label": "has rating score",
+      "kind": "ObjectProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:hasWorstMeasure": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/hasWorstMeasure",
+      "label": "has worst measure",
+      "kind": "DatatypeProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:producesRatingsFor": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/producesRatingsFor",
+      "label": "produces ratings for",
+      "kind": "ObjectProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:rates": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/rates",
+      "label": "rates",
+      "kind": "ObjectProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
+    },
+    "fibo-fnd-arr-rt:usesRatingParty": {
+      "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Ratings/usesRatingParty",
+      "label": "uses rating performer",
+      "kind": "ObjectProperty",
+      "module": "FND/Arrangements/Ratings.rdf"
     },
     "fibo-fnd-dt-fd:AdHocSchedule": {
       "uri": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule",

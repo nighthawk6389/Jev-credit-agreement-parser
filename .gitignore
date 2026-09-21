@@ -8,6 +8,7 @@ build/
 dist/
 *.egg-info/
 out/
+vendor/fpml/
 
 # The corpus is generated output by default -- synthetic variants, mutants and
 # harvest scratch -- and is rebuilt by `python -m credit_extract.eval.gold`.
