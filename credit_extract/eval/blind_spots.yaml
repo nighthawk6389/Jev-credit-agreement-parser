@@ -131,9 +131,20 @@ untestable_in_this_environment:
     consequence: >
       OfflineJev is a deterministic lexical stand-in, not a calibrated model.
       Validators B, C, D, E and G are exercised end to end but their
-      judgements are keyword matches. Archetype dispatch in particular leans
-      on a semantic choice that the stand-in approximates crudely.
-    remedy: set JEV_API_KEY and refit thresholds; they are tagged per backend.
+      judgements are keyword matches. Archetype dispatch is the clearest
+      casualty and it is now measured: across the 62 corpus documents whose
+      stratum implies an archetype, the deterministic classifier gets 17
+      right and 14 confidently wrong, and four alternative configurations
+      trade those two against each other at roughly one for one without
+      improving either. The distinguishing vocabulary sits deep in a document
+      and the shared vocabulary sits on the cover, so no anchoring rule
+      separates them. A wrong archetype is worse than none, because it marks
+      applicable fields not_applicable_to_archetype and suppresses real terms
+      silently. See docs/corpus_findings.md for the table.
+    remedy: >
+      set JEV_API_KEY and refit thresholds; they are tagged per backend. This
+      one will not yield to more keywords -- the measurement above is the
+      argument for not trying.
 
   - id: ANTHROPIC_API
     families: [F01_integrity, F09_definitional_depth, F11_layout]
