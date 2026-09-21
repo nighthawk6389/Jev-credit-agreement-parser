@@ -194,9 +194,23 @@ untestable_in_this_environment:
       correct citations survive to a correct record, and the answer before
       this week was that they did not.
 
+      A second reading, of Aspen Technology's bilateral facility, found four
+      more and needed no labels for any of them: a heading style that left one
+      section detected out of 198 and every cross-reference in the document
+      unresolvable; a money parser that read "1.250% of the initial principal
+      amount" as one dollar twenty-five; an F01 invariant that had outgrown
+      its own premise and was calling an evidenced absence a defect; and the
+      targeted re-read at tier 4, which the ladder has always described and no
+      caller had ever supplied, so it had never executed on any document.
+      On that document's twelve assertions the deterministic tier passes
+      8 and the checked-in reading passes 12.
+
       What is still unknown is whether a model produces those extractions.
       Recall on a live pass remains unmeasured, and the orphan sweep is still
-      carrying weight a real extractor would take off it.
+      carrying weight a real extractor would take off it -- tier 4 now runs
+      and, under the deterministic backend, recovers nothing on any document
+      tried, which is a statement about the pattern set rather than about the
+      tier.
     remedy: >
       set ANTHROPIC_API_KEY and run with --backend anthropic, against the
       documents that already carry both labels and a recording, so the live

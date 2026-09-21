@@ -375,3 +375,108 @@ directly.
 prompts module and no request ever passed it, so the one instruction framing
 the whole task — a confident wrong answer is worse than no answer — reached the
 model in no request this repository has ever built.
+
+## A second held-out reading, and four more defects
+
+Aspen Technology / Emerson Electric, stratum P, December 2022. Bilateral
+acquisition financing between a company and its controlling shareholder: one
+lender, no administrative agent, no arranger, no revolver, $630,000,000 drawn
+once and amortised over twenty quarters. Picked because F07 was the worst row
+in the table at 3 pass / 6 fail, and it carries the complete post-LIBOR
+waterfall.
+
+The first document found five defects. This one found four more, and none of
+them needed the labels — all four were visible from reading the source and
+running the pipeline over it.
+
+### A heading style that made a whole agreement look structureless
+
+Every heading pattern in `detect_sections` anchors to the start of a line. Some
+filers' HTML puts the entire agreement in one flow, with no line break before
+any heading. On this document that meant **1 section detected out of 198
+present**. Three consequences, all silent:
+
+* every cross-reference in the document was unresolvable, so the F01 check
+  produced **56 errors on a perfectly well-formed agreement** — the kind of
+  false-positive rate that teaches a reader to skip the section;
+* the structural segmentation, one of the three independent views the pass
+  planner relies on, **collapsed to a single chunk**;
+* `section_hints` in the field registry had nothing to point at.
+
+Case is what separates a heading from a reference in that house style: the
+headings read `SECTION 2.07. Repayment of Loans` and the references read
+`Section 2.07`. In this filing all 198 upper-case occurrences were headings and
+all 239 references were mixed case, with no overlap either way. An inline rule
+gated on the anchored patterns having already failed takes the count to 102
+sections and 114 structural chunks, and the violations from 60 to 13 — of which
+the two remaining cross-reference errors are real (`Section 18.1` points at an
+Article this agreement does not have, and `Section 2.1` is a typo for `2.01`).
+
+### A percentage that became a dollar amount
+
+`parse_money("1.250% of the initial principal amount")` returned
+`Decimal("1.250")`. The regex found the first number and never looked at the
+unit. Amortisation is routinely drafted as a percentage of initial principal
+per instalment — it is drafted that way here, four times over — so the field
+would have carried a quarterly payment of **one dollar twenty-five** against a
+real first instalment of **$7,875,000**, with a citation behind it. That is the
+shape of a silent error, not of a miss. A percentage is no longer an amount.
+
+### An invariant that had outgrown its own premise
+
+`citations_cite_a_value` held that a span on a valueless field cites nothing.
+It was written from evidence: the offending spans were whole chunks, 8,379
+characters and up, against 162 for any real citation. Two things had happened
+since. The chunk-wide hints moved to `review_hint`, so they no longer reach
+`spans` at all. And a model tier began producing the opposite case — a field
+with no value and a short, real quotation that is precisely the evidence for
+having none:
+
+```
+"Maturity Date" means, with respect to each Facility, the date that is
+five (5) years after the Funding Date.
+```
+
+A reader following that span gets exactly the passage that explains the empty
+field. The check now tests the thing that separated the two cases all along and
+states it rather than inferring it: a stored span must be short enough to be a
+quotation. The original regression still fires; an evidenced absence no longer
+does. It had **no test at all**, which is why the change broke nothing.
+
+### Tier 4 had never run
+
+The escalation ladder documents a targeted re-read that fires only on chunks
+the orphan sweep flagged. `run_pipeline` accepted a `reread` callable,
+`rescue_orphans` used it, `build_reread_prompt` existed — and **no caller ever
+supplied one**. The tier had never executed on any document. It also discarded
+what it found: the candidates were used to mark the orphan "rescued" and then
+dropped, which is the expensive half of the work and none of the useful half.
+
+It is wired now, with a default that re-asks the extraction question over one
+flagged chunk with the fields that are still empty, and rescued values reach
+the record at `needs_review` — never confirmed, because one chunk and one pass
+has none of the independent support the main passes are built to produce, and
+never over a value the passes already agreed on.
+
+Under the deterministic backend it recovers nothing, on any document, and that
+is the measurement rather than a disappointment: `orphan re-read (tier 4): 94
+chunk(s) flagged, nothing recovered` says that ninety-four passages of this
+agreement say something the pattern set cannot explain, and now says it in the
+report instead of leaving the tier's absence to be mistaken for a clean sweep.
+
+### What the document itself says
+
+On its twelve assertions the deterministic tier passes 8 and the checked-in
+reading passes 12. The two fields that make it worth labelling are the two with
+no answer:
+
+| field | what the agreement says |
+| --- | --- |
+| `closing_date` | *the date on which the conditions specified in Section 4.01 are satisfied* |
+| `initial_term_loan.maturity_date` | *the date that is five (5) years after the Funding Date* |
+
+The Funding Date is itself *the date such initial Loan is funded*. Neither event
+is dated anywhere in the filing. The cover says December 23, 2022, which is the
+execution date and the answer to neither question — and it is the answer both
+fields will attract, from a reader that takes the nearest date and, for the
+maturity, adds five to it.
