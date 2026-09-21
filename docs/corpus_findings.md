@@ -480,3 +480,61 @@ is dated anywhere in the filing. The cover says December 23, 2022, which is the
 execution date and the answer to neither question — and it is the answer both
 fields will attract, from a reader that takes the nearest date and, for the
 maturity, adds five to it.
+
+## What F05's seven failures actually are
+
+F05_versioning has been the largest block of failures in the report for some
+time -- 17 pass, 7 fail -- and nobody had looked at which seven. They are:
+
+| document | assertions | shape |
+| --- | --- | --- |
+| Air T Amendment No. 7 | 5 | value present in the text, extractor returns nothing |
+| Essential Properties Eighth Amendment | 2 | one the same, one an eleven-way date conflict |
+
+**None is a silent error.** All seven are routed to review, which is the
+outcome the design asks for when the pipeline does not know. And one of the
+seven -- Essential Properties' `revolver.commitment` -- the checked-in model
+reading already gets right, at $1,300,000,000. So F05 is not a versioning
+mechanism that is broken. It is the same recall gap as every other family,
+measured on documents where the amendment restates the terms rather than
+naming them in a definitions article.
+
+### A real defect behind it, which does not close it
+
+All five Air T values sit inside restated blocks:
+
+```
+Section 7.12(b) of the Original Agreement is hereby amended in its entirety
+to read as follows: " (b) Permit the Leverage Ratio to be greater than
+3.00 to 1.00 at any Measurement Date."
+```
+
+The whole restated section is inside double quotes, so every defined term
+*inside* it drops to single quotes -- `'Revolving Credit Termination Date'
+means the earliest to occur of (a) August 27, 2029`. The definition graph
+required double quotes, so on this document it found **3 terms in 73,805
+characters against 19 actually present**, and the closure it hands the model
+tier as `DEFINED TERMS IN SCOPE` was three lines long.
+
+Fixed, and the graph goes from 3 terms to 26. The corpus says how narrow this
+is: **15,075 double-quoted definitions against 19 single-quoted, and all 19 in
+that one filing.**
+
+It also **changes none of the seven assertions**, and that is worth stating
+plainly rather than letting the fix and the family be mentioned in the same
+breath. The values come from the rules tier, which anchors on phrases and not
+on the graph. What improved is the context the model tier receives on that
+document, which is unmeasured because the model tier has never run.
+
+### Why these five can never be measured against a recording
+
+Air T has labels and no recording, and it cannot have one. A recording must be
+made before that document's labels exist, by a reader who has not seen them;
+its labels were written in batch 1. Any recording made now would be
+contaminated, and `recorded_before_labels: true` on it would be a lie the CI
+gate is specifically there to catch.
+
+So the five are reachable by exactly two routes: a live model run, or a second
+reader who has not seen the labels. That is the ordering rule working as
+designed, and it is the cost of the rule -- worth naming, because the
+alternative is a number that looks like recall and is not.
