@@ -42,6 +42,7 @@ AssertionKind = Literal[
     "report_count",         # a countable on the document report
     "chain_finding",        # a named chain finding is / is not reported
     "text_present",         # a string does / does not occur in operative text
+    "closure_contains",     # resolving a term reaches these other terms
 ]
 
 #: Statuses the pipeline presents as settled. Anything else is a review flag,
@@ -293,6 +294,25 @@ def evaluate_assertion(
         observed = assertion.target in reported
         passed = bool(observed) == bool(assertion.expect)
 
+    elif kind == "closure_contains":
+        # The thing F09 is actually about: a term's meaning is the chain of
+        # definitions below it, and a covenant extracted without that chain is
+        # a symbol rather than a number.
+        graph = getattr(result, "definition_graph", None)
+        closure = graph.closure(assertion.target) if graph is not None else []
+        wanted = [assertion.expect] if isinstance(assertion.expect, str) else list(
+            assertion.expect or []
+        )
+        folded = {c.casefold() for c in closure}
+        missing = [w for w in wanted if w.casefold() not in folded]
+        observed = closure[:12]
+        passed = not missing and bool(closure)
+        confident = bool(closure)
+        detail = (
+            f"{len(closure)} term(s) in the closure"
+            + (f"; missing {missing}" if missing else "")
+        )
+
     elif kind == "text_present":
         # Asserted against the *operative* text, which is what every span
         # quotes. A figure a blackline deleted must not be addressable here.
@@ -318,6 +338,12 @@ _REPORT_COUNTS = {
     "override_findings": lambda r: len(r.override_findings),
     "review_queue": lambda r: len(r.review_queue),
     "chain_findings": lambda r: len(r.chain.get("findings", [])),
+    "definition_terms": lambda r: r.definition_graph_stats.get("terms"),
+    "definition_cycles": lambda r: len(r.definition_graph_stats.get("cycles") or []),
+    "definition_max_depth": lambda r: r.definition_graph_stats.get("max_depth"),
+    "definition_deep_terms": lambda r: len(
+        r.definition_graph_stats.get("terms_at_depth_3_or_more") or []
+    ),
     "effects_applied": lambda r: len(r.chain.get("effects_applied", [])),
     "effects_unapplied": lambda r: len(r.chain.get("effects_unapplied", [])),
 }

@@ -78,6 +78,10 @@ class ExtractionResult(BaseModel):
     #: from serialization -- it is already quoted span by span, and carrying a
     #: second copy would double the size of every report on disk.
     document: Any = Field(default=None, exclude=True, repr=False)
+    #: The defined-term graph. Excluded from serialization for the same reason
+    #: as the document: the report already carries its statistics, and a second
+    #: copy of every definition body would dwarf the fields.
+    definition_graph: Any = Field(default=None, exclude=True, repr=False)
 
     def unresolved(self) -> list[str]:
         return [name for name, f in self.fields.items() if not f.is_resolved]
@@ -451,6 +455,7 @@ def run_pipeline(
         archetype=archetype,
         pricing=pricing,
         document=doc,
+        definition_graph=graph,
         standards={
             "fibo": fibo_map.provenance(),
             "fpml": fpml_model.provenance(),
