@@ -1,0 +1,166 @@
+# Tier 2 assertions: Cooper-Standard Holdings Inc., Amendment No. 6 to Third
+# Amended and Restated Loan Agreement, dated as of September 3, 2026. Borrower
+# group headed by CS Intermediate Holdco 1 LLC.
+#
+# Fit side, never read during development. A cross-border asset-based revolver
+# -- U.S. and Canadian borrowing bases, Accounts and Inventory, field
+# examinations and appraisals, Term SOFR on the U.S. side and Term CORRA on the
+# Canadian. "borrowing base" occurs 84 times.
+#
+# The classifier returns unknown at 0.16. That is the finding this document was
+# kept for: the decisive vocabulary for abl_revolver is "borrowing base",
+# "eligible accounts", "eligible inventory" and "advance rate", all of which are
+# here in quantity, and the detection window is the first 30,000 characters --
+# which on a 715,503-character amendment is the recitals and the first pages of
+# defined terms, where this agreement is still introducing parties. The
+# register already says archetype detection is wrong on about a quarter of the
+# corpus; this is the shape of one of those quarters.
+#
+# Its pricing is keyed to availability rather than leverage, which no other
+# labelled document does:
+#
+#   (A) Pricing Table A -- no Pricing/Fee Reduction Period in effect
+#         I   >= 45% of the Borrowing Base            SOFR 1.75%  Base 0.75%
+#         II  >= 20% but < 45% of the Borrowing Base  SOFR 2.00%  Base 1.00%
+#         III <  20% of the Borrowing Base            SOFR 2.25%  Base 1.25%
+#   (B) Pricing Table B -- Pricing/Fee Reduction Period in effect
+#         I   >= 45%                                  SOFR 1.50%  Base 0.50%
+#         II  >= 20% but < 45%                        SOFR 1.75%  Base 0.75%
+#
+# and the definition puts a temporal split above both: "for any day prior to
+# the Sixth Amendment Effective Date, such margin set forth in this Agreement
+# as in effect on such day" and thereafter the tables above. So the operative
+# margin depends on a date, then on whether a Pricing/Fee Reduction Period is
+# running, then on availability -- three conditions deep before a number.
+
+document: cooper_standard_amendment_6_2026
+corpus_name: C_cooper-standard-holdings-inc-cps_2026-09-10_0001320461-26-000119_exhibit101sixthamendmentan
+source: real
+tier: 2
+
+assertions:
+
+  # -- F06 structure: a textbook ABL the classifier does not recognise -----
+
+  - id: cooper_is_an_asset_based_revolver
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: abl_revolver
+    note: >
+      Every decisive signal the abl_revolver profile lists is present and
+      repeated: "borrowing base" 84 times, across a U.S. Borrowing Base and a
+      Canadian Borrowing Base, with eligibility criteria, advance rates, field
+      examinations, appraisals and Agent's Permitted Discretion to set
+      reserves. Section 10.3 carries one financial covenant and it is a Fixed
+      Charge Coverage Ratio, which is the ABL convention.
+
+      The classifier returns unknown at 0.16. The failure is positional rather
+      than lexical -- detection reads the first 30,000 characters and this is
+      an amendment whose opening pages are parties and recitals -- so more
+      vocabulary would not fix it, and the register's existing note that this
+      will not yield to more keywords applies.
+
+  - id: cooper_maximum_facility_amount
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_value
+    target: revolver.commitment
+    expect: "$200,000,000"
+    note: >
+      '"Commitments" means the aggregate amount of all Facility Commitments,
+      which amount shall be $200,000,000 on the Sixth Amendment Effective
+      Date', and '"Maximum Facility Amount": $200,000,000, or such greater or
+      lesser amount as shall then be in effect'.
+
+      $185,000,000 is the near miss: the Maximum U.S. Facility Amount is "the
+      lesser of (i) the U.S. Revolver Commitments on such date and (ii)
+      $185,000,000", which is the U.S. sublimit of the same facility rather
+      than a second facility. A cross-border ABL states its size once and its
+      per-jurisdiction caps several times.
+
+  # -- F04 absence: a financial covenant that is not a leverage cap --------
+
+  - id: cooper_has_no_leverage_covenant
+    family: F04_absence
+    member: springing_covenant_only
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      Section 10.3 is headed "Financial Covenant", singular, and Section
+      10.3.1 is its only limb: a Fixed Charge Coverage Ratio. That is a
+      coverage floor. This field holds a maximum leverage level, and the
+      agreement sets none -- an ABL sizes credit by the borrowing base, so
+      there is nothing for a leverage cap to do.
+
+      Absent rather than not_applicable_to_archetype, and the distinction is
+      sharper here than usual because the archetype assertion above is
+      currently failing. If suppression fired off a correct abl_revolver
+      classification it would reach the same field by a different route, and
+      the two answers are not interchangeable: "this deal kind has no leverage
+      covenant" is false of ABLs generally -- plenty carry a springing one --
+      while "this agreement sets none" is true of this one.
+
+      The trap is that the document is full of ratios. Consolidated Total Debt
+      Ratio sets which pricing table applies, and LTM EBITDA is defined and
+      used. A reader looking for a covenant level finds numbers that price the
+      loan rather than covenant it.
+
+  - id: cooper_no_ecf_sweep
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      One occurrence of "excess cash flow" in 715,503 characters and it is not
+      a sweep. A revolver has no excess cash flow prepayment; the analogous
+      mechanic is the cash dominion and application of collections that an ABL
+      runs continuously.
+
+  # -- F07 benchmark -------------------------------------------------------
+
+  - id: cooper_top_margin_is_the_lowest_availability
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.25%"
+    note: >
+      Pricing Table A, Level III, "Less than 20% of the Borrowing Base",
+      Term SOFR Loans 2.25%.
+
+      Four ways to miss it, three of which no other labelled document has.
+      The grid runs on Average Quarterly Availability, not leverage, so the
+      worst level is the one with the least availability rather than the most
+      debt. There are two complete tables and the wrong one is not stale but
+      conditional -- Table B applies while a Pricing/Fee Reduction Period is
+      running and tops out at 2.00%. Above both sits a temporal limb sending
+      any day before the Sixth Amendment Effective Date to whatever the
+      agreement said then, which this document does not reproduce. And the
+      right-hand column is the U.S. Base Rate, Canadian Base Rate and Canadian
+      Prime Rate margin, topping at 1.25%.
+
+      The SOFR column is also shared with Term CORRA Rate Loans and Letter of
+      Credit Fees, so one number here is a margin on two benchmarks and a fee.
+
+  - id: cooper_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      No adjustment under any name. "credit spread adjustment", "spread
+      adjustment" and "sofr adjustment" all occur zero times, and there is no
+      defined term of the form "X Adjustment". Term SOFR is the CME screen
+      rate with a zero floor written into its own definition ("if such rate
+      ... would otherwise be less than zero, Term SOFR shall be deemed zero"),
+      and the margin is added to it directly.
+
+      Probed for the renamed form deliberately. BrightSpring has zero
+      occurrences of the obvious phrase and a "Term SOFR Adjustment" of 0.00%
+      two definitions away, so the string search alone is not evidence; what
+      makes this an absence is that the document defines no adjustment term at
+      all and its benchmark definition has no second limb to add one.

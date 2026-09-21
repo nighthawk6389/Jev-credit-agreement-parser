@@ -1,0 +1,162 @@
+# Tier 2 assertions: Evernorth Holdings Inc., Note Purchase Agreement dated
+# September 11, 2026 -- $30,000,000 4.00% Convertible Senior PIK Notes due
+# 2031.
+#
+# Fit side, never read during development. It is in the corpus and it is not a
+# credit agreement: a note purchase agreement between an issuer and a
+# purchaser, fixed rate, convertible, payment-in-kind. The classifier reaches
+# holdco_pik at 0.70, which is right.
+#
+# It earns its place by being the corpus's clearest case of a document where
+# the right answer to most of the registry is "this instrument has no such
+# term", reached from evidence rather than from failing to find one. In
+# 204,846 characters: no EBITDA, no leverage ratio, no coverage ratio, no
+# borrowing base, no SOFR, no floor, no spread adjustment under any name, no
+# MFN, no excess cash flow. Sections 9 and 10 are affirmative and negative
+# covenants -- corporate existence, future financing notice, notice of
+# security incidents, registration rights -- and not one of them is a
+# financial maintenance test.
+#
+# That makes it the test for F04's no_financial_covenant member, and a fair
+# one, because a pipeline tuned on leveraged credit agreements has to decline
+# roughly forty fields here without being told to.
+#
+# The trap is the instrument's own name. It is a "4.00% Convertible Senior PIK
+# Note due 2031", and that phrase appears on the cover, in the schedule list,
+# and in the form of note. The operative definition says something else:
+#
+#   "Maturity Date" means the fifth anniversary of the Effectiveness Date.
+#   "Effectiveness Date" means the date of the closing of the DeSPAC
+#   Transaction.
+#
+# The DeSPAC Transaction has not closed. So 2031 is the issuer's expectation
+# of where five years from a future event lands, printed as a title, and the
+# document states no maturity date at all. It is the same undated-event shape
+# as Aspen and Constellation Brands with one difference that matters: those
+# two offer no date, and this one offers a plausible year in the largest type
+# on the page.
+
+document: evernorth_pik_note_2026
+corpus_name: F_evernorth-holdings-inc_2026-09-17_0001193125-26-393846_d116959dex41
+source: real
+tier: 2
+
+assertions:
+
+  # -- F04 absence: an instrument with no financial covenant ---------------
+
+  - id: evernorth_no_financial_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      There is no financial maintenance covenant. "EBITDA" occurs zero times,
+      as do "leverage ratio", "coverage ratio" and "borrowing base", and no
+      sentence in the document is of the form "will not permit ... ratio ...
+      to exceed". Section 9 (Affirmative Covenants) runs to corporate
+      existence, a future financing notice, notice of security incidents and
+      registration rights; Section 10 (Negative Covenants) restricts actions
+      rather than testing ratios.
+
+      Absent rather than not_applicable_to_archetype. A PIK note can carry a
+      leverage covenant and plenty do -- the holdco_pik profile does not rule
+      the field out, and it should not. This one simply does not have one, and
+      the difference between "this kind of deal never has this" and "this
+      agreement is silent on a term it could have had" is the whole reason
+      both statuses exist.
+
+  - id: evernorth_no_mfn_threshold
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_threshold_pct
+    expect: absent_from_document
+    note: >
+      "most favored nation" and "mfn" each occur zero times. Section 9.2 is a
+      Future Financing Notice, which obliges the company to tell the purchaser
+      about later financings and confers no repricing right, so the nearest
+      thing in the document to an MFN is a notice provision.
+
+  - id: evernorth_no_ecf_sweep
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      "excess cash flow" occurs zero times. The notes capitalise their
+      interest rather than paying it, so there is no cash flow at the
+      instrument to sweep; what the purchaser gets instead is an Investor Put
+      Option at Section 8.6.
+
+  # -- F07 benchmark: a fixed rate has none of this ------------------------
+
+  - id: evernorth_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      The notes bear interest at 4.00% fixed. There is no benchmark in the
+      document: "SOFR" occurs zero times, and so do "credit spread
+      adjustment", "spread adjustment" and "sofr adjustment".
+
+      Probed for the renamed form as well, because the previous document in
+      this batch taught that lesson: BrightSpring has zero occurrences of
+      "credit spread adjustment" and a Term SOFR Adjustment of 0.00% two
+      definitions away. Here there is no defined term of the shape "X
+      Adjustment means" at all. The absence is structural rather than a
+      drafting choice, which is what makes this a cleaner negative than a
+      floating-rate deal that happens to pay no adjustment.
+
+  # -- F10 conditionality: the title says 2031 and the definition does not --
+
+  - id: evernorth_maturity_is_five_years_after_an_undated_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: null
+    note: >
+      '"Maturity Date" means the fifth anniversary of the Effectiveness Date.'
+      and '"Effectiveness Date" means the date of the closing of the DeSPAC
+      Transaction.' The DeSPAC Transaction has not closed and the document
+      dates it nowhere, so the maturity is five years after an undated future
+      event.
+
+      2031 is the answer to beat and it is the strongest such answer in the
+      corpus, because it is not buried: the instrument is called the "4.00%
+      Convertible Senior PIK Note due 2031" on the cover, in the schedule
+      index and in the form of note attached as Schedule 1. A reader that
+      takes it has taken the issuer's projection of where five years from an
+      unscheduled closing will land, and has taken it from a title rather than
+      from an operative provision.
+
+      September 11, 2026 is on the cover too and is the agreement's own date,
+      which is the other wrong answer -- adding five to it gives 2031 and
+      makes the title look confirmed.
+
+  # -- F06 structure: principal that grows by itself -----------------------
+
+  - id: evernorth_original_principal_amount
+    family: F06_structure
+    member: pik_toggle
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$30,000,000"
+    note: >
+      'The Company will authorize the issue and sale of $30,000,000 aggregate
+      principal amount (the "Original Principal Amount"), subject to increases
+      in such principal amount in the form of PIK Interest (as defined in
+      Section 8.7(a)), of its 4.00% Convertible Senior PIK Notes due 2031.'
+
+      $30,000,000 is the answer, and the qualifier is the interesting part:
+      this is the only principal amount in the corpus that grows without a
+      further drawing. Section 8.7 capitalises the interest, so the balance at
+      any later date is the Original Principal Amount compounded at 4.00%, and
+      a field holding one money figure cannot express that. It is not an
+      accordion and not a delayed draw -- there is no second funding and no
+      lender commitment to make one.
