@@ -1,0 +1,157 @@
+# Tier 2 assertions: BrightSpring Health Services, Inc., Amendment No. 10
+# dated as of May 28, 2026, to the First Lien Credit Agreement dated as of
+# March 5, 2019. Morgan Stanley Senior Funding as Collateral Agent.
+#
+# Fit side, never read during development. Picked for F05_versioning and
+# F07_benchmark, the two families with the worst real pass rates, and it earns
+# both in the same definition.
+#
+# The Applicable Margin for Revolving Credit Loans is written as three dated
+# limbs, all present in the text, in order:
+#
+#   (a) prior to the Amendment No. 7 Effective Date
+#         I   > 4.00:1.00            ABR 3.25%   Adjusted Term SOFR 4.25%
+#         II  < 4.00:1.00 but > 3.50 ABR 3.00%   Adjusted Term SOFR 4.00%
+#         III < 3.50:1.00            ABR 2.75%   Adjusted Term SOFR 3.75%
+#   (b) from Amendment No. 7 and prior to Amendment No. 10
+#         I   > 4.00:1.00            ABR 2.25%   Adjusted Term SOFR 3.25%
+#         II  < 4.00:1.00 but > 3.50 ABR 2.00%   Adjusted Term SOFR 3.00%
+#         III < 3.50:1.00            ABR 1.75%   Adjusted Term SOFR 2.75%
+#   (c) from and after the Amendment No. 10 Effective Date,
+#         (I) for SOFR Loans that are Revolving Credit Loans, 2.00% per annum
+#         and (II) for ABR Loans that are Revolving Credit Loans, 1.00%
+#
+# Limb (c) has no table. Amendment No. 10 did not move the grid, it removed
+# it: the operative margin is flat, and leverage no longer prices the
+# revolver. So a pipeline looking for "the highest margin in the pricing grid"
+# finds 4.25% -- a real, correctly parsed, correctly cited number from a grid
+# that stopped applying two amendments ago. It is 225 basis points above the
+# operative rate and every check will pass on it.
+#
+# The same definition carries four more dated grids for the 2020 Letter of
+# Credit Applicable Margin (3.75/3.50/3.25, then 3.25/3.00/2.75, then
+# 2.75/2.50, then a flat 2.00), so the document holds seven superseded pricing
+# tables and two operative flat rates, all inline, all in one defined term.
+
+document: brightspring_amendment_10_2026
+corpus_name: D_brightspring-health-services-inc-btsg-btsgu_2026-07-31_0001193125-26-327014_btsg-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  # -- F05 versioning: the grid the amendment deleted ----------------------
+
+  - id: bs_operative_margin_is_flat_not_the_old_grid
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.00%"
+    note: >
+      '(c) from and after the Amendment No. 10 Effective Date, (I) for SOFR
+      Loans that are Revolving Credit Loans, 2.00% per annum and (II) for ABR
+      Loans that are Revolving Credit Loans, 1.00% per annum'.
+
+      This field asks for the highest margin in the pricing grid, and after
+      Amendment No. 10 there is no grid -- the highest applicable margin for a
+      SOFR revolving loan is the only one, 2.00%.
+
+      4.25% is the answer to beat, and it is a hard one because nothing about
+      it looks wrong. It is the top level of limb (a), a real table with real
+      leverage thresholds, quoted verbatim in this document, and a reader that
+      cites it is citing text that is genuinely there. What makes it wrong is
+      four words at the front of the limb -- "prior to the Amendment No. 7
+      Effective Date" -- and the fact that a later limb supersedes it. 3.25%,
+      the top of limb (b), is the same trap one amendment less stale.
+
+  - id: bs_closing_date_is_the_original_agreements
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2019-03-05
+    note: >
+      '"Closing Date" shall mean March 5, 2019.' Stated outright, which makes
+      this the third distinct shape in the corpus for one field: Aspen and
+      Constellation Brands define it as an undated event, StepStone defines it
+      as "the date of this Agreement" and resolves in one hop, and this one
+      just says the date.
+
+      The trap is that this document is dated May 28, 2026 on its own first
+      line, and it is Amendment No. 10 to an agreement from 2019. The Closing
+      Date belongs to the agreement being amended, not to the instrument
+      amending it, and 2026-05-28 is the Amendment No. 10 Effective Date --
+      a different defined term that also exists here and that limb (c) above
+      turns on.
+
+  # -- F07 benchmark: an adjustment that is not called one -----------------
+
+  - id: bs_credit_spread_adjustment_is_zero_not_absent
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.00%"
+    note: >
+      The phrase "credit spread adjustment" does not occur in this agreement.
+      The thing does, under another name, in two hops:
+
+        '"Adjusted Term SOFR Rate" shall mean ... an interest rate per annum
+        equal to (a) Term SOFR for such Interest Period plus (b) the Term SOFR
+        Adjustment; provided that the Adjusted Term SOFR Rate shall not be
+        less than 0.00% per annum.'
+        '"Term SOFR Adjustment" shall mean with respect to Term Loans and
+        Revolving Credit Loans, 0.00%.'
+
+      So the answer is 0.00% stated deliberately, and absent_from_document
+      would be wrong. The distinction matters here more than usual because the
+      pricing grid's own column is headed "Adjusted Term SOFR Rate": the
+      margins quoted against it are quoted against a rate that already
+      includes this adjustment, so a reader who treats the adjustment as
+      missing has not just mislabelled a field, they have described an all-in
+      rate as a bare one.
+
+      This is the Health Catalyst error in a new costume -- a string search
+      that is accurate about the string and wrong about the deal -- and it is
+      why the label for this field is a value rather than an absence.
+
+  - id: bs_benchmark_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means a rate of interest equal to 0.00% per annum.' The same
+      rate is floored twice and in two different places: the Adjusted Term
+      SOFR Rate carries its own proviso that it "shall not be less than 0.00%
+      per annum". Neither floors the margin, and neither floors the all-in
+      rate -- both floor the benchmark, which is the distinction this family
+      member is named for.
+
+  # -- F10 conditionality: a covenant that only one facility has -----------
+
+  - id: bs_covenant_is_springing_and_revolver_only
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: financial_covenant.level
+    expect: "6.90:1.00"
+    note: >
+      'Solely with respect to the Revolving Credit Facility, the Borrower will
+      not permit the Consolidated First Lien Secured Debt to Consolidated
+      EBITDA Ratio as of the last day of any Test Period ending during any
+      Compliance Period to be greater than 6.90:1.00.'
+
+      Two conditions on one covenant, and each on its own would make the field
+      something other than a plain maximum. It binds only the revolver, so the
+      term loans in this facility are covenant-lite and a reader who reports
+      "the leverage covenant is 6.90:1.00" has said something untrue of most
+      of the debt. And it applies only during a Compliance Period, so it is
+      springing: outside one there is no level at all, and 6.90:1.00 is the
+      level when it is tested rather than the level at every date.
+
+      6.90:1.00 also sits far above the 4.00:1.00 and 3.50:1.00 thresholds in
+      the pricing grids above, which are the numbers a search for a leverage
+      ratio finds first and which price the loan rather than covenanting it.
