@@ -1,0 +1,48 @@
+# Tier 2 assertions: FiscalNote, Inc. / Oxford Economics USA, Inc., Equity
+# Purchase Agreement dated as of August 27, 2026.
+#
+# Fit side, never read during development. The second document in the harvest
+# that is not a credit agreement, and the one that defeated the first version
+# of the guard written for the first.
+#
+# Greenfire's business acquisition report contains "event of default" zero
+# times, so requiring the phrase at all was enough to make the classifier
+# decline. This is an M&A purchase agreement: it is an agreement, it has an
+# event-of-default representation about the target's contracts, and it uses
+# the phrase once. The classifier returned recurring_revenue at 0.70 -- above
+# the threshold at which fields begin resolving to
+# not_applicable_to_archetype, which is a confident status.
+#
+# So the guard is now a count rather than a presence test, at a floor of two,
+# and the margin below that line is a single occurrence: the lowest real
+# agreement in the corpus, Martin Marietta's ABL amendment, uses the phrase
+# three times. That thinness is recorded in the code rather than smoothed
+# over, together with why erring toward unknown is the safe direction.
+
+document: fiscalnote_epa_2026
+corpus_name: E_fiscalnote-holdings-inc-note-notew_2026-09-02_0001193125-26-380190_d111500dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: fiscalnote_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      An equity purchase agreement between a buyer and a seller. There is no
+      facility, no lender, no borrowing and nothing for an archetype to
+      describe.
+
+      recurring_revenue at 0.70 was the classifier's answer, and the route to
+      it is worth stating: a company that sells subscriptions is described in
+      a purchase agreement in the vocabulary of recurring revenue, which is
+      the decisive signal for that profile. The document is about the business
+      being bought, and the classifier read its description as the shape of a
+      loan.
+
+      The same mechanism as Greenfire, one step subtler -- there the
+      vocabulary came from a footnote describing a facility, here it comes
+      from describing what the target sells.

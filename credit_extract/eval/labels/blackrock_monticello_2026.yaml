@@ -1,0 +1,60 @@
+# Tier 2 assertions: BlackRock Monticello Debt Real Estate Investment Trust,
+# credit facility (Exhibit 10.6), August 2026.
+#
+# Fit side, never read during development. The corpus's second self-referential
+# definition, and a cleaner one than the first:
+#
+#   "Maturity Date" means the earliest to occur of (i) the Stated Maturity
+#   Date, (ii) the date of the declaration, or automatic occurrence, of THE
+#   MATURITY DATE pursuant to Section 7.2 and (iii) the Collection Date.
+#
+# Limb (ii) defines the Maturity Date as, among other things, the date the
+# Maturity Date occurs. Cumberland Farms' circularity is a computation that
+# converges -- each branch assumes its own percentage to test whether it
+# applies -- and this one is a naming convention: Section 7.2 accelerates the
+# facility and the drafter calls the accelerated date "the Maturity Date", so
+# the definition folds that back into itself.
+#
+# Both are correct drafting and both defeat a closure walk. A definition graph
+# that refuses cycles loses the maturity here and the excess cash flow
+# percentage there, on two agreements that have nothing else in common.
+
+document: blackrock_monticello_2026
+corpus_name: L_blackrock-monticello-debt-real-estate-investment-trust_2026-08-07_0001193125-26-339198_ck0002049595-ex10-6
+source: real
+tier: 2
+
+assertions:
+
+  - id: blackrock_maturity_definition_names_itself
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_value
+    target: revolver.maturity_date
+    expect: null
+    note: >
+      No answer, and the reason is worth separating from the corpus's other
+      empty maturities.
+
+      Aspen's is empty because its chain ends at an undated event. Eagle
+      Point's is empty because four hops end at two events. This one is empty
+      because the only limb that could carry a date is limb (i), the Stated
+      Maturity Date, which this exhibit does not define in the text available;
+      limb (ii) points at itself and limb (iii) is the Collection Date, an
+      event.
+
+      So a reader must establish that a three-limb "earliest to occur of"
+      resolves to nothing, while two nearly identical constructions elsewhere
+      in the corpus -- Fidelity's and Blue Owl Technology's -- resolve to a
+      date because one limb carries one. The phrase is not the signal.
+
+  - id: blackrock_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-07-30
+    note: >
+      '"Closing Date" means July 30, 2025.' Stated, and here as the control
+      against the maturity above: the same document answers one date field
+      outright and cannot answer the other at all.

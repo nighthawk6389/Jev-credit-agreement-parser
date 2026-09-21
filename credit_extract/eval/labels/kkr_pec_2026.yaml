@@ -1,0 +1,65 @@
+# Tier 2 assertions: KKR Private Equity Conglomerate LLC, Amended and Restated
+# Credit Agreement, September 2026.
+#
+# Fit side, never read during development. Kept for two definitions.
+#
+#   "Floor" means zero (0).
+#
+# A word, then a bare numeral in parentheses, and no percent sign anywhere. The
+# corpus now holds nine renderings of a zero floor and this is the only one
+# with no unit at all -- "0" could be zero per cent or zero of anything, and
+# the field is typed as a percent. Valvoline's bare word "zero" at least
+# carries no misleading digit; this one supplies a number a parser can take and
+# no unit to scale it by.
+#
+#   "Closing Date" means the date of initial funding of Loans under the
+#   Existing Credit Agreement.
+#
+# An undated event located in a different agreement. The corpus has eight
+# documents whose Closing Date is an event and this is the first where the
+# event happened under an instrument that is not this one and is not filed --
+# so it is unresolvable twice over.
+
+document: kkr_pec_2026
+corpus_name: F_kkr-private-equity-conglomerate-llc_2026-09-14_0001957845-26-000082_k-pecxamendedandrestated
+source: real
+tier: 2
+
+assertions:
+
+  - id: kkr_floor_has_no_unit
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means zero (0).'
+
+      Zero per cent is the answer and the document does not say per cent. The
+      value happens to be immune to the ambiguity -- zero is zero at any scale
+      -- which is exactly why it is worth an assertion: a pipeline that
+      recovers 0 here has not demonstrated it would recover 50 basis points
+      from the same construction, and Eagle Point shows the construction
+      carrying a non-zero number.
+
+  - id: kkr_closing_date_is_an_event_in_another_agreement
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: closing_date
+    expect: external_reference
+    note: >
+      '"Closing Date" means the date of initial funding of Loans under the
+      Existing Credit Agreement.'
+
+      external_reference rather than a null value, and the distinction is the
+      one the F03 split exists for. Aspen and Constellation Brands define
+      their Closing Date as an event under THIS agreement, and the honest
+      answer there is that the document does not state it. Here the event took
+      place under a different instrument, so the date exists, is knowable, and
+      lives in a document that was not filed.
+
+      The practical difference is what a reader should do next. For Aspen
+      there is nothing to look up; for this one there is, and saying so is the
+      whole value of the status.

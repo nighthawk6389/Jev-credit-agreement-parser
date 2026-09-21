@@ -693,6 +693,20 @@ _INLINE_NUMBERED_SECTION_RE = re.compile(
     r"(?:[ ,;]+(?:[A-Z][A-Za-z']*|of|to|as|and|the|in|on|for|or|etc|Etc)){0,9})"
     r"\.\s",
 )
+#: And the LMA shape, where the heading is a table row rather than a run of
+#: text. Cadeler's facility agreement renders as "| 2.3 | Effectiveness | (a) |
+#: Subject to paragraph (b) below ..." -- the number in one cell, the title in
+#: the next. Nothing anchored or inline matches that, so the document came
+#: through with ZERO sections detected in 412,976 characters, the worst in the
+#: corpus; KNOT Offshore, the other LMA agreement, managed 12.
+#:
+#: The pipes are the safety. They only appear where the ingester rendered a
+#: table, the number cell must carry a dot, and the title cell must open with a
+#: capital -- so a pricing grid row like "| 1 | > 4.25:1.00 | 2.25% |" cannot
+#: match on either count.
+_TABLE_CLAUSE_RE = re.compile(
+    r"\|\s*(?P<num>\d{1,2}\.\d{1,2})\s*\|\s*(?P<title>[A-Z][^|\n]{2,70}?)\s*\|",
+)
 #: Below this many line-anchored section markers, assume the headings are
 #: inline rather than that the document has almost no sections.
 _INLINE_SECTION_FLOOR = 5
@@ -731,7 +745,8 @@ def detect_sections(text: str) -> list[SectionMarker]:
         # so a filing that reads correctly today cannot be changed by this.
         for rx, level in ((_INLINE_ARTICLE_RE, "article"),
                           (_INLINE_SECTION_RE, "section"),
-                          (_INLINE_NUMBERED_SECTION_RE, "section")):
+                          (_INLINE_NUMBERED_SECTION_RE, "section"),
+                          (_TABLE_CLAUSE_RE, "section")):
             for match in rx.finditer(text):
                 if match.start() in markers:
                     continue

@@ -1,0 +1,89 @@
+# Tier 2 assertions: Lifetime Brands, Inc., Term Loan Agreement (Exhibit
+# 10.02), August 2026 -- the companion to the ABL Amendment No. 3 filed as
+# Exhibit 10.01 in the same accession and labelled separately.
+#
+# Fit side, never read during development. The pair is the corpus's first case
+# where a cross-document reference resolves INSIDE the corpus:
+#
+#   "Maturity Date" means the earlier of (i) August 17, 2031, and (ii) the
+#   "Maturity Date" as defined in the ABL Credit Agreement (as in effect as of
+#   the Effective Date, but without giving effect to clause (ii) of the
+#   definition thereof).
+#
+# and the ABL Credit Agreement's own definition, from the other exhibit, is:
+#
+#   "Maturity Date" means the earliest of (i) August 17, 2031, (ii) the
+#   Springing Maturity Date and (iii) any date on which the Commitments are
+#   reduced to zero ...
+#
+# So limb (ii) here points at a document that is in the harvest, with an
+# instruction to read it as at the Effective Date and to ignore its own limb
+# (ii). Both resolve to August 17, 2031. Every other external reference in the
+# corpus -- StepStone's Schedule B, PennantPark's fee letters, KKR's Existing
+# Credit Agreement, Latham's missing grid -- points somewhere unfiled.
+#
+# It also carries the corpus's highest floor by a wide margin.
+
+document: lifetime_brands_term_loan_2026
+corpus_name: C_lifetime-brands-inc-lcut_2026-08-20_0000874396-26-000046_termloanagreement
+source: real
+tier: 2
+
+assertions:
+
+  - id: lifetime_term_floor_is_two_percent
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "2%"
+    note: >
+      '"Floor" means a rate of interest equal to two percent (2%) per annum.'
+
+      The highest floor in the corpus. Nineteen documents floor at zero, two
+      at 0.50% and 0.75%, and this one is 2% -- more than twice the previous
+      maximum, on a term loan sitting behind an ABL.
+
+      It matters because it removes the last excuse for treating this field
+      loosely. A pipeline that defaults to zero, or that reads only the digit
+      it finds first, has been right or harmlessly wrong on almost every
+      document here; on this one it understates the borrower's floor by 200
+      basis points. And the rendering is Eagle Point's -- words then numeral
+      -- so a reader taking the first token gets "two".
+
+  - id: lifetime_term_maturity_points_at_the_other_exhibit
+    family: F09_definitional_depth
+    member: conflicting_definition_across_documents
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: 2031-08-17
+    note: >
+      Both limbs land on August 17, 2031: limb (i) states it, and limb (ii)
+      reaches the ABL Credit Agreement's definition, which also states it.
+
+      The instruction attached to limb (ii) is the interesting part and no
+      field can hold it. It says to read the other agreement as in effect at
+      the Effective Date -- so a later amendment to the ABL does not move this
+      maturity -- and to ignore clause (ii) of that definition, which is the
+      Springing Maturity Date. Without that carve-out the two definitions
+      would be mutually recursive, each deferring to the other's springing
+      limb.
+
+  - id: lifetime_term_has_a_minimum_ebitda_covenant
+    family: F04_absence
+    member: springing_covenant_only
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      Two financial covenants and neither is a leverage cap. Section 6.13 is
+      the Fixed Charge Coverage Ratio at not less than 1.10 to 1.00 during an
+      FCCR Test Period, identical to the ABL's. Section 6.14 is a Minimum
+      Adjusted EBITDA -- 'The Borrowers will not permit Adjusted EBITDA, less
+      the Specified Adjustment, measured as of the last day of each cale[ndar
+      period] ...' -- which is a floor on earnings themselves.
+
+      Sixth distinct covenant shape in the corpus that cannot go in this
+      field, and the first that constrains a single quantity rather than a
+      ratio. A minimum EBITDA covenant has no denominator at all, so it cannot
+      be normalised into a leverage level by any arithmetic.

@@ -1,0 +1,69 @@
+# Tier 2 assertions: Janus Living OP, LLC, $1,250,000,000 Amended and Restated
+# Credit Agreement dated as of September 17, 2026.
+#
+# Fit side, never read during development. Its pricing grid breaks a
+# plausibility assumption the rest of the corpus would teach.
+#
+#   Revolving Loans and Letter of Credit Fees
+#   Pricing Level | Leverage Ratio | Applicable Rate for Alternative Currency
+#   Term Rate Loans, Term SOFR Loans, Daily SOFR Loans and Letter of Credit
+#   Fees | Applicable Rate for Base Rate Loans
+#     1  < 0.30 to 1.00                    105.0 bps   5.0 bps
+#     2  > 0.30 to 1.00 and < 0.35 to 1.00 110.0 bps  10.0 bps
+#     3  > 0.35 to 1.00 and < 0.40 to 1.00 115.0 bps  15.0 bps
+#     4  > 0.40 to 1.00 and < 0.45 to 1.00 120.0 bps  20.0 bps
+#     5  > 0.45 to 1.00 and < 0.50 to 1.00 125.0 bps  25.0 bps
+#     6  > 0.50 to 1.00 and < 0.55 to 1.00 130.0 bps  30.0 bps
+#
+# The leverage ratios are fractions. This is a real-estate facility and its
+# Leverage Ratio is debt against asset value, so it runs from 0.30 to about
+# 0.60 -- where every other leverage covenant in the corpus runs from 1.00 to
+# 6.90 because it measures debt against earnings.
+#
+# Two numbers that look alike and are not. A ratio of 0.55 here is a heavily
+# levered borrower; a ratio of 0.55 in BrightSpring would be an
+# unrecognisably conservative one. Any sanity rule of the form "a leverage
+# ratio is between 1 and 10" rejects this entire grid.
+
+document: janus_living_2026
+corpus_name: I_janus-living-inc-jan_2026-09-17_0001104659-26-108578_tm2624344d4-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: janus_leverage_ratios_are_fractions_of_asset_value
+    family: F08_units
+    member: ratio_formatting
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.30%"
+    note: >
+      Pricing Level 6, 130.0 bps, which is 1.30%. It is the highest level
+      shown in the grid as extracted; the table continues past Level 6 and the
+      pattern steps 5 bps per level, so a reader must establish where it
+      stops rather than assume Level 6 is the end.
+
+      Filed under ratio_formatting because the hard part is not the bps
+      conversion -- HealthStream and Crane NXT already cover that -- but the
+      leverage axis. Every band is a fraction under 1.00, so a pipeline that
+      validates leverage bands against the range the rest of the corpus
+      teaches discards the axis and with it any hope of picking the right row.
+
+      The Base Rate column starting at 5.0 bps is the other oddity: a
+      base-rate margin of five basis points is lower than any in the corpus by
+      a factor of ten, and is the kind of value a magnitude check would treat
+      as a units error.
+
+  - id: janus_closing_date_is_an_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: closing_date
+    expect: null
+    note: >
+      '"Closing Date" means the first date all the conditions precedent in
+      Section 4.01 are satisfied or waived in accordance with Section 10.01.'
+
+      The eighth document with this construction, and word for word IDEX's.
+      September 17, 2026 is on the cover and is the execution date.

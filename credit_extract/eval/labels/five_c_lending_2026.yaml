@@ -1,0 +1,68 @@
+# Tier 2 assertions: 5C Lending Partners Corp., Second Amendment to Loan,
+# Security and Collateral Management Agreement, dated September 2026.
+#
+# Fit side, never read during development. A BDC facility, and the document
+# where the PDF form-field artefact does real damage.
+#
+# nVent leaks the same metadata between a table caption and its first row.
+# Here it lands inside a definition --
+#
+#   "Floor": A rate of interest equal to 0.0%. Field: Page; Sequence: 52;
+#   Options: NewSection; Value: 33 - Field: Sequence; Type: Arabic; Name:
+#   PageNo 33 Field: /Sequence - Field: /Page  "Foreign Lender": ...
+#
+# -- and, worse, inside an operative sentence, cutting it mid-clause:
+#
+#   the Borrower shall have prepaid Loan Advances in an amount that Field:
+#   Page; Se[quence ...]
+#
+# A covenant's cure mechanic is severed between "in an amount that" and
+# whatever it was going to say. Any reader working at sentence or clause
+# granularity -- a span, a quote, a chunk boundary -- gets a fragment that
+# parses and means nothing.
+
+document: five_c_lending_2026
+corpus_name: H_5c-lending-partners-corp_2026-09-08_0000930413-26-002858_c117647-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: five_c_page_metadata_cuts_an_operative_sentence
+    family: F11_layout
+    member: grid_rendered_as_text
+    kind: text_present
+    target: "Options: NewSection"
+    expect: true
+    note: >
+      Second document in the corpus carrying PDF form fields into the text,
+      and the first where they interrupt a sentence rather than sit between
+      elements.
+
+      The consequence is not a stray number but a truncated clause. The
+      pipeline's rule that a value must carry a quote locating it in the text
+      assumes the text around a value is the text a reader would see; where
+      the metadata cuts in, a quote can be verbatim, locatable and
+      meaningless.
+
+  - id: five_c_has_no_leverage_covenant
+    family: F04_absence
+    member: springing_covenant_only
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'Borrower shall not permit its Total Interest Coverage Ratio to be less
+      than 1.50 to 1.00 unless, within two (2) Business Days of the last day
+      of the fiscal quarter in which the Borrower failed to comply ..., the
+      Borrower shall have prepaid Loan Advances in an amount that [text cut by
+      page metadata]'.
+
+      A coverage floor with a two-day cure by prepayment, and no leverage cap
+      anywhere. Fifth distinct covenant shape in the corpus that cannot go in
+      this field, after two fixed charge coverage ratios, a debt service
+      coverage ratio and two asset coverage ratios.
+
+      1.50 to 1.00 is also the Asset Coverage Ratio level in Fidelity and Blue
+      Owl Technology, so the same figure now appears in three agreements
+      governing two different ratios in two different directions.

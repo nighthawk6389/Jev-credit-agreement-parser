@@ -209,6 +209,20 @@ untestable_in_this_environment:
       "Delayed Drawdown Collateral Loan". A phrase now only vetoes where some
       use of it sits outside a collateral description.
 
+      The register assumed the damage was bounded by the veto. It was not.
+      Greenfire Resources' Business Acquisition Report is in the harvest -- a
+      Canadian disclosure with financial statements, no defined terms, no
+      borrower and no operative clause -- and the classifier read a $50
+      million revolver out of a footnote and returned second_lien at 0.70.
+      Above 0.50 the profile begins marking fields not_applicable_to_archetype,
+      which is confident, so a document with nothing to classify was about to
+      settle fields on the strength of a guess. The corpus caught it as the
+      first silent error the gate has ever reported. Detection now requires
+      the document to contain an Event of Default: zero occurrences in the
+      report, three at the lowest in any real agreement here and mostly above
+      fifteen, so the margin is wide and the test is about document kind
+      rather than quality.
+
       Health Catalyst showed the third way it fails, which is neither: the
       phrase list can simply miss the term. The agreement writes "Consolidated
       Adjusted EBITDA" 53 times and "Consolidated EBITDA" never, so the veto

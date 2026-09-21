@@ -1,0 +1,81 @@
+# Tier 2 assertions: Greenfire Resources Ltd., Business Acquisition Report
+# (Form 51-102F4) dated August 12, 2026, with audited financial statements.
+#
+# Fit side, never read during development. It is in the corpus and it is not a
+# credit agreement. That is the label.
+#
+# The harvest selected 100 filings by stratum and this one is a Canadian
+# securities disclosure about the acquisition of Connacher Oil and Gas, with
+# consolidated financial statements attached. It has no defined-term section:
+# "the borrower shall" occurs zero times, '"Borrower" means' zero times, and
+# the phrase "means, with respect to" -- which opens a definition in every real
+# agreement here -- zero times.
+#
+# What it does have is a facility described in a footnote:
+#
+#   12. DEBT  12.1 Revolving Credit Facility  In Q4 2025, the Company closed a
+#   $50 million revolving reserved-based credit facility (the "Credit
+#   Facility"). The Credit Facility is subject to semi-annual borrowing base
+#   reviews on April 30th and October 31st. The borrowing base determination
+#   reflects the lender's evaluation of the Company's petroleum and natural gas
+#   reserves ...
+#
+# A facility size, a borrowing base, review dates and a lender's discretion --
+# all of it disclosure about an agreement that is somewhere else. An extractor
+# reading this document finds the vocabulary it was built for and every value
+# it recovers belongs to a document not in the filing.
+#
+# Two documents of the 107 in the frozen split are like this; Horizon
+# Technology's Sale and Servicing Agreement is the other, though that one is at
+# least a transaction document. Neither is a defect in the pipeline and both
+# are worth a label, because a corpus is also a claim about what it contains.
+
+document: greenfire_bar_2026
+corpus_name: D_greenfire-resources-ltd-gfr-gfrwf_2026-08-14_0001213900-26-090296_ea030224701ex99-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: greenfire_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      The classifier returns second_lien at 0.70 on a business acquisition
+      report. There is no facility here to have an archetype, and 0.70 is
+      above the threshold at which the profile's suppression rules begin
+      marking fields not_applicable_to_archetype -- a confident status.
+
+      So the composition the register warns about is available on this
+      document in its purest form: a confident classification of a document
+      that is not a credit agreement, feeding suppression of fields that are
+      absent because the agreement is elsewhere. Nothing is extracted today,
+      so nothing is currently wrong; what the assertion pins is that the
+      classifier should decline rather than choose.
+
+      Returning unknown is what the profile machinery already does on half the
+      real agreements in this corpus, including textbook ABLs. That it
+      declines on Cooper-Standard and commits here is the clearest statement
+      available of how little the confidence figure means.
+
+  - id: greenfire_facility_size_belongs_to_another_document
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: revolver.commitment
+    expect: external_reference
+    note: >
+      "$50 million" is stated plainly and is not this document's term. It is a
+      financial statement note describing a Credit Facility agreement that the
+      filing does not contain, so the value is real, correctly quoted and
+      belongs to a document that is somewhere else -- which is what
+      external_reference means.
+
+      absent_from_document would be wrong twice over: the figure is present,
+      and the facility exists. Reporting $50,000,000 as this document's
+      revolver commitment would be the mirror of the Constellation Brands
+      defect, where a date from a cross-referenced agreement was filed under
+      this agreement's field -- except that here every economic term in the
+      document is in that position.

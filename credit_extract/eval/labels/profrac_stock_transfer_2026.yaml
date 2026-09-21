@@ -1,0 +1,39 @@
+# Tier 2 assertions: ProFrac Holding Corp., Stock Transfer Agreement dated as
+# of September 11, 2026 (Exhibit 10.1).
+#
+# Fit side, never read during development. The fourth document in the harvest
+# that is not a credit agreement, after Greenfire's acquisition report,
+# FiscalNote's equity purchase agreement and Evolent's press release.
+#
+# 31,073 characters, "event of default" zero times, and every vocabulary probe
+# empty -- no borrowing base, no EBITDA, no MFN, no spread adjustment. A share
+# transfer between affiliated holding companies.
+#
+# It is labelled for the same reason as the other three: the harvest's
+# composition is a claim the corpus should carry rather than a caveat in a
+# note. Four of the documents labelled so far are not credit agreements, and
+# two more visible in the same category -- the Butterfield proxy and the
+# McGraw-Hill release -- bring it to six in roughly sixty read.
+
+document: profrac_stock_transfer_2026
+corpus_name: L_profrac-holding-corp-acdc_2026-09-16_0001104659-26-108302_tm2625564d1-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: profrac_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      A stock transfer agreement. The classifier returned unknown at 0.26 on
+      its own, before the guard, because nothing decisive fires -- there is no
+      facility vocabulary here at all.
+
+      Which is the useful contrast with Greenfire and FiscalNote. All three
+      are non-agreements; only the two that happened to describe a facility or
+      a subscription business drew a confident answer. The classifier was
+      never telling documents from agreements, and on two thirds of the
+      non-agreements in this corpus that made no difference.

@@ -1,0 +1,49 @@
+# Tier 2 assertions: SLR HC BDC SPV, LLC, Loan Financing and Servicing
+# Agreement dated as of August 14, 2026.
+#
+# Fit side, never read during development. The fourth warehouse in the corpus
+# -- after StepStone, PennantPark and Golub -- and a short label, because what
+# it shows has been shown. It is here for the count rather than for a new
+# finding: "Collateral Obligation" occurs 695 times, second only to the Owl
+# Rock CLO's 717, on a document that is a loan financing agreement rather than
+# an indenture.
+#
+# Four warehouses and a CLO now carry the same trap, which makes it the most
+# repeated structural pattern in the corpus: every one of them describes assets
+# it may buy in the vocabulary of loans a company owes.
+
+document: slr_hc_bdc_2026
+corpus_name: E_slr-hc-bdc-llc_2026-08-20_0001193125-26-359169_d417305dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: slr_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      An SPV borrower with a servicer and an equityholder, constrained by
+      eligibility criteria and a borrowing base rather than by a ratio of debt
+      to earnings. The twelve EBITDA references belong to obligors of the
+      Collateral Obligations, as in every other warehouse here.
+
+  - id: slr_ebitda_belongs_to_the_obligors
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_status
+    target: consolidated_ebitda.addback_cap_pct
+    expect: absent_from_document
+    note: >
+      Sixth document where EBITDA sits on somebody else's balance sheet --
+      Star Mountain, Golub, StepStone, Owl Rock, PennantPark and this one --
+      and the fourth where the borrower is a special purpose vehicle that
+      could not have any.
+
+      Recorded because the rule that keeps this safe is a sixty-character
+      proximity window around a collateral noun, derived from one document. A
+      sixth instance is the cheapest evidence available that the window
+      generalises.

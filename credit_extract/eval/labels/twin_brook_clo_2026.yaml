@@ -1,0 +1,53 @@
+# Tier 2 assertions: Twin Brook CLO 2024-1 LLC (TPG Twin Brook Capital Income
+# Fund), First Supplemental Indenture dated as of August 19, 2026.
+#
+# Fit side, never read during development. The corpus's second CLO, and a
+# supplemental indenture rather than an original one -- so it amends a
+# document that is not in the harvest.
+#
+# Short label. What it adds is a count: "Collateral Obligation" occurs 698
+# times here, 717 in the Owl Rock indenture, 695 in SLR's servicing agreement.
+# Three documents over six hundred, on top of Golub's nineteen "Delayed
+# Drawdown Collateral Loan" that the collateral-noun rule was built from.
+
+document: twin_brook_clo_2026
+corpus_name: A_tpg-twin-brook-capital-income-fund_2026-08-25_0001628280-26-058914_exhibit102-supplementalinda
+source: real
+tier: 2
+
+assertions:
+
+  - id: twin_brook_closing_date_is_the_original_indentures
+    family: F05_versioning
+    member: superseded_by_amendment_and_restatement
+    kind: field_value
+    target: closing_date
+    expect: 2024-05-30
+    note: >
+      '"Closing Date": May 30, 2024.' on a supplemental indenture dated August
+      19, 2026 -- so the date belongs to the original indenture, which is not
+      in the harvest.
+
+      Fourth document in the corpus whose Closing Date predates its own
+      instrument by more than a year, after Virco (2012 on 2026), BrightSpring
+      (2019 on 2026) and Horizon (2024 on 2026). The pattern is now common
+      enough to state plainly: on an amendment, this field is almost never the
+      document's own date, and the gap carries no information about whether
+      the value was read correctly.
+
+  - id: twin_brook_ebitda_belongs_to_the_obligors
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_status
+    target: consolidated_ebitda.addback_cap_pct
+    expect: absent_from_document
+    note: >
+      An issuer with no operations. Seventh document where EBITDA belongs to
+      the obligors of assets the vehicle holds rather than to the borrower,
+      and the third with more than six hundred mentions of "Collateral
+      Obligation".
+
+      The collateral-noun rule that keeps these safe was derived from a single
+      document with a few dozen such mentions and a sixty-character window.
+      Seven instances across CLOs, warehouses, a BDC and a servicing agreement
+      is the evidence that the window was not fitted to one filing's habits.

@@ -1,0 +1,68 @@
+# Tier 2 assertions: HealthStream, Inc., Second Amendment to Amended and
+# Restated Revolving Credit Agreement, dated as of September 10, 2026.
+#
+# Fit side, never read during development. It is the control the corpus has
+# been missing for its single most repeated trap.
+#
+#   "Closing Date" shall mean the date on which the conditions precedent set
+#   forth in Section 3.1 and Section 3.2 have been satisfied or waived in
+#   accordance with Section 10.2. FOR THE AVOIDANCE OF DOUBT, THE CLOSING DATE
+#   OCCURRED ON OCTOBER 6, 2023.
+#
+# Six documents define this field as an event that never resolves -- Aspen,
+# Constellation Brands, SB Energy and others -- and the correct answer in all
+# of them is nothing. This one opens with the identical sentence and then
+# answers it. A rule that learned to decline on "the date on which the
+# conditions ... are satisfied" declines here, wrongly, on a date the document
+# states outright in the next breath.
+#
+# Latham welds its date into the same clause ("means August 20, 2026, the date
+# on which the conditions specified in Section 4.01 were satisfied"), which a
+# reader scanning for a numeral will catch. This one puts the numeral in a
+# separate sentence after the definition has apparently closed.
+
+document: healthstream_2026
+corpus_name: O_healthstream-inc-hstm_2026-09-14_0001437749-26-030240_ex-1015492
+source: real
+tier: 2
+
+assertions:
+
+  - id: healthstream_closing_date_is_resolved_after_the_definition
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-10-06
+    note: >
+      The date is in the sentence following the definition, introduced by "For
+      the avoidance of doubt" -- the drafter anticipating exactly the
+      ambiguity this corpus keeps running into.
+
+      September 10, 2026 is the wrong answer and the one on the cover: this is
+      the Second Amendment, and the Closing Date belongs to the agreement
+      being amended.
+
+  - id: healthstream_top_margin_is_two_hundred_bps
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.00%"
+    note: >
+      'Pricing Level | Net Funded Debt Leverage Ratio | Applicable Percentage
+      (per annum) | Applicable Margin (SOFR Loans) (per annum) | Applicable
+      Margin (Base Rate Loans) (per annum): I Less than 1.50:1.00 20 bps 150
+      bps 50 bps; II Greater than or equal to 1.50:1.00 and Less than 2.50:1.00
+      25 bps 175 bps 75 bps; III Greater than or equal to 2.50:1.00 30 bps 200
+      bps 100 bps.'
+
+      Second grid in the corpus quoted entirely in basis points, after Crane
+      NXT, and this one has no decimal point anywhere -- 20, 150, 50 rather
+      than 200.0 or 162.5 -- so nothing in the numbers hints that they are not
+      percentages. 200 read as a percent is a 200% margin; read correctly it
+      is 2.00%.
+
+      Three columns and the first is a fee: "Applicable Percentage" here means
+      the commitment fee, 20 to 30 bps, which is the narrowest and leftmost
+      column and shares the row with two margins.

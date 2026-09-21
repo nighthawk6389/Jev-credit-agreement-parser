@@ -480,3 +480,51 @@ def test_the_inline_rule_leaves_a_document_that_already_parses_alone():
     )
     ids = [marker.section_id for marker in detect_sections(anchored)]
     assert ids == ["1.01", "1.02", "1.03", "2.01", "2.02", "2.03"]
+
+
+def test_lma_clause_headings_render_as_table_rows():
+    """Cadeler's facility agreement produced ZERO sections in 412,976 chars.
+
+    LMA agreements number provisions as Clauses and this filer renders each
+    heading as a table row -- the number in one cell, the title in the next --
+    so neither the anchored patterns nor the inline ones could see them. The
+    document's 352 internal references are Clauses too, and the cross-reference
+    extractor only knew "Section" and "Article", so the integrity check that
+    exists to catch dangling references stayed silent on a document where
+    nothing resolved. Two invisible failures composing into a clean report.
+    """
+    from credit_extract.ingest.normalize import detect_sections
+
+    lma = (
+        "THIS AGREEMENT is dated 11 September 2026. | 2.3 | Effectiveness | "
+        "(a) | Subject to paragraph (b) below, the terms and conditions apply. "
+        "| 5.4 | Lenders' participation | (a) | Each Lender shall participate. "
+        "| 27.8 | Additional trustees | The Agent may appoint a co-trustee."
+    )
+    found = {marker.section_id for marker in detect_sections(lma)}
+    assert {"2.3", "5.4", "27.8"} <= found
+
+
+def test_a_pricing_grid_row_is_not_mistaken_for_a_clause_heading():
+    """The table-row rule fires on documents where heading detection already
+    failed, and a pricing grid is exactly the kind of table such a document
+    still contains. Its number cells carry no decimal point in the clause
+    sense and its second cell is a threshold rather than a title."""
+    from credit_extract.ingest.normalize import detect_sections
+
+    grid = (
+        "Pricing Level | Consolidated Net Leverage Ratio | Term SOFR Loans "
+        "| 1 | > 4.25:1.00 | 2.25% | 2 | < 4.25:1.00 | 2.00% "
+        "| 3 | < 3.25:1.00 | 1.75% |"
+    )
+    assert detect_sections(grid) == []
+
+
+def test_a_clause_cross_reference_is_extracted():
+    """352 of Cadeler's references are "clause N.N" and none was seen."""
+    from credit_extract.validate.invariants import _XREF_RE
+
+    found = {m.group(1) for m in _XREF_RE.finditer(
+        "in accordance with clause 5.4 (Lenders' participation) and Section 2.3"
+    ) if m.group(1)}
+    assert found == {"5.4", "2.3"}

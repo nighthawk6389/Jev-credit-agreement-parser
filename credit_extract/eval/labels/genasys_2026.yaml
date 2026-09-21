@@ -1,0 +1,71 @@
+# Tier 2 assertions: Genasys Inc., credit agreement as amended, September 2026.
+#
+# Fit side, never read during development. The first document the venture_debt
+# profile claims (0.70), and the only one in the corpus carrying a maturity
+# that has already happened:
+#
+#   "Maturity Date" means (i) with respect to the Closing Date Term Loan and
+#   any Additional Term Loan, July 13, 2027 and (ii) with respect to the First
+#   Amendment Term Loan, December 31, 2025.
+#
+# The filing is dated September 4, 2026. Limb (ii) matured more than eight
+# months before the document was filed, and the definition still states it as
+# a maturity rather than as a historical fact.
+#
+# Nothing in the corpus tests what a pipeline does with a date in the past. The
+# natural instinct -- prefer the later date, or discard the one that has gone
+# -- is wrong here in both directions: limb (ii) is the operative maturity of a
+# tranche that may still be outstanding and in default, and reporting July 13,
+# 2027 as "the" maturity silently drops a facility.
+
+document: genasys_2026
+corpus_name: C_genasys-inc-gnss_2026-09-04_0001193125-26-383648_gnss-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: genasys_is_venture_debt
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: venture_debt
+    note: >
+      First real exercise of this profile, whose decisive signals are a loan
+      and security agreement, a warrant to purchase and a preferred stock
+      financing. Recorded against the F06 borrowing-base member because the
+      register has no venture-debt member -- the fourth archetype in that
+      position after project finance, investment grade and LMA, which is now
+      enough of a pattern to say the family register's F06 members were drawn
+      from the deal types the author expected rather than from the ones the
+      corpus holds.
+
+  - id: genasys_term_loan_maturity_is_the_stated_2027_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: 2027-07-13
+    note: >
+      Limb (i), which governs the Closing Date Term Loan -- the facility this
+      field is named for.
+
+      December 31, 2025 is the answer to avoid and it is not a distractor of
+      the usual kind. It is a real maturity of a real tranche, correctly
+      stated, in the same definition, one clause away; what disqualifies it is
+      that it belongs to the First Amendment Term Loan. A pipeline that takes
+      the nearest date, the first date, or the only date that has passed gets
+      it, and a pipeline that filters out past dates as parse errors loses the
+      fact that this agreement has a matured tranche in it.
+
+  - id: genasys_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-05-13
+    note: >
+      '"Closing Date" means May 13, 2024.' Two years and four months before
+      the filing, and exactly fourteen months before limb (i) of the maturity
+      -- so the document contains three dates in ascending order, two of them
+      in the past, and only one of each is this field's.

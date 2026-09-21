@@ -627,8 +627,16 @@ def registered() -> list[str]:
 # F01 -- integrity: defects that parse cleanly
 # ---------------------------------------------------------------------------
 
+#: "Clause" is matched in lower case as well as upper, and "Section" is not.
+#: LMA agreements refer to their own provisions in running prose -- "in
+#: accordance with clause 5.4 (Lenders' participation)" -- where US agreements
+#: capitalise. Cadeler makes 352 such references and this pattern saw none of
+#: them, so on a document where nothing resolved the invariant reported
+#: nothing wrong. Lower-case "section" stays out because it is overwhelmingly
+#: statutory ("section 3(37) of ERISA"), which is a citation to a law rather
+#: than to this agreement.
 _XREF_RE = re.compile(
-    r"\bSection\s+(\d+\.\d+[A-Za-z]?)\b|\bArticle\s+([IVXLC]+)\b"
+    r"\b(?:Section|[Cc]lause)\s+(\d+\.\d+[A-Za-z]?)\b|\bArticle\s+([IVXLC]+)\b"
 )
 _SCHEDULE_REF_RE = re.compile(
     r"\b(Schedule|Exhibit|Annex)\s+([\w.()-]+)", re.IGNORECASE

@@ -1,0 +1,62 @@
+# Tier 2 assertions: LL Flooring Holdings, Inc., Credit Agreement dated
+# December 2022.
+#
+# Fit side, never read during development. The third document in the corpus
+# with a real, paid credit spread adjustment:
+#
+#   "SOFR Adjustment" means 0.10% (10.00 basis points) per annum.
+#
+# word for word Compass Diversified's, plus "per annum". Hornbeck writes the
+# same rate as a bare "0.10%". Three agreements from three banks across four
+# years converge on one number and three renderings of it, which is what makes
+# 0.10% both the easiest value to guess and the one a pipeline gets no credit
+# for guessing.
+
+document: ll_flooring_2022
+corpus_name: P_ll-flooring-holdings-inc-llflq_2022-12-30_0001396033-22-000031_ll-20221227xex10d1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ll_flooring_sofr_adjustment_is_ten_basis_points
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.10%"
+    note: >
+      Paid on every SOFR loan, stated in percent and basis points and
+      qualified per annum.
+
+      With Compass Diversified and Hornbeck this makes three positives for
+      this field against eleven negatives, which is the first time the ratio
+      is good enough for the family's coverage to mean something. Before the
+      positives existed, a check that never fired passed every assertion.
+
+  - id: ll_flooring_floor_has_a_space_before_the_percent
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means 0.00 % per annum.'
+
+      A space between the numeral and the sign. Trivial to a reader and not to
+      a pattern: the corpus now has seven renderings of a zero floor -- 0.00%,
+      0.0%, 0%, "zero", "zero percent (0%)", "zero percent (0.00%)", and a
+      definition that states no rate at all -- and this adds an eighth that
+      differs from the first by one character of whitespace.
+
+  - id: ll_flooring_maturity_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2026-04-30
+    note: >
+      '"Maturity Date" means April 30, 2026.' A bare date with no limbs, no
+      extensions and no springing override -- the simplest maturity in the
+      corpus, and here as the control against nScale's three extension dates
+      and Eagle Point's four-hop chain that never lands.

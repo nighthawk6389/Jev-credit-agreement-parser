@@ -1,0 +1,60 @@
+# Tier 2 assertions: Blue Owl Technology Income Corp., Fourth Amendment to
+# Senior Secured Credit Agreement, dated as of September 10, 2026.
+#
+# Fit side, never read during development. Labelled as the pair to Fidelity
+# Private Credit: two BDC facilities, two different sponsors, two different
+# agent banks, and the same three provisions almost word for word --
+#
+#   "Floor" means zero percent (0.00%).
+#   "Maturity Date" means the earliest to occur of (a) [a stated date] and
+#   (b) the date on which all Commitments have been terminated ...
+#   (b) Asset Coverage Ratio. The Borrower will not permit the Asset Coverage
+#   Ratio to be less than 1.50 to 1 at any time.
+#
+# The pair is worth having because it establishes that these are conventions
+# rather than quirks. A single document showing an Asset Coverage Ratio in
+# place of a leverage covenant could be a drafting choice; two unrelated BDCs
+# with identical wording make it the shape of the product, which is what the
+# archetype machinery would need to learn if a BDC profile is ever added.
+
+document: blue_owl_technology_2026
+corpus_name: R_blue-owl-technology-income-corp_2026-09-15_0001193125-26-391951_d96120dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: blue_owl_tech_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      The Asset Coverage Ratio floor of 1.50 to 1 is the 1940 Act limit and is
+      assets over debt, so it constrains leverage in the opposite direction
+      and at the opposite end of the fraction. Identical to Fidelity's.
+
+      Reported as a maximum leverage level, 1.50 says the fund is capped at a
+      turn and a half; what the clause requires is that assets stay half again
+      the size of borrowings, which permits roughly two turns.
+
+  - id: blue_owl_tech_maturity_resolves
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-10
+    note: >
+      '"Maturity Date" means the earliest to occur of (a) September 10, 2031
+      and (b) the date on which all Commitments have been terminated and the
+      aggregate amount of Loans outstanding has been repaid in full ...'.
+
+      "Earliest to occur of" with one dated limb and one termination event,
+      which resolves to the date -- the same construction and the same
+      resolution as Fidelity's, and the opposite outcome from Eagle Point's,
+      whose limbs are both events.
+
+      Three documents, one phrase, two answers. What decides it is whether any
+      limb carries a date, which is a property of the limbs rather than of the
+      phrase, so a rule keyed to "earliest to occur of" learns nothing useful.

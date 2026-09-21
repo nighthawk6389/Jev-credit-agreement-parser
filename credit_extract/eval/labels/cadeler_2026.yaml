@@ -1,0 +1,74 @@
+# Tier 2 assertions: Cadeler A/S, facility agreement (Exhibit 10.29),
+# September 2026.
+#
+# Fit side, never read during development. It sets the corpus's record for
+# structural failure:
+#
+#   ZERO sections detected in 412,976 characters.
+#
+# Not one. Aspen found 1 of 198 before the inline-heading rule; StepStone found
+# 16 of 125 before the bare-numbered rule. This finds none at all, because it
+# is an LMA agreement and LMA agreements number their provisions as Clauses --
+# "Clause 1.1", "Clause 22.3" -- and every pattern in the detector is built for
+# "Section", "ARTICLE" or a bare "N.N." heading followed by a Title Case name.
+#
+# The consequence is total: with no section markers the structural segmentation
+# collapses to one chunk, every cross-reference in the agreement is
+# unresolvable, and the definition graph has no provision boundaries to work
+# with. This is the second european_lma document after KNOT Offshore, which
+# found 12, so the dialect costs roughly everything.
+#
+# It is also redacted -- "CERTAIN IDENTIFIED INFORMATION HAS BEEN EXCLUDED FROM
+# THE EXHIBIT BECAUSE IT IS BOTH (I) NOT MATERIAL AND (II) THE TYPE OF
+# INFORMATION THAT THE REGISTRANT TREATS AS PRIVATE" -- which makes it the
+# second after Lifetime Brands.
+
+document: cadeler_2026
+corpus_name: J_cadeler-plc_2026-09-14_0001104659-26-107368_tm2510458d9-ex10-29
+source: real
+tier: 2
+
+assertions:
+
+  - id: cadeler_is_european_lma
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: european_lma
+    note: >
+      0.95, the highest archetype confidence in the corpus, on the document
+      the rest of the pipeline can do least with. The classifier reads the
+      first 30,000 characters and the LMA dialect is unmistakable there;
+      everything downstream needs structure, and there is none.
+
+      Worth pinning as a pair with the section count below: a document can be
+      classified confidently and correctly and still be unreadable, and the
+      confidence figure says nothing about that.
+
+  - id: cadeler_cross_references_are_clauses
+    family: F11_layout
+    member: grid_rendered_as_text
+    kind: text_present
+    target: "clause 5.4"
+    expect: true
+    note: >
+      The first version of this assertion expected cross_references_resolve to
+      fire, on the reasoning that with no section markers every reference must
+      dangle. It does not fire, and the reason is worse than the reasoning.
+
+      The document makes 352 internal references and every one is a "clause":
+      "subject to clause 2.3 (Effectiveness)", "appointed under clause 27.8
+      (Additional trustees)", "in accordance with clause 5.4 (Lenders'
+      participation)". The reference extractor looks for "Section N.N" and
+      finds 48, almost all of them citations to statutes. So the 352 real
+      references are as invisible as the headings they point at.
+
+      Two failures that cancel. Nothing detects the provisions, nothing
+      detects the references to them, and the integrity check that exists to
+      catch exactly this reports a clean document. It is the Air T shape --
+      two individually visible gaps composing into a confident wrong answer --
+      except that here the wrong answer is silence.
+
+      Asserted on the document's own text rather than on the invariant,
+      because asserting that the invariant stays quiet would bless the defect
+      rather than record it.

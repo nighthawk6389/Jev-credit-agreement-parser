@@ -1,0 +1,52 @@
+# Tier 2 assertions: Virco Mfg. Corporation, Amendment No. 8 to Amended and
+# Restated Revolving Credit and Security Agreement, dated September 2026.
+#
+# Fit side, never read during development. A short label for one figure:
+#
+#   "Closing Date" shall mean June 15, 2012.
+#
+# on an instrument dated fourteen years later. Every other stated Closing Date
+# in the corpus is within a year or two of its document -- BrightSpring's 2019
+# on a 2026 amendment is the closest -- and this one is old enough that a
+# plausibility check on the gap would reject it.
+
+document: virco_amendment_8_2026
+corpus_name: C_virco-mfg-corporation-virc_2026-09-04_0001628280-26-060657_virc-20260731xex101ngxpncx
+source: real
+tier: 2
+
+assertions:
+
+  - id: virco_closing_date_is_fourteen_years_old
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2012-06-15
+    note: >
+      The Closing Date belongs to the original 2012 agreement and survives
+      eight amendments unchanged, which is what a Closing Date is for -- it
+      anchors every "on the Closing Date" representation and basket in the
+      document, and moving it would reopen all of them.
+
+      The risk is the opposite of the usual one. Elsewhere the danger is
+      reporting the instrument's own date instead of the defined term; here a
+      pipeline that does read the defined term produces a date fourteen years
+      before the filing, which looks like a parsing error and is not.
+
+  - id: virco_floor_is_zero_by_default
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means the benchmark rate floor, if any, provided in this
+      Agreement initially ... with respect to the Term SOFR Rate or, if no
+      floor is specified, zero.'
+
+      The same construction as Limbach, in an unrelated agreement by a
+      different bank, which makes it a drafting convention rather than a
+      one-off: the definition states no rate and supplies zero as a fallback,
+      so the answer requires establishing that nothing elsewhere specifies
+      one.

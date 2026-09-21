@@ -1,0 +1,46 @@
+# Tier 2 assertions: Evolent Health, Inc., second quarter 2026 results press
+# release (Exhibit 99.1).
+#
+# Fit side, never read during development. The third document in the harvest
+# that is not a credit agreement: a 46,483-character earnings announcement,
+# zero sections, nineteen mentions of EBITDA because that is what an earnings
+# release discusses.
+#
+# The classifier already declined on it -- unknown at 0.21 -- so unlike
+# Greenfire and FiscalNote it was never producing a confident answer. It is
+# labelled anyway, because the assertion that a press release has no archetype
+# is worth being able to run rather than worth assuming, and because three
+# instances is what turns "the harvest contains a stray document" into a
+# measurement.
+#
+# Of the documents labelled so far, three of the harvested filings are not
+# credit agreements and two more -- the Butterfield proxy and the McGraw-Hill
+# release -- are visible in the same category without being labelled. That is
+# roughly five in a hundred, which is a fact about the harvest worth carrying
+# in the corpus rather than in a note.
+
+document: evolent_press_release_2026
+corpus_name: D_evolent-health-inc-evh_2026-08-06_0001628908-26-000084_a2026q2exhibit991
+source: real
+tier: 2
+
+assertions:
+
+  - id: evolent_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      A press release. It reports Adjusted EBITDA nineteen times, which is
+      enough EBITDA vocabulary to reach several profiles' supporting signals
+      and not enough of anything decisive, so the classifier returns unknown
+      at 0.21 on its own.
+
+      That it declines here and committed on Greenfire is the useful contrast.
+      Both are corporate disclosures with financial figures; the difference is
+      that Greenfire's footnote described a revolving credit facility with a
+      borrowing base, which is decisive vocabulary, and this one describes
+      operating results, which is not. The classifier was never distinguishing
+      documents from agreements -- it was matching phrases, and one document
+      happened to contain the phrases.

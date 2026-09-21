@@ -539,6 +539,49 @@ def decisive_counts(text: str) -> dict[str, list[str]]:
     }
 
 
+#: The one clause every credit agreement has and no financial statement,
+#: prospectus, press release or acquisition report does. Measured across the
+#: corpus:
+#:
+#:   Greenfire business acquisition report      0
+#:   Evolent press release                      0
+#:   Butterfield proxy                          0
+#:   McGraw-Hill press release                  0
+#:   Sysco press release                        0
+#:   FiscalNote equity purchase agreement       1
+#:   ---------------------------------------------
+#:   Martin Marietta ABL amendment              3   <- lowest real agreement
+#:   Air T                                     15
+#:   Evernorth PIK note                        19
+#:   every other labelled agreement            25+
+#:
+#: So two separates them, and the margin below the line is one occurrence
+#: rather than the comfortable gap the zero-count documents suggest. The
+#: equity purchase agreement is the reason: it is an agreement, it has an
+#: event-of-default representation about the target's contracts, and it is not
+#: a credit agreement. The plural "Events of Default" would be a better marker
+#: -- it is a section heading rather than a reference -- and cannot be used,
+#: because filings render headings in small caps and the text arrives as
+#: "E VENTS OF D EFAULT".
+#:
+#: The thin margin is tolerable because the two errors are not symmetric.
+#: Rejecting a real agreement costs coverage: the archetype goes to unknown,
+#: nothing is suppressed, and fields route to review. Accepting a document
+#: that is not an agreement costs correctness, because suppression is
+#: confident. Erring toward unknown is the direction that cannot produce a
+#: silent error.
+#:
+#: Deliberately a document-kind test and not a quality score. It answers "is
+#: this an agreement" and nothing else -- a real agreement that is badly
+#: drafted, redacted, or in a dialect nothing here parses still passes it.
+_AGREEMENT_MARKER = "event of default"
+_AGREEMENT_MARKER_FLOOR = 2
+
+
+def _reads_like_an_agreement(text: str) -> bool:
+    return text.lower().count(_AGREEMENT_MARKER) >= _AGREEMENT_MARKER_FLOOR
+
+
 def detect_deterministic(text: str) -> ArchetypeDetection:
     """Classify on *distinctive* vocabulary alone, for free.
 
@@ -552,7 +595,22 @@ def detect_deterministic(text: str) -> ArchetypeDetection:
     wins only when nothing decisive fires, which is the right default because
     it is also the most common deal. Two archetypes firing decisively at equal
     strength is a real ambiguity and goes to the model.
+
+    Before any of that, the document has to be an agreement. Greenfire
+    Resources' Business Acquisition Report is in the harvest, describes a $50
+    million revolver in a financial statement footnote, and was classified as
+    a second lien term loan at 0.70 -- confidently, on a filing with no
+    borrower, no lender and no operative clause. That is a silent error by
+    construction: every field the profile then rules inapplicable is settled
+    on a document that has no fields at all.
     """
+    if not _reads_like_an_agreement(text):
+        return ArchetypeDetection(
+            note=(
+                "no Event of Default anywhere in the document, so this is not "
+                "a credit agreement and has no archetype"
+            ),
+        )
     found = signal_counts(text)
     decisive = decisive_counts(text)
     if decisive:

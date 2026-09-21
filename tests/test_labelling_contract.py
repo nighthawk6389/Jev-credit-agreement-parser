@@ -329,3 +329,41 @@ def test_every_label_names_a_document_the_split_knows():
         "these labels name a document the frozen split does not know, so their "
         f"assertions never run: {unknown}"
     )
+
+
+def test_a_document_that_is_not_an_agreement_gets_no_archetype():
+    """Greenfire Resources' Business Acquisition Report is in the harvest.
+
+    It is a Canadian securities disclosure with financial statements attached:
+    no defined terms, no borrower, no lender, no operative clause. It
+    describes a $50 million revolver in note 12.1, which is enough vocabulary
+    for the classifier to return second_lien at 0.70 -- above the threshold at
+    which the profile begins marking fields not_applicable_to_archetype, a
+    confident status.
+
+    So the composition the blind-spot register warns about was reachable in
+    its purest form: a confident classification of a document with nothing to
+    classify, suppressing fields that are absent because the agreement is
+    somewhere else. The corpus caught it as a silent error and this is the
+    guard.
+    """
+    from credit_extract.models.archetypes import detect_deterministic
+
+    report = (
+        "FORM 51-102F4 BUSINESS ACQUISITION REPORT. Item 2 Details of "
+        "Acquisition. 12. DEBT 12.1 Revolving Credit Facility. In Q4 2025 the "
+        "Company closed a $50 million revolving reserved-based credit facility "
+        "(the 'Credit Facility'). The Credit Facility is subject to "
+        "semi-annual borrowing base reviews. The borrowing base determination "
+        "reflects the lender's evaluation of the Company's petroleum and "
+        "natural gas reserves."
+    )
+    assert detect_deterministic(report).archetype == "unknown"
+
+    # The same vocabulary inside something that is an agreement still classifies.
+    agreement = report + (
+        " Section 8. Events of Default. Any Event of Default shall entitle the "
+        "Administrative Agent to act. Upon an Event of Default the Lenders may "
+        "accelerate."
+    )
+    assert detect_deterministic(agreement).archetype != "unknown"

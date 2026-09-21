@@ -1,0 +1,74 @@
+# Tier 2 assertions: PIMCO Asset-Based Lending Co. LLC / PALCO LVS 9 LP,
+# Credit and Security Agreement (Exhibit 10.3), Closing Date June 1, 2026.
+#
+# Fit side, never read during development. It carries the most subtle
+# redaction in the corpus, and the normalized text gives no sign of it:
+#
+#   "Floor" means a rate of interest equal to .
+#
+# A definition that ends mid-sentence with a full stop. No number, no [***],
+# no notice at the head of the exhibit, nothing a marker search can find. It
+# reads as a malformed definition or a bad parse.
+#
+# The source says otherwise:
+#
+#   a rate of interest equal to <FONT STYLE="font-family:Times New Roman;
+#   background-color:#000000">&#8195;&#8195;&#8195;</FONT><FONT ...>. </FONT>
+#
+# Three em-spaces on a black background. The filer redacted the floor by
+# blacking out whitespace -- so in the rendered PDF a reader sees a black bar
+# where the rate should be, and in the text there is nothing at all, because
+# em-spaces normalize away. The redaction is entirely a CSS property.
+#
+# Lifetime Brands and Cadeler declare their exclusions at the top of the
+# exhibit and mark each one. loanDepot leaves "[***] %", which at least states
+# the type of the hole. This leaves a full stop.
+
+document: pimco_abl_2026
+corpus_name: H_pimco-asset-based-lending-co-llc_2026-08-13_0001193125-26-348949_d168840dex103
+source: real
+tier: 2
+
+assertions:
+
+  - id: pimco_floor_is_blacked_out_with_no_marker
+    family: F03_external_reference
+    member: redacted_from_filing
+    kind: field_status
+    target: libor_floor_pct
+    expect: external_reference
+    note: >
+      The floor exists, binds the Base Rate -- "should ever be less than the
+      Floor, then the Base Rate shall be deemed to be the Floor" -- and is not
+      in the public record.
+
+      external_reference rather than absent_from_document for the same reason
+      as loanDepot: the agreement has a floor and the filing does not say what
+      it is. Reporting absence would describe how this facility behaves at
+      zero rates, wrongly.
+
+      What makes this the harder of the two is that nothing downstream can
+      tell. loanDepot leaves "[***] %" so a pipeline can see a redaction and a
+      unit; here the em-spaces vanish in normalization and the definition
+      reads as truncated. Any rule that infers redaction from a marker finds
+      no marker, and any rule that infers absence from a missing value gets
+      absence -- which is the confident wrong answer.
+
+      A check for a definition whose body is empty after "equal to" would
+      catch it, and nothing here does that today.
+
+  - id: pimco_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-01
+    note: >
+      '"Closing Date" means June 1, 2026.' Stated, on an agreement whose floor
+      is not -- the two definitions are eight pages apart and a reader has no
+      way to know from the first that the second is missing anything.
+
+      The borrower is PALCO LVS 9 LP with UMB Bank as trustee of an underlying
+      trust, so this is the fifth warehouse-shaped facility in the corpus
+      after StepStone, PennantPark, Golub and SLR. Its "Collateral Loan"
+      definition carries the same obligor-EBITDA eligibility machinery.

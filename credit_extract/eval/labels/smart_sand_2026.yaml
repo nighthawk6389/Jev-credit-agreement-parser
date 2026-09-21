@@ -1,0 +1,73 @@
+# Tier 2 assertions: Smart Sand, Inc., Amendment No. 2 to Credit Agreement,
+# dated as of September 1, 2026.
+#
+# Fit side, never read during development. It gives the credit spread
+# adjustment a shape the corpus did not have: a table.
+#
+#   "Term SOFR Adjustment" shall mean, for any calculation with respect to a
+#   Term SOFR Loan, a percentage per annum as set forth below for the
+#   applicable Type of such Loan and (if applicable) Interest Period therefor:
+#       Interest Period | Percentage
+#       One month       | 0%
+#       Three months    | 0%
+#       Six months      | ...
+#
+# Every other adjustment in the corpus is a scalar in a sentence -- Compass's
+# 0.10%, BrightSpring's 0.00%, Hornbeck's 0.10%, LL Flooring's 0.10%. Sanmina's
+# Term CORRA Adjustment varies by tenor but states its two values inline. This
+# one is a grid, indexed by Interest Period, and every cell is zero.
+#
+# So the field's answer is 0% and reaching it means reading a table whose rows
+# are durations rather than leverage bands, in a definition that says
+# "percentage per annum as set forth below" and then stops.
+
+document: smart_sand_2026
+corpus_name: A_smart-sand-inc-snd_2026-09-03_0001529628-26-000104_exhibit101-amendmentno2toc
+source: real
+tier: 2
+
+assertions:
+
+  - id: smart_sand_adjustment_is_a_tenor_table_of_zeros
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0%"
+    note: >
+      Zero at every tenor, stated as a table rather than as a rate.
+
+      The value agrees with BrightSpring's Term SOFR Adjustment of 0.00% and
+      the route to it does not: BrightSpring states the number in the
+      definition, this one points at a grid. A pipeline that reads the
+      definition text and stops finds "a percentage per annum as set forth
+      below" and no percentage.
+
+      It is also the third distinct relationship between this field and a
+      tenor. Sanmina's CORRA adjustment differs by tenor (29.547 bps at one
+      month, 32.138 at three) so no single value is right; this one is indexed
+      by tenor and constant, so a single value is right and only by
+      coincidence; and every other document has no tenor dimension at all.
+
+  - id: smart_sand_closing_date_is_two_years_earlier
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-09-03
+    note: >
+      '"Closing Date" shall mean September 3, 2024' on an amendment dated
+      September 1, 2026 -- and note that the amendment's own date is two days
+      before the anniversary, so the two dates differ in year and in day but
+      share a month. A check that compares only part of a date sees a match.
+
+  - id: smart_sand_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" shall mean a rate of interest equal to 0%.' Plain, and here
+      mainly to sit beside the adjustment above: both are zero, both are the
+      benchmark's, and one is a scalar while the other is a grid.

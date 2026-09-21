@@ -1,0 +1,67 @@
+# Tier 2 assertions: DPC Holdings plc (Doncasters), Credit Agreement dated as
+# of September 3, 2026.
+#
+# Fit side, never read during development. Third document carrying PDF form
+# fields into its text, and the first where they land inside a date:
+#
+#   "Maturity Date" means September 3, 2029, as such date may be extended
+#   pursuant to Section 2.07(e); provided that if such date shall not be a
+#   Business Day, then the "Maturity Date" shall be the immediately preceding
+#   Business Day. Field: Page; Sequence: 23; Value: 1 | Field: Sequence; Type:
+#   Arabi[c] ...
+#
+# The metadata opens immediately after the definition closes, carrying the
+# integers 23 and 1 into the space a date parser looks at for context. nVent
+# puts the same artefact between a table caption and its first row; 5C cuts an
+# operative sentence with it.
+
+document: dpc_holdings_2026
+corpus_name: R_dpc-holdings-plc-dpc_2026-09-08_0001104659-26-105687_tm2624842d1-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: dpc_maturity_is_stated_and_rounds_backwards
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-09-03
+    note: >
+      A stated date, extendable under Section 2.07(e), rolling to the
+      immediately preceding Business Day -- the third document in the corpus
+      with the backward convention after nScale and IDEX, against a
+      modified-following default that would move it forward.
+
+      Three years from the agreement's own date to the day, which is the
+      shortest tenor in the corpus and worth noting because the two figures
+      share a month and a day: September 3, 2026 and September 3, 2029. A
+      check that matches on anything less than the full date sees the
+      execution date here.
+
+  - id: dpc_covenant_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.00 to 1.00"
+    note: >
+      'Commencing with the Financial Covenant Testing Period ending December
+      31, 2026, the Company will not permit the Total Net Leverage Ratio
+      calculated as of the last day of a Financial Covenant Testing Period to
+      exceed 3.00 to 1.00; provided that in the event the Company or any
+      subsidiary ... shall have consummated any Qualifying Material
+      Acquisition, the Borrower Agent may elect, by written notice delivered
+      to [the Administrative Agent] ...'.
+
+      3.00 standing, with an elective step-up on notice after a Qualifying
+      Material Acquisition -- the same elective mechanism as nVent and Aspen
+      rather than the automatic one in BrightSpring and IDEX. It also does not
+      begin until the period ending December 31, 2026, so the agreement has a
+      covenant-free first quarter.
+
+      The pricing grid above it has the matching construction: Pricing Level 1
+      applies by fiat for the fiscal quarter ending September 30, 2026 and the
+      Total Net Leverage Ratio governs only thereafter. Two mechanisms, one
+      agreement, both keyed to the same first testing date.

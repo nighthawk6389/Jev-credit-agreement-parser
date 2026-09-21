@@ -1,0 +1,53 @@
+# Tier 2 assertions: loanDepot, Inc. / Signature Bank, master note as amended,
+# December 2022.
+#
+# Fit side, never read during development. One assertion, and it is the
+# cleanest instance in the corpus of a criticality-5 economic term that the
+# public record does not contain:
+#
+#   "Floor" means the benchmark rate floor, if any, provided in this Note
+#   initially (as of the execution of this Note, the modification, amendment
+#   or renewal of this Note or otherwise). In no event shall the Benchmark be
+#   less than [***] %.
+#
+# The number is redacted. Not omitted, not deferred to another document, not
+# spelled in a way nothing can parse -- excluded by the registrant under the
+# confidential-treatment rules, with the percent sign left behind.
+#
+# Every other redaction in the corpus takes something structural: Lifetime
+# Brands loses the definition of "Loan Documents" and part of a section
+# heading, Cadeler loses unspecified identified information. This one takes a
+# rate, leaves its unit visible, and so states exactly what is missing.
+
+document: loandepot_2022
+corpus_name: P_loandepot-inc-ldi_2022-12-29_0001831631-22-000380_signaturebank-loandepotxam
+source: real
+tier: 2
+
+assertions:
+
+  - id: loandepot_floor_is_redacted
+    family: F03_external_reference
+    member: redacted_from_filing
+    kind: field_status
+    target: libor_floor_pct
+    expect: external_reference
+    note: >
+      external_reference rather than absent_from_document, and the difference
+      is the whole point of the status. The Note has a floor; the filing does
+      not say what it is. Reporting absence would say this facility has no
+      floor, which of a 2022 note is a statement about how it behaves if rates
+      go to zero.
+
+      It is also the one case in the corpus where a pipeline can know it is
+      missing something specific. "[***] %" names the type of the hole -- a
+      percentage -- where a redacted definition or an unfiled schedule leaves
+      no trace of what shape the answer would have had. A reader can report
+      "the floor is redacted" with confidence, which is a more useful output
+      than either a null or a guess.
+
+      What stays untestable is the value, permanently: no filing states it, so
+      any pipeline claiming to have resolved one is wrong by construction and
+      nothing in this corpus can catch that. The register says this about fee
+      letters and it is true here in a stronger form, because the redaction is
+      deliberate rather than incidental.

@@ -1,0 +1,44 @@
+# Tier 2 assertions: Horizon Technology Finance Corporation, Amendment No. 2 to
+# Sale and Servicing Agreement, dated September 2026.
+#
+# Fit side, never read during development. A securitization transaction
+# document rather than a credit agreement -- it governs the sale of loans to an
+# issuer and their servicing thereafter -- which puts it in the same position
+# as the Owl Rock CLO indenture: in scope for the corpus, mostly out of scope
+# for the registry. A short label accordingly.
+
+document: horizon_technology_2026
+corpus_name: G_horizon-technology-finance-corp-hrzn-htfc_2026-09-09_0001437749-26-029978_ex-1014140
+source: real
+tier: 2
+
+assertions:
+
+  - id: horizon_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-06-21
+    note: >
+      '"Closing Date" means June 21, 2024.' A bare date on an instrument dated
+      September 2026, so the Closing Date belongs to the agreement being
+      amended -- the same relationship as Virco (2012 on a 2026 amendment) and
+      BrightSpring (2019 on 2026), and the third instance of a gap wide enough
+      that a plausibility check on the difference would reject it.
+
+  - id: horizon_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      A sale and servicing agreement imposes eligibility criteria and
+      servicing standards on transferred loans, not financial covenants on a
+      borrower. "borrowing base" occurs 35 times and every one governs what
+      the issuer may hold rather than what an operating company may owe.
+
+      Absent rather than not_applicable_to_archetype: the classifier returns
+      abl_revolver at 0.85 here, which is wrong, and suppression off a wrong
+      archetype is exactly the path the register calls the worst one.

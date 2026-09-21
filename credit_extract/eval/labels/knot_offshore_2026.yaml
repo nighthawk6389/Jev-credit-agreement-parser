@@ -1,0 +1,61 @@
+# Tier 2 assertions: KNOT Offshore Partners LP, USD 225,000,000 Term Loan
+# Facility Agreement.
+#
+# Fit side, never read during development. The corpus's first LMA-style
+# agreement and the first document the european_lma profile claims, at 0.85.
+#
+# It is a different dialect, not just a different deal. The borrower makes a
+# "Utilisation" rather than a borrowing; the facility is a "Term Loan Facility
+# Agreement" rather than a Credit Agreement; commitments live in "Part A of
+# Schedule 1" rather than on a signature page; and the spelling throughout is
+# British. None of the registry's anchoring phrases were written against this
+# vocabulary.
+#
+#   "Closing Date" means the date on which the first Utilisation is made under
+#   this Agreement.
+#
+# which is the seventh document whose Closing Date is an undated event, and the
+# first where the event is named in a word the rest of the corpus never uses.
+#
+# Twelve sections are detected in 363,659 characters. LMA agreements number
+# their provisions as Clauses, and the detector's patterns are built for
+# "Section" and "ARTICLE".
+
+document: knot_offshore_2026
+corpus_name: J_knot-offshore-partners-lp-knop_2026-09-09_0001104659-26-106128_knop-20260630xex4d2
+source: real
+tier: 2
+
+assertions:
+
+  - id: knot_is_european_lma
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: european_lma
+    note: >
+      First real exercise of this profile. Recorded against the F06
+      borrowing-base member because the family register has no LMA member,
+      which is now the third archetype in that position after project finance
+      and investment grade.
+
+      The classifier gets it right at 0.85, which is worth noting given how
+      often it returns unknown on ordinary US agreements: the LMA dialect is
+      distinctive enough that vocabulary alone settles it, where "borrowing
+      base" and "term loan" are shared across half the corpus.
+
+  - id: knot_closing_date_is_the_first_utilisation
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: closing_date
+    expect: null
+    note: >
+      '"Closing Date" means the date on which the first Utilisation is made
+      under this Agreement.'
+
+      An undated event, and structurally the same as Aspen's Funding Date --
+      the day money first moves. What differs is the word. Seven documents in
+      the corpus now define this field as an event and this is the only one a
+      pattern built on "conditions precedent", "funding" or "borrowing" would
+      not match, because the operative noun is Utilisation.
