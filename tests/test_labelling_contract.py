@@ -127,6 +127,56 @@ def test_the_guide_describes_the_statuses_the_pipeline_actually_has():
         assert f"`{status}`" in text, f"the guide does not tell a labeller about {status}"
 
 
+def test_the_archetype_cannot_suppress_a_term_the_document_names():
+    """The first held-out document produced this, and it is the worst kind.
+
+    Air T is a revolver, a term loan and an accordion under one bilateral
+    facility. Its borrowing base led the classifier to an asset-based
+    revolver, which rules the term-loan fields inapplicable; the extractor
+    had missed the Consolidated Term Loan's maturity because the registry
+    anchors on a phrase this agreement does not use; and suppression only
+    fires on fields the extractor left empty. Two failures that are each
+    visible on their own -- a field in review, an archetype the register
+    already calls unreliable -- composed into ``not_applicable_to_archetype``,
+    which reads as a settled answer, on a term loan maturing 27 August 2031.
+    """
+    from credit_extract.models.archetypes import (
+        PROFILES, inapplicable_fields, suppression_vetoes,
+    )
+
+    abl = PROFILES["abl_revolver"]
+    assert "term_amortization" in abl.inapplicable_groups
+
+    silent = inapplicable_fields(abl, ["initial_term_loan.maturity_date"])
+    assert silent, "without the document, the archetype still rules"
+
+    text = "the Consolidated Term Loan shall mature on August 27, 2031"
+    assert not inapplicable_fields(abl, ["initial_term_loan.maturity_date"], text)
+    assert suppression_vetoes(abl, text) == {"term_amortization": "term loan"}
+
+    # The veto is not a licence to un-suppress everything: a document that
+    # never mentions the thing keeps the archetype's judgement.
+    quiet = "the Borrowers shall deliver a Borrowing Base Certificate monthly"
+    assert inapplicable_fields(abl, ["initial_term_loan.maturity_date"], quiet)
+
+
+def test_a_fraction_of_one_percent_is_not_a_numeral_mismatch():
+    """"one-quarter of one percent (0.25%)" says the same thing twice."""
+    from credit_extract.validate.invariants import (
+        _FRACTION_OF_PERCENT_RE, _NUMERAL_WORD_RE,
+    )
+
+    text = "a rate of one-quarter of one percent (0.25%) per annum"
+    match = _NUMERAL_WORD_RE.search(text)
+    assert match, "the bare pattern still matches -- that is why the guard exists"
+    assert match.group("words").lower() == "one"
+    assert _FRACTION_OF_PERCENT_RE.search(text[:match.end()])
+
+    plain = "twenty-five percent (35%) of Consolidated EBITDA"
+    assert _NUMERAL_WORD_RE.search(plain)
+    assert not _FRACTION_OF_PERCENT_RE.search(plain), "a real mismatch still fires"
+
+
 def test_the_split_file_is_yaml_a_human_can_read():
     raw = yaml.safe_load(split_mod.SPLIT_FILE.read_text())
     assert raw["version"] == 1

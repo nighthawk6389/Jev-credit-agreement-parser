@@ -1,0 +1,184 @@
+# Tier 2 assertions: Air T, Inc., Amendment No. 7 to Credit Agreement, 2026.
+#
+# THE FIRST HELD-OUT DOCUMENT. Every real assertion before this one is on a
+# filing that was read while the parser was being written; this one was drawn
+# by the frozen split in credit_extract/eval/split.yaml before any label for
+# it existed, and nothing in the pipeline has been tuned against it.
+#
+# Read it before reading the numbers: these labels were produced by a model
+# reading the source text, not by a credit analyst. That is not the same
+# thing, and the difference has a direction. The extractor is anchored
+# patterns plus a lexical stand-in, so a reader who resolves "'Revolving
+# Credit Commitment' shall mean ... not to exceed $25,000,000" from the
+# sentence is doing something the extractor demonstrably cannot -- the
+# evidence is that it did not. But a model can misread a credit agreement in
+# ways an analyst would not, most likely about which tranche a figure belongs
+# to and whether a restated definition is the operative one. Every assertion
+# below quotes the text it rests on so that a second reader can check it in
+# the time it takes to read the quote.
+#
+# The deal: Air T, Inc. and eight subsidiary borrowers, bilateral with Alerus
+# Financial as sole Lender. Amendment No. 7, effective 1 September 2026,
+# restates the Borrowing Base, Maturity Date, Revolving Credit Commitment,
+# Revolving Credit Termination Date and Total Usage definitions in Section
+# 1.01, and Sections 2.02A, 2.03A, 2.05, 2.07(a), 2.10 and 7.12(b) in their
+# entireties -- so the operative economics are all in this document rather
+# than only in the 2024 base agreement, which is what makes it labellable
+# standalone.
+
+document: air_t_amendment_7_2026
+corpus_name: L_air-t-inc-airt-airtp_2026-09-04_0000353184-26-000098_a101amendmentno7tocredit
+source: real
+tier: 2
+
+assertions:
+  # -- F05 versioning: values that exist only because a section was restated -
+  #
+  # Read the 2024 base agreement alone and every one of these is the old
+  # number. That is the whole of F05 and it is why this document is worth
+  # labelling: the amendment is where the deal currently is.
+
+  - id: airt_revolver_commitment
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_value
+    target: revolver.commitment
+    expect: 25000000
+    note: >
+      "'Revolving Credit Commitment' shall mean the obligation of the Lender
+      to make Revolving Credit Loans to the Borrowers and to issue Letters of
+      Credit for the account of the Borrowers, in an aggregate principal
+      amount not to exceed $25,000,000". One lender, so the aggregate is the
+      single commitment.
+
+  - id: airt_revolver_maturity
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-08-27
+    note: >
+      "'Revolving Credit Termination Date' means the earliest to occur of (a)
+      August 27, 2029, and (b) the termination of the Revolving Credit
+      Commitment pursuant to Section 8.02 or Section 2.04." Clause (b) is an
+      acceleration, not a scheduled date, so the stated maturity is (a).
+
+  - id: airt_term_loan_maturity
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: 2031-08-27
+    note: >
+      "'Maturity Date' means, the earlier of: (a) the date on which the Loans
+      become due and payable under Section 8.02 ... or (b) ... (iii) August
+      27, 2031 for the Consolidated Term Loan." The Consolidated Term Loan is
+      this deal's term loan; there is no other.
+
+  - id: airt_commitment_fee
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_value
+    target: commitment_fee_pct
+    expect: 0.25
+    note: >
+      Section 2.10, restated in its entirety: "a fee (the 'Unused Commitment
+      Fee') in an amount determined by applying a rate of one-quarter of one
+      percent (0.25%) per annum to the average daily excess of the Revolving
+      Credit Commitment over the Total Usage."
+
+  - id: airt_leverage_covenant_level
+    family: F05_versioning
+    member: amendment_restates_section
+    kind: field_value
+    target: financial_covenant.level
+    expect: 3.00
+    note: >
+      Section 7.12(b), restated in its entirety: "Permit the Leverage Ratio to
+      be greater than 3.00 to 1.00 at any Measurement Date." Flat -- no
+      stepdown, no springing trigger.
+
+  # -- F07 benchmark: the pricing grid, which is a grid ---------------------
+
+  - id: airt_applicable_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: 2.75
+    note: >
+      "'Applicable Margin' means ... the percentage indicated below in
+      accordance with the Leverage Ratio at such date: Leverage Ratio
+      Applicable Margin / Less than 1.50:1.00 2.25% / Greater than or equal to
+      1.50 to 1.00 but less than 2.50:1.00 2.50% / Greater than or equal to
+      2.50 to 1.00 2.75%". Three levels; the highest margin is 2.75%, which is
+      what this field asks for. The margin actually in force on the amendment
+      date is stated separately as 2.50%, and reporting that one instead would
+      understate the deal at its worst leverage.
+
+  # -- F06 structure: an asset-based borrowing base -------------------------
+
+  - id: airt_advance_rate_accounts
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_value
+    target: borrowing_base.advance_rate_accounts
+    expect: 80
+    note: >
+      "'Borrowing Base' means ... (a) 85% of Eligible Investment Grade
+      Accounts; plus (b) 80% of Eligible Accounts (other than Eligible
+      Investment Grade Accounts)". Two rates against receivables. 80% is the
+      rate against ordinary eligible accounts; 85% applies only to the
+      investment-grade subset, which the registry has no field for.
+
+  - id: airt_advance_rate_inventory
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_value
+    target: borrowing_base.advance_rate_inventory
+    expect: 50
+    note: >
+      "(c) 50% of Eligible Inventory; plus (d) 40% of Eligible WIP Inventory,
+      provided, however, that the portion of the Borrowing Base attributable
+      to ... Eligible Inventory and Eligible WIP Inventory shall be limited to
+      not more than 75% of the total Borrowing Base." 50% is the inventory
+      rate; the 40% WIP rate and the 75% cap have no registry field.
+
+  # -- F04 absence: claims about the document, checked by searching ---------
+  #
+  # Each of these was searched case-insensitively across the whole document
+  # before being asserted, because "I did not find it" and "it is not there"
+  # are the two answers F04 exists to keep apart.
+
+  - id: airt_no_mfn_sunset
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_sunset
+    expect: absent_from_document
+    note: >
+      "most favoured nation" and "MFN" both return zero matches, in any case,
+      across all 72,000 characters. This is a bilateral facility with a single
+      lender, where MFN protection has nothing to protect against -- so the
+      absence is a property of the deal, not a gap in the drafting.
+
+  - id: airt_no_mfn_threshold
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_threshold_pct
+    expect: absent_from_document
+    note: >
+      Same search, same zero. A sunset cannot be absent while the protection
+      it would sunset is present, so these two have to agree.
+
+  - id: airt_no_ecf_sweep
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      "excess cash flow" returns zero matches in any case. Section 2.07(a),
+      which this amendment restates in its entirety, is a borrowing-base
+      overadvance cure rather than a cash sweep.

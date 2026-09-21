@@ -105,6 +105,12 @@ class AssertionFile(BaseModel):
     #: Documents forming a set, oldest-looking first. Mutually exclusive with
     #: ``document``; ``document`` then names the chain for reporting.
     chain: list[str] = Field(default_factory=list)
+    #: The harvest's name for this document, when it differs from ``document``.
+    #: EDGAR filenames carry a stratum letter, the filer, the accession number
+    #: and the exhibit id, which is unreadable in a report and is also what the
+    #: frozen split is keyed on. Naming both keeps the report legible without
+    #: making the document unfindable or the split unresolvable.
+    corpus_name: str | None = None
     path: Path | None = None
     source: Literal["real", "synthetic"] = "synthetic"
     tier: int = 2
@@ -385,5 +391,7 @@ def evaluate_file(file: AssertionFile, result: Any) -> list[AssertionOutcome]:
         for assertion in file.assertions
     ]
     for outcome in outcomes:
-        outcome.label_document = file.document
+        # The split is keyed on the harvest name, so that is what travels with
+        # the outcome; the readable name is what the label file is called.
+        outcome.label_document = file.corpus_name or file.document
     return outcomes

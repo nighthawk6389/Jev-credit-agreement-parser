@@ -269,16 +269,29 @@ def _resolve_document(file: AssertionFile) -> Path | None:
         and Path(file.path).exists()
     ):
         return Path(file.path)
-    for directory in (GOLD_DIR, CORPUS_DIR, CORPUS_DIR / "gold", CORPUS_DIR / "real"):
-        for suffix in _DOCUMENT_SUFFIXES:
-            candidate = directory / f"{file.document}{suffix}"
-            if candidate.exists():
-                return candidate
-    matches = [
-        path for path in sorted(CORPUS_DIR.rglob(f"{file.document}.*"))
-        if path.suffix.lower() in _DOCUMENT_SUFFIXES
-    ]
-    return matches[0] if matches else None
+    for name in (file.corpus_name, file.document):
+        if not name:
+            continue
+        for directory in (GOLD_DIR, CORPUS_DIR, CORPUS_DIR / "gold", CORPUS_DIR / "real"):
+            for suffix in _DOCUMENT_SUFFIXES:
+                candidate = directory / f"{name}{suffix}"
+                if candidate.exists():
+                    return candidate
+        matches = [
+            path for path in sorted(CORPUS_DIR.rglob(f"{name}.*"))
+            if path.suffix.lower() in _DOCUMENT_SUFFIXES
+        ]
+        if matches:
+            return matches[0]
+        if file.corpus_name:
+            # The harvest name is the authoritative one; fall back to the
+            # readable name only when no harvest name was given, or a typo in
+            # corpus_name would silently resolve to whatever `document` finds.
+            ensure_corpus_unpacked()
+            named = _resolve_named(name)
+            if named is not None:
+                return named
+    return None
 
 
 def run_coverage(

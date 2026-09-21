@@ -42,7 +42,9 @@ from .models.core import (
     Condition, CostLedger, DocumentReport, ExtractedField, InvariantViolation,
     Variant,
 )
-from .models.archetypes import ArchetypeDetection, inapplicable_fields
+from .models.archetypes import (
+    ArchetypeDetection, inapplicable_fields, suppression_vetoes,
+)
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.pricing import Pricing, parse_pricing
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
@@ -302,7 +304,8 @@ def run_pipeline(
     # after extraction would mean validating fields this deal kind cannot have.
     archetype = detect_archetype(doc, session)
     profile = archetype.profile
-    not_applicable = inapplicable_fields(profile, list(fields))
+    not_applicable = inapplicable_fields(profile, list(fields), doc.text)
+    vetoes = suppression_vetoes(profile, doc.text)
     for name, reason in not_applicable.items():
         field = fields[name]
         if field.value is not None:
@@ -441,6 +444,10 @@ def run_pipeline(
             f"archetype: {archetype.archetype} ({archetype.basis}, "
             f"{archetype.confidence:.2f}) -- {archetype.note}",
             f"fields inapplicable to this archetype: {len(not_applicable)}",
+            "archetype suppression vetoed by the document: " + (
+                ", ".join(f"{g} ({p!r})" for g, p in sorted(vetoes.items()))
+                if vetoes else "none"
+            ),
             f"pricing: {pricing.describe()}",
         ],
     )

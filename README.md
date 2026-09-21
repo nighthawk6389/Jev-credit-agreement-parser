@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 244 tests
+pytest -q                                          # 246 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 
@@ -310,18 +310,35 @@ Run it yourself:
 python scripts/run_corpus.py --limit 10      # unzips corpus/edgar on demand
 ```
 
-### The split, and why the accuracy numbers carry an asterisk
+### The split, and the first held-out document
 
-Every real assertion in this repository is on a filing that was read while the
-parser was being written. There is no held-out number, and until there is, the
-figures above describe fit rather than generalisation. The coverage report
-says so in a `SPLIT` section rather than leaving it to a footnote.
+Every real assertion here used to be on a filing that was read while the parser
+was being written, so the figures described fit rather than generalisation. The
+split is frozen **before the labels exist** — the only moment it can be frozen
+honestly, because afterwards a labeller knows which side would flatter the
+result. All 100 harvested documents are assigned by SHA-256 of the document
+name, stratified so every deal type contributes: **27 held out, 73 fittable**,
+plus 11 pinned to the fit side as already-read.
 
-So the split is frozen **now, before the labels exist** — the only moment it
-can be frozen honestly, because afterwards a labeller knows which side would
-flatter the result. All 100 harvested documents are assigned by SHA-256 of the
-document name, stratified so every deal type contributes: **27 held out, 73
-fittable**, plus 11 pinned to the fit side as already-read.
+The first held-out document was labelled the moment the split existed, and it
+paid for the machinery immediately. **Air T Amendment No. 7** is a bilateral
+facility carrying a revolver, a term loan and an accordion. Its borrowing base
+led the classifier to an asset-based revolver, which rules term-loan fields
+inapplicable; the extractor had separately missed the Consolidated Term Loan's
+maturity, because the registry anchors on a phrase this agreement does not use.
+Suppression fires only on fields the extractor left empty — so the two misses
+composed, and a term loan maturing **27 August 2031** was reported as
+`not_applicable_to_archetype`: a settled answer, and wrong.
+
+Neither half was invisible on its own. A field in review is visible; an
+unreliable archetype is in the blind-spot register. It is the composition that
+is silent, and no fixture would have produced it. Archetype suppression is now
+vetoed by the document: a field group the text plainly discusses stays
+applicable whatever the classifier concluded, and the report names the phrase
+that vetoed it. The same document also produced a false positive —
+`one-quarter of one percent (0.25%)` read as a numeral mismatch — and a
+mutation that cannot apply to an amendment, since an amendment's
+cross-references point into a base agreement it does not contain.
 
 ```bash
 python -m credit_extract.eval.split --check   # recomputes and compares; CI runs it

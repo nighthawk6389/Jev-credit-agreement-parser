@@ -606,6 +606,17 @@ _SCHEDULE_REF_RE = re.compile(
     r"\b(Schedule|Exhibit|Annex)\s+([\w.()-]+)", re.IGNORECASE
 )
 #: "twenty-five percent (35%)" -- the words and the numeral disagree.
+#: A fraction *of* a spelled percentage: "one-quarter of one percent (0.25%)".
+#: The market writes sub-1% rates this way and the figure in brackets is the
+#: product, not the spelled number -- so a check that reads only the words next
+#: to "percent" sees "one percent (0.25%)" and reports a document that says
+#: exactly the right thing. Air T states its unused commitment fee this way,
+#: and it was the first held-out document to be labelled.
+_FRACTION_OF_PERCENT_RE = re.compile(
+    r"\b(?:one[\s-])?(?:quarter|half|third|eighth|tenth)s?\s+of\s+(?:one|a)\s+percent",
+    re.IGNORECASE,
+)
+
 _NUMERAL_WORD_RE = re.compile(
     r"\b(?P<words>(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
     r"ten|eleven|twelve|fifteen|one|two|three|four|five|six|seven|eight|nine)"
@@ -742,6 +753,11 @@ def _numeral_words(ctx: InvariantContext) -> list[InvariantViolation]:
         spelled = _words_to_number(match.group("words"))
         numeral = Decimal(match.group("numeral"))
         if spelled is None or Decimal(spelled) == numeral:
+            continue
+        # "one-quarter of one percent (0.25%)" agrees with itself; the words
+        # this pattern captured are the tail of a fraction, not the figure.
+        lead = doc.text[max(0, match.start() - 40): match.end()]
+        if _FRACTION_OF_PERCENT_RE.search(lead):
             continue
         violations.append(InvariantViolation(
             invariant="numeral_and_words_agree",

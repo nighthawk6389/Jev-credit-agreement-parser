@@ -127,6 +127,16 @@ def _break_cross_reference(html: str) -> MutationResult | None:
     match = re.search(r"Section (\d+\.\d+)", html)
     if match is None:
         return None
+    from ..ingest.normalize import detect_sections, normalize_chars
+    if not detect_sections(normalize_chars(re.sub(r"<[^>]+>", " ", html))):
+        # An amendment has no sections of its own -- every "Section 2.10" in
+        # it points into the base agreement. cross_references_resolve cannot
+        # adjudicate a reference into a document it does not have, and making
+        # it try would fire on every legitimate citation in every amendment,
+        # which is the false-positive class this check was narrowed to avoid.
+        # So the defect is not injectable here, and a mutation that cannot be
+        # caught is not evidence that anything is broken.
+        return None
     mutated = html[:match.start()] + "Section 99.99" + html[match.end():]
     return MutationResult(
         mutation_id="break_cross_reference",

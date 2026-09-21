@@ -66,6 +66,42 @@ construction a **base-rate** floor, which is the distinction that matters: at a
 SOFR of 0.05% with a 1.00% floor and a 5.00% margin, a base-rate floor yields
 6.00% and an all-in floor yields 5.05%.
 
+### Eighteen of the hundred are not credit agreements
+
+Found by trying to label one. The smallest held-out document, chosen because
+it could be read end to end, turned out to be a **Stock Transfer Agreement** —
+a share-for-debt exchange that mentions a term loan credit agreement and is not
+one. Checking the rest:
+
+| what it actually is | documents |
+| --- | --- |
+| financial statements | 3 |
+| earnings press release | 2 |
+| Stock Transfer Agreement | 2 |
+| indenture (supplemental, and a CLO indenture) | 2 |
+| Warrant, Registration Rights, Investor Rights, Equity Purchase, Placement Agency | 5 |
+| Note Purchase Agreement (convertible PIK note) | 1 |
+| Amendment to a Sale and Servicing Agreement | 1 |
+| Business Acquisition Report | 1 |
+| proxy statement | 1 |
+
+**18 of 100**, spread across nine strata, 15 on the fit side and 3 in the
+holdout. The harvest selected on filing metadata and stratum keywords, which
+is how a proxy statement that discusses a credit facility ends up filed as
+one.
+
+This does not invalidate the corpus — it is still 82 real agreements and
+amendments across 18 strata — but it changes three numbers that get quoted.
+The holdout is 24 usable documents, not 27. Any recall figure averaged over
+the whole corpus is diluted by documents where every field is correctly
+absent. And "100 stratified credit agreements" should read "100 stratified
+filings, 82 of them credit agreements or amendments to one".
+
+A classifier is not the fix. The fix is a reviewed list, because the
+distinction is a judgement — a Note Purchase Agreement for a PIK note carries
+real debt terms and still is not a credit agreement, and no keyword settles
+that.
+
 ### The field registry's anchors are named after the fixture
 
 `initial_term_loan.maturity_date` anchors on the phrase **"Initial Term Loan
