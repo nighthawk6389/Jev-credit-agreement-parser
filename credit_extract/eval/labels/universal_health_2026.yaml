@@ -1,0 +1,81 @@
+# Tier 2 assertions: Universal Health Services, Inc., Credit Agreement as
+# amended through the Tenth Amendment (July 2026).
+#
+# Fit side, never read during development. Kept for one field, where it is the
+# most complete trap in the corpus.
+#
+# The document contains "Excess Cash Flow", it contains "mandatory prepayment",
+# it contains "50%", and it has no excess cash flow sweep.
+#
+#   "Available Excess Cash Flow Amount": the sum of (x) $508,379,000 and (y)
+#   commencing with the fiscal year ending December 31, 2024, the amount equal
+#   to 50% of the cumulative Excess Cash Flow, if any, for each fiscal year for
+#   which financial statements have been delivered ...
+#
+# That 50% is a builder basket. It accumulates cash the borrower may SPEND --
+# Section 7.6(e) lets it fund Restricted Payments and Section 7.8(i)
+# Investments, each capped at the Available Excess Cash Flow Amount less what
+# the other has used. It is the share retained, not the share swept, and the
+# two are opposites.
+#
+# The only sweep in the agreement is one that does not exist yet:
+#
+#   any such Tranche B Term Loans will be subject to an Excess Cash Flow
+#   mandatory prepayment based on a percentage (with step-downs in such
+#   percentage) of Excess Cash Flow to be specified in the applicable Increased
+#   Facility Activation Notice
+#
+# -- a sweep a future incremental tranche may carry, at a percentage a future
+# notice will set.
+
+document: universal_health_2026
+corpus_name: B_universal-health-services-inc-uhs_2026-07-21_0001193125-26-310330_uhs-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: uhs_fifty_percent_is_retained_not_swept
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      Every surface feature that would make a pipeline answer this field is
+      present and the answer is still absence. Sanmina, Valvoline and
+      Cumberland Farms all have a real 50% sweep, so the corpus now contains
+      four documents where "50%" sits beside "Excess Cash Flow" and in one of
+      them it means the reverse.
+
+      The distinction is directional and a percentage cannot carry it. Swept
+      cash leaves the borrower and repays lenders; the Available Excess Cash
+      Flow Amount stays with the borrower and funds dividends and
+      acquisitions. A pipeline that reports 50% here has told a reader the
+      facility deleverages at half of free cash flow when the clause it cited
+      does the opposite.
+
+      Absent rather than external_reference for the future tranche's sweep:
+      the Increased Facility Activation Notice is not a document that exists
+      and is unfiled, it is a document that may never be written.
+
+  - id: uhs_closing_date_is_another_defined_term
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_status
+    target: closing_date
+    expect: needs_review
+    note: >
+      '"Closing Date": the Tenth Amendment Effective Date.'
+
+      The definition resolves to another defined term rather than to a date or
+      to an event, which is a fifth shape for this field. Whether it lands on
+      a day depends on whether the Tenth Amendment Effective Date is itself
+      dated in this exhibit, and a reader cannot tell from the Closing Date
+      definition alone.
+
+      The assertion is that the pipeline declines, not that it answers. This
+      is the Aspen pattern -- conflicted or needs_review are both honest ways
+      to decline -- and if reconciliation ever resolves this field, the
+      assertion should be replaced by one checking the resolved value rather
+      than deleted.

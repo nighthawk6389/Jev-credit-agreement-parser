@@ -1,0 +1,95 @@
+# Tier 2 assertions: nVent Electric plc, Amendment No. 2 dated as of September
+# 17, 2026 to the Second Amended and Restated Credit Agreement dated as of
+# June 30, 2025.
+#
+# Fit side, never read during development. Two things.
+#
+# Its grid prices two facilities at once, with separate columns for each:
+#
+#   Pricing Level | Facility Fee | Term Benchmark/RFR Spread for REVOLVING
+#   Loans | ABR Spread for Revolving Loans | Term Benchmark/RFR Spread for
+#   TERM Loans | ABR Spread for Term Loans
+#     I    0.10%   0.90%   0%      1.00%   0%
+#     II   0.11%   1.015%  0.015%  1.125%  0.125%
+#     III  0.125%  1.125%  0.125%  1.25%   0.25%
+#     IV   0.15%   1.225%  0.225%  1.375%  0.375%
+#
+# Five numeric columns, two of them benchmark margins that differ by facility
+# and never by more than 15 basis points. Every other grid in the corpus prices
+# one facility per column set; this one makes "the applicable margin" a
+# question with two right answers at every level.
+#
+# And the filing leaks its own page furniture into the text. Between the
+# introduction to the table and its first row the normalized text reads:
+#
+#   Field: Page; Sequence: 24; Value: 6 Field: Sequence; Type: Arabic; Name:
+#   PageNo 8 Field: /Sequence Field: /Page
+#
+# -- PDF form-field metadata, sitting inside a pricing grid. The numbers 24, 6
+# and 8 are a sequence index and two page numbers, and they arrive in the
+# middle of a table of percentages.
+
+document: nvent_amendment_2_2026
+corpus_name: O_nvent-electric-plc-nvt_2026-09-17_0001104659-26-108580_tm2625610d1-ex4-2
+source: real
+tier: 2
+
+assertions:
+
+  - id: nvent_top_term_loan_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.375%"
+    note: >
+      Level IV, "Term Benchmark / RFR Spread for Term Loans", 1.375% -- the
+      highest benchmark margin in the table.
+
+      1.225% is the same level's revolving margin and is the answer a reader
+      gets by taking the first benchmark column rather than the highest. The
+      two are 15 basis points apart at every level and the columns are
+      adjacent, distinguished only by the words "Revolving" and "Term" inside
+      headers that wrap across lines in the filing's rendering.
+
+      The facility fee column tops at 0.15% and the two ABR columns at 0.225%
+      and 0.375%, so a row at Level IV holds five percentages between 0.15%
+      and 1.375% and only one of them answers this field.
+
+  - id: nvent_covenant_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75 to 1.00"
+    note: >
+      'Section 6.01 Maximum Net Leverage Ratio. The Parent shall not permit
+      the Net Leverage Ratio on the last day of any period of four consecutive
+      fiscal quarters of the Parent to exceed 3.75 to 1.00; provided, that (i)
+      the Company may, by written notice to the Administrative Agent ... and
+      not more than two times during any five consecutive year term of th[is
+      Agreement] ...'.
+
+      3.75 is the standing level and the step-up is elective rather than
+      automatic: the borrower raises it by giving notice, at most twice in any
+      five-year window. Aspen's step-up is also elective and capped at twice;
+      BrightSpring's and IDEX's fire on an acquisition without notice. So the
+      corpus now has both mechanisms for the same economic feature.
+
+  - id: nvent_page_metadata_is_inside_the_grid
+    family: F11_layout
+    member: grid_rendered_as_text
+    kind: text_present
+    target: "Name: PageNo"
+    expect: true
+    note: >
+      The filing's PDF form fields survive into the normalized text, and in
+      this document they land between the sentence introducing the pricing
+      grid and the grid's first row.
+
+      Asserted so the artefact is on the record rather than discovered again.
+      It matters for two reasons: the integers it carries (24, 6, 8) sit in a
+      run of percentages and are the kind of stray number a table reader can
+      pick up as a cell, and the text it inserts breaks the adjacency between
+      a table's caption and its first row, which is how a grid parser knows
+      which caption belongs to which table.

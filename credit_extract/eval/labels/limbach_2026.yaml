@@ -1,0 +1,84 @@
+# Tier 2 assertions: Limbach Holdings, Inc., PNC Credit Agreement dated as of
+# September 9, 2026.
+#
+# Fit side, never read during development. A short label for one definition
+# that no other document in the corpus writes this way:
+#
+#   "Floor" means the benchmark rate floor, if any, provided in this Agreement
+#   initially ... with respect to the Term SOFR Rate or Daily SOFR, as
+#   applicable, OR, IF NO FLOOR IS SPECIFIED, ZERO.
+#
+# The floor is zero by default rather than by statement. Every other agreement
+# here either states a number (0.00%, 0%, 0.50%, 0.75%) or states the word
+# ("zero", "zero percent (0%)"); this one defines the term as whatever the
+# agreement specifies elsewhere and supplies zero only if nothing does.
+#
+# So answering the field correctly requires establishing a negative -- that no
+# floor is specified anywhere in a 514,977-character agreement -- before the
+# default applies. That is a different operation from reading a definition, and
+# it is the operation the whole absence machinery exists for, appearing here
+# inside a single field.
+
+document: limbach_2026
+corpus_name: M_limbach-holdings-inc-lmb_2026-09-09_0001628280-26-061042_pnccreditagreement-limbach
+source: real
+tier: 2
+
+assertions:
+
+  - id: limbach_floor_is_zero_by_default
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      Zero, reached through the definition's own fallback rather than from a
+      stated rate. The distinction is worth an assertion because a reader that
+      stops at the defined term has read "the benchmark rate floor, if any,
+      provided in this Agreement" and learned nothing -- the sentence points
+      back at the agreement.
+
+      Six renderings of a zero floor across the corpus now: 0.00%, 0.0%, 0%,
+      "zero", "zero percent (0%)", and this one, which states no rate at all.
+
+  - id: limbach_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-09-09
+    note: >
+      '"Closing Date" means September 9, 2026.' A bare date agreeing with the
+      cover, which is the easy case and is here as a control: six documents in
+      the corpus define this field as an event that never resolves, one
+      defines it as another defined term, and one splits the year across
+      markup.
+
+  - id: limbach_default_pricing_level_before_the_first_quarter
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_status
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: needs_review
+    note: >
+      'the Applicable Margin, the Applicable Commitment Fee Rate and the
+      Applicable Letter of Credit Fee Rate shall be based on Pricing Level II
+      ... shall be recomputed as of the end of each fiscal quarter commencing
+      with the first full fiscal quarter ending after the Closing Date based
+      on the Consolidated Net Leverage Ratio ... If a Compliance Certificate
+      is not delivered when due ... then the rates in Pricing Level V shal[l
+      apply].'
+
+      Three regimes for one margin: Level II by fiat until the first full
+      fiscal quarter closes, then the grid, then Level V whenever a Compliance
+      Certificate is late. The agreement is dated September 9, 2026 and the
+      first full fiscal quarter has not ended, so on its own date the
+      applicable margin is Level II regardless of leverage -- which is not the
+      highest level and not the one the grid would give.
+
+      The assertion is that the pipeline declines rather than picking a level,
+      because the field asks for the highest margin in the grid and the
+      document's answer today is a level chosen by fiat outside it. Aspen has
+      the same construction -- Level I until the first Compliance Certificate
+      -- and it is recorded there in a note; this makes it testable.

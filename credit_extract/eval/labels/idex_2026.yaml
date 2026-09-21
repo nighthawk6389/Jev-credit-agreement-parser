@@ -1,0 +1,86 @@
+# Tier 2 assertions: IDEX Corporation, $800,000,000 Second Amended & Restated
+# Credit Agreement dated as of September 3, 2026.
+#
+# Fit side, never read during development. The first document the
+# investment_grade profile claims (0.70), and the third distinct rule in the
+# corpus for reconciling a ratings axis with a leverage axis:
+#
+#   "Applicable Rate" means, from time to time, the following percentages per
+#   annum, based upon THE LOWER OF THE TWO PRICING LEVELS in effect at such
+#   time as determined by (a) the Total Leverage Ratio ... and (b) the Debt
+#   Rating as set forth below
+#
+#     Pricing Level | Debt Ratings S&P/Moody's/Fitch | Total Leverage Ratio |
+#     Facility Fee | Term SOFR and Alternative Currency Loans, Letters of
+#     Credit | Base Rate Loans
+#       1  A-/A3/A- or higher   < 0.50 to 1.00                 0.080%  0.795%  0.000%
+#       2  BBB+/Baa1/BBB+       > 0.50 but < 1.25 to 1.00      0.090%  0.910%  0.000%
+#
+# "The lower of the two" means the better of the two, and lower is the word
+# the document uses. SanDisk resolves the same conflict by letting ratings
+# govern and falling back to leverage only when unrated; Cooper-Standard has
+# two whole tables selected by a Pricing/Fee Reduction Period. Three
+# agreements, three rules, and each one is a single clause easy to read past.
+
+document: idex_2026
+corpus_name: I_idex-corp-de-iex_2026-09-03_0001193125-26-381880_d421581dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: idex_is_investment_grade
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: investment_grade
+    note: >
+      Ratings-based pricing off S&P, Moody's and Fitch, a facility fee rather
+      than a commitment fee, no borrowing base, a single financial covenant,
+      and a published CUSIP for the facility. The profile's decisive signals
+      are ratings-based pricing, debt rating and index debt, and this is the
+      first real document to exercise it -- Constellation Brands is in the
+      same stratum and its archetype was never asserted.
+
+      Recorded against the F06 borrowing-base member because the family
+      register has no investment-grade member of its own, the same gap that
+      SB Energy's project financing ran into.
+
+  - id: idex_covenant_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      '7.15 Financial Covenant. The Company shall not permit the Net Leverage
+      Ratio as of the end of any fiscal quarter of the Company to be greater
+      than 3.50 to 1.00. Notwithstanding the foregoing, in connection with any
+      Acquisition (or series of Acquisitions occurring within any consecutive
+      twelve-month period) consummated after the Closing Date having aggregate
+      conside[ration] ...'.
+
+      3.50 is the standing level with an acquisition step-up, the same shape
+      as Aspen and Constellation Brands. Sections 7.11 through 7.14 are all
+      "[Reserved]", so the covenant sits alone at the end of a run of four
+      empty sections -- a layout that puts the only financial covenant in the
+      document immediately after four headings with no content.
+
+  - id: idex_revolver_maturity_rounds_backwards
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-03
+    note: >
+      '"Maturity Date" means with respect to the Revolving Credit Facility,
+      September 3, 2031, subject to extension (in the case of each Revolving
+      Credit Lender consenting thereto) as provided in Section 2.16; provided
+      that, if such date is not a Business Day, the Maturity Date shall be the
+      next preceding Business Day.'
+
+      A stated date with two qualifications: it may be extended lender by
+      lender, so the facility can end on different days for different lenders,
+      and it rolls BACKWARD off a non-business day. Second document in the
+      corpus with the preceding-business-day convention after nScale, against
+      a modified-following default that would move it forward.
