@@ -1,0 +1,174 @@
+{
+  "document": "essential_properties_amendment_8_2026",
+  "corpus_name": "I_essential-properties-realty-trust-inc-eprt_2026-09-16_0001728951-26-000066_ex101-8thamendcreditagreem",
+  "model": "read by hand, by the same reader who later wrote the labels",
+  "recorded_on": "2026-09-21",
+  "recorded_before_labels": true,
+  "note": "Eighth Amendment to an Amended and Restated Credit Agreement, with the conformed Amended Credit Agreement attached as Exhibit A. Investment-grade REIT: a $1.3bn revolver plus three term loan tranches, unsecured, priced off a five-level credit-rating grid. Read end to end before any label for this document existed. This is NOT a measurement of a model's recall -- the same reader wrote the labels afterwards, so agreement between the two is self-consistency. What it does measure is whether correct extractions with correct citations survive reconciliation, the validators and archetype dispatch to a correct record, which is a different question and one no synthetic fixture has ever asked.",
+  "fields": [
+    {
+      "field": "borrower.legal_name",
+      "value": "ESSENTIAL PROPERTIES, L.P.",
+      "quote": "ESSENTIAL PROPERTIES, L.P., a Delaware limited partnership (the \" Borrower \")",
+      "confidence": 0.95
+    },
+    {
+      "field": "holdings.legal_name",
+      "value": "ESSENTIAL PROPERTIES REALTY TRUST, INC.",
+      "quote": "ESSENTIAL PROPERTIES REALTY TRUST, INC., a Maryland corporation (the \" Parent REIT \")",
+      "confidence": 0.9,
+      "notes": "Named Parent REIT throughout, not Holdings. It is the REIT above the operating partnership that borrows."
+    },
+    {
+      "field": "administrative_agent.legal_name",
+      "value": "WELLS FARGO BANK, NATIONAL ASSOCIATION",
+      "quote": "WELLS FARGO BANK, NATIONAL ASSOCIATION, a national banking association, as administrative agent for the Lenders (in such capacity, the \" Administrative Agent \")",
+      "confidence": 0.95
+    },
+    {
+      "field": "arranger.legal_name",
+      "value": "TRUIST SECURITIES, INC.",
+      "quote": "TRUIST SECURITIES, INC.,  as Joint Lead Arrangers",
+      "confidence": 0.55,
+      "notes": "The cover page reads 'WELLS FARGO SECURITIES, LLC, and BOFA SECURITIES, INC., as Joint Bookrunners and with TRUIST SECURITIES, INC., as Joint Lead Arrangers'. Only Truist sits under the arranger caption, but 'and with' suggests all three were meant. Low confidence on purpose: the field holds one name and the page supports either reading."
+    },
+    {
+      "field": "guarantor.legal_name",
+      "value": "ESSENTIAL PROPERTIES REALTY TRUST, INC.",
+      "quote": "The Parent REIT (a) confirms its obligations under the Guarantee Agreement",
+      "confidence": 0.8,
+      "notes": "As of this amendment the Parent REIT is the only guarantor: Section V releases every Subsidiary Guarantor listed on Annex I, on the strength of the Investment Grade Rating. A reading of the conformed agreement alone would still report subsidiary guarantors."
+    },
+    {
+      "field": "closing_date",
+      "value": "June 25, 2018",
+      "quote": "\" Closing Date \": June 25, 2018.",
+      "confidence": 0.75,
+      "notes": "Three dates are on offer and only one is the defined term. The amendment is dated September 14, 2026, the restatement April 12, 2019, and the Closing Date is the date of the $300,000,000 Existing Credit Agreement this one amended and restated."
+    },
+    {
+      "field": "revolver.commitment",
+      "value": "$1,300,000,000",
+      "quote": "The aggregate amount of the Total Revolving Credit Commitments as of the Eighth Amendment Effective Date is $1,300,000,000.",
+      "confidence": 0.95,
+      "notes": "Already includes the $300,000,000 of incremental commitments this amendment adds. The recitals of the conformed agreement also say $1,300,000,000, which is the pre-increase figure: the same number twice for two different reasons."
+    },
+    {
+      "field": "revolver.maturity_date",
+      "value": "February 6, 2029",
+      "quote": "\" Revolving Credit Termination Date \": February 6, 2029, as such date may be extended pursuant to",
+      "confidence": 0.9,
+      "notes": "Extendable at the Borrower's discretion up to two times under Section 2.6(a); the stated date is the unextended one."
+    },
+    {
+      "field": "initial_term_loan.commitment",
+      "value": "$200,000,000",
+      "quote": "Date was $200,000,000.",
+      "confidence": 0.6,
+      "notes": "The sentence is 'The aggregate amount of the Initial Term Loan Commitments on the Restatement Effective Date was $200,000,000', and a page break falls inside it, between 'Effective' and 'Date'. The quote is the only side of the break that carries the figure. Past tense: the tranche matured in 2024 and the commitment has terminated."
+    },
+    {
+      "field": "initial_term_loan.maturity_date",
+      "value": "April 12, 2024",
+      "quote": "(a) with respect to the Initial Term Loans, April 12, 2024",
+      "confidence": 0.85,
+      "notes": "Term Loan Maturity Date is a function of the tranche, not a scalar: (a) Initial April 12, 2024, (b) Second Tranche January 25, 2028, (c) Fourth Amendment August 24, 2027, (d) Fifth Amendment July 11, 2027. Reporting one number for 'the' term loan maturity loses three."
+    },
+    {
+      "field": "lc_sublimit",
+      "value": "$10,000,000",
+      "quote": "which shall include an up to $10,000,000 letter of credit subfacility",
+      "confidence": 0.85
+    },
+    {
+      "field": "applicable_margin.eurodollar_top_level_pct",
+      "value": "1.550%",
+      "quote": "Credit Rating Level 5 | 1.350% | 0.750% | 1.550% | 0.550%",
+      "confidence": 0.6,
+      "notes": "The first reading of this grid recorded 0.675%, the top printed row, and that was wrong: the field is 'the highest Eurodollar Applicable Margin in the pricing grid', and Level 1 is the best rating and so the lowest margin. Corrected before any label for this document existed, against the field's own description rather than against an answer. The grid has four margin columns; 1.550% is the highest Term SOFR figure in any of them, on the term loan facility at Level 5. The revolver-only reading gives 1.350% and the field cannot say which facility it means. Two conditional overlays sit on top: a leverage test at or below 0.35:1.00 moves pricing one level better, and an ESG amendment, if one is ever effectuated, can move the margin by up to 0.02% either way. Neither is in force today."
+    },
+    {
+      "field": "commitment_fee_pct",
+      "value": "0.125%",
+      "quote": "Credit Rating Level 1 | 0.125%",
+      "confidence": 0.5,
+      "notes": "The field is defined as 'the unused commitment fee' and this agreement has none. What it has is a Facility Fee, computed under Section 2.7(a) at the same grid rate on the average daily amount of the Total Revolving Credit Commitment, drawn or not. Recorded here because the registry has no other slot and reporting no fee on a $1.3bn revolver that charges 12.5 to 30 basis points on the whole line would understate the cost of the facility by more than leaving it empty saves. The difference is real money and the note is the only place the record can say so."
+    },
+    {
+      "field": "financial_covenant.level",
+      "value": "60%",
+      "quote": "Permit the Consolidated Leverage Ratio as of the last day of any fiscal quarter of the Parent REIT to exceed 60%",
+      "confidence": 0.8,
+      "notes": "A REIT leverage covenant is debt over total asset value, so it is quoted as a percentage and not as a multiple of EBITDA. Steps up to 65% for four quarters after a Material Acquisition, on two non-consecutive occasions. Section 7.1 carries five more levels: fixed charge coverage at 1.50 to 1.00, secured debt leverage at 50%, unencumbered leverage at 60%, unencumbered interest coverage at 1.75:1.00."
+    },
+    {
+      "field": "incremental.free_and_clear_amount",
+      "value": "$700,000,000",
+      "quote": "the aggregate amount of such Incremental Loan Commitments and such increase in the Total Revolving Credit Commitments shall not exceed $700,000,000",
+      "confidence": 0.85,
+      "notes": "A flat dollar cap shared between incremental term loans and revolver increases, with no leverage-based second basket."
+    },
+    {
+      "field": "facility.governing_law",
+      "value": "New York",
+      "quote": "10.11 Governing Law . THIS AGREEMENT AND THE RIGHTS AND OBLIGATIONS OF THE PARTIES UNDER THIS AGREEMENT SHALL BE GOVERNED BY, AND CONSTRUED AND INTERPRETED IN ACCORDANCE WITH, THE LAW OF THE STATE OF NEW YORK.",
+      "confidence": 0.95
+    },
+    {
+      "field": "facility.multi_currency",
+      "value": "false",
+      "quote": "\" Dollars \" and \" $ \": dollars in lawful currency of the United States of America.",
+      "confidence": 0.75,
+      "notes": "No alternative currency machinery anywhere: payments are in Dollars, and each Letter of Credit shall be denominated in Dollars."
+    },
+    {
+      "field": "facility.seniority",
+      "value": "senior unsecured",
+      "quote": "the credit ratings (or their equivalents) most recently announced for the Parent REIT's long-term senior unsecured non-credit enhanced debt",
+      "confidence": 0.6,
+      "notes": "Inferred rather than stated. The agreement has a guarantee and no security agreement, no collateral agent and no borrowing base, and it prices off the Parent REIT's senior unsecured ratings. A Borrowing Base Certificate is still a condition precedent in Section 5, but 'Borrowing Base' is not a defined term anywhere in the conformed text."
+    },
+    {
+      "field": "libor_floor_pct",
+      "value": "0%",
+      "quote": "if, as of any date of determination, Adjusted Term SOFR determined as provided above shall be less than zero, then Adjusted Term SOFR as of such date shall be deemed to be zero",
+      "confidence": 0.65,
+      "notes": "A floor of zero is a floor, and it is not the same as no floor. Recorded as 0% rather than left out so the distinction survives. There is no credit spread adjustment: Adjusted Term SOFR is Term SOFR with nothing added."
+    },
+    {
+      "field": "delayed_draw.commitment",
+      "value": "$450,000,000",
+      "quote": "The aggregate amount of the Fifth Amendment Term Loan Commitments on the Fifth Amendment Effective Date is $450,000,000.",
+      "confidence": 0.7,
+      "notes": "The Fifth Amendment Term Loan is drawn on Funding Dates and its unfunded commitment expires, which is a delayed draw whatever it is called. The Fourth Amendment Term Loan is a second one, also $450,000,000, expiring 180 days after its own effective date."
+    },
+    {
+      "field": "delayed_draw.must_draw_by_date",
+      "value": null,
+      "quote": "the 180th day after the Fifth Amendment Effective Date",
+      "confidence": 0.8,
+      "external_document": "Fifth Amendment to Amended and Restated Credit Agreement, dated as of July 11, 2024",
+      "notes": "Not determinable here. The deadline is 180 days after the Fifth Amendment Effective Date, and this agreement defines that date only as 'has the meaning assigned to such term in the Fifth Amendment'. July 11, 2024 is the date the Fifth Amendment bears, not the date it became effective, so computing from it would be a guess dressed as arithmetic."
+    },
+    {
+      "field": "rating.agency",
+      "value": "S&P, Moody's and Fitch",
+      "quote": "the Credit Rating is greater than or equal to A- by S&P or Fitch or A3 by Moody's",
+      "confidence": 0.8
+    },
+    {
+      "field": "rating.credit_quality",
+      "value": "Investment Grade Rating",
+      "quote": "WHEREAS, the Parent REIT has received an Investment Grade Rating",
+      "confidence": 0.7,
+      "notes": "The agreement records that the rating exists and turns the guarantor release on it, but never states what the rating is."
+    },
+    {
+      "field": "facility.evergreen_option",
+      "value": "false",
+      "quote": "the Borrower may, in its sole discretion, extend such Revolving Credit Termination Date up to two times",
+      "confidence": 0.6,
+      "notes": "Two discretionary extensions, each requiring notice inside a 120-to-30-day window and an extension fee. That is an extension option, not an evergreen: nothing renews unless the Borrower acts."
+    }
+  ]
+}

@@ -24,23 +24,42 @@ from .eval import traps as trap_checks
 from .extract.passes import (
     AnthropicBackend, LayeredBackend, OfflineRuleBackend,
 )
+from .extract.recorded import RECORDINGS, RecordedBackend, for_document
 from .pipeline import ExtractionResult, run_document_set, run_pipeline
 from .validate.calibrate import BackendMismatch, Thresholds, load_thresholds
 from .validate.jev import JevClient, OfflineJev
 
 
-def _build_backends(args: argparse.Namespace):
+def _build_backends(args: argparse.Namespace, document: Path | None = None):
     """Rules first, model for what the rules leave.
 
     ``--backend anthropic`` layers the model *behind* the deterministic rules
     rather than replacing them. The rules are cheap and exact on the easy
     fields; the model is for everything else, and it only ever sees the fields
     the rules did not settle.
+
+    ``--backend recorded`` puts a checked-in reading in the same slot, so the
+    model tier can be exercised without a key. It refuses rather than falling
+    back when no recording covers the document: a silent fall back to the
+    rules would report the model tier's recall as the rules' recall.
     """
     if args.backend == "anthropic":
         extraction = LayeredBackend(
             OfflineRuleBackend(),
             AnthropicBackend(model=args.model, temperature=args.temperature),
+        )
+    elif args.backend == "recorded":
+        if document is None:
+            raise SystemExit("--backend recorded needs a document to look up")
+        recording = for_document(document.name)
+        if recording is None:
+            raise SystemExit(
+                f"no checked-in recording reads {document.name}. Recordings "
+                f"live in {RECORDINGS} and are made by hand; see that module's "
+                "docstring for the ordering that makes one worth scoring."
+            )
+        extraction = LayeredBackend(
+            OfflineRuleBackend(), RecordedBackend(recording)
         )
     else:
         extraction = OfflineRuleBackend()
@@ -113,8 +132,14 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
         print(f"\n  review queue ({len(report.review_queue)}), most material "
               "first:")
         for item in report.review_queue[:10]:
-            print(f"    [{item['criticality_label']}] {item['field']} "
-                  f"= {item['value']}")
+            if item["status"] == "conflicted":
+                # Never "field = value" for a field the pipeline refused to
+                # resolve: the eye reads the equals sign and stops.
+                rival = ", ".join(item.get("competing_values") or []) or "no candidates"
+                shown = f"unresolved between {rival}"
+            else:
+                shown = f"= {item['value']}"
+            print(f"    [{item['criticality_label']}] {item['field']} {shown}")
             print(f"      {item['why']}")
 
     results = trap_checks.check_all(result)
@@ -141,7 +166,7 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
 
 
 def cmd_extract(args: argparse.Namespace) -> int:
-    extraction_backend, jev_backend = _build_backends(args)
+    extraction_backend, jev_backend = _build_backends(args, args.file)
     thresholds: Thresholds | None = None
     if args.thresholds:
         thresholds = load_thresholds(args.thresholds, backend=jev_backend.name)
@@ -181,7 +206,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
 
 def cmd_traps(args: argparse.Namespace) -> int:
-    extraction_backend, jev_backend = _build_backends(args)
+    extraction_backend, jev_backend = _build_backends(args, args.file)
     result = run_pipeline(
         args.file,
         extraction_backend=extraction_backend,
@@ -247,10 +272,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_common(sub: argparse.ArgumentParser) -> None:
         sub.add_argument("file", type=Path, help=".htm/.html/.mht/.pdf/.txt")
-        sub.add_argument("--backend", choices=("offline", "anthropic"),
+        sub.add_argument("--backend", choices=("offline", "anthropic", "recorded"),
                          default="offline",
                          help="extraction backend (default: offline, "
-                              "deterministic, no API key needed)")
+                              "deterministic, no API key needed; "
+                              "recorded replays a checked-in model reading)")
         sub.add_argument("--jev", choices=("offline", "api"), default="offline",
                          help="Jev backend (default: offline stand-in)")
         sub.add_argument("--model", default="claude-sonnet-5")

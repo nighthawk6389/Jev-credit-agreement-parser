@@ -38,6 +38,10 @@ credit_extract = [
     # report reads the blind-spot register.
     "eval/*.yaml",
     "eval/labels/*.yaml",
+    # Checked-in model readings. --backend recorded resolves these by document
+    # name and refuses rather than falling back, so a wheel without them turns
+    # the model tier into an error instead of a quiet downgrade to the rules.
+    "extract/recordings/*.json",
     # The FIBO and ACTUS snapshots. fibo() and actus_term() raise on a term
     # that is not in them, which is the whole point -- an invented URI cannot
     # ship -- so without these files every extraction raises instead.
