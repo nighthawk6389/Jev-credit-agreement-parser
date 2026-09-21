@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 223 tests
+pytest -q                                          # 233 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 ```
@@ -131,8 +131,21 @@ relationship means. Thus a lien resolves to both `fpml:lien` and
 standard has the concept (for example PIK accrual in FpML), the other side is a
 documented gap rather than an invented ontology term.
 
-`scripts/gen_fpml.py --check` re-fetches the pinned schemas and detects drift;
-`--vendor` refreshes the snapshot, and `--generate` optionally runs `xsdata`.
+`fpml()` and `fibo()` raise on an unknown name, so the two binding functions
+check themselves whenever they are called. The field registry does not go
+through them — its `standard_term` is a plain string — so `scripts/gen_fpml.py
+--check` resolves all 40 mapped terms against the checked-in index, offline, on
+every build. `--drift` re-fetches the pinned bytes and asks the separate
+question of whether the mirror still serves what the snapshot was built from;
+it is informational, because a change in someone else's repository is not a
+reason to fail a pull request. `--vendor` refreshes the snapshot and
+`--generate` optionally runs `xsdata`.
+
+What `verified=True` claims here is narrow and worth stating: the element name
+is declared in the pinned schemas. It does not claim the element means what the
+field means, or that it is legal where the mapping puts it — FpML declares some
+names in more than one scope and the index merges them. The `FPML_SCHEMAS`
+blind spot carries the limit into every report.
 
 **ACTUS** supplies anything that generates a cashflow, and is the reason to
 bother with standards at all. LAM and LAX are reimplemented in Python
@@ -362,9 +375,13 @@ API but unexercised. `OfflineRuleBackend` is the default: anchored patterns
 with exact spans, deliberately weaker at recall than an LLM — which is what the
 orphan sweep exists to compensate for.
 
-**FpML's authenticated download page is not used by CI.** The schema bytes are
-fetched from a pinned public mirror commit, hashed in the vendored index, and
-cross-checked against every FpML registry binding.
+**The FpML schemas come from a mirror, not from ISDA.** fpml.org serves them
+behind an authenticated session, so the bytes are fetched from a pinned commit
+of a public mirror and hashed in the vendored index. That makes them
+reproducible — `--drift` rebuilds the index from those URLs byte for byte — but
+not authentic: nothing here compares them against ISDA. The hand-mapped names
+are gone and all 40 mapped terms are declared, which is the part that lifted;
+meaning and position are still unchecked, which is the part that did not.
 
 ## Layout
 

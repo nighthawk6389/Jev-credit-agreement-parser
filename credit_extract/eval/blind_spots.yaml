@@ -154,3 +154,34 @@ untestable_in_this_environment:
       lower than production would be, and the orphan sweep is carrying more
       weight than it would with a real extractor behind it.
     remedy: set ANTHROPIC_API_KEY and run with --backend anthropic.
+
+  - id: FPML_SCHEMAS
+    families: [F06_structure, F07_benchmark]
+    status: partially_lifted
+    reason: >
+      fpml.org serves the schemas behind an authenticated session, so the
+      bytes come from a pinned commit of a public mirror
+      (rosetta-models/rune-fpml) rather than from ISDA. Three schemas are
+      recorded with their SHA-256, and `gen_fpml.py --drift` reproduces the
+      checked-in index from them byte for byte.
+    consequence: >
+      What was lifted is the hand-mapping: the 40 element names this
+      repository binds to are no longer invented, all 40 are declared in the
+      pinned schemas, and fpml() raises on a name that is not. Two things
+      stay unverified, and they are not small. The pin makes the bytes
+      reproducible, not authentic -- nothing here checks them against ISDA,
+      so a mirror that diverged before the pinned commit would be indexed
+      without complaint. And the check is a check of names: it says
+      spreadAdjustment is declared, not that it means the credit spread
+      adjustment a SOFR facility quotes, nor that it is legal where the
+      mapping puts it. FpML declares the same name in more than one scope --
+      delayedDraw is both a boolean on a term loan and a facility element --
+      and the index merges them, so a name resolving proves less than it
+      looks like it proves. The documentation each mapped element carries is
+      in the index and was read once, by hand; nothing re-reads it.
+    remedy: >
+      Fetch the schemas from fpml.org with a session and compare the hashes,
+      which settles authenticity. Position and meaning need the generated
+      bindings -- `gen_fpml.py --generate` runs xsdata over the loan schema --
+      so that a mapping to an element that cannot appear there fails to
+      compile rather than passing a name check.
