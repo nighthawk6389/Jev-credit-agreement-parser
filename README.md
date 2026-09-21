@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 246 tests
+pytest -q                                          # 247 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 
@@ -339,6 +339,29 @@ that vetoed it. The same document also produced a false positive —
 `one-quarter of one percent (0.25%)` read as a numeral mismatch — and a
 mutation that cannot apply to an amendment, since an amendment's
 cross-references point into a base agreement it does not contain.
+
+Two more held-out documents followed, chosen for the families the report
+called undersampled. **Schneider National** is in the credit-spread-adjustment
+stratum and has no credit spread adjustment — `Adjusted Term SOFR Rate` means
+the Term SOFR Rate, and the only "adjustment" in 417,000 characters is the
+benchmark-replacement boilerplate every post-2022 agreement carries. Its
+pricing grid is quoted in basis points against a percentage-typed field, so a
+reader who takes `22.5` as written reports a 22.5% fee on an undrawn
+$350,000,000 revolver. Its maturity springs from 2031 back to 2029 on a
+condition inside the borrower's control.
+
+**Martin Marietta's Eighteenth Amendment** is a blackline that moves both
+headline terms — the facility limit from $400m to $500m and the termination
+date from September 2026 to September 2027 — and the ingester excises all
+thirteen struck runs correctly, which four assertions now pin. Labelling it
+found that **Validator E could never fire on the case it exists for**: it
+reads the sentence a figure sits in, so it only ran on fields that already
+had a span, and a fee fixed by a fee letter has no figure. That agreement
+names a Fee Letter twelve times and states no rate anywhere; the commitment
+fee came back as an ordinary missing field rather than as external by design.
+
+F04, F07 and F08 left the undersampled list as a result. F02, F03 and F10
+have not.
 
 ```bash
 python -m credit_extract.eval.split --check   # recomputes and compares; CI runs it

@@ -447,9 +447,47 @@ def validator_d_overrides(
 
 
 _EXTERNAL_HINTS = (
-    "Sponsor Model", "Disclosure Letter", "as separately agreed",
+    "Sponsor Model", "Disclosure Letter", "Fee Letter", "as separately agreed",
     "Schedule", "Exhibit", "Annex",
 )
+
+#: A defined Fee Letter, and the sentence that makes it govern the fees. Both
+#: are required: an agreement can mention a fee letter in a boilerplate list of
+#: Loan Documents without any fee actually living there.
+_FEE_LETTER_DEFINED_RE = re.compile(
+    r'"\s*Fee Letter\s*"\s*(?:means|shall mean)', re.IGNORECASE
+)
+_FEES_UNDER_FEE_LETTER_RE = re.compile(
+    r"fees?\s+(?:payable|due and payable|owing)\s+(?:pursuant to|under)\s+"
+    r"(?:a|the|any)\s+Fee Letter",
+    re.IGNORECASE,
+)
+
+
+def fee_letter_governs_fees(doc: NormalizedDocument) -> str | None:
+    """The quote establishing that this deal's fees live in a Fee Letter.
+
+    Validator E can only speak about fields that already carry a span, because
+    it reads the sentence the figure sits in. A fee fixed by a fee letter has
+    no figure and therefore no sentence, so the validator built to say "this
+    value is elsewhere" cannot fire on the case it was built for. Martin
+    Marietta's Eighteenth Amendment names a Fee Letter twelve times, defines
+    it, conditions closing on its delivery, and states no rate anywhere; the
+    commitment fee came back as an ordinary missing field.
+
+    The rule stays deliberately narrow because ``external_reference`` is a
+    settled status and a wrong one is a silent error. A fee letter governs
+    fees and nothing else, so this answers only for fee fields, and only when
+    the agreement both defines the letter and says the fees are payable under
+    it.
+    """
+    text = doc.text
+    if not _FEE_LETTER_DEFINED_RE.search(text):
+        return None
+    match = _FEES_UNDER_FEE_LETTER_RE.search(text)
+    if match is None:
+        return None
+    return " ".join(text[match.start(): match.end() + 60].split())
 
 
 def _sentence_window(doc: NormalizedDocument, span: Span, cap: int = 900) -> str:
@@ -518,9 +556,41 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
     """
     forced: list[str] = []
     document_omits = document_omits_schedules(ctx.doc)
+    fee_letter_quote = fee_letter_governs_fees(ctx.doc)
+
     for name, field in ctx.fields.items():
         spec = ctx.specs.get(name)
-        if not field.spans or spec is None:
+        if spec is None:
+            continue
+        if not field.spans:
+            if (
+                fee_letter_quote
+                and field.value is None
+                and field.status not in ("external_reference", "confirmed")
+                and "fee" in name
+            ):
+                field.external_document = "Fee Letter"
+                field.external_kind = "by_design"
+                field.status = "external_reference"
+                field.validation_source = "E_external_dependency"
+                field.notes = (
+                    "no rate is stated in this agreement; the fees are payable "
+                    "under the Fee Letter, which is never filed -- so this is "
+                    "external by design and not a figure that was missed"
+                )
+                field.record(ValidationEvent(
+                    validator="E_external_dependency",
+                    question=(
+                        "Are the fees for this facility fixed by a Fee Letter "
+                        "rather than by this agreement?"
+                    ),
+                    jev_type="python",
+                    result="by_design",
+                    passed=True,
+                    backend="deterministic",
+                    notes=fee_letter_quote,
+                ))
+                forced.append(name)
             continue
         already_external = field.status == "external_reference"
         if already_external and field.external_kind is not None:

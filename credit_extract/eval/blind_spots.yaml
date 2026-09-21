@@ -30,8 +30,18 @@ untestable_from_public_filings:
       point at one are: 52 of the 100 in corpus/edgar name a Fee Letter and 44
       use "separately agreed" or equivalent.
     consequence: >
-      The *detection* side is now testable -- there are 52 real examples of
-      the reference to find, and marking one external_by_design is checkable.
+      The *detection* side is now testable and has been tested. Martin
+      Marietta's Eighteenth Amendment is labelled, and writing that label
+      found that Validator E could not fire on this case at all: it reads the
+      sentence a figure sits in, so it only ran on fields that already
+      carried a span, and a fee fixed by a fee letter has no figure. A fee
+      field with no value is now external by design where the agreement both
+      defines a Fee Letter and says the fees are payable under it -- 3
+      documents of the 52 that name one and the 23 that define one, which is
+      deliberate: external_reference is a settled status and a wrong one is a
+      silent error, so the rule buys precision with recall and the other 49
+      stay in review rather than being guessed at.
+
       What stays untestable is the content: no filing anywhere states the
       number, so a pipeline claiming to have resolved one is wrong by
       construction and nothing in the corpus can catch that.

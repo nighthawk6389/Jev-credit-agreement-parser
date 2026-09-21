@@ -160,6 +160,42 @@ def test_the_archetype_cannot_suppress_a_term_the_document_names():
     assert inapplicable_fields(abl, ["initial_term_loan.maturity_date"], quiet)
 
 
+def test_a_fee_letter_is_only_external_where_the_fees_actually_live_in_it():
+    """Validator E could not fire on the case it exists for.
+
+    It reads the sentence a figure sits in, so it only ran on fields that
+    already carried a span -- and a fee fixed by a fee letter has no figure
+    and so no sentence. The rule that replaces that gap has to be narrow,
+    because ``external_reference`` is a status the pipeline presents as
+    settled and a wrong one is a silent error: naming a fee letter in a list
+    of Loan Documents is not evidence that this deal's fees live there.
+    """
+    from credit_extract.validate.validators import fee_letter_governs_fees
+
+    class _Doc:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+    governs = _Doc(
+        '"Fee Letter" means that certain Fourth Amended and Restated Fee '
+        "Letter dated as of April 17, 2018. The Lenders and the "
+        "Administrative Agent shall have received all fees due and payable "
+        "under the Fee Letter."
+    )
+    assert fee_letter_governs_fees(governs)
+
+    # Defined, but nothing says the fees are payable under it.
+    mentioned_only = _Doc(
+        '"Loan Documents" means this Agreement, the Notes and the Fee Letter. '
+        '"Fee Letter" means the fee letter dated as of the date hereof.'
+    )
+    assert fee_letter_governs_fees(mentioned_only) is None
+
+    # Fees payable under one, but no definition -- a passing reference.
+    undefined = _Doc("all fees payable under the Fee Letter shall be retained")
+    assert fee_letter_governs_fees(undefined) is None
+
+
 def test_a_fraction_of_one_percent_is_not_a_numeral_mismatch():
     """"one-quarter of one percent (0.25%)" says the same thing twice."""
     from credit_extract.validate.invariants import (
