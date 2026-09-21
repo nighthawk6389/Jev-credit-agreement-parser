@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import tempfile
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -532,3 +534,42 @@ def test_depth_does_not_change_between_runs():
         for _ in range(5)
     }
     assert len(runs) == 1, "depths() is not deterministic"
+
+
+def test_definitions_inside_a_restated_section_are_visible():
+    """An amendment that restates a section quotes the whole restated block,
+    so every definition inside it drops to single quotes. Requiring double
+    quotes made that content invisible: on the one document in the corpus
+    drafted this way the graph saw 3 terms in 73,805 characters against 19
+    actually present, and the closure handed to the model tier -- which is
+    most of what this module is for -- was three lines long.
+    """
+    from credit_extract.ingest.normalize import ingest
+
+    restated = (
+        "Section 1.01 of the Original Agreement is hereby amended in its "
+        "entirety to read as follows: \" 'Revolving Credit Termination Date' "
+        "means the earliest to occur of (a) August 27, 2029, and (b) the "
+        "termination of the Revolving Credit Commitment. 'Leverage Ratio' "
+        "means the ratio of Funded Debt to EBITDA. \""
+    )
+    path = Path(tempfile.mkdtemp()) / "restated.txt"
+    path.write_text(restated)
+    graph = build_definition_graph(ingest(path))
+    assert "Revolving Credit Termination Date" in graph
+    assert "Leverage Ratio" in graph
+
+
+def test_an_apostrophe_does_not_open_a_definition():
+    """``'`` is also an apostrophe, and a possessive must not be read as a
+    quoted term: the closing quote cannot be one."""
+    from credit_extract.ingest.normalize import ingest
+
+    prose = (
+        "The Borrowers' means of repayment shall be as set forth herein, and "
+        "the Lenders' means of enforcement shall not be limited hereby."
+    )
+    path = Path(tempfile.mkdtemp()) / "prose.txt"
+    path.write_text(prose)
+    graph = build_definition_graph(ingest(path))
+    assert len(graph) == 0, sorted(graph.nodes)

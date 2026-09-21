@@ -1,0 +1,179 @@
+# Tier 2 assertions: Schneider National Leasing, Inc., credit agreement, 2026.
+#
+# Held out by the frozen split before any label for it existed. A $350,000,000
+# revolver, JPMorgan as Administrative Agent, dated 10 September 2026 --
+# investment-grade in shape, and chosen for labelling because stratum O is
+# "SOFR with credit spread adjustment" and the undersampled families are the
+# ones that most need real examples.
+#
+# These labels were produced by a model reading the source text, not by a
+# credit analyst; every assertion quotes the passage it rests on so a second
+# reader can check it in the time it takes to read the quote.
+#
+# Two things about this document are worth a reader's attention before the
+# assertions.
+#
+# It is in the credit-spread-adjustment stratum and has no credit spread
+# adjustment. "Adjusted Term SOFR Rate" means the Term SOFR Rate, full stop;
+# the only "adjustment" in 417,000 characters is the Benchmark Replacement
+# Adjustment, which is the fallback boilerplate every post-2022 agreement
+# carries against the day SOFR is replaced and which explicitly "may be a
+# positive or negative value or zero". This is the drafting that made
+# csa_not_silently_zero fire on some forty correctly-drafted agreements
+# before it was narrowed, and it is now a labelled example rather than a
+# remembered one.
+#
+# And its pricing grid is quoted in basis points -- 175.0 bps, not 1.75% --
+# against a registry field typed as a percentage. A reader who takes the
+# figure as written is out by a factor of a hundred.
+
+document: schneider_national_2026
+corpus_name: O_schneider-national-inc-sndr_2026-09-16_0001692063-26-000044_schneidernational2026credi
+source: real
+tier: 2
+
+assertions:
+  # -- F07 benchmark --------------------------------------------------------
+
+  - id: schneider_floor_is_zero_on_the_base_rate
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: 0
+    note: >
+      "'Floor' means the benchmark rate floor, if any, provided in this
+      Agreement ... with respect to the Adjusted Term SOFR Rate or the
+      Adjusted Daily Simple SOFR, as applicable. For the avoidance of doubt
+      the initial Floor for each of Adjusted Term SOFR Rate or the Adjusted
+      Daily Simple SOFR shall be zero." Zero is a stated value, not an
+      absence: the agreement went out of its way to say so, and a pipeline
+      reporting this field as absent would be reporting something the
+      document explicitly denies. The floor also attaches to the benchmark
+      rather than to the all-in rate, which is the distinction this family
+      member exists for -- at a SOFR of 0.05% the two constructions differ by
+      the margin.
+
+  - id: schneider_has_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "'Adjusted Term SOFR Rate' means, for any Interest Period, an interest
+      rate per annum equal to (a) the Term SOFR Rate for such Interest
+      Period" -- nothing is added. "Credit spread adjustment" returns zero
+      matches in any case across the document. The sixteen occurrences of
+      "adjustment" are the Benchmark Replacement Adjustment, which applies
+      only on a benchmark transition that has not happened and "may be a
+      positive or negative value or zero". Zero is the correct reading of
+      this deal's economics today.
+
+  - id: schneider_top_grid_level_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: 1.75
+    note: >
+      "Level / Consolidated Net Debt Coverage Ratio / ABR Spread / Term
+      Benchmark-RFR Spread / Commitment Fee Rate: I ≥ 3.00:1.00 75.0 bps
+      175.0 bps 22.5 bps; II < 3.00:1.00 but ≥ 2.00:1.00 50.0 bps 150.0 bps
+      17.5 bps; III < 2.00:1.00 but ≥ 1.00:1.00 25.0 bps 125.0 bps 12.5 bps;
+      IV < 1.00:1.00 0.0 bps 100.0 bps 10.0 bps". Four levels. The highest
+      Term Benchmark spread is 175.0 bps, which this percentage-typed field
+      carries as 1.75. The ABR column is a different rate on the same row and
+      reporting 0.75 here would be reading the wrong column.
+
+  # -- F08 units ------------------------------------------------------------
+
+  - id: schneider_commitment_fee_is_basis_points
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: commitment_fee_pct
+    expect: 0.225
+    note: >
+      22.5 bps at Level I of the same grid. Written as "22.5" against a field
+      typed as a percentage, so a reader who takes the figure as it appears
+      reports a commitment fee of 22.5% on an undrawn $350,000,000 revolver
+      -- about $78,750,000 a year for lending nothing. The whole grid is in
+      basis points and none of it says "percent", which is the ordinary way
+      an investment-grade agreement is drafted.
+
+  # -- F10 conditionality ---------------------------------------------------
+
+  - id: schneider_maturity_is_the_unconditional_one
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-10
+    note: >
+      "'Maturity Date' means September 10, 2031; provided, however, that the
+      Maturity Date will be November 22, 2029, if the Borrower does not,
+      prior to the date 91 days prior to November 22, 2029, (i) extend the
+      maturity date under the Term Loan Agreement ... (ii) refinance ... or
+      (iii) otherwise repay in full the Term Loan Agreement." The stated
+      maturity is 2031; 2029 springs only on a condition that has not
+      occurred and is within the borrower's control. Reporting 2029 would
+      shorten the facility by twenty-two months on a contingency, and
+      reporting 2031 with no record of the springing date understates the
+      refinancing risk -- which is why the model stores variants rather than
+      a date.
+
+  - id: schneider_covenant_level_is_the_unconditional_one
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: financial_covenant.level
+    expect: 3.50
+    note: >
+      "The Parent shall not permit the Consolidated Net Debt Coverage Ratio
+      to be greater than 3.50 to 1.00 as of the last day of any fiscal
+      quarter; provided that, if elected in writing by the Borrower ... for
+      the twelve month period starting as of the date of any Material
+      Permitted Acquisition, the Consolidated Net Debt Coverage Ratio shall
+      not exceed 4.00 to 1.00". 3.50 governs; 4.00 is a twelve-month holiday
+      that has to be elected and triggered. A second financial covenant, an
+      Interest Coverage Ratio of not less than 2.50 to 1.00, applies only
+      while the group is no longer bound by a net-worth covenant elsewhere.
+
+  - id: schneider_has_no_stepped_down_final_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_status
+    target: financial_covenant.final_level
+    expect: absent_from_document
+    note: >
+      "Step-down" and "stepped down" return zero matches in any case. The
+      covenant is flat at 3.50 for the life of the deal, so there is no final
+      stepped-down level to report -- the conditional 4.00 is a step *up* and
+      a temporary one. Absence is the right answer here and the pipeline
+      already gives it; the assertion is here so that a future change which
+      starts inventing a stepdown schedule fails rather than passing quietly.
+
+  # -- F04 absence ----------------------------------------------------------
+
+  - id: schneider_no_mfn
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_sunset
+    expect: absent_from_document
+    note: >
+      "Most favored nation", "most favoured nation" and "MFN" all return zero
+      matches in any case. A bank revolver for an investment-grade shipper
+      has no institutional term loan to reprice against.
+
+  - id: schneider_no_ecf_sweep
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      "Excess cash flow" returns zero matches in any case. A revolver has
+      nothing to sweep: repayments are reborrowable, which is what makes it a
+      revolver.

@@ -22,25 +22,65 @@ from typing import Any
 
 from .eval import traps as trap_checks
 from .extract.passes import (
-    AnthropicBackend, LayeredBackend, OfflineRuleBackend,
+    ROUTES, AnthropicBackend, LayeredBackend, OfflineRuleBackend,
 )
+from .extract.recorded import RECORDINGS, RecordedBackend, for_document
 from .pipeline import ExtractionResult, run_document_set, run_pipeline
 from .validate.calibrate import BackendMismatch, Thresholds, load_thresholds
 from .validate.jev import JevClient, OfflineJev
 
 
-def _build_backends(args: argparse.Namespace):
+def _build_backends(args: argparse.Namespace, document: Path | None = None):
     """Rules first, model for what the rules leave.
 
     ``--backend anthropic`` layers the model *behind* the deterministic rules
     rather than replacing them. The rules are cheap and exact on the easy
     fields; the model is for everything else, and it only ever sees the fields
     the rules did not settle.
+
+    ``--backend vercel`` is the same tier over a different route: Vercel's AI
+    Gateway speaks the Messages API, so the prompt, the schema, the failure
+    handling and the candidate construction are byte for byte the ones the
+    direct route uses, and a measurement taken through one is comparable to a
+    measurement taken through the other. What differs is the base URL, the
+    credential and the creator-first model id, all of which live on
+    :class:`Route`. Thresholds are fitted per backend and the backend name
+    follows the route, so a set fitted against one is not silently applied to
+    the other.
+
+    ``--backend recorded`` puts a checked-in reading in the same slot, so the
+    model tier can be exercised without a key. It refuses rather than falling
+    back when no recording covers the document: a silent fall back to the
+    rules would report the model tier's recall as the rules' recall.
     """
-    if args.backend == "anthropic":
+    if args.backend in ROUTES:
+        route = ROUTES[args.backend]
+        if route.credential() is None:
+            raise SystemExit(
+                f"the {route.name} route needs a credential: set "
+                + " or ".join(route.key_vars)
+                + ". Refusing here rather than on the first chunk, because a "
+                "run that dies a thousand chunks in has already spent the "
+                "cheap tiers and reports partial recall as recall."
+            )
         extraction = LayeredBackend(
             OfflineRuleBackend(),
-            AnthropicBackend(model=args.model, temperature=args.temperature),
+            AnthropicBackend(
+                model=args.model, temperature=args.temperature, route=route
+            ),
+        )
+    elif args.backend == "recorded":
+        if document is None:
+            raise SystemExit("--backend recorded needs a document to look up")
+        recording = for_document(document.name)
+        if recording is None:
+            raise SystemExit(
+                f"no checked-in recording reads {document.name}. Recordings "
+                f"live in {RECORDINGS} and are made by hand; see that module's "
+                "docstring for the ordering that makes one worth scoring."
+            )
+        extraction = LayeredBackend(
+            OfflineRuleBackend(), RecordedBackend(recording)
         )
     else:
         extraction = OfflineRuleBackend()
@@ -96,6 +136,16 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
             print(f"    {orphan.chunk_id} [{orphan.top_signal} "
                   f"{orphan.score:.2f}] {snippet}")
 
+    explained = [o for o in report.orphan_chunks if o.findings]
+    if explained:
+        total = sum(len(o.findings) for o in explained)
+        print(f"\n  findings ({total}) -- what those passages say, where no "
+              "field can hold it:")
+        for orphan in explained[:5]:
+            for finding in orphan.findings:
+                print(f"    [{finding.kind}] {finding.name}")
+                print(f"      {finding.summary}")
+
     if report.override_findings:
         print(f"\n  override findings ({len(report.override_findings)}):")
         for finding in report.override_findings[:5]:
@@ -113,9 +163,36 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
         print(f"\n  review queue ({len(report.review_queue)}), most material "
               "first:")
         for item in report.review_queue[:10]:
-            print(f"    [{item['criticality_label']}] {item['field']} "
-                  f"= {item['value']}")
+            if item["status"] == "conflicted":
+                # Never "field = value" for a field the pipeline refused to
+                # resolve: the eye reads the equals sign and stops.
+                rival = ", ".join(item.get("competing_values") or []) or "no candidates"
+                shown = f"unresolved between {rival}"
+            else:
+                shown = f"= {item['value']}"
+            print(f"    [{item['criticality_label']}] {item['field']} {shown}")
             print(f"      {item['why']}")
+
+    if result.facilities:
+        print(f"\n  fpml facilities ({len(result.facilities)}):")
+        for export in result.facilities:
+            f = export.facility
+            print(f"    {f.facility_id} ({f.facility_type}): "
+                  f"{export.populated} element(s) populated, "
+                  f"{len(export.withheld)} withheld")
+        # The withheld count is the interesting half. An element left empty
+        # because its value is in a fee letter is not the same fact as an
+        # element left empty because the agreement has no such term, and the
+        # model this exports into cannot tell them apart -- so the reasons are
+        # printed rather than summed away.
+        external = sorted({
+            element for export in result.facilities
+            for element, why in export.withheld.items()
+            if "in a document" in why
+        })
+        if external:
+            print("    withheld because the value lives elsewhere: "
+                  + ", ".join(external))
 
     results = trap_checks.check_all(result)
     print()
@@ -141,7 +218,7 @@ def _print_summary(result: ExtractionResult, verbose: bool) -> None:
 
 
 def cmd_extract(args: argparse.Namespace) -> int:
-    extraction_backend, jev_backend = _build_backends(args)
+    extraction_backend, jev_backend = _build_backends(args, args.file)
     thresholds: Thresholds | None = None
     if args.thresholds:
         thresholds = load_thresholds(args.thresholds, backend=jev_backend.name)
@@ -181,7 +258,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
 
 def cmd_traps(args: argparse.Namespace) -> int:
-    extraction_backend, jev_backend = _build_backends(args)
+    extraction_backend, jev_backend = _build_backends(args, args.file)
     result = run_pipeline(
         args.file,
         extraction_backend=extraction_backend,
@@ -247,10 +324,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_common(sub: argparse.ArgumentParser) -> None:
         sub.add_argument("file", type=Path, help=".htm/.html/.mht/.pdf/.txt")
-        sub.add_argument("--backend", choices=("offline", "anthropic"),
+        sub.add_argument("--backend",
+                         choices=("offline", "recorded", *sorted(ROUTES)),
                          default="offline",
                          help="extraction backend (default: offline, "
-                              "deterministic, no API key needed)")
+                              "deterministic, no API key needed; recorded "
+                              "replays a checked-in model reading; anthropic "
+                              "and vercel are the same model tier over "
+                              "different routes)")
         sub.add_argument("--jev", choices=("offline", "api"), default="offline",
                          help="Jev backend (default: offline stand-in)")
         sub.add_argument("--model", default="claude-sonnet-5")
@@ -289,7 +370,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="ignore amendments effective after this date")
     chain.add_argument("--out", type=Path)
     chain.add_argument("--jev", choices=("offline", "api"), default="offline")
-    chain.add_argument("--backend", choices=("offline", "anthropic"),
+    chain.add_argument("--backend",
+                       choices=("offline", "recorded", *sorted(ROUTES)),
                        default="offline")
     chain.add_argument("--model", default="claude-sonnet-5")
     chain.add_argument("--temperature", type=float, default=0.0)

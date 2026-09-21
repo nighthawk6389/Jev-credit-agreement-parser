@@ -30,8 +30,28 @@ untestable_from_public_filings:
       point at one are: 52 of the 100 in corpus/edgar name a Fee Letter and 44
       use "separately agreed" or equivalent.
     consequence: >
-      The *detection* side is now testable -- there are 52 real examples of
-      the reference to find, and marking one external_by_design is checkable.
+      The *detection* side is now testable and has been tested. Martin
+      Marietta's Eighteenth Amendment is labelled, and writing that label
+      found that Validator E could not fire on this case at all: it reads the
+      sentence a figure sits in, so it only ran on fields that already
+      carried a span, and a fee fixed by a fee letter has no figure. A fee
+      field with no value is now external by design where the agreement both
+      defines a Fee Letter and says the fees are payable under it -- 3
+      documents of the 52 that name one and the 23 that define one, which is
+      deliberate: external_reference is a settled status and a wrong one is a
+      silent error, so the rule buys precision with recall and the other 49
+      stay in review rather than being guessed at.
+
+      Star Mountain's BDC warehouse is the second labelled case and it shows
+      what that recall cost looks like: it defines "Fee Letters" in the
+      plural, so the singular pattern never matched, while the rate itself
+      reads '"Non-Utilization Fee Rate" ... means the "Non-Utilization Fee
+      Rate" as set forth in such Lender's Fee Letter.' A fee rate whose own
+      definition points at the letter names the fee and the document in one
+      sentence and needs no corroboration, so it is now sufficient on its
+      own. That route fires on 1 of the 100 harvested documents, which is the
+      basis on which a rule bought narrow for precision may be widened at all.
+
       What stays untestable is the content: no filing anywhere states the
       number, so a pipeline claiming to have resolved one is wrong by
       construction and nothing in the corpus can catch that.
@@ -75,10 +95,21 @@ untestable_from_public_filings:
       corpus/edgar holds six subscription, NAV and CLO warehouse facilities,
       and eight agreements overall use capital-commitment or NAV vocabulary.
     consequence: >
-      Archetype dispatch now has examples, and they are unlabelled. A NAV line
-      misread as a cash-flow term loan would be covenanted on EBITDA it does
-      not have, which is the failure this entry exists for -- the six
-      documents make it visible rather than fixing it.
+      One of the six is now labelled -- Star Mountain's Sixth Amendment, a BDC
+      borrowing against its own portfolio of loan assets -- and the failure
+      this entry was written for turns out to be sharper than the entry
+      guessed. It is not that a fund-level facility has no EBITDA to be
+      covenanted on. EBITDA is all over the document: it is the Obligors',
+      the portfolio companies', and it sets advance rates. '"Advance Rate"
+      means, (i) with respect to First Lien Loan Assets for which the
+      applicable Obligor has EBITDA of: (1) greater than $20,000,000, 70.0%'.
+      So a pipeline trained on corporate credit agreements finds a covenant
+      threshold and a receivables advance rate exactly where it expects them,
+      and both belong to somebody else's balance sheet. Eight assertions pin
+      it; the deterministic tier passes 6 and the checked-in reading 8. What
+      is still untested is the other five documents and the subscription-line
+      shape specifically -- this one is a warehouse, which is the same family
+      and not the same deal.
 
   - id: F09_term_defined_in_other_loan_document
     family: F09_definitional_depth
@@ -148,12 +179,84 @@ untestable_in_this_environment:
 
   - id: ANTHROPIC_API
     families: [F01_integrity, F09_definitional_depth, F11_layout]
-    reason: ANTHROPIC_API_KEY is not configured.
+    status: partially_lifted
+    reason: >
+      ANTHROPIC_API_KEY is not configured, so no live model pass has ever run.
+      What has run is one reading, made by hand and checked in: a reader read
+      Essential Properties' Eighth Amendment end to end, wrote 24 extractions
+      with a verbatim quote each into
+      credit_extract/extract/recordings/, and --backend recorded replays them
+      through the identical path -- same quote location, same reconciliation,
+      same validators, same statuses.
     consequence: >
-      Extraction runs on anchored patterns rather than an LLM pass. Recall is
-      lower than production would be, and the orphan sweep is carrying more
-      weight than it would with a real extractor behind it.
-    remedy: set ANTHROPIC_API_KEY and run with --backend anthropic.
+      Two different things were unknown here and only one of them still is.
+
+      What is now known is that the machinery downstream of extraction was not
+      ready for a model tier, because nothing had ever fed it one. The first
+      replay crashed the pipeline outright: three registry fields are booleans,
+      a bool is an int in Python, Decimal("False") raises, and no run had ever
+      populated one. Behind that: a leverage covenant written as "60%" against
+      a ratio-typed field was coerced to None and then reported as "the
+      extractor probably missed it" on a section the extractor had quoted
+      correctly; reconciliation flattened every valueless candidate to
+      "produced no value", discarding the span it cited; the review queue
+      printed "closing_date = 2019-11-26" next to status conflicted on a field
+      with eleven candidates at equal weight; and the text pricing-grid reader
+      was naming the last column of a four-column investment-grade grid the
+      Eurodollar margin, putting a base rate spread of 0.550% into a
+      criticality-5 field at 0.93 confidence, where the answer is 1.550%. All
+      five are fixed and all five have regression tests.
+
+      On the same 19 assertions the deterministic tier passes 10 and the
+      replay passes 17, with no silent error either way. That number is NOT
+      model recall and must not be quoted as one: the same reader wrote the
+      reading and the labels, so the agreement between them is
+      self-consistency. What it measures is whether correct extractions with
+      correct citations survive to a correct record, and the answer before
+      this week was that they did not.
+
+      A second reading, of Aspen Technology's bilateral facility, found four
+      more and needed no labels for any of them: a heading style that left one
+      section detected out of 198 and every cross-reference in the document
+      unresolvable; a money parser that read "1.250% of the initial principal
+      amount" as one dollar twenty-five; an F01 invariant that had outgrown
+      its own premise and was calling an evidenced absence a defect; and the
+      targeted re-read at tier 4, which the ladder has always described and no
+      caller had ever supplied, so it had never executed on any document.
+      On that document's twelve assertions the deterministic tier passes
+      8 and the checked-in reading passes 12.
+
+      What is still unknown is whether a model produces those extractions.
+      Recall on a live pass remains unmeasured, and the orphan sweep is still
+      carrying weight a real extractor would take off it -- tier 4 now runs
+      and, under the deterministic backend, recovers nothing on any document
+      tried, which is a statement about the pattern set rather than about the
+      tier.
+    remedy: >
+      Run with --backend anthropic and ANTHROPIC_API_KEY, or --backend vercel
+      and AI_GATEWAY_API_KEY, against the documents that already carry both
+      labels and a recording, so the live pass can be compared with a reading
+      rather than only with the rules.
+
+      The two are the same tier over different routes: Vercel's AI Gateway
+      speaks the Messages API at ai-gateway.vercel.sh, takes the x-api-key
+      header the SDK already sends, and supports output_config.format and
+      output_config.effort, so the prompt, the schema and the failure handling
+      are byte for byte the ones the direct route uses. What differs is the
+      base URL, the credential and a creator-first model id
+      (anthropic/claude-opus-5), all of which live on the Route object.
+
+      Neither route has been exercised from this environment and the gateway
+      route cannot be: api.anthropic.com needs a key, and ai-gateway.vercel.sh
+      is refused by the egress proxy here as vercel.com is. What is tested is
+      everything decidable without the network -- that the model id is
+      prefixed once and not twice, that it is stripped again before pricing so
+      an Opus run through the gateway is not costed at the fallback rate, that
+      the gateway does not pick up an Anthropic key and send it somewhere
+      Anthropic is not, that a missing credential fails before the first chunk
+      rather than a thousand chunks in, and that the route decides where a
+      request goes and never what it says. The first live call is still a
+      first live call.
 
   - id: FPML_SCHEMAS
     families: [F06_structure, F07_benchmark]
@@ -167,7 +270,16 @@ untestable_in_this_environment:
     consequence: >
       What was lifted is the hand-mapping: the 40 element names this
       repository binds to are no longer invented, all 40 are declared in the
-      pinned schemas, and fpml() raises on a name that is not. Two things
+      pinned schemas, and fpml() raises on a name that is not. A second gap
+      has closed since: those names sat on a Facility model that nothing ever
+      constructed, so zero of the 40 were populated by any run the project had
+      made. models/export.py builds one now, and only from settled fields --
+      an external_reference is withheld with its reason rather than exported
+      as None, because FpML has no element for "this is real and lives
+      elsewhere" and None in that model reads as a term. On Essential
+      Properties the deterministic tier exports no facility at all and the
+      checked-in reading exports three, with 20 elements populated and 58
+      withheld. Two things
       stay unverified, and they are not small. The pin makes the bytes
       reproducible, not authentic -- nothing here checks them against ISDA,
       so a mirror that diverged before the pinned commit would be indexed

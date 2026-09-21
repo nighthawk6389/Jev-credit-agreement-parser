@@ -50,8 +50,28 @@ from ..models.core import Span
 #: Requiring the term to start immediately after the quote matched one
 #: definition in a 571,000-character agreement whose definitions article is
 #: 189,000 characters long.
+#: Defined terms are quoted, and usually with double quotes. An amendment that
+#: restates a section quotes the whole restated block, so every definition
+#: inside it drops to single quotes:
+#:
+#:     Section 1.01 of the Original Agreement is hereby amended in its
+#:     entirety to read as follows: " ... 'Revolving Credit Termination Date'
+#:     means the earliest to occur of (a) August 27, 2029 ... "
+#:
+#: Requiring double quotes made that content invisible. On the one document in
+#: the corpus drafted this way the graph found 3 terms in 73,805 characters,
+#: against 19 definitions actually present, and five of the seven failing
+#: assertions in the whole F05 family were values sitting inside those
+#: restated blocks. The corpus counts say how narrow this is: 15,075
+#: double-quoted definitions against 19 single-quoted, and all 19 in that one
+#: filing. A rule for one document in a hundred is worth having when the
+#: document is the one the family's failures come from.
+#:
+#: The closing quote must not be an apostrophe, so a single-quoted term may
+#: not end in one, and "s' means" cannot open a definition.
 _DEFINITION_RE = re.compile(
-    r'"\s*(?P<term>[A-Z][^"\n]{1,90}?)\s*"\s*'
+    r'(?:"\s*(?P<term>[A-Z][^"\n]{1,90}?)\s*"'
+    r"|'\s*(?P<sterm>[A-Z][^'\n]{1,90}?[^'\s\n])\s*'(?!\w))\s*"
     r'(?:(?P<verb>means|shall mean|has the meaning|shall have the meaning)\b'
     r'|(?P<colon>:)\s)',
 )
@@ -364,7 +384,7 @@ def build_definition_graph(doc: NormalizedDocument) -> DefinitionGraph:
     matches = list(_DEFINITION_RE.finditer(region))
     nodes: dict[str, DefinitionNode] = {}
     for index, match in enumerate(matches):
-        term = match.group("term").strip()
+        term = (match.group("term") or match.group("sterm")).strip()
         body_start = match.end()
         body_end = matches[index + 1].start() if index + 1 < len(matches) else len(region)
         body = region[body_start:body_end].strip()

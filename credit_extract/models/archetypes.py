@@ -49,9 +49,33 @@ class FieldGroup(BaseModel):
     id: str
     patterns: list[str]
     description: str = ""
+    #: Phrases whose presence in the document means the deal has this thing,
+    #: whatever the archetype concluded. A veto on suppression, not a detector:
+    #: it never marks a field applicable that the archetype thought applicable
+    #: anyway, and it never extracts a value.
+    #:
+    #: It exists because two tolerable failures compose into an intolerable
+    #: one. Low extraction recall is visible -- the field routes to review.
+    #: A wrong archetype is visible -- the register says so. But suppression
+    #: only fires on fields the extractor left empty, so a missed field under
+    #: a wrong archetype becomes ``not_applicable_to_archetype``, which is a
+    #: settled answer, and the two invisible halves make a confident wrong
+    #: one. Air T is the case: an ABL borrowing base led the classifier to an
+    #: asset-based revolver, and the Consolidated Term Loan maturing 27 August
+    #: 2031 -- named nine times in the document -- was reported as a term the
+    #: deal kind cannot have.
+    evidence: list[str] = Field(default_factory=list)
 
     def matches(self, field_name: str) -> bool:
         return any(fnmatch.fnmatch(field_name, p) for p in self.patterns)
+
+    def evidenced_in(self, text: str) -> str | None:
+        """The first phrase this document uses that contradicts suppression."""
+        lowered = text.lower()
+        for phrase in self.evidence:
+            if phrase in lowered:
+                return phrase
+        return None
 
 
 FIELD_GROUPS: dict[str, FieldGroup] = {
@@ -64,47 +88,56 @@ FIELD_GROUPS: dict[str, FieldGroup] = {
                 "financial_covenant.*", "opening_total_leverage_ratio",
                 "consolidated_ebitda.*", "incremental.leverage_based_test",
             ],
+            evidence=["consolidated ebitda", "combined ebitda", "leverage ratio"],
         ),
         FieldGroup(
             id="ebitda_baskets",
             description="baskets denominated as a percentage of EBITDA",
             patterns=["indebtedness.purchase_money_basket_ebitda_pct"],
+            evidence=["consolidated ebitda", "combined ebitda"],
         ),
         FieldGroup(
             id="term_amortization",
             description="scheduled principal repayment on a term loan",
             patterns=["amortization.*", "initial_term_loan.*", "delayed_draw.*"],
+            evidence=["term loan", "term note", "delayed draw"],
         ),
         FieldGroup(
             id="revolver_mechanics",
             description="revolver commitment, unused fee, LC sublimit",
             patterns=["revolver.*", "commitment_fee_pct", "lc_sublimit",
                       "fronting_fee_pct"],
+            evidence=["revolving credit", "revolving loan", "revolver"],
         ),
         FieldGroup(
             id="borrowing_base",
             description="advance rates against eligible collateral",
             patterns=["borrowing_base.*"],
+            evidence=["borrowing base", "advance rate", "eligible accounts"],
         ),
         FieldGroup(
             id="recurring_revenue",
             description="ARR-keyed covenants and liquidity tests",
             patterns=["arr.*"],
+            evidence=["recurring revenue", "annualized recurring", "arr "],
         ),
         FieldGroup(
             id="nav_tests",
             description="loan-to-value against portfolio net asset value",
             patterns=["nav.*"],
+            evidence=["net asset value", "loan-to-value", "loan to value"],
         ),
         FieldGroup(
             id="pik_mechanics",
             description="payment-in-kind toggle and step-up",
             patterns=["pik.*"],
+            evidence=["payment-in-kind", "payment in kind", "pik "],
         ),
         FieldGroup(
             id="mfn",
             description="most-favoured-nation pricing protection",
             patterns=["mfn_*"],
+            evidence=["most favored nation", "most favoured nation", "mfn"],
         ),
     ]
 }
@@ -482,12 +515,54 @@ def detect_deterministic(text: str) -> ArchetypeDetection:
 
 
 def inapplicable_fields(
-    profile: ArchetypeProfile, field_names: list[str]
+    profile: ArchetypeProfile, field_names: list[str], text: str = ""
 ) -> dict[str, str]:
-    """Field name -> why this archetype does not have it."""
+    """Field name -> why this archetype does not have it.
+
+    ``text`` is the document. Pass it: a field group the document plainly
+    discusses is not suppressed, whatever the archetype concluded, because
+    the classifier is wrong on about a quarter of the corpus and suppression
+    is the one path by which its being wrong reaches a reader as a settled
+    answer. Omitting it restores the old behaviour, which is why it defaults
+    to empty rather than being required -- a caller that has no text should
+    get the archetype's judgement, not a silent veto that never fires.
+    """
     out: dict[str, str] = {}
+    vetoed: dict[str, str] = {}
+    for group_id in profile.inapplicable_groups:
+        group = FIELD_GROUPS.get(group_id)
+        if group and text:
+            phrase = group.evidenced_in(text)
+            if phrase:
+                vetoed[group_id] = phrase
     for name in field_names:
         reason = profile.why_not(name)
-        if reason:
-            out[name] = reason
+        if not reason:
+            continue
+        group_id = next(
+            (g for g in profile.inapplicable_groups
+             if g in FIELD_GROUPS and FIELD_GROUPS[g].matches(name)),
+            None,
+        )
+        if group_id in vetoed:
+            continue
+        out[name] = reason
     return out
+
+
+def suppression_vetoes(profile: ArchetypeProfile, text: str) -> dict[str, str]:
+    """Group id -> the phrase in this document that kept it applicable.
+
+    Reported rather than inferred. A veto means the classifier and the
+    document disagree about what kind of deal this is, which is worth a
+    reader's attention in its own right -- it is the visible form of an
+    archetype error that would otherwise only show up as a missing field.
+    """
+    found: dict[str, str] = {}
+    for group_id in profile.inapplicable_groups:
+        group = FIELD_GROUPS.get(group_id)
+        if group:
+            phrase = group.evidenced_in(text)
+            if phrase:
+                found[group_id] = phrase
+    return found

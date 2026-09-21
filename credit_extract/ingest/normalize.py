@@ -649,6 +649,31 @@ _SIMPLE_SECTION_RE = re.compile(
     r"^[ \t]*(?P<num>\d{1,2})\.[ \t]+(?P<title>[A-Z][^\n]{2,90})",
     re.MULTILINE,
 )
+#: Every pattern above anchors to the start of a line, and some filers' HTML
+#: puts the whole agreement in one flow with no line break before any heading.
+#: On one real filing that meant 1 section detected out of 198 present: every
+#: cross-reference was then unresolvable -- 56 errors at error severity on a
+#: perfectly well-formed agreement, which teaches a reader to ignore the check
+#: -- and the structural segmentation, one of the three independent views the
+#: pass planner relies on, collapsed to a single chunk.
+#:
+#: Case is what separates a heading from a reference in that house style: the
+#: headings read "SECTION 2.07. Repayment of Loans" and the references read
+#: "Section 2.07". In that filing all 198 upper-case occurrences were headings
+#: and all 239 references were mixed case, with no overlap either way.
+_INLINE_SECTION_RE = re.compile(
+    r"(?<![A-Za-z])SECTION\s+(?P<num>\d+\.\d+[A-Za-z]?)[.:]\s+"
+    r"(?P<title>[A-Z\[][^\n]{2,90})",
+)
+#: The same problem one level up, and worth fixing with it: while the articles
+#: went undetected every "ARTICLE VII" in the text read as a reference to a
+#: division the document does not have, including the headings themselves.
+_INLINE_ARTICLE_RE = re.compile(
+    r"(?<![A-Za-z])ARTICLE\s+(?P<num>[IVXLC]+|\d+)\s+(?P<title>[A-Z\[][^\n]{2,80})",
+)
+#: Below this many line-anchored section markers, assume the headings are
+#: inline rather than that the document has almost no sections.
+_INLINE_SECTION_FLOOR = 5
 
 
 def detect_sections(text: str) -> list[SectionMarker]:
@@ -679,6 +704,20 @@ def detect_sections(text: str) -> list[SectionMarker]:
                 title=match.group("title").strip(" .:-"),
                 level="section",
             )
+    if sum(1 for m in markers.values() if m.level == "section") < _INLINE_SECTION_FLOOR:
+        # Confined to documents the anchored patterns have already failed on,
+        # so a filing that reads correctly today cannot be changed by this.
+        for rx, level in ((_INLINE_ARTICLE_RE, "article"), (_INLINE_SECTION_RE, "section")):
+            for match in rx.finditer(text):
+                if match.start() in markers:
+                    continue
+                num = match.group("num")
+                markers[match.start()] = SectionMarker(
+                    offset=match.start(),
+                    section_id=f"ARTICLE {num}" if level == "article" else num,
+                    title=match.group("title").strip(" .:-"),
+                    level=level,
+                )
     if not markers:
         for match in _SIMPLE_SECTION_RE.finditer(text):
             markers[match.start()] = SectionMarker(

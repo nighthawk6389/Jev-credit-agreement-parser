@@ -377,6 +377,15 @@ def _ranges(ctx: InvariantContext) -> list[InvariantViolation]:
         spec = FIELD_REGISTRY.get(name)
         if spec is None or field.value is None:
             continue
+        if spec.kind not in ("percent", "ratio"):
+            continue
+        # A bool is an int in Python and Decimal("False") raises rather than
+        # returning anything, so a single populated boolean field took the
+        # whole report down with a ConversionSyntax three frames deep. Nothing
+        # in this check applies to one: booleans have their own kind and no
+        # range to be outside of.
+        if isinstance(field.value, bool):
+            continue
         if not isinstance(field.value, (int, float, Decimal)):
             continue
         value = Decimal(str(field.value))
@@ -504,40 +513,59 @@ def _units_present(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
+#: Above this, a stored span is not a quotation. The measured separation on the
+#: documents that produced this check is absolute and nowhere near the line:
+#: every value-bearing span was at most 162 characters and every offending
+#: null-value span at least 8,379.
+_QUOTATION_CEILING = 1_000
+
+
 @invariant("citations_cite_a_value", "F01_integrity")
 def _citations_cite_a_value(ctx: InvariantContext) -> list[InvariantViolation]:
-    """F01. A span on a field with no value is not a citation of anything.
+    """F01. A span too large to be a quotation is not a citation.
 
     Spans are the mechanism the whole pipeline rests on: a value is only
-    trustworthy because the text it was read from can be reread. A span stored
-    against a null value breaks that reading, because there is no value it
-    could be evidence for -- and the ones that appeared here were whole chunks,
-    an order of magnitude larger than any real citation. On two documents the
-    separation is absolute: every value-bearing span was at most 162
-    characters, every null-value span at least 8,379. Where to look next is
-    real information and it belongs in ``review_hint``, which says so.
+    trustworthy because the text it was read from can be reread.
+
+    This began as "a span on a field with no value cites nothing", written
+    from the case that prompted it -- whole chunks, 8,379 characters and up,
+    stored where a citation belongs, against fields the extractor had said
+    nothing about. Two things have happened since. The chunk-wide hints moved
+    to ``review_hint``, which says what they are, so they no longer reach
+    ``spans`` at all. And a model tier started producing the opposite case: a
+    field with no value and a real, short quotation that is precisely the
+    evidence for having none -- a maturity defined as five years after an
+    undated event, a spread adjustment that applies only if the benchmark is
+    ever replaced, a covenant stated in a unit the field cannot hold. A reader
+    following one of those spans gets exactly the passage that explains the
+    empty field, which is the opposite of being sent nowhere.
+
+    So the test is the thing that actually separated the two all along, and it
+    is stated rather than inferred: a stored span must be short enough to be a
+    quotation. That keeps the original regression caught -- a chunk in
+    ``spans`` still fires -- without calling an evidenced absence a defect.
     """
     violations = []
     for name, field in ctx.fields.items():
         for variant in field.variants:
             if variant.value is not None or not variant.spans:
                 continue
-            if field.external_document:
-                # An external reference legitimately cites the sentence that
-                # points elsewhere while holding no value of its own.
-                continue
             span = variant.spans[0]
+            length = span.end - span.start
+            if length <= _QUOTATION_CEILING:
+                continue
             violations.append(
                 InvariantViolation(
                     invariant="citations_cite_a_value",
                     message=(
-                        f"{name} has no value but carries a "
-                        f"{span.end - span.start:,}-character span; a reader "
-                        "following it is sent to text that was never claimed "
-                        "to say anything"
+                        f"{name} has no value but carries a {length:,}-character "
+                        f"span, past the {_QUOTATION_CEILING:,} a quotation can "
+                        "run to; a reader following it is sent to a block of "
+                        "text rather than to a passage. Where to look next "
+                        "belongs in review_hint, which says so"
                     ),
                     fields=[name], spans=[span],
-                    observed=None, expected=None,
+                    observed=str(length), expected=f"<= {_QUOTATION_CEILING}",
                 )
             )
     return violations
@@ -606,6 +634,17 @@ _SCHEDULE_REF_RE = re.compile(
     r"\b(Schedule|Exhibit|Annex)\s+([\w.()-]+)", re.IGNORECASE
 )
 #: "twenty-five percent (35%)" -- the words and the numeral disagree.
+#: A fraction *of* a spelled percentage: "one-quarter of one percent (0.25%)".
+#: The market writes sub-1% rates this way and the figure in brackets is the
+#: product, not the spelled number -- so a check that reads only the words next
+#: to "percent" sees "one percent (0.25%)" and reports a document that says
+#: exactly the right thing. Air T states its unused commitment fee this way,
+#: and it was the first held-out document to be labelled.
+_FRACTION_OF_PERCENT_RE = re.compile(
+    r"\b(?:one[\s-])?(?:quarter|half|third|eighth|tenth)s?\s+of\s+(?:one|a)\s+percent",
+    re.IGNORECASE,
+)
+
 _NUMERAL_WORD_RE = re.compile(
     r"\b(?P<words>(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
     r"ten|eleven|twelve|fifteen|one|two|three|four|five|six|seven|eight|nine)"
@@ -742,6 +781,11 @@ def _numeral_words(ctx: InvariantContext) -> list[InvariantViolation]:
         spelled = _words_to_number(match.group("words"))
         numeral = Decimal(match.group("numeral"))
         if spelled is None or Decimal(spelled) == numeral:
+            continue
+        # "one-quarter of one percent (0.25%)" agrees with itself; the words
+        # this pattern captured are the tail of a fraction, not the figure.
+        lead = doc.text[max(0, match.start() - 40): match.end()]
+        if _FRACTION_OF_PERCENT_RE.search(lead):
             continue
         violations.append(InvariantViolation(
             invariant="numeral_and_words_agree",

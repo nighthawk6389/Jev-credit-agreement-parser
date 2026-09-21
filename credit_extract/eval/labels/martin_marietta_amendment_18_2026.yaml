@@ -1,0 +1,129 @@
+# Tier 2 assertions: Martin Marietta Funding LLC, Eighteenth Amendment to
+# Credit and Security Agreement, 2026.
+#
+# Held out by the frozen split before any label for it existed. A receivables
+# securitisation -- Martin Marietta Funding LLC as Borrower, Martin Marietta
+# Materials as Servicer, commercial paper conduits and banks as Lenders,
+# Truist as Administrative Agent -- which is not what stratum C ("ABL with
+# borrowing base") was aiming at, and is close enough to be worth labelling.
+#
+# These labels were produced by a model reading the source text, not by a
+# credit analyst; every assertion quotes the passage it rests on.
+#
+# It is a BLACKLINE, and it moves both headline terms. Flattened to plain
+# text the definition reads
+#
+#     "Facility Termination Date" means the earlier of (i) September 16 15 ,
+#     2026 2027 , and (ii) the Amortization Date.
+#
+# with the old date and the new one adjacent and nothing in the characters to
+# say which is which. A first-match reader takes September 16, 2026 and
+# reports the facility as expiring a year before it does. The same applies to
+# the facility size, where $400,000,000 and $500,000,000 sit side by side.
+#
+# The first four assertions are about the ingester rather than the extractor:
+# they check that the struck text is gone from the offset space, which is what
+# every span in this document depends on. The ingester passes -- thirteen
+# struck runs excised, including three lender commitments that sum to the old
+# facility size -- and these assertions exist so that a future change which
+# quietly stops excising them fails here rather than in a report.
+
+document: martin_marietta_amendment_18_2026
+corpus_name: C_martin-marietta-materials-inc-mlm_2026-09-16_0000950157-26-001024_ex10-01
+source: real
+tier: 2
+
+assertions:
+  # -- F11 layout: the blackline, on the two terms that matter --------------
+
+  - id: mlm_superseded_facility_limit_is_excised
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "$ 400,000,000"
+    expect: false
+    note: >
+      The Eighteenth Amendment raises the Facility Limit from $400,000,000 to
+      $500,000,000 by striking the old figure and underlining the new one.
+      The struck figure must not survive into the offset space: a span
+      quoting it would quote the document accurately and report a facility
+      one fifth smaller than it is.
+
+  - id: mlm_operative_facility_limit_survives
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "$ 500,000,000"
+    expect: true
+    note: >
+      '"Facility Limit " means $ 500,000,000 , as the same may be increased
+      pursuant to Secton 1.10 hereof from time to time.' The typo in
+      "Secton" is the filer's and is reproduced here deliberately -- it is
+      what the document says. Excising a blackline must remove only the
+      struck text; a check that the new figure is gone too would pass on an
+      ingester that dropped the whole sentence.
+
+  - id: mlm_superseded_termination_date_is_excised
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "September 16 , 2026"
+    expect: false
+    note: >
+      The old Facility Termination Date. In the flattened text it reads
+      "September 16 15 , 2026 2027", so the year the reader wants is the
+      second of two adjacent years and the day is the second of two adjacent
+      numbers. This is the shape that makes blacklines dangerous rather than
+      merely untidy.
+
+  - id: mlm_operative_termination_date_survives
+    family: F11_layout
+    member: blackline_flattened_to_text
+    kind: text_present
+    target: "September 15 , 2027"
+    expect: true
+    note: >
+      '"Facility Termination Date" means the earlier of (i) September 15 ,
+      2027 , and (ii) the Amortization Date.' The facility runs twelve
+      months longer than the superseded text says.
+
+  # -- F03 external reference: the fees are not in this document ------------
+
+  - id: mlm_fees_live_in_the_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_external_kind
+    target: commitment_fee_pct
+    expect: by_design
+    note: >
+      '"Fee Letter" means that certain Fourth Amended and Restated Fee Letter
+      dated as of April 17, 2018 by and among the Borrower, the
+      Administrative Agent and the Lenders' and '"Fees" means, collectively,
+      any fees payable pursuant to a Fee Letter.' The amendment's own
+      conditions precedent require "a fully executed copy of that certain
+      Eleventh Amended and Restated Fee Letter, dated as of the date hereof"
+      and that the Lenders "have received all fees due and payable under the
+      Fee Letter".
+
+      Twelve references, and no rate anywhere in the agreement. The fee is
+      external **by design** -- not omitted by the filer, not redacted -- and
+      that distinction is what section 7 of the spec turns on: a fee letter
+      is never filed, so a pipeline that resolves one has invented a number,
+      while a pipeline that reports the fee as simply missing has lost the
+      fact that it is knowable and deliberately elsewhere.
+
+      This assertion failed when it was written, and the reason was
+      structural rather than a missing pattern. Validator E reads the
+      sentence a figure sits in, so it only ever ran on fields that already
+      carried a span -- and a fee fixed by a fee letter has no figure and
+      therefore no sentence. The validator built to say "this value is
+      elsewhere" could not fire on the case it was built for. "Fee Letter"
+      was also missing from its list of external documents.
+
+      Both are fixed, narrowly: a fee field with no value is external by
+      design only where the agreement defines a Fee Letter *and* says the
+      fees are payable under it. Across the corpus that is 3 documents of the
+      52 that name one and the 23 that define one, which is the right shape
+      for a status the pipeline presents as settled -- a wrong
+      external_reference is a silent error, so the rule buys precision with
+      recall and the other 49 stay in review.

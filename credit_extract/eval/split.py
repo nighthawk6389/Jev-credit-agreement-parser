@@ -259,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
 
     labelled: list[str] = []
     for file in load_assertions(Path(__file__).parent / "labels", load_families()):
-        labelled.extend(file.chain or [file.document])
+        labelled.extend(file.chain or [file.corpus_name or file.document])
 
     problems = check(labelled=labelled)
     for problem in problems:

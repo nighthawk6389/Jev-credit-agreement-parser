@@ -1,0 +1,140 @@
+{
+  "document": "aspen_technology_2022",
+  "corpus_name": "P_aspen-technology-inc-azpn_2022-12-30_0001897982-22-000058_aspen-emersoncreditagree",
+  "model": "read by hand, by the same reader who later wrote the labels",
+  "recorded_on": "2026-09-21",
+  "recorded_before_labels": true,
+  "note": "Bilateral acquisition financing: Emerson Electric lends $630,000,000 to its own affiliate Aspen Technology, one lender, no agent, no revolver, drawn once and amortising. Stratum P, legacy benchmark waterfall. Read end to end before any label for this document existed. As with the Essential Properties recording, the same reader wrote the labels afterwards, so agreement between the two is self-consistency and is not a model recall figure; what it measures is whether correct extractions survive the pipeline. What makes this document worth reading is that its two most critical fields have no answer: the Closing Date is defined as the date conditions are satisfied and the Maturity Date as five years after the date the loan is funded, and neither event is dated anywhere in the agreement. Every date on the page is the wrong answer to both. The findings list was added later, after this document's labels existed. That does not touch the ordering rule, which exists because a score against labels written by the same reader is self-consistency: nothing scores findings, they are answers to the orphan sweep rather than claims about a field, and no assertion in the corpus tests one.",
+  "fields": [
+    {
+      "field": "borrower.legal_name",
+      "value": "ASPEN TECHNOLOGY, INC.",
+      "quote": "CREDIT AGREEMENT dated as of December 23, 2022, between ASPEN TECHNOLOGY, INC., as Borrower and EMERSON ELECTRIC CO., as Lender.",
+      "confidence": 0.95,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": "Bilateral. Emerson Electric is the Lender and there is no Administrative Agent, Arranger or Syndication Agent in this agreement -- those fields are not merely unfound, the role does not exist in a one-lender facility."
+    },
+    {
+      "field": "closing_date",
+      "value": null,
+      "quote": "\"Closing Date\" means the date on which the conditions specified in Section 4.01 are satisfied (or waived in accordance with Section 9.02).",
+      "confidence": 0.8,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": "Not a date. The agreement is dated as of December 23, 2022 on its cover and defines its Closing Date as an event, with Section 4.01 adding that the Lender shall notify the Borrower of the Closing Date and that such notice is conclusive and binding -- so the date exists in a notice that is not part of this document. December 23, 2022 is the execution date and reporting it here would be reporting a different fact under this field's name."
+    },
+    {
+      "field": "initial_term_loan.commitment",
+      "value": "$630,000,000",
+      "quote": "The initial aggregate amount of the Lender's Commitment is $630,000,000.",
+      "confidence": 0.95,
+      "qualifiers": {
+        "lenders": "one; Emerson Electric Co."
+      },
+      "external_document": null,
+      "notes": "The recitals give the same figure as the amount of the Loans, financing part of the cash consideration for the Acquisition and the Refinancing. There is no revolver: Section 2.06 terminates all Commitments on the Funding Date once the borrowing is made, so the revolver fields are correctly absent rather than unfound."
+    },
+    {
+      "field": "initial_term_loan.maturity_date",
+      "value": null,
+      "quote": "\"Maturity Date\" means, with respect to each Facility, the date that is five (5) years after the Funding Date.",
+      "confidence": 0.85,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": "Not a date either, and not resolvable by arithmetic from anything in the document. The Funding Date is defined in Section 4.02 as 'the date such initial Loan is funded', which is itself conditional on the Closing Date having occurred. Five years after an undated event is an undated event. A pipeline that reports December 23, 2027 has added five to a number that is not the one the definition names."
+    },
+    {
+      "field": "applicable_margin.eurodollar_top_level_pct",
+      "value": "1.75%",
+      "quote": "Level III Greater than 2.50 to 1.00 1.75% 0.75%",
+      "confidence": 0.8,
+      "qualifiers": {
+        "grid": "leverage-based, three levels",
+        "loan_type": "SOFR Loans; the 0.75% on the same row is the ABR margin",
+        "per": "per annum"
+      },
+      "external_document": null,
+      "notes": "The highest SOFR margin in the grid, at the worst leverage level. Level I (1.25%) is the lowest and is the one the grid prints first. Two things sit on top of the grid and neither is in it: until the Lender receives the first Compliance Certificate the Applicable Rate is Level I by fiat regardless of actual leverage, and the grid has no table markup at all -- this document contains zero HTML tables, so every level is a run of words in a sentence."
+    },
+    {
+      "field": "financial_covenant.level",
+      "value": "3.5 to 1.0",
+      "quote": "the Borrower will not permit the Leverage Ratio to exceed 3.5 to 1.0 as of the last day of any Fiscal Quarter of the Borrower",
+      "confidence": 0.85,
+      "qualifiers": {
+        "direction": "maximum",
+        "tested": "quarterly"
+      },
+      "external_document": null,
+      "notes": "Steps up to 4.00 to 1.0 during a Leverage Specified Period -- two consecutive fiscal quarters after an acquisition of $100,000,000 or more that the Borrower designates, at most twice after the Closing Date and not within four quarters of a prior one. Section 6.14 adds an Interest Coverage Ratio of not less than 2.5 to 1.0, which is a floor rather than a cap and has no field of its own; a reader looking for a covenant level will find 2.5 to 1.0 parses just as well as 3.5 to 1.0 and means the opposite."
+    },
+    {
+      "field": "libor_floor_pct",
+      "value": "0.0%",
+      "quote": "\"Floor\" means 0.0%.",
+      "confidence": 0.9,
+      "qualifiers": {
+        "floors": "the Benchmark, including any Benchmark Replacement"
+      },
+      "external_document": null,
+      "notes": "A defined term in its own right, three words long. Zero stated deliberately, not an absent floor."
+    },
+    {
+      "field": "accrual.credit_spread_adjustment_pct",
+      "value": null,
+      "quote": "the spread adjustment, or method for calculating or determining such spread adjustment, (which may be a positive or negative value or zero) that has been selected by the Lender and the Borrower",
+      "confidence": 0.75,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": "This facility pays no credit spread adjustment. The only spread adjustment in the document is the Benchmark Replacement Adjustment, which applies on the day the benchmark is replaced, is selected by the parties at that time, and may be zero or negative. It is the drafting that made this check fire on forty correctly-drafted agreements in the corpus before it was narrowed, and it is here in its purest form: a waterfall to Daily Simple SOFR first, then a selected rate plus the adjustment, floored at the Floor."
+    },
+    {
+      "field": "amortization.quarterly_amount",
+      "value": "1.250% of the initial principal amount",
+      "quote": "Installment Principal Amount (per installment) 1-8 1.250% of the initial principal amount 9-12 1.875% of the initial principal amount 13-16 2.500% of the initial principal amount 17-20 3.125% of the initial principal amount Maturity Date Remaining principal balance",
+      "confidence": 0.6,
+      "qualifiers": {
+        "expressed_as": "percentage of initial principal, not a money amount",
+        "base": "the initial principal amount of the Loans",
+        "steps": "four rates over twenty quarterly instalments, then a bullet"
+      },
+      "external_document": null,
+      "notes": "The field wants a money amount and the document gives a percentage of a base, four times over. No single quarterly amount exists: 1.250% for eight quarters, 1.875% for four, 2.500% for four, 3.125% for four, then the remaining balance at maturity. Multiplying by $630,000,000 would give $7,875,000 for the first instalment and is arithmetic this tier does not do. Recording the written form rather than a number, because a bare 1.250 in a money field is one dollar twenty-five."
+    },
+    {
+      "field": "facility.governing_law",
+      "value": "New York",
+      "quote": "shall be governed by, and construed in accordance with, the law of the State of New York",
+      "confidence": 0.95,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": null
+    },
+    {
+      "field": "facility.multi_currency",
+      "value": "false",
+      "quote": "the Lender agrees to make a Loan in Dollars to the Borrower on the Funding Date in an amount not to exceed the amount of the Commitment of the Lender",
+      "confidence": 0.85,
+      "qualifiers": {},
+      "external_document": null,
+      "notes": "One currency, one draw, one lender."
+    }
+  ],
+  "findings": [
+    {
+      "kind": "override",
+      "name": "Covenants may be frozen to the GAAP in effect before any change",
+      "summary": "Either party may, by notice, require any provision of an accounting or financial nature to be interpreted on the GAAP in effect immediately before a change -- including any new rule such as Topic 606 -- and the freeze holds until the notice is withdrawn or the provision amended. Every covenant level in this agreement is therefore quoted against an accounting basis that either side can move, and no field in the registry can hold that.",
+      "quote": "then such provision shall be interpreted on the basis of GAAP and such rule or guidance as in effect and applied immediately prior thereto shall have become effective until such notice shall have been withdrawn or such provision amended in accordance herewith",
+      "confidence": 0.8
+    },
+    {
+      "kind": "payment_obligation",
+      "name": "The borrower chooses which amortisation instalments a prepayment retires",
+      "summary": "A voluntary prepayment is applied against the remaining scheduled instalments in the manner the Borrower specifies. The printed schedule -- 1.250% of initial principal for eight quarters, then 1.875%, 2.500% and 3.125% -- is therefore an opening position rather than a fixture, and which steps survive a prepayment is the Borrower's election. amortization.quarterly_amount cannot express that, and it is already empty here because the schedule is stated as percentages.",
+      "quote": "shall be applied against the remaining scheduled installments of",
+      "confidence": 0.75
+    }
+  ]
+}

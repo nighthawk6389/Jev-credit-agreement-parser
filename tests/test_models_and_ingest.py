@@ -366,3 +366,78 @@ def test_facility_retains_pik_rank_rating_and_draw_optionality():
     assert facility.classification.seniority == "senior secured"
     assert facility.commitment.must_draw_by_date == date(2028, 6, 30)
     assert facility.ratings[0].rating == "BB-"
+
+
+# ---------------------------------------------------------------------------
+# Two units of measure that a money-typed field cannot tell apart, and a
+# heading style that made a whole agreement look structureless. Both were
+# found by reading one held-out document.
+# ---------------------------------------------------------------------------
+
+
+def test_a_percentage_is_not_an_amount():
+    """Amortisation is routinely drafted as a percentage of the initial
+    principal, per instalment. The regex read the first number and ignored the
+    unit, so "1.250% of the initial principal amount" came back as a quarterly
+    payment of one dollar twenty-five where the real one is $7,875,000 -- with
+    a citation behind it, which is the shape of a silent error rather than a
+    miss."""
+    assert parse_money("1.250% of the initial principal amount") is None
+    assert parse_money("0.0%") is None
+    assert parse_money("50%") is None
+
+
+def test_the_money_parser_still_reads_money():
+    assert parse_money("$630,000,000") == Decimal("630000000")
+    assert parse_money("$10.5 million") == Decimal("10500000")
+    assert parse_money("($2,000)") == Decimal("-2000")
+    assert parse_money("$5.0 million or 2.5%") == Decimal("5000000"), (
+        "a dollar figure keeps winning when both appear; only a number that is "
+        "itself a percentage is rejected"
+    )
+
+
+def test_headings_are_found_when_the_filing_has_no_line_breaks():
+    """Every heading pattern anchored to the start of a line, and some filers'
+    HTML puts the whole agreement in one flow. On one real filing that was 1
+    section detected out of 198 present, which made every cross-reference in
+    the document unresolvable and collapsed the structural segmentation to a
+    single chunk."""
+    from credit_extract.ingest.normalize import detect_sections
+
+    inline = (
+        "the parties hereto agree as follows: ARTICLE I Definitions "
+        "SECTION 1.01. Defined Terms. As used in this Agreement, the following "
+        "terms have the meanings specified below. ARTICLE II The Credits "
+        "SECTION 2.01. Commitments. Subject to the terms and conditions set "
+        "forth herein, the Lender agrees to make a Loan. SECTION 2.02. Loans "
+        "and Borrowings. Each Loan shall be made as part of a Borrowing."
+    )
+    found = {marker.section_id for marker in detect_sections(inline)}
+    assert {"ARTICLE I", "ARTICLE II", "1.01", "2.01", "2.02"} <= found
+
+
+def test_a_reference_in_prose_is_not_mistaken_for_a_heading():
+    """The house style that needs the inline rule distinguishes the two by
+    case: headings read "SECTION 2.07." and references read "Section 2.07"."""
+    from credit_extract.ingest.normalize import detect_sections
+
+    prose = (
+        "Subject to Section 2.07 and Section 9.02, the Borrower shall pay the "
+        "amounts described in Section 2.13 on each date specified in Section "
+        "2.16 of this Agreement, as further provided in Section 6.01."
+    )
+    assert detect_sections(prose) == []
+
+
+def test_the_inline_rule_leaves_a_document_that_already_parses_alone():
+    """It is a fallback, gated on the anchored patterns having already failed,
+    so no filing that reads correctly today can be changed by it."""
+    from credit_extract.ingest.normalize import detect_sections
+
+    anchored = "\n".join(
+        [f"SECTION {n}. A Heading\nsome text about the agreement" for n in
+         ("1.01", "1.02", "1.03", "2.01", "2.02", "2.03")]
+    )
+    ids = [marker.section_id for marker in detect_sections(anchored)]
+    assert ids == ["1.01", "1.02", "1.03", "2.01", "2.02", "2.03"]
