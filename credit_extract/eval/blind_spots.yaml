@@ -111,6 +111,30 @@ untestable_from_public_filings:
       shape specifically -- this one is a warehouse, which is the same family
       and not the same deal.
 
+      A second is now labelled and it is the one that can be built against:
+      StepStone SPV Facility VII, on the fit side and never read during
+      development, where Star Mountain is holdout and so can only ever be a
+      test. It is a different shape again -- a bankruptcy-remote SPV acquiring
+      Collateral Obligations, not a BDC lending off its own balance sheet --
+      and it repeats the finding above in a form that removes the last excuse
+      for it. Seven EBITDA mentions, every one attached to "the obligor of
+      such obligation": eligibility floors of $7,500,000 and concentration
+      limits at $15,000,000 and $25,000,000, quoted as percentages of the
+      Collateral Portfolio Calculation Base. Those percentages sit exactly
+      where a covenant level is expected and none of them is one.
+
+      It also carries the first real instance of something this register
+      assumed would be rare: the facility's central economic term is not in
+      the filing. '"Advance Rate" has the meaning set forth in Schedule B',
+      and no schedule is reproduced -- not one SCHEDULE heading in 653,111
+      characters. The detection side is testable and now tested; the value
+      never will be, because no filing states it.
+
+      What remains is the subscription line proper. Both labelled documents
+      lend against acquired assets. A facility secured on uncalled capital
+      commitments -- where the credit is the limited partners' rather than the
+      portfolio's -- is still a shape nothing here has read.
+
   - id: F09_term_defined_in_other_loan_document
     family: F09_definitional_depth
     member: term_defined_in_other_loan_document

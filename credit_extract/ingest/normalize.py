@@ -671,6 +671,28 @@ _INLINE_SECTION_RE = re.compile(
 _INLINE_ARTICLE_RE = re.compile(
     r"(?<![A-Za-z])ARTICLE\s+(?P<num>[IVXLC]+|\d+)\s+(?P<title>[A-Z\[][^\n]{2,80})",
 )
+#: And the same problem with the word left out altogether. StepStone's SPV
+#: warehouse numbers its divisions "SECTION 2. LOANS AND COMMITMENTS" and its
+#: operative subsections "2.1. Loans and Commitments." -- bare, inline, no
+#: "Section" in front. The divisions are found and the 121 subsections are not,
+#: so every cross-reference in the agreement points at a subsection nothing
+#: knows about: 68 cross_references_resolve violations on a document whose
+#: references are all perfectly good.
+#:
+#: The title pattern carries the weight here, because a bare "2.1." has none of
+#: the anchoring the other two get from a keyword. It admits a Title Case
+#: phrase with the connectives such headings actually use ("Assumptions as to
+#: Collateral Obligations, Etc.") and nothing else -- no digits, no currency --
+#: and it must close with a full stop. The lookbehinds keep it off the
+#: cross-references themselves, which are the one thing in the document
+#: guaranteed to be followed by the same number.
+_INLINE_NUMBERED_SECTION_RE = re.compile(
+    r"(?<![A-Za-z0-9.])(?<!Section )(?<!Sections )(?<!section )(?<!sections )"
+    r"(?P<num>\d{1,2}\.\d{1,2})\.\s+"
+    r"(?P<title>[A-Z][A-Za-z']*"
+    r"(?:[ ,;]+(?:[A-Z][A-Za-z']*|of|to|as|and|the|in|on|for|or|etc|Etc)){0,9})"
+    r"\.\s",
+)
 #: Below this many line-anchored section markers, assume the headings are
 #: inline rather than that the document has almost no sections.
 _INLINE_SECTION_FLOOR = 5
@@ -707,7 +729,9 @@ def detect_sections(text: str) -> list[SectionMarker]:
     if sum(1 for m in markers.values() if m.level == "section") < _INLINE_SECTION_FLOOR:
         # Confined to documents the anchored patterns have already failed on,
         # so a filing that reads correctly today cannot be changed by this.
-        for rx, level in ((_INLINE_ARTICLE_RE, "article"), (_INLINE_SECTION_RE, "section")):
+        for rx, level in ((_INLINE_ARTICLE_RE, "article"),
+                          (_INLINE_SECTION_RE, "section"),
+                          (_INLINE_NUMBERED_SECTION_RE, "section")):
             for match in rx.finditer(text):
                 if match.start() in markers:
                     continue

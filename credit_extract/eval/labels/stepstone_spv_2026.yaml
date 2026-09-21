@@ -1,0 +1,188 @@
+# Tier 2 assertions: StepStone SPV Facility VII LLC, Credit Agreement dated as
+# of September 14, 2026. Borrower is the SPV; StepStone Private Credit Fund LLC
+# is Collateral Manager; Goldman Sachs Bank USA is Administrative, Syndication
+# and Calculation Agent; UMB Bank is Collateral Agent, Custodian and
+# Administrator.
+#
+# Fit side, and never read while the parser was being written. Picked for
+# F06_nav_or_subscription_line, which the blind-spot register lists as having
+# exactly one labelled example -- Star Mountain's BDC warehouse, on the holdout
+# side, where it cannot be used to build anything. This is the fit-side
+# counterpart and it is a different animal: not a BDC borrowing against its own
+# balance sheet but a bankruptcy-remote SPV borrowing against a portfolio of
+# Collateral Obligations it acquires, with the advance rates doing the work a
+# borrowing base does in an ABL.
+#
+# Three things this document has that the corpus did not:
+#
+# 1. The single most important economic term is not in the filing.
+#    '"Advance Rate" has the meaning set forth in Schedule B.' No schedule is
+#    reproduced anywhere in the exhibit -- there is not one SCHEDULE heading in
+#    653,111 characters. Eleven terms point at Schedule B, including the Advance
+#    Rate and the dispute mechanics for asset pricing. This is the
+#    schedule_omitted_from_filing member of F03, which the register has listed
+#    as untested since the register was written.
+#
+# 2. Its maturity resolves, where the corpus's other undated maturities do not.
+#    Maturity Date -> Scheduled Maturity Date -> "the five-year anniversary of
+#    the Closing Date" -> Closing Date -> "the date of this Agreement" -> the
+#    cover. Four hops to a real date. Aspen and Constellation Brands both stop
+#    at an event that is never dated; this one does not, and the difference is
+#    one word in one definition. A pipeline that has learned "maturity defined
+#    by reference means undated" learns the wrong rule from those two.
+#
+# 3. EBITDA all over the document, none of it the borrower's. Seven mentions,
+#    every one about "the obligor of such obligation" -- eligibility floors of
+#    $7,500,000 and concentration limits at $15,000,000 and $25,000,000 of
+#    portfolio-company EBITDA, expressed as percentages of the Collateral
+#    Portfolio Calculation Base. Those percentages sit exactly where a covenant
+#    level is expected to be and belong to somebody else's balance sheet.
+#
+# Found while reading, fixed separately: only 16 of this agreement's 125
+# divisions were detected, because it numbers its operative subsections
+# "2.1. Loans and Commitments." with no "Section" in front of them. Every
+# cross-reference therefore pointed at a provision nothing knew about --
+# 68 cross_references_resolve violations on an agreement whose references are
+# almost all sound. Ten remain and are a mix of further detection gaps and
+# possibly genuine misdirection, so no assertion here claims the document's
+# cross-references are clean.
+
+document: stepstone_spv_2026
+corpus_name: F_stepstone-private-credit-fund-llc_2026-09-17_0001193125-26-393948_d115122dex101
+source: real
+tier: 2
+
+assertions:
+
+  # -- F03 external reference: the advance rate is not in the filing --------
+
+  - id: stepstone_advance_rate_is_in_an_omitted_schedule
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: borrowing_base.advance_rate_accounts
+    expect: external_reference
+    note: >
+      '"Advance Rate" has the meaning set forth in Schedule B.' That is the
+      whole definition. Schedule B is referenced eleven times -- it also
+      carries "Approved Broker Dealer" and the Dispute procedure that settles
+      an asset's price -- and it is not in the exhibit: no SCHEDULE heading
+      appears anywhere in the document.
+
+      external_reference rather than absent_from_document, and the distinction
+      is the entire point of the F03 split. The agreement is not silent about
+      its advance rates; it states where they are and the filer did not file
+      that part. Reporting this absent would say the facility has no advance
+      rate, which of a warehouse is close to saying it has no economics.
+
+      What stays untestable here is the value. Nothing in any public filing
+      says what the Advance Rate is, so a pipeline that ever claims to have
+      resolved one is wrong by construction and nothing in this corpus can
+      catch it. The register's F03 entry says this about fee letters; it is
+      true of this schedule in exactly the same way.
+
+  # -- F09 definitional depth: a maturity that does resolve ----------------
+
+  - id: stepstone_maturity_resolves_through_four_definitions
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-14
+    note: >
+      Four hops, each of which is a defined term:
+
+        "Maturity Date" means the earlier of (a) the Scheduled Maturity Date
+        and (b) the date on which all Loans shall become due and payable in
+        full hereunder, whether by acceleration or otherwise.
+        "Scheduled Maturity Date" means the five-year anniversary of the
+        Closing Date.
+        "Closing Date" means the date of this Agreement.
+
+      and the cover reads "dated as of September 14, 2026". So the scheduled
+      maturity is 14 September 2031.
+
+      Limb (b) is not a second candidate date. Acceleration is a contingency
+      and has no date until it happens, so "the earlier of" has one resolvable
+      operand; a reader who treats limb (b) as competing evidence concludes
+      the field is conflicted when it is settled.
+
+      This assertion is the counterweight to the two undated maturities in
+      Aspen and Constellation Brands. All three define maturity by reference
+      to another defined term, and only this one lands on a date. The
+      difference is whether the chain ends at an event or at the cover.
+
+  - id: stepstone_closing_date_is_the_cover_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: closing_date
+    expect: 2026-09-14
+    note: >
+      '"Closing Date" means the date of this Agreement.' A definition by
+      reference that resolves in one hop, against Aspen's "the date on which
+      the conditions specified in Section 4.01 are satisfied", which does not
+      resolve at all. Same grammatical shape, opposite answer, and the phrase
+      that separates them is five words long.
+
+  # -- F04 absence, F07 benchmark ------------------------------------------
+
+  - id: stepstone_no_mfn_threshold
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_threshold_pct
+    expect: absent_from_document
+    note: >
+      "most favored nation" and "mfn" each occur zero times. The lenders here
+      price a warehouse line against advance rates, and there are no initial
+      term loans whose yield an MFN could protect.
+
+  - id: stepstone_no_ecf_sweep
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_status
+    target: excess_cash_flow.sweep_pct
+    expect: absent_from_document
+    note: >
+      "excess cash flow" occurs zero times. An SPV has no excess cash flow to
+      sweep -- collections run through the waterfall in Section 7 (Application
+      of Monies) instead, which is a different mechanism reaching a similar
+      end and is not this field.
+
+  - id: stepstone_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "credit spread adjustment" occurs zero times. The bare phrase "spread
+      adjustment" occurs six times and every one is inside the Benchmark
+      Replacement machinery, which applies on the day the benchmark is
+      replaced and sets no rate today -- the same drafting as Aspen, and the
+      reason the naive check fired on forty correctly-drafted agreements
+      before it was narrowed.
+
+  # -- F06 structure: the facility size ------------------------------------
+
+  - id: stepstone_maximum_facility_amount
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$250,000,000"
+    note: >
+      '"Maximum Facility Amount" means, at any date, (a) $250,000,000 plus
+      (b) the aggregate amount of New Commitments that have become effective
+      after the Closing Date and on or prior to such date.'
+
+      $250,000,000 is the answer: it is the amount committed at the Closing
+      Date, and limb (b) is a growth mechanism with no stated cap and no
+      stated amount. A reader who reports the facility as uncapped because of
+      limb (b) has described an accordion as a commitment.
+
+      Note that the term is not "Commitment" -- this agreement uses Commitment
+      for each Lender's share and Maximum Facility Amount for the aggregate,
+      which is the reverse of the convention in Aspen, where the aggregate is
+      the one called Commitment.

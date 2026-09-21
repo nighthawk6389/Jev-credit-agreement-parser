@@ -430,6 +430,45 @@ def test_a_reference_in_prose_is_not_mistaken_for_a_heading():
     assert detect_sections(prose) == []
 
 
+def test_headings_are_found_when_the_word_section_is_left_out():
+    """StepStone's SPV warehouse numbers its subsections bare: "2.1. Loans and
+    Commitments." The divisions above them do say SECTION, so the document
+    looked structured -- 16 markers found -- while all 109 provisions the
+    cross-references actually cite went undetected, for 68 unresolvable
+    references in an agreement whose references are almost all sound."""
+    from credit_extract.ingest.normalize import detect_sections
+
+    bare = (
+        "SECTION 1. DEFINITIONS AND INTERPRETATION 1.1. Definitions. As used "
+        "herein, the following terms have the meanings set forth below. "
+        "1.2. Accounting Terms. Except as otherwise expressly provided "
+        "herein, all accounting terms shall be construed in conformity with "
+        "GAAP. 1.4. Assumptions as to Collateral Obligations, Etc. In "
+        "connection with all calculations required hereunder, the following "
+        "shall apply. SECTION 2. LOANS AND COMMITMENTS 2.1. Loans and "
+        "Commitments. During the Availability Period, each Lender agrees to "
+        "make Loans to the Borrower."
+    )
+    found = {marker.section_id for marker in detect_sections(bare)}
+    assert {"1.1", "1.2", "1.4", "2.1"} <= found
+
+
+def test_a_bare_numbered_reference_in_prose_is_not_mistaken_for_a_heading():
+    """The bare rule has no keyword to anchor on, so the title pattern and the
+    lookbehinds are all that separate a heading from the cross-references --
+    which are the one thing in the document guaranteed to carry the same
+    numbers."""
+    from credit_extract.ingest.normalize import detect_sections
+
+    prose = (
+        "Subject to Section 2.7 and Section 9.2, the Borrower shall repay the "
+        "Loans in the amount of $12,500,000 as provided in Section 2.13, and "
+        "the Advance Rate shall be redetermined in accordance with Section "
+        "6.4. The Collateral Manager shall give notice thereof."
+    )
+    assert detect_sections(prose) == []
+
+
 def test_the_inline_rule_leaves_a_document_that_already_parses_alone():
     """It is a fallback, gated on the anchored patterns having already failed,
     so no filing that reads correctly today can be changed by it."""
