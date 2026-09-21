@@ -87,6 +87,30 @@ def test_no_field_ends_as_a_bare_null(result):
     assert unresolved == [], f"unresolved fields: {unresolved}"
 
 
+def test_a_field_with_no_value_carries_no_citation(result):
+    """Where to look next is not the same claim as what the text says.
+
+    The negative-space validator records the chunk whose absence probability
+    was lowest -- useful, and the reason a reader is told to escalate rather
+    than shrug. It used to record it in ``spans``, so a field with no value at
+    all cited ten thousand characters, and the stored preview made that read
+    as a precise reference to whatever the chunk happened to open with. On one
+    real agreement the maturity date cited the Junior Indebtedness definition.
+    """
+    for name, field in result.fields.items():
+        for variant in field.variants:
+            if variant.value is None and not field.external_document:
+                assert not variant.spans, (
+                    f"{name} has no value but cites "
+                    f"{variant.spans[0].end - variant.spans[0].start} characters"
+                )
+
+    escalated = [f for f in result.fields.values() if f.review_hint is not None]
+    assert escalated, "the fixture should escalate something with a hint"
+    for field in escalated:
+        assert field.value is None, "a hint is for a field still missing a value"
+
+
 def test_orphan_sweep_finds_a_provision_outside_the_registry(result):
     """Section 2.16 Call Protection is deliberately not an extraction target.
 

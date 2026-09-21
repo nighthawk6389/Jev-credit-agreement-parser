@@ -333,9 +333,12 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
                 "probably missed it -- escalate"
             )
             if name in witness:
-                field.spans = [witness[name]]
+                # The witness is a chunk, not a quotation, so it goes in
+                # review_hint rather than spans. See ExtractedField.review_hint.
+                field.review_hint = witness[name]
                 field.notes += (
-                    f" (strongest signal near offset {witness[name].start})"
+                    f" (strongest signal in the chunk at offset "
+                    f"{witness[name].start})"
                 )
     return min_absence
 

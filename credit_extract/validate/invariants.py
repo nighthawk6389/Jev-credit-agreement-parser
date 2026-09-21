@@ -504,6 +504,45 @@ def _units_present(ctx: InvariantContext) -> list[InvariantViolation]:
     return violations
 
 
+@invariant("citations_cite_a_value", "F01_integrity")
+def _citations_cite_a_value(ctx: InvariantContext) -> list[InvariantViolation]:
+    """F01. A span on a field with no value is not a citation of anything.
+
+    Spans are the mechanism the whole pipeline rests on: a value is only
+    trustworthy because the text it was read from can be reread. A span stored
+    against a null value breaks that reading, because there is no value it
+    could be evidence for -- and the ones that appeared here were whole chunks,
+    an order of magnitude larger than any real citation. On two documents the
+    separation is absolute: every value-bearing span was at most 162
+    characters, every null-value span at least 8,379. Where to look next is
+    real information and it belongs in ``review_hint``, which says so.
+    """
+    violations = []
+    for name, field in ctx.fields.items():
+        for variant in field.variants:
+            if variant.value is not None or not variant.spans:
+                continue
+            if field.external_document:
+                # An external reference legitimately cites the sentence that
+                # points elsewhere while holding no value of its own.
+                continue
+            span = variant.spans[0]
+            violations.append(
+                InvariantViolation(
+                    invariant="citations_cite_a_value",
+                    message=(
+                        f"{name} has no value but carries a "
+                        f"{span.end - span.start:,}-character span; a reader "
+                        "following it is sent to text that was never claimed "
+                        "to say anything"
+                    ),
+                    fields=[name], spans=[span],
+                    observed=None, expected=None,
+                )
+            )
+    return violations
+
+
 @invariant("date_invariants_use_fiscal_calendar", "F08_units")
 def _calendar_declared(ctx: InvariantContext) -> list[InvariantViolation]:
     """F08. Assuming calendar quarters on a 52/53-week borrower is a false
