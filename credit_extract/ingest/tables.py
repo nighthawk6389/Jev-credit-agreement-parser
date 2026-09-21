@@ -124,6 +124,15 @@ def parse_money(text: str) -> Decimal | None:
     match = _MONEY_RE.search(cleaned)
     if not match:
         return None
+    if cleaned[match.end("num"):match.end("num") + 1].strip()[:1] == "%":
+        # A percentage is not an amount, and this returned one. Amortisation is
+        # routinely drafted as "1.250% of the initial principal amount" per
+        # instalment, and reading the first number out of that gives a
+        # quarterly payment of one dollar twenty-five against a real one of
+        # $7,875,000. The regex never looked at the unit, so every percentage
+        # handed to a money-typed field became a dollar figure with a citation
+        # behind it -- which is the shape of a silent error, not of a miss.
+        return None
     try:
         value = Decimal(match.group("num").replace(",", ""))
     except InvalidOperation:
