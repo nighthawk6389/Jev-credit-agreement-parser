@@ -1,0 +1,67 @@
+# Tier 2 assertions: Comtech Telecommunications Corp., Amendment No. 5 to
+# Credit Agreement (Exhibit 10.1), August 2026.
+#
+# Fit side, never read during development. Short, because the document is
+# short: 28,594 characters, eight sections, and almost entirely operative
+# amendments to provisions that live in a base agreement the harvest does not
+# contain.
+#
+# It is labelled for the pair it forms with Exhibit 10.2 in the same
+# accession, Amendment No. 4 to the SUBORDINATED Credit Agreement. Comtech
+# filed both on the same day: a senior facility and a subordinated one,
+# amended in lockstep, each amending a base agreement that is not in the
+# harvest.
+#
+# That is a structure the corpus has not had. Its amendment chains so far are
+# successive amendments to ONE agreement -- Wheels Up, BRC, Ares. This is one
+# borrower with two capital structures amended together, where a term appearing
+# in both exhibits may mean different things and the subordination between them
+# is set in an intercreditor agreement that was not filed either.
+
+document: comtech_amendment_5_2026
+corpus_name: L_comtech-telecommunications-corp-de-cmtl_2026-08-03_0000023197-26-000084_ex101comtech-amendmentno5t
+source: real
+tier: 2
+
+assertions:
+
+  - id: comtech_terms_live_in_an_unfiled_base_agreement
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: external_reference
+    note: >
+      28,594 characters of amendment with no pricing grid in them. The
+      Applicable Margin is a defined term of the Credit Agreement being
+      amended, and that agreement is not in the harvest.
+
+      external_reference rather than absent_from_document: the margin exists,
+      is knowable, and is in a document this one names and does not contain.
+      Reporting absence would say this facility has no margin.
+
+      It is the ordinary case for an amendment and the corpus has not had a
+      clean instance of it. BrightSpring and Crane NXT are amendments too and
+      both restate their pricing in full, which is why their labels are about
+      superseded grids rather than missing ones. This one restates nothing.
+
+  - id: comtech_has_a_subordinated_facility_filed_beside_it
+    family: F02_precedence
+    member: later_section_overrides_earlier
+    kind: text_present
+    target: "Excess Cash Flow"
+    expect: true
+    note: >
+      Six occurrences, in an amendment whose companion exhibit amends a
+      Subordinated Credit Agreement for the same borrower on the same day.
+
+      Asserted as text rather than as a field because the point is the pair,
+      and no field holds "this borrower has two facilities amended together".
+      An excess cash flow sweep in a senior agreement and one in a
+      subordinated agreement are different obligations with an order of
+      priority between them, and that order is in an intercreditor agreement
+      that is in neither exhibit.
+
+      Recorded so the pair is visible to whoever next works on document sets:
+      the chain machinery models successive amendments to one agreement, and
+      this is two agreements amended in parallel.

@@ -1,0 +1,39 @@
+# Tier 2 assertions: ATII Holdings Inc., warrant (Exhibit 4.9), September 2026.
+#
+# Fit side, never read during development. The fifth document in the harvest
+# that is not a credit agreement, and the first that is not even a contract
+# between a borrower and a lender:
+#
+#   THIS WARRANT AND THE SHARES ISSUABLE HEREUNDER HAVE NOT BEEN REGISTERED ...
+#
+# A warrant to purchase shares. 33,363 characters, no facility, no borrowing,
+# every vocabulary probe empty.
+#
+# Five of roughly sixty-five documents read so far are not credit agreements:
+# an acquisition report, an equity purchase agreement, an earnings release, a
+# stock transfer agreement and this warrant. Two more are visible in the same
+# category. The harvest was stratified by filer and form type, and this is
+# what that selects when the target is "credit agreements".
+
+document: atii_warrant_2026
+corpus_name: G_atii-holdings-inc-nano_2026-09-02_0001104659-26-104734_none-20260902xex4d9
+source: real
+tier: 2
+
+assertions:
+
+  - id: atii_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      A warrant. The classifier returns unknown at 0.21 on its own, as it does
+      for the press release and the stock transfer agreement -- the three
+      non-agreements with no facility vocabulary at all.
+
+      Only the two that described a facility or a subscription business drew a
+      confident answer, which is the measurement worth keeping from these five
+      labels: the classifier does not distinguish documents from agreements,
+      and whether that matters depends entirely on what the document happens
+      to talk about.

@@ -1,0 +1,51 @@
+# Tier 2 assertions: Blue Owl Credit Income Corp., Twelfth Supplemental
+# Indenture with Truist Bank as trustee (Exhibit 4.5), September 2026.
+#
+# Fit side, never read during development. A notes indenture -- a BDC issuing
+# unsecured notes to investors -- rather than a credit agreement. It is the
+# third indenture in the corpus after Owl Rock's CLO and Twin Brook's
+# supplemental, and the first that is a plain corporate bond rather than a
+# securitization.
+#
+# Short label. The registry has no field for a note's coupon or its indenture
+# covenants, and asserting forty absences would measure the registry's fit
+# rather than the pipeline's reading -- the same reasoning as the Owl Rock
+# label.
+
+document: blue_owl_credit_income_indenture_2026
+corpus_name: A_blue-owl-credit-income-corp_2026-09-15_0001628280-26-062059_exhibit45-closing8xk
+source: real
+tier: 2
+
+assertions:
+
+  - id: blue_owl_indenture_has_no_archetype
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: unknown
+    note: >
+      A supplemental indenture between an issuer and a trustee. There is no
+      borrower, no lender and no facility, so no archetype applies, and the
+      classifier returns unknown at 0.29 on its own.
+
+      It is the twelfth supplemental to a base indenture that is not in the
+      harvest, which puts it in the same position as Twin Brook's first
+      supplemental and Comtech's amendments: an instrument whose operative
+      terms are mostly elsewhere. Three shapes of that now -- supplemental
+      indentures, credit agreement amendments, and the CLO indenture's
+      reliance on a Loan Sale Agreement.
+
+  - id: blue_owl_indenture_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      A BDC's public notes are constrained by the Investment Company Act's
+      asset coverage requirement rather than by a leverage covenant in the
+      indenture. Fidelity and Blue Owl Technology both carry that requirement
+      explicitly as a 1.50 to 1 floor in their credit agreements; this
+      supplemental does not restate it, so the field is absent here and
+      present there for the same issuer family.

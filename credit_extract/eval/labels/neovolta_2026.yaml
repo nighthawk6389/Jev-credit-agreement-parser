@@ -1,0 +1,80 @@
+# Tier 2 assertions: NeoVolta Inc. / Roho Capital Opportunity Fund LLC, Loan,
+# Security and Guaranty Agreement (Exhibit 10.1), September 2026.
+#
+# Fit side, never read during development. Its Closing Date is defined once,
+# parenthetically, on the first line of the agreement, and the definition has
+# no year:
+#
+#   LOAN, SECURITY AND GUARANTY AGREEMENT Dated as of September 4 (the
+#   "Closing Date") by and among ROHO CAPITAL OPPORTUNITY FUND LLC ...
+#
+# There is no "Closing Date" in the defined-terms section at all -- that
+# parenthetical is the whole of it. So the agreement's only statement of its
+# own closing date is incomplete.
+#
+# The year exists in the normalized text, in the line above:
+#
+#   EX-10.1 3 neovolta_ex1001.htm LOAN, SECURITY AND GUARANTY AGREEMENT,
+#   DATED AS OF SEPTEMBER 4, 2026
+#
+# which is the EDGAR filing wrapper rather than the agreement. So the document
+# states the date twice, once completely and once operatively, and they are
+# not the same statement: one is metadata about the filing and the other is
+# the defined term every "on the Closing Date" representation turns on.
+
+document: neovolta_2026
+corpus_name: A_neovolta-inc-neov-neovw_2026-09-04_0001683168-26-006967_neovolta-ex1001
+source: real
+tier: 2
+
+assertions:
+
+  - id: neovolta_closing_date_has_no_year_in_the_agreement
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-09-04
+    note: >
+      2026-09-04 is right and the route to it matters. A reader working inside
+      the four corners of the agreement gets "September 4" and has to stop; the
+      year is only in the exhibit header EDGAR prepends.
+
+      This is the fourth distinct way a date has defeated extraction in this
+      corpus and the first where the document is simply missing part of it.
+      Camping World splits its digits across markup so the characters are
+      present and unreadable. Aspen and seven others define the date as an
+      event that never resolves. Virco and three others state a date that is
+      correct and many years before the filing. Here the characters are
+      readable, the definition resolves, and what it resolves to is half a
+      date.
+
+      A pipeline that recovers the year from the filing wrapper is doing
+      something defensible and worth being explicit about, because the wrapper
+      is not the agreement -- the same line also carries a file name and an
+      exhibit number, neither of which is evidence about anything.
+
+  - id: neovolta_maturity_has_an_amortization_limb
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: null
+    note: >
+      '"Maturity Date" means, the earlier of (a) the Scheduled Maturity Date,
+      (b) the date of acceleration of the Loan following an Event of Default,
+      or (c) the due date of a payment of the any Amortization Amount, which,
+      after giving effect to such payment of the applicable Amortization
+      Amount, shall re[duce the Loan to zero] ...'.
+
+      Three limbs and none is a date in this exhibit. Limb (c) is new to the
+      corpus: maturity arrives when an amortisation payment happens to retire
+      the balance, so the date is a consequence of the schedule rather than a
+      term of it. Every other multi-limb maturity here pairs a stated date
+      with events; this one pairs a defined term that the exhibit does not
+      define with two events.
+
+      Note also the drafting error in limb (c) -- "a payment of the any
+      Amortization Amount" -- which is the kind of thing F01's integrity
+      checks exist for and which no invariant in the register currently looks
+      at.

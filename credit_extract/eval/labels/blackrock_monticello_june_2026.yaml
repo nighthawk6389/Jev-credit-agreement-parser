@@ -1,0 +1,61 @@
+# Tier 2 assertions: BlackRock Monticello Debt Real Estate Investment Trust,
+# credit facility (Exhibit 10.1), Closing Date June 1, 2026.
+#
+# Fit side, never read during development. The same sponsor as the Exhibit
+# 10.6 facility labelled separately, and not the same deal -- that one closed
+# July 30, 2025, this one June 1, 2026. Two facilities, ten months apart,
+# carrying the same self-referential maturity:
+#
+#   "Maturity Date" means the earliest to occur of (i) the Stated Maturity
+#   Date, (ii) the date of the declaration, or automatic occurrence, of THE
+#   MATURITY DATE pursuant to Section 7.2 and (iii) the Collection Date.
+#
+# word for word in both. So the circularity is a house convention rather than
+# a slip, which is the thing a single document could not establish. It is the
+# second such pair in the corpus after "if no floor is specified, zero", which
+# Limbach and Virco share across unrelated banks.
+#
+# It is also the third redacted filing, and the third distinct notice: this
+# one cites Item 601(b)(10) of Regulation S-K where Lifetime Brands marks
+# exclusions with [***] and Cadeler declares "certain identified information".
+
+document: blackrock_monticello_june_2026
+corpus_name: L_blackrock-monticello-debt-real-estate-investment-trust_2026-06-05_0001193125-26-259869_d82690dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: blackrock_june_maturity_names_itself_too
+    family: F09_definitional_depth
+    member: circular_definition
+    kind: field_value
+    target: revolver.maturity_date
+    expect: null
+    note: >
+      No answer, for the same reason as the August facility: limb (ii) points
+      at itself, limb (iii) is an event, and limb (i) is a Stated Maturity
+      Date this exhibit does not define in the text available.
+
+      The value of having both is that one document showing a cycle could be a
+      drafting error worth reporting to a reader. Two independent facilities
+      from the same sponsor using the identical wording ten months apart make
+      it a convention, which is a different finding: a definition graph that
+      refuses cycles will lose this field on every facility this sponsor
+      writes, not on one.
+
+  - id: blackrock_june_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-01
+    note: >
+      '"Closing Date" means June 1, 2026.' Stated, and different from the
+      other facility's July 30, 2025 -- which is how the two are known to be
+      separate deals rather than versions of one.
+
+      The pair is worth keeping for that reason alone. Two exhibits from one
+      sponsor with near-identical defined-term sections are exactly what a
+      document-set heuristic would try to chain, and the Closing Date is the
+      field that says they cannot be chained.
