@@ -44,9 +44,13 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 233 tests
+pytest -q                                          # 244 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
+
+# Labelling a new agreement.
+python -m credit_extract.eval.split --show         # which side each document is on
+python -m credit_extract.eval.label <document>     # scaffold a label file to correct
 ```
 
 Against the live services:
@@ -306,6 +310,34 @@ Run it yourself:
 python scripts/run_corpus.py --limit 10      # unzips corpus/edgar on demand
 ```
 
+### The split, and why the accuracy numbers carry an asterisk
+
+Every real assertion in this repository is on a filing that was read while the
+parser was being written. There is no held-out number, and until there is, the
+figures above describe fit rather than generalisation. The coverage report
+says so in a `SPLIT` section rather than leaving it to a footnote.
+
+So the split is frozen **now, before the labels exist** — the only moment it
+can be frozen honestly, because afterwards a labeller knows which side would
+flatter the result. All 100 harvested documents are assigned by SHA-256 of the
+document name, stratified so every deal type contributes: **27 held out, 73
+fittable**, plus 11 pinned to the fit side as already-read.
+
+```bash
+python -m credit_extract.eval.split --check   # recomputes and compares; CI runs it
+```
+
+The assignment is a function of the names, so a document cannot change sides
+after its labels turn out inconvenient — the edit is visible and the build
+rejects it. [`docs/labelling_guide.md`](docs/labelling_guide.md) is the
+contract for writing the labels themselves: which fields, what counts as the
+right answer on a multi-tranche deal, and how to choose between
+`absent_from_document` and "I could not find it", which are not the same claim.
+`python -m credit_extract.eval.label <document>` scaffolds a file filled in
+with what the extractor currently says and the text it read each value from,
+every line marked `VERIFY`; the loader refuses a file that still carries the
+marker, so a scaffold cannot be mistaken for ground truth.
+
 The four in `corpus/real/` are the ones with Tier 2 labels:
 
 | filing | what it is | what it found |
@@ -413,9 +445,12 @@ credit_extract/
               calibrate.py      fitting, Wilson bounds, held-out scoring
   eval/       trap_families.yaml  the eleven families -- single source of truth
               blind_spots.yaml    what has no testable examples, and why
+              split.yaml          frozen fit/holdout assignment, derived not chosen
               labels/             Tier 2 assertions, one file per document
               families.py         registers, coverage, consistency check
               assertions.py       assertion kinds and evaluation
+              split.py            derives and re-checks the document split
+              label.py            scaffolds a label file from a run
               mutations.py        Tier 3: inject a defect, check it is found
               family_report.py    the gated report
               gold/               fixture + corpus generator

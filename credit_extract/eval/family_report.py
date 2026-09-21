@@ -137,9 +137,54 @@ class CoverageRun:
                 "  Below the family's configured minimum; treat these metrics "
                 "as directional.",
             ]
+        lines += self._split_lines()
         for note in self.notes:
             lines.append(f"\n  note: {note}")
         return "\n".join(lines)
+
+    def _split_lines(self) -> list[str]:
+        """Which side of the frozen split each real assertion came from.
+
+        Printed with the headline rather than on request, because a precision
+        figure measured entirely on documents the parser was built against is
+        a different claim from the same figure on held-out ones, and the two
+        are indistinguishable once the number is quoted on its own.
+        """
+        from .split import load_split
+
+        real = [o for o in self.outcomes if o.source == "real"]
+        if not real:
+            return []
+        split = load_split()
+        sides: dict[str, list[AssertionOutcome]] = {}
+        for outcome in real:
+            name = outcome.label_document or outcome.document
+            side = (
+                "contaminated" if name in split.contaminated
+                else split.side_of(name)
+            )
+            sides.setdefault(side, []).append(outcome)
+
+        lines = ["", "SPLIT (real assertions only)"]
+        for side in ("holdout", "fit", "contaminated", "unassigned"):
+            group = sides.get(side)
+            if not group:
+                continue
+            wrong = sum(1 for o in group if o.silent_error)
+            confident = sum(1 for o in group if o.confident)
+            lines.append(
+                f"  {side:14} {len(group):>3} assertions, {confident} confident, "
+                f"{wrong} wrong"
+            )
+        if not sides.get("holdout"):
+            lines += [
+                "  Nothing has been measured on a held-out document. Every real",
+                "  assertion above is on a filing that was read while the parser",
+                "  was written, so these numbers describe fit, not generalisation.",
+                f"  {len(split.documents('holdout'))} documents are reserved and",
+                "  unlabelled; credit_extract/eval/split.py --check keeps them that way.",
+            ]
+        return lines
 
     def gate_failures(self) -> list[str]:
         """What should fail the build."""

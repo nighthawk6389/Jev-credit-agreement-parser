@@ -45,6 +45,11 @@ AssertionKind = Literal[
     "closure_contains",     # resolving a term reaches these other terms
 ]
 
+#: Left on every line of a scaffolded label file by credit_extract.eval.label,
+#: and deleted by the human who checked that line. Its presence means the file
+#: still holds the extractor's own answers.
+SCAFFOLD_MARKER = "VERIFY"
+
 #: Statuses the pipeline presents as settled. Anything else is a review flag,
 #: and a wrong answer behind a review flag is not a silent error.
 CONFIDENT_STATUSES = frozenset(
@@ -128,6 +133,10 @@ class AssertionOutcome(BaseModel):
     confident: bool = True
     source: Literal["real", "synthetic"] = "synthetic"
     detail: str = ""
+    #: The label file's name for the document, which is what the frozen split
+    #: is keyed on. ``document`` above is the pipeline's internal id -- a hash
+    #: that says nothing about which side of the split this was measured on.
+    label_document: str = ""
 
     @property
     def silent_error(self) -> bool:
@@ -139,7 +148,21 @@ def load_assertion_file(
 ) -> AssertionFile:
     """Load and validate one assertion file against the family register."""
     register = register or load_families()
-    raw = yaml.safe_load(path.read_text())
+    text = path.read_text()
+    if SCAFFOLD_MARKER in text:
+        # A scaffold from credit_extract.eval.label holds what the extractor
+        # said, not what the document says. Loading one would score the
+        # pipeline against its own output and report perfect agreement.
+        remaining = sum(
+            1 for line in text.splitlines()
+            if line.lstrip().startswith(("note:", "- ")) and SCAFFOLD_MARKER in line
+        )
+        raise ValueError(
+            f"{path}: {remaining} assertion(s) still marked {SCAFFOLD_MARKER}. "
+            "A scaffold is the extractor's answers, not ground truth -- read "
+            "each quote, correct the value, and delete the marker."
+        )
+    raw = yaml.safe_load(text)
     parsed = AssertionFile(path=path, **raw)
     seen: set[str] = set()
     for assertion in parsed.assertions:
@@ -357,7 +380,10 @@ def _report_count(report: Any, name: str) -> int | None:
 
 
 def evaluate_file(file: AssertionFile, result: Any) -> list[AssertionOutcome]:
-    return [
+    outcomes = [
         evaluate_assertion(assertion, result, source=file.source)
         for assertion in file.assertions
     ]
+    for outcome in outcomes:
+        outcome.label_document = file.document
+    return outcomes
