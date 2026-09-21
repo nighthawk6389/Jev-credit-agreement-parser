@@ -234,14 +234,20 @@ def rescue_orphans(
     orphans: list[OrphanChunk],
     reread,
     graph=None,
-) -> int:
+) -> list[Any]:
     """Tier 4: targeted re-read of each orphan chunk.
 
     ``reread`` is a callable ``(chunk) -> list[Candidate]``. When none is
     available the orphans stay in the report as unreviewed rather than being
     quietly dropped, because an unexplained orphan is itself the finding.
+
+    Returns the candidates, which the caller folds into the record. It used to
+    return a count and drop them: a tier that re-reads a passage, finds the
+    field the first pass missed, marks the orphan "rescued" and then throws
+    the value away is doing the expensive half of the work and none of the
+    useful half.
     """
-    rescued = 0
+    rescued: list[Any] = []
     by_id = {c.chunk_id: c for c in ctx.chunks}
     for orphan in orphans:
         chunk = by_id.get(orphan.chunk_id)
@@ -251,7 +257,7 @@ def rescue_orphans(
         if found:
             orphan.resolution = "rescued"
             orphan.rescued_fields = sorted({c.field for c in found})
-            rescued += 1
+            rescued.extend(found)
     return rescued
 
 

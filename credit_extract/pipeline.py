@@ -355,8 +355,10 @@ def run_pipeline(
 
     V.validator_a_span_support(ctx)
     orphans = V.validator_b_orphan_sweep(ctx)
-    if reread is not None and orphans:
-        V.rescue_orphans(ctx, orphans, reread, graph)     # tier 4
+    if reread is None:
+        reread = _default_reread(doc, extraction_backend, fields, graph)
+    rescued = V.rescue_orphans(ctx, orphans, reread, graph) if orphans else []
+    tier4 = _fill_from_rescue(fields, rescued)             # tier 4
     V.validator_e_external_dependency(ctx)
     V.validator_c_negative_space(ctx)
     overrides = V.validator_d_overrides(ctx, OVERRIDE_SUBJECTS)
@@ -439,6 +441,13 @@ def run_pipeline(
                 ) or "nothing extracted"
             ),
             f"chunks swept: {len(sweep)}",
+            # Tier 4, which had never run: the ladder describes a targeted
+            # re-read of the chunks the sweep flagged and nothing supplied one.
+            # A line that reads "0 rescued" over a hundred orphans is a
+            # statement about the pattern set, and it is worth printing.
+            f"orphan re-read (tier 4): {len(orphans)} chunk(s) flagged, "
+            + (f"{len(tier4)} field(s) recovered -- {', '.join(tier4)}"
+               if tier4 else "nothing recovered"),
             # Empty on every offline run and on any healthy model run. When it
             # is not empty, part of the document was never read by the
             # extractor, and no absence in this report can be taken at face
@@ -696,6 +705,91 @@ def _status_counts(fields: dict[str, ExtractedField]) -> dict[str, int]:
     for field in fields.values():
         counts[field.status] = counts.get(field.status, 0) + 1
     return counts
+
+
+def _default_reread(
+    doc: NormalizedDocument,
+    backend: ExtractionBackend,
+    fields: dict[str, ExtractedField],
+    graph: Any = None,
+) -> Callable[[Chunk], list[Candidate]]:
+    """Tier 4's callable, when the caller supplies none.
+
+    The ladder documents a targeted re-read that fires only on chunks the
+    orphan sweep flagged, and nothing ever supplied one, so the tier had never
+    run: on one held-out agreement the sweep found 118 passages that say
+    something no field captured and then the pipeline moved on.
+
+    The re-read asks the extraction question again over one chunk, with the
+    fields that are still empty -- which is a different question from the one
+    the main passes asked, because those walk whole segmentations and, behind
+    ``LayeredBackend``, only ever show the model what the rules left. For the
+    deterministic backend it is the same rules over the same text and finds
+    nothing, which is not a disappointment: it is the measurement. Those 118
+    passages are ones the patterns cannot explain, and running them again says
+    so rather than leaving the tier's absence to be mistaken for a clean sweep.
+    """
+    def reread(chunk: Chunk) -> list[Candidate]:
+        specs = [
+            FIELD_REGISTRY[name] for name, field in fields.items()
+            if field.value is None and name in FIELD_REGISTRY
+        ]
+        if not specs:
+            return []
+        context = ""
+        if graph is not None and chunk.segmentation == "definitional":
+            context = graph.context_for(chunk.label)
+        try:
+            found, _ = backend.extract(doc, chunk, specs, context, "reread")
+        except Exception:  # noqa: BLE001 - a failed rescue is not a failed run
+            return []
+        return found
+
+    return reread
+
+
+def _fill_from_rescue(
+    fields: dict[str, ExtractedField], rescued: list[Candidate]
+) -> list[str]:
+    """Put a rescued value into the field it names, if that field is empty.
+
+    Never into a field that already has one: a single re-read of a single
+    chunk has none of the independent support the main passes are built to
+    produce, so it is evidence enough to answer a question nobody answered and
+    not enough to overturn an answer. The status says so -- these arrive at
+    ``needs_review`` and cannot be confirmed here -- and so does the note,
+    because a value that came from the orphan sweep was found by a different
+    route than the rest of the record and a reader should be told which.
+    """
+    filled: list[str] = []
+    best: dict[str, Candidate] = {}
+    for candidate in rescued:
+        if candidate.value is None or candidate.span is None:
+            continue
+        field = fields.get(candidate.field)
+        if field is None or field.value is not None:
+            continue
+        current = best.get(candidate.field)
+        if current is None or candidate.confidence > current.confidence:
+            best[candidate.field] = candidate
+    for name, candidate in best.items():
+        field = fields[name]
+        # Span before value: the variant validates on assignment and a value
+        # without provenance is rejected, which is the rule doing its job.
+        field.variants[0].spans = [candidate.span]
+        field.variants[0].value = candidate.value
+        field.variants[0].quantity = candidate.quantity
+        field.status = "needs_review"
+        field.variants[0].extraction_confidence = candidate.confidence
+        field.notes = (
+            "found by the orphan sweep's re-read of "
+            f"{candidate.span.section_id or 'an unattributed passage'}, on one "
+            "chunk and one pass; the main passes over every segmentation did "
+            "not produce it, so it has no independent support and is not "
+            "eligible to be confirmed from here"
+        )
+        filled.append(name)
+    return sorted(filled)
 
 
 def _review_queue(

@@ -267,3 +267,120 @@ def test_a_grid_with_more_columns_than_the_parser_knows_claims_nothing():
     assert all("eurodollar rate" not in row for row in rows), (
         "with an unknown column layout the parser must not name one"
     )
+
+
+def test_a_chunk_stored_as_a_citation_still_fires():
+    """The regression citations_cite_a_value was written for: a block of text
+    where a quotation belongs, against a field nothing was claimed about."""
+    field = ExtractedField[str].single(
+        value=None,
+        spans=[Span(start=0, end=9_000, text="x" * 9_000)],
+        status="needs_review", field_class="economic_terms", criticality=4,
+    )
+    violations = check_all(InvariantContext(
+        document_id="d", fields={"mfn_sunset": field},
+    ))
+    assert [v.invariant for v in violations if v.invariant == "citations_cite_a_value"]
+
+
+def test_an_evidenced_absence_is_not_a_defect():
+    """The opposite case, which only appeared once a model tier ran: no value
+    and a real, short quotation that is exactly the evidence for having none.
+
+    A maturity defined as five years after an undated event, a spread
+    adjustment that applies only if the benchmark is ever replaced. A reader
+    following the span gets the passage that explains the empty field, which
+    is the opposite of being sent nowhere.
+    """
+    quote = (
+        '"Maturity Date" means, with respect to each Facility, the date that '
+        "is five (5) years after the Funding Date."
+    )
+    field = ExtractedField[str].single(
+        value=None,
+        spans=[Span(start=0, end=len(quote), text=quote)],
+        status="needs_review", field_class="dates", criticality=5,
+        notes="not a date: the Funding Date is an event, not a date",
+    )
+    violations = check_all(InvariantContext(
+        document_id="d", fields={"initial_term_loan.maturity_date": field},
+    ))
+    assert not [v for v in violations if v.invariant == "citations_cite_a_value"]
+
+
+# ---------------------------------------------------------------------------
+# Tier 4: the targeted re-read that had never run
+# ---------------------------------------------------------------------------
+
+
+def test_the_orphan_sweep_re_read_reaches_the_record():
+    """``run_pipeline`` accepted a ``reread`` callable, ``rescue_orphans``
+    used it, ``build_reread_prompt`` existed -- and no caller ever supplied
+    one, so the tier had never fired. It also discarded what it found: the
+    candidates were used to label the orphan "rescued" and then dropped.
+    """
+    from credit_extract.models.core import CostLedger
+    from credit_extract.pipeline import run_pipeline
+
+    root = Path(__file__).resolve().parents[1]
+    source = root / "credit_extract" / "eval" / "gold" / "fixture_meridian_2017.html"
+    target = "mfn_sunset"
+
+    class OnlyOnReread:
+        """Silent on the main passes, talkative on the re-read."""
+
+        name = "stub"
+
+        def extract(self, doc, chunk, specs, context, pass_id):
+            if not pass_id.startswith("reread"):
+                return [], CostLedger()
+            wanted = {spec.name for spec in specs}
+            if target not in wanted:
+                return [], CostLedger()
+            quote = chunk.text.strip()[:40]
+            span = chunk.locate(doc, quote)
+            if span is None:
+                return [], CostLedger()
+            return [Candidate(
+                field=target, value="eighteen months", span=span,
+                confidence=0.7, pass_id=pass_id, segmentation=chunk.segmentation,
+            )], CostLedger()
+
+    result = run_pipeline(source, extraction_backend=OnlyOnReread())
+    field = result.fields[target]
+    assert field.value == "eighteen months", (
+        "a re-read that finds the field the first pass missed has to put it in "
+        "the record; labelling the orphan rescued and dropping the value is "
+        "the expensive half of the work and none of the useful half"
+    )
+    assert field.status == "needs_review", (
+        "one chunk and one pass has none of the independent support the main "
+        "passes are built to produce, so it answers a question nobody answered "
+        "and is never confirmed from here"
+    )
+    assert "orphan sweep" in (field.notes or "")
+    assert any("orphan re-read (tier 4)" in note for note in result.report.notes)
+
+
+def test_a_re_read_never_overturns_a_value_the_passes_agreed_on():
+    from credit_extract.models.core import CostLedger, Span
+    from credit_extract.pipeline import _fill_from_rescue
+
+    settled = ExtractedField[str].single(
+        value="twelve months", spans=[Span(start=0, end=5, text="hello")],
+        status="confirmed", field_class="economic_terms", criticality=3,
+    )
+    empty = ExtractedField[str].single(
+        value=None, status="needs_review", field_class="economic_terms",
+        criticality=3,
+    )
+    fields = {"mfn_sunset": settled, "facility.feature": empty}
+    span = Span(start=0, end=5, text="hello")
+    filled = _fill_from_rescue(fields, [
+        Candidate(field="mfn_sunset", value="six months", span=span,
+                  confidence=0.99, pass_id="reread", segmentation="structural"),
+        Candidate(field="facility.feature", value="delayed draw", span=span,
+                  confidence=0.4, pass_id="reread", segmentation="structural"),
+    ])
+    assert filled == ["facility.feature"]
+    assert fields["mfn_sunset"].value == "twelve months"
