@@ -48,9 +48,10 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 318 tests
+pytest -q                                          # 337 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
+python -m credit_extract.eval.ablation             # which stages earn their cost
 
 # Labelling a new agreement.
 python -m credit_extract.eval.split --show         # which side each document is on
@@ -556,9 +557,10 @@ credit_extract/
   cli.py                        extract | traps | chain
 config/thresholds.json          fitted, versioned, CI-asserted
 corpus/real/                    four SEC filings, read in detail and labelled
-corpus/edgar/                   100 more, stratified, zipped, unlabelled
+corpus/edgar/                   100 more, stratified, zipped, all labelled
 docs/orientation.md             start here: goals, labels vs recordings, families
 docs/corpus_findings.md         what those 100 say about the pipeline
+docs/ablation.md                current vs model-only vs hybrid, and what it found
 scripts/                        vendor_standards.py, fetch_corpus.py, gen_fpml.py
 ```
 

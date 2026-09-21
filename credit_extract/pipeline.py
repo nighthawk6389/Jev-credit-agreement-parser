@@ -27,6 +27,10 @@ from .extract.passes import (
     run_passes,
 )
 from .extract.reconcile import reconcile
+# eval/ imports pipeline, so this would be circular for anything heavier.
+# arms.py imports nothing from the package, deliberately, so that the stage
+# vocabulary can live with the ablation that uses it rather than here.
+from .eval.arms import FULL, Arm
 from .graph.definitions import build_definition_graph
 from .graph.precedence import PrecedenceGraph, build_precedence_graph
 from .ingest.documents import (
@@ -247,6 +251,7 @@ def run_pipeline(
     document_id: str | None = None,
     passes: int = 3,
     document_set: DocumentSet | None = None,
+    arm: Arm | None = None,
 ) -> ExtractionResult:
     """Run the whole pipeline over one document, or over a chain.
 
@@ -255,7 +260,12 @@ def run_pipeline(
     Extracting the base alone reports terms that stopped being true years ago,
     and does it silently, because every span is correct and every figure is
     quoted accurately.
+
+    ``arm`` selects which validators run, for the ablation in
+    ``credit_extract.eval.ablation``. The default is every one of them, so
+    omitting it is the pipeline as shipped.
     """
+    arm = arm or FULL
     from .models import actus_map, fibo_map, fpml_model
 
     extraction_backend = extraction_backend or OfflineRuleBackend()
@@ -359,8 +369,14 @@ def run_pipeline(
         if basis:
             field.precedence_basis = basis
 
-    V.validator_a_span_support(ctx)
-    orphans = V.validator_b_orphan_sweep(ctx)
+    # The arm decides which stages run. FULL is the default and enables all of
+    # them, so a caller that does not know arms exist gets the pipeline it
+    # always got. Tier 4 and the findings sweep hang off validator B: with no
+    # orphans there is nothing to re-read and nothing to report, so they fall
+    # away on their own rather than needing a second switch.
+    if arm.runs("A"):
+        V.validator_a_span_support(ctx)
+    orphans = V.validator_b_orphan_sweep(ctx) if arm.runs("B") else []
     if reread is None:
         reread = _default_reread(doc, extraction_backend, fields, graph)
     rescued = V.rescue_orphans(ctx, orphans, reread, graph) if orphans else []
@@ -370,16 +386,28 @@ def run_pipeline(
     # only ever shows fields, so an obligation the registry has no slot for
     # has been invisible in every report this project has produced -- which is
     # the exact text the sweep flags and then could say nothing about.
-    findings = _collect_findings(doc, extraction_backend, orphans, sweep)
-    V.validator_e_external_dependency(ctx)
-    V.validator_c_negative_space(ctx)
-    overrides = V.validator_d_overrides(ctx, OVERRIDE_SUBJECTS)
+    findings = (
+        _collect_findings(doc, extraction_backend, orphans, sweep)
+        if orphans else []
+    )
+    if arm.runs("E"):
+        V.validator_e_external_dependency(ctx)
+    if arm.runs("C"):
+        V.validator_c_negative_space(ctx)
+    overrides = (
+        V.validator_d_overrides(ctx, OVERRIDE_SUBJECTS) if arm.runs("D") else []
+    )
+    # Not a validator and not optional: reconciliation left conflicts behind
+    # and a record that reports a field as both values is not a configuration
+    # choice, it is a broken record.
     V.resolve_conflicts(ctx)
-    V.validator_f_criticality(ctx)
+    if arm.runs("F"):
+        V.validator_f_criticality(ctx)
 
     amendment_verdicts = (
         V.validator_g_amendment_effect(ctx, document_set)
-        if document_set is not None and document_set.amendments else []
+        if arm.runs("G") and document_set is not None and document_set.amendments
+        else []
     )
     if operative is not None:
         _attribute_spans(fields, operative)
