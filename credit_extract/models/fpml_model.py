@@ -8,6 +8,16 @@ checked-in index generated from a pinned public mirror of the published FpML
 schemas. Unknown names raise rather than silently becoming plausible-looking
 URIs.
 
+    What ``verified=True`` claims here, and what it does not. It claims the
+    element name is declared in the pinned schemas -- which the hand-mapped
+    names it replaced were not. It does not claim the element means what the
+    field it is bound to means, and it does not claim the element is legal in
+    the position the mapping implies: FpML declares some names in more than
+    one scope and the index merges those declarations. ``declaration()``
+    returns what the schemas actually say about a name, and the
+    ``FPML_SCHEMAS`` blind spot states the limit in the terms a reader of the
+    report needs.
+
 The registry at the bottom is the pipeline's spine: it names every extraction
 target, the standard term each maps to, the field class its confidence
 threshold is fitted on, and the affirmative question the negative-space
@@ -38,6 +48,17 @@ def _vendored() -> dict:
     if not _VENDORED.exists():  # pragma: no cover - packaging regression
         raise RuntimeError(f"{_VENDORED} is missing; run `python scripts/gen_fpml.py --vendor`")
     return json.loads(_VENDORED.read_text())
+
+
+def declaration(term: str) -> dict:
+    """What the pinned schemas declare about an element name.
+
+    ``schemas`` is the interesting key: a loan concept bound to an element
+    that only the asset schema declares is a mapping worth a second look, not
+    a resolution failure, so the fact travels with the binding instead of
+    being flattened into a yes.
+    """
+    return _vendored()["elements"][term]
 
 
 def fpml(term: str) -> TermBinding:
@@ -570,6 +591,25 @@ def fields_in_class(field_class: str) -> list[FieldSpec]:
     return [s for s in FIELD_REGISTRY.values() if s.field_class == field_class]
 
 
+def mapped_terms() -> set[str]:
+    """Every FpML element name this repository binds to.
+
+    ``fpml()`` raises on a name outside the snapshot, so the two binding
+    functions check themselves the moment they are called. ``FIELD_REGISTRY``
+    is the one they do not cover: ``standard_term`` is a plain string there,
+    so a term that does not exist reaches a report looking like every other
+    one. ``scripts/gen_fpml.py --check`` and the test suite both read this.
+    """
+    bindings = list(facility_bindings().values())
+    bindings += [b for pair in standards_bindings().values() for b in pair]
+    terms = {b.term.split(":", 1)[1] for b in bindings
+             if b.term and b.term.startswith("fpml:")}
+    terms |= {spec.standard_term.split(":", 1)[1]
+              for spec in FIELD_REGISTRY.values()
+              if spec.standard_term and spec.standard_term.startswith("fpml:")}
+    return terms
+
+
 def provenance() -> dict:
     v = _vendored()
     composed = {
@@ -585,10 +625,16 @@ def provenance() -> dict:
         "mirror_commit": v["mirror_commit"],
         "schema_files": v["schema_files"],
         "elements_available": len(v["elements"]),
+        "elements_mapped": len(mapped_terms()),
         "composed_with_fibo": composed,
         "verified": True,
+        "verified_claim": (
+            "every mapped element name is declared in the pinned schemas; "
+            "the schemas' own meaning and position for it are not checked"
+        ),
         "note": (
             "Element names resolve against a checked-in index generated from "
-            "the published schemas at a pinned public mirror commit."
+            "the published schemas at a pinned public mirror commit, not from "
+            "ISDA directly. See the FPML_SCHEMAS blind spot."
         ),
     }

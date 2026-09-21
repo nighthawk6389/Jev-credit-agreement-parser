@@ -1,13 +1,29 @@
-"""Vendor, verify, or generate bindings from the FpML loan schemas.
+"""Vendor, check, or generate bindings from the FpML loan schemas.
 
 FpML's download page requires an authenticated session. A public mirror copy
 of the published schemas is pinned here so builds stay
 reproducible, while the official FpML specification page remains normative.
 
-    python scripts/gen_fpml.py --vendor    # refresh the checked-in index
-    python scripts/gen_fpml.py --check     # fail if the index has drifted
-    python scripts/gen_fpml.py --verify    # backwards-compatible alias
+    python scripts/gen_fpml.py --check     # offline: do our terms resolve?
+    python scripts/gen_fpml.py --drift     # online: has upstream moved?
+    python scripts/gen_fpml.py --vendor    # online: refresh the snapshot
+    python scripts/gen_fpml.py --verify    # alias for --drift
     python scripts/gen_fpml.py --generate  # optional xsdata generation
+
+The two checks answer different questions and only one of them needs a
+network. ``--check`` reads the checked-in index and asks whether every FpML
+term this repository maps is declared in it -- a repository invariant, so it
+runs on every build. ``--drift`` re-fetches the pinned bytes and asks whether
+someone else's copy has changed underneath us, which is informational and
+cannot be allowed to fail a pull request. Welding them together would have
+made the invariant untestable without egress, which is how it ends up
+untested.
+
+    Index caveat: FpML declares the same element name in more than one scope
+    -- ``delayedDraw`` is both a boolean flag on a term loan and a member of
+    the facility substitution group -- and the index merges those
+    declarations under one entry. So a name in the index is a name the
+    schemas declare somewhere, not a name that is legal in a given position.
 """
 
 from __future__ import annotations
@@ -130,41 +146,64 @@ def harvest() -> tuple[dict, dict[str, bytes]]:
     return payload, bodies
 
 
-def _write(payload: dict, bodies: dict[str, bytes], check: bool) -> bool:
-    encoded = json.dumps(payload, indent=2, sort_keys=False) + "\n"
-    if check:
-        if not VENDORED_INDEX.exists() or VENDORED_INDEX.read_text() != encoded:
-            print(f"DRIFT   {VENDORED_INDEX}")
-            return False
-        print(f"ok      {VENDORED_INDEX} ({len(payload['elements']):,} elements)")
-        return True
+def encode(payload: dict) -> str:
+    return json.dumps(payload, indent=2, sort_keys=False) + "\n"
 
+
+def _write(payload: dict, bodies: dict[str, bytes]) -> None:
     VENDORED_INDEX.parent.mkdir(parents=True, exist_ok=True)
-    VENDORED_INDEX.write_text(encoded)
+    VENDORED_INDEX.write_text(encode(payload))
     SCHEMA_DIR.mkdir(parents=True, exist_ok=True)
     for filename, body in bodies.items():
         (SCHEMA_DIR / filename).write_bytes(body)
     print(f"wrote   {VENDORED_INDEX} ({len(payload['elements']):,} elements)")
+
+
+def drift() -> bool:
+    """Has the upstream copy moved since the snapshot was taken?"""
+    payload, _ = harvest()
+    if not VENDORED_INDEX.exists():
+        print(f"MISSING {VENDORED_INDEX}; run --vendor")
+        return False
+    if VENDORED_INDEX.read_text() != encode(payload):
+        print(f"DRIFT   {VENDORED_INDEX}")
+        for file in payload["schema_files"]:
+            print(f"  upstream {file['name']:26} sha256={file['sha256'][:16]} "
+                  f"{file['bytes']:,} bytes")
+        return False
+    print(f"ok      {VENDORED_INDEX} matches upstream "
+          f"({len(payload['elements']):,} elements)")
     return True
 
 
-def verify_bindings() -> bool:
-    from credit_extract.models.fpml_model import FIELD_REGISTRY, facility_bindings
+def check_bindings() -> bool:
+    """Offline: does every mapped FpML term resolve against the snapshot?
 
-    indexed = set(json.loads(VENDORED_INDEX.read_text())["elements"])
-    mapped = {
-        binding.term.split(":", 1)[1]
-        for binding in facility_bindings().values()
-        if binding.term
-    }
-    mapped |= {
-        spec.standard_term.split(":", 1)[1]
-        for spec in FIELD_REGISTRY.values()
-        if spec.standard_term and spec.standard_term.startswith("fpml:")
-    }
-    missing = sorted(mapped - indexed)
-    for term in sorted(mapped):
-        print(f"{'ok' if term in indexed else 'MISSING':7} fpml:{term}")
+    ``fpml()`` raises on a name outside the snapshot, so the two binding
+    functions check themselves the moment they are called. ``FIELD_REGISTRY``
+    is the one they do not cover: ``standard_term`` is a plain string there,
+    so a term that does not exist reaches a report looking like every other
+    one. That is the entry this check exists for.
+    """
+    from credit_extract.models.fpml_model import mapped_terms
+
+    if not VENDORED_INDEX.exists():
+        print(f"MISSING {VENDORED_INDEX}; run --vendor", file=sys.stderr)
+        return False
+    index = json.loads(VENDORED_INDEX.read_text())
+    indexed = index["elements"]
+    terms = sorted(mapped_terms())
+    for term in terms:
+        entry = indexed.get(term)
+        where = ",".join(
+            name.replace("fpml-", "").replace("-5-13.xsd", "")
+            for name in entry["schemas"]
+        ) if entry else "-"
+        print(f"{'ok' if entry else 'MISSING':7} fpml:{term:34} [{where}]")
+    missing = [term for term in terms if term not in indexed]
+    print(f"\n{len(terms) - len(missing)}/{len(terms)} mapped terms declared in "
+          f"{len(index['schema_files'])} pinned schemas "
+          f"({len(indexed):,} elements indexed)")
     return not missing
 
 
@@ -176,7 +215,7 @@ def generate() -> int:
         return 1
     if not SCHEMA_DIR.exists():
         payload, bodies = harvest()
-        _write(payload, bodies, check=False)
+        _write(payload, bodies)
     GENERATED.mkdir(parents=True, exist_ok=True)
     command = [
         sys.executable, "-m", "xsdata", "generate",
@@ -189,20 +228,29 @@ def generate() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--vendor", action="store_true")
-    action.add_argument("--check", action="store_true")
-    action.add_argument("--verify", action="store_true")
-    action.add_argument("--generate", action="store_true")
+    action.add_argument("--check", action="store_true",
+                        help="offline: every mapped term resolves in the snapshot")
+    action.add_argument("--drift", action="store_true",
+                        help="online: the snapshot still matches upstream")
+    action.add_argument("--vendor", action="store_true",
+                        help="online: refresh the snapshot from the pinned commit")
+    action.add_argument("--verify", action="store_true", help="alias for --drift")
+    action.add_argument("--generate", action="store_true",
+                        help="run xsdata over the loan schema")
     args = parser.parse_args(argv)
     if args.generate:
         return generate()
-    payload, bodies = harvest()
-    check = args.check or args.verify
-    if not _write(payload, bodies, check=check):
-        return 1
-    return 0 if verify_bindings() else 1
+    if args.check:
+        return 0 if check_bindings() else 1
+    if args.vendor:
+        payload, bodies = harvest()
+        _write(payload, bodies)
+        return 0 if check_bindings() else 1
+    return 0 if drift() and check_bindings() else 1
 
 
 if __name__ == "__main__":
