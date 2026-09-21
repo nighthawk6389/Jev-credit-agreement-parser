@@ -1,0 +1,117 @@
+# Tier 2 assertions: Sandisk Corporation, Credit Agreement as amended by
+# Amendment No. 1 (multicurrency revolver -- Dollars, Euro and Yen).
+#
+# Fit side, never read during development. Kept for its pricing grid, which is
+# the most conditional in the corpus, and for a third flavour of the
+# adjustment trap.
+#
+#   Level | Net Leverage Ratio      | Rating (S&P/Moody's/Fitch) | Term Bench | Base  | RFR    | Fee
+#   I     | > 2.50 to 1.00          | < BB-/Ba3/BB-              | 1.875%     | 0.875%| 1.875% | 0.300%
+#   II    | <= 2.50 and > 1.50      | BB/Ba2/BB                  | 1.625%     | 0.625%| 1.625% | 0.250%
+#   III   | <= 1.50 to 1.00         | BB+/Ba1/BB+                | 1.375%     | 0.375%| 1.375% | 0.175%
+#   IV    |                         | BBB-/Baa3/BBB-             | 1.250%     | 0.250%| 1.250% | 0.150%
+#   V     |                         | BBB/Baa2/BBB               | 1.125%     | 0.125%| 1.125% | 0.125%
+#   VI    |                         | >= BBB+/Baa1/BBB+          | 1.000%     | 0.000%| 1.000% |
+#
+# Three of the six levels have no leverage band at all -- the cell is empty --
+# because above investment grade the rating governs alone. Which axis applies
+# is itself a rule: the level is set by "either (i) the Net Leverage Ratio ...
+# or (ii) the corresponding corporate family ratings of the Lead Borrower from
+# S&P, Moody's and Fitch", and then, where the agencies disagree, by the middle
+# of three ratings; by the higher of two that differ by one level; by the level
+# below the higher of two that differ by two or more; by the only rating if
+# there is one; and "if the Parent Borrower does not have any such corporate
+# family ratings, the pricing level shall be based on the Net Leverage Ratio".
+#
+# So the grid has six levels, two axes, a precedence rule between the axes, a
+# three-agency tie-break, and a table with holes in it.
+
+document: sandisk_2026
+corpus_name: O_sandisk-corp-sndk_2026-09-11_0001193125-26-389293_d138343dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: sandisk_top_margin_is_level_one
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.875%"
+    note: >
+      Level I, Term Benchmark Loans, at leverage greater than 2.50 to 1.00 or
+      a corporate family rating below BB-/Ba3/BB-.
+
+      The RFR Loans column carries the identical 1.875%, and identical numbers
+      all the way down the table, so a pipeline that picks the wrong one of
+      those two columns is right here and would not be elsewhere -- the same
+      coincidence that makes Crane NXT unable to catch a wrong-grid error. The
+      Base Rate column tops at 0.875% and is the column that produced the
+      Essential Properties defect.
+
+      Level I is the first row, which for once is also the worst level:
+      Constellation Brands prints its best rating first and Cooper-Standard
+      its best availability first, so "take the first row" and "take the worst
+      row" disagree in those two and agree here.
+
+  - id: sandisk_floor_is_zero_across_six_benchmarks
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means the benchmark rate floor, if any, provided in this
+      Agreement initially ... with respect to the Adjusted Term SOFR Rate,
+      Adjusted EURIBOR Rate, Adjusted TIBOR Rate, the Adjusted Daily Simple
+      SOFR, the Japanese Prime Rate or the Central Bank Rate, as applicable.
+      For the avoidance of doubt the initial Floor for the Adjusted Term SOFR
+      Rate shall be 0%, and the initial Floor for the Adjusted Daily Simple
+      SOFR, Adjusted EURIBOR Rate, Adjusted TIBOR Rate, the Japanese Prime
+      Rate and the Central Bank Rate shall be 0%.'
+
+      Six benchmarks, one floor, and the definition names all six twice. The
+      field is safe here only because they agree -- Iridium is the document
+      where the same construction produces two different numbers, and this one
+      shows how much text a reader has to carry to know that they do not.
+
+  - id: sandisk_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "credit spread adjustment" occurs zero times, and the three defined
+      terms ending in "Adjustment" are none of them a credit spread
+      adjustment. This is the third distinct flavour of that trap in the
+      corpus and the furthest from the thing itself.
+
+      The Benchmark Replacement Adjustment is the usual replacement-date
+      machinery. The other two are rate-construction components: the Central
+      Bank Rate Adjustment is "the difference (which may be a positive or
+      negative value or zero) of (i) the average of the Adjusted EURIBOR Rate
+      for the five most recent Business Days ..." and the Japanese Prime Rate
+      Adjustment is the same shape against TIBOR. They exist to build a
+      fallback rate out of a local bank rate, not to add a spread to a
+      benchmark, and a rule that reports any "X Adjustment" percentage would
+      report a five-day averaging residual as this facility's credit spread.
+
+      Taken with BrightSpring (an adjustment that is real and zero) and
+      Sanmina (adjustments that are real, non-zero and another currency's),
+      the corpus now has three ways for the obvious probe to be wrong and one
+      document where the narrow probe is right.
+
+  - id: sandisk_commitment_fee_at_the_top_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.300%"
+    note: >
+      Level I, Revolving Facility Commitment Fee. The fee column is the only
+      one in the table that does not run in parallel with the others -- it
+      falls from 0.300% to 0.125% across five levels while the margins fall by
+      0.875% -- and Level VI has no fee cell printed at all, which is a second
+      hole in the same table.

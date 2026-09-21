@@ -1,0 +1,96 @@
+# Tier 2 assertions: Valvoline Inc., Credit Agreement (Term B and Revolving
+# Credit Facilities).
+#
+# Fit side, never read during development. A short label for a conventional
+# agreement, kept for two pieces of drafting that no other document in the
+# corpus uses.
+#
+# Its floor is a word. '"Floor" means a rate of interest equal to zero.' No
+# numeral, no percent sign, no digits at all, in a field typed as a percent.
+# Nine other labelled documents write theirs as 0.00% or 0.0%, and one --
+# Iridium -- writes two different numerals in the same definition. A parser
+# that scans for a number and a unit finds neither here and returns nothing,
+# which is indistinguishable from an agreement that has no floor.
+#
+# And its excess cash flow percentage is a defined term rather than a clause.
+# Sanmina states its sweep inline inside the prepayment mechanics; Valvoline
+# hoists it into "Required ECF Percentage" and then refers to that term
+# wherever the sweep is operated. Both are 50% at the top of the ladder, so the
+# pair separates finding the number from finding the sentence it usually lives
+# in.
+
+document: valvoline_2026
+corpus_name: B_valvoline-inc-vvv_2026-08-24_0001628280-26-058633_exhibit101-vvvcredit
+source: real
+tier: 2
+
+assertions:
+
+  - id: valvoline_floor_is_the_word_zero
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means a rate of interest equal to zero.'
+
+      The value is zero per cent and the document contains no digit saying so.
+      Filed under F08 because the failure is a unit-and-magnitude failure
+      rather than a location one: the definition is short, unambiguous and
+      easy to find, and what defeats extraction is that "zero" is a word.
+
+      The distinction that matters downstream is between this and an absent
+      floor. An agreement with no floor and an agreement with a floor of zero
+      differ the moment the benchmark goes negative, and a pipeline that
+      returns nothing here has produced the same answer for both.
+
+      The Benchmark Replacement provision leans on the term as well -- a
+      replacement benchmark below the Floor "will be deemed to be the Floor" --
+      so the word governs the successor rate too.
+
+  - id: valvoline_ecf_percentage_is_a_defined_term
+    family: F04_absence
+    member: no_ecf_sweep
+    kind: field_value
+    target: excess_cash_flow.sweep_pct
+    expect: "50%"
+    note: >
+      '"Required ECF Percentage" shall mean, with respect to any Excess Cash
+      Flow Period, 50%; provided that, as of any time a prepayment is required
+      ... if the Consolidated Net Leverage Ratio as of the end of such Excess
+      Cash Flow Period ... is (x) les[s than] ...'.
+
+      50% is the standing percentage and the step-downs hang off it as a
+      proviso, so the field's answer is in the first clause of the definition
+      rather than at the end of a prepayment waterfall.
+
+      Paired deliberately with Sanmina, which reaches the same 50% by writing
+      it inline in Section 2.05's mechanics with no defined term at all. Two
+      documents, one number, two places to look -- which is what makes them
+      worth having together rather than either alone.
+
+  - id: valvoline_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      Six occurrences of "spread adjustment", all inside the Benchmark
+      Replacement Adjustment, which applies on a replacement of the benchmark
+      and sets nothing today. Sixth document in the corpus with this
+      construction.
+
+  - id: valvoline_no_mfn_threshold
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_threshold_pct
+    expect: absent_from_document
+    note: >
+      "most favored nation" and "mfn" each occur zero times, in an agreement
+      that does have an incremental facility (Section 2.14) -- so this is an
+      incremental without MFN protection rather than an agreement with no
+      incremental to protect, which is the case in Evernorth and Constellation
+      Brands.
