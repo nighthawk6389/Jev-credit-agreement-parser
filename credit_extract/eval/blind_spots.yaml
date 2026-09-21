@@ -130,10 +130,37 @@ untestable_from_public_filings:
       characters. The detection side is testable and now tested; the value
       never will be, because no filing states it.
 
-      What remains is the subscription line proper. Both labelled documents
-      lend against acquired assets. A facility secured on uncalled capital
-      commitments -- where the credit is the limited partners' rather than the
-      portfolio's -- is still a shape nothing here has read.
+      The subscription line proper was the last gap and the harvest turned
+      out to contain one all along: AGL Private Credit Income Fund, whose
+      "Capital Contribution" is the cash an Investor contributes "with respect
+      to its Uncalled Capital Commitment in response to any Drawdown Notice".
+      Uncalled capital, 31 times, secured on the limited partners' promises
+      rather than on any acquired asset -- the shape this entry said nothing
+      here had read.
+
+      It is on the held-out side, so the gap closes for measurement and stays
+      open for construction: the document can be a test and can never be
+      material to build against. Read once, to write its label, and no code
+      was changed on its strength.
+
+      What it shows is that the profile is not the problem. "Uncalled capital"
+      is already decisive of nav_or_subscription and is already in this
+      document; it first appears at character 41,542, and decisive vocabulary
+      is searched in the first 30,000. The classifier returns unknown, saved
+      from a wrong answer only by two false positives cancelling -- abl_
+      revolver on a borrowing base and investment_grade on "s&p and moody",
+      one signal each, tied. The fit-side evidence for the same defect is the
+      Accelevation pair, where one conformed amendment and the agreement it
+      conforms classified differently because a preamble moved a phrase across
+      the window boundary.
+
+      Two more fund facilities were labelled in the same pass and both are
+      warehouses rather than subscription lines -- Blue Owl's Core Income
+      Funding VII and Athena Funding III, the latter with 777 references to
+      collateral obligations. Both classify as abl_revolver at 0.85, which
+      rules nav_tests inapplicable: the archetype chosen on the strength of
+      the borrowing base suppresses the tests the borrowing base is measured
+      by. Both are held out, both recorded, neither repaired.
 
   - id: F09_term_defined_in_other_loan_document
     family: F09_definitional_depth
@@ -232,6 +259,43 @@ untestable_in_this_environment:
       pipeline to suppress a capped add-back ladder under a confident status.
       The lesson is about labels as much as code: a string search is evidence
       about strings, and a label that reasons from one inherits its blind spot.
+
+      Labelling the remaining 32 documents found a fourth way, and it is the
+      one the Event of Default floor cannot reach. The test asks whether a
+      filing is an agreement. It does not ask whether it is a *credit*
+      agreement, and the difference is where the confident wrong answers now
+      live:
+
+        Neovolta's Registration Rights Agreement would classify as
+        venture_debt at 0.70 on "warrant to purchase" -- ordinary
+        equity-issuance vocabulary, used correctly, by a document that lends
+        nothing. It has no Events of Default, so the guard happens to stop it.
+
+        Elmet's Investor Rights Agreement with the US Department of War does
+        classify, as abl_revolver at 0.70, on a "Borrowing Base" it defines
+        for a facility nobody has yet agreed to: "with respect to borrowings
+        under a credit facility with lenders ... the aggregate lending value
+        to be ascribed to the assets". Eligible accounts, zero. Lender, four
+        times, all hypothetical. It has five Events of Default, because an
+        investor rights agreement has defaults like any contract, so the guard
+        admits it. That is the corpus's fourth silent error and its first on
+        the held-out side, recorded and deliberately not repaired there.
+
+      Air T's promissory note is the same admission without the harm: six
+      Events of Default, no archetype vocabulary, so it declines on a
+      different test than the one that lets it through. And the floor of two
+      is wrong in the other direction on three real agreements -- nScale's
+      Amendment No. 3, Vivid Seats' Amendment No. 7 and Horizon's Note Funding
+      Agreement each say "Event of Default" once. None is currently harmed,
+      because each declines on vocabulary too; Horizon's margin is nine
+      references to a borrowing base wide.
+
+      So the guard buys a great deal and its floor is not the thing doing the
+      buying. What it establishes is that a document with no defaults at all
+      is not an agreement, and that is worth keeping. What it cannot
+      establish -- whose facility the credit vocabulary describes -- is the
+      same question the suppression veto answers field by field, and the
+      classifier does not ask it.
     remedy: >
       set JEV_API_KEY and refit thresholds; they are tagged per backend. This
       one will not yield to more keywords -- the measurement above is the
