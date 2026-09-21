@@ -35,7 +35,7 @@ one. Whatever no tier settles is still caught by the orphan sweep.
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev]"   # add [llm] for the model tier on either route
 
 # Extract, with the offline backends -- no API keys, no network.
 credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 294 tests
+pytest -q                                          # 302 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 
@@ -62,7 +62,22 @@ Against the live services:
 ```bash
 export ANTHROPIC_API_KEY=... JEV_API_KEY=...
 credit-extract extract agreement.htm --backend anthropic --jev api --out result.json
+
+# The same model tier through Vercel's AI Gateway, which speaks the Messages
+# API. One key, and the gateway's own model catalogue behind it.
+export AI_GATEWAY_API_KEY=...
+credit-extract extract agreement.htm --backend vercel --out result.json
 ```
+
+`anthropic` and `vercel` are one tier over two routes, not two backends. A
+`Route` is a base URL, a credential and a naming rule; the prompt, the schema,
+the failure handling and the candidate construction are the same object either
+way, which is what makes a measurement taken through one comparable to a
+measurement taken through the other. The gateway names models creator-first
+(`anthropic/claude-opus-5`) and the id is stripped again before pricing, so a
+run through it is not quietly costed at the fallback rate. Thresholds are
+fitted per backend and the backend name follows the route, so a set fitted
+against one is not silently applied to the other.
 
 ### The model tier, without a model
 

@@ -212,9 +212,30 @@ untestable_in_this_environment:
       tried, which is a statement about the pattern set rather than about the
       tier.
     remedy: >
-      set ANTHROPIC_API_KEY and run with --backend anthropic, against the
-      documents that already carry both labels and a recording, so the live
-      pass can be compared with a reading rather than only with the rules.
+      Run with --backend anthropic and ANTHROPIC_API_KEY, or --backend vercel
+      and AI_GATEWAY_API_KEY, against the documents that already carry both
+      labels and a recording, so the live pass can be compared with a reading
+      rather than only with the rules.
+
+      The two are the same tier over different routes: Vercel's AI Gateway
+      speaks the Messages API at ai-gateway.vercel.sh, takes the x-api-key
+      header the SDK already sends, and supports output_config.format and
+      output_config.effort, so the prompt, the schema and the failure handling
+      are byte for byte the ones the direct route uses. What differs is the
+      base URL, the credential and a creator-first model id
+      (anthropic/claude-opus-5), all of which live on the Route object.
+
+      Neither route has been exercised from this environment and the gateway
+      route cannot be: api.anthropic.com needs a key, and ai-gateway.vercel.sh
+      is refused by the egress proxy here as vercel.com is. What is tested is
+      everything decidable without the network -- that the model id is
+      prefixed once and not twice, that it is stripped again before pricing so
+      an Opus run through the gateway is not costed at the fallback rate, that
+      the gateway does not pick up an Anthropic key and send it somewhere
+      Anthropic is not, that a missing credential fails before the first chunk
+      rather than a thousand chunks in, and that the route decides where a
+      request goes and never what it says. The first live call is still a
+      first live call.
 
   - id: FPML_SCHEMAS
     families: [F06_structure, F07_benchmark]

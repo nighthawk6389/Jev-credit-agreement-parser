@@ -384,3 +384,133 @@ def test_a_re_read_never_overturns_a_value_the_passes_agreed_on():
     ])
     assert filled == ["facility.feature"]
     assert fields["mfn_sunset"].value == "twelve months"
+
+
+# ---------------------------------------------------------------------------
+# Routes: the same model tier, sent somewhere else
+# ---------------------------------------------------------------------------
+
+
+def test_the_gateway_spells_the_model_creator_first():
+    from credit_extract.extract.passes import DIRECT, VERCEL
+
+    assert DIRECT.model_id("claude-opus-5") == "claude-opus-5"
+    assert VERCEL.model_id("claude-opus-5") == "anthropic/claude-opus-5"
+
+
+def test_an_already_qualified_model_is_not_prefixed_twice():
+    from credit_extract.extract.passes import VERCEL
+
+    assert VERCEL.model_id("anthropic/claude-opus-5") == "anthropic/claude-opus-5"
+
+
+def test_a_routed_model_is_still_priced_as_the_model_it_is():
+    """ANTHROPIC_PRICES is keyed on the bare id, and an unknown key falls
+    through to a default rate. A creator-first id would miss the table and be
+    costed at $3/$15 against Opus's $5/$25 -- a cost ledger that is quietly
+    wrong in the cheap direction, on every run through the gateway."""
+    from credit_extract.extract.passes import (
+        ANTHROPIC_PRICES, VERCEL, _anthropic_cost,
+    )
+
+    routed = VERCEL.model_id("claude-opus-5")
+    assert routed not in ANTHROPIC_PRICES, "the premise of this test"
+    assert _anthropic_cost(VERCEL.billed_model(routed), 1_000_000, 0) == 5.00
+    assert _anthropic_cost(routed, 1_000_000, 0) != 5.00, (
+        "and this is what it would have cost if the id were not stripped"
+    )
+
+
+def test_the_backend_name_follows_the_route():
+    """Thresholds are fitted per backend and load_thresholds refuses a
+    mismatch, so a set fitted against one route must not be applied to the
+    other without somebody deciding that it may be."""
+    from credit_extract.extract.passes import VERCEL, AnthropicBackend
+
+    assert AnthropicBackend().name == "anthropic"
+    assert AnthropicBackend(route=VERCEL).name == "vercel"
+    assert AnthropicBackend(route=VERCEL).with_temperature(0.4).name == "vercel"
+
+
+def test_a_route_reads_its_own_credential(monkeypatch):
+    from credit_extract.extract.passes import DIRECT, VERCEL
+
+    for var in ("ANTHROPIC_API_KEY", "AI_GATEWAY_API_KEY",
+                "VERCEL_AI_GATEWAY_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    assert DIRECT.credential() is None and VERCEL.credential() is None
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "direct")
+    assert DIRECT.credential() == "direct"
+    assert VERCEL.credential() is None, (
+        "the gateway must not pick up an Anthropic key and send it somewhere "
+        "Anthropic is not"
+    )
+
+    monkeypatch.setenv("VERCEL_AI_GATEWAY_API_KEY", "fallback")
+    assert VERCEL.credential() == "fallback"
+    monkeypatch.setenv("AI_GATEWAY_API_KEY", "preferred")
+    assert VERCEL.credential() == "preferred", "first var set wins, in order"
+
+
+def test_a_route_without_a_credential_fails_before_the_first_chunk(monkeypatch):
+    """Not on chunk one of nine hundred: by then the cheap tiers have run and
+    the partial result reports partial recall as recall."""
+    import argparse
+
+    from credit_extract.cli import _build_backends
+
+    for var in ("AI_GATEWAY_API_KEY", "VERCEL_AI_GATEWAY_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    args = argparse.Namespace(
+        backend="vercel", jev="offline", model="claude-opus-5", temperature=0.0
+    )
+    with pytest.raises(SystemExit) as caught:
+        _build_backends(args, Path("x.htm"))
+    assert "AI_GATEWAY_API_KEY" in str(caught.value)
+
+
+def test_both_routes_send_the_identical_prompt_and_schema():
+    """A route is a base URL, a credential and a naming rule. If it were also
+    a different request then a number taken through one would not be
+    comparable to a number taken through the other, which is the only reason
+    to have built it this way."""
+    import inspect
+
+    from credit_extract.extract.passes import VERCEL, AnthropicBackend
+
+    source = inspect.getsource(AnthropicBackend.extract)
+    assert source.count("client.messages.create(") == 1
+    assert "build_extraction_prompt" in source and "EXTRACTION_SCHEMA" in source
+    assert "if self.route" not in source, (
+        "the route may decide where a request goes and how the model is "
+        "spelled; it may not decide what the request says"
+    )
+    assert "self.route.model_id" in source
+    assert AnthropicBackend(route=VERCEL).effort == AnthropicBackend().effort
+
+
+def test_the_client_actually_points_where_the_route_says(monkeypatch):
+    """The one thing about a route that cannot be reasoned about: whether the
+    SDK accepts the override and sends the request to the host we named.
+
+    Neither endpoint is reachable from this environment -- api.anthropic.com
+    needs a key and ai-gateway.vercel.sh is refused by the egress proxy -- so
+    this stops at the client, which is as far as an offline test honestly
+    goes. It is still the difference between having configured a base URL and
+    having assumed one.
+    """
+    anthropic = pytest.importorskip("anthropic")
+    from credit_extract.extract.passes import DIRECT, VERCEL, AnthropicBackend
+
+    monkeypatch.setenv("AI_GATEWAY_API_KEY", "fake-gateway-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-direct-key")
+
+    gateway = AnthropicBackend(route=VERCEL)._ensure_client()
+    assert str(gateway.base_url).rstrip("/") == "https://ai-gateway.vercel.sh"
+    assert gateway.api_key == "fake-gateway-key"
+
+    direct = AnthropicBackend(route=DIRECT)._ensure_client()
+    assert "api.anthropic.com" in str(direct.base_url)
+    assert direct.api_key == "fake-direct-key"
+    assert isinstance(gateway, anthropic.Anthropic)

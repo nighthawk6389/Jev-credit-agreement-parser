@@ -369,12 +369,71 @@ EXTRACTION_SCHEMA: dict[str, Any] = {
 }
 
 
+@dataclass(frozen=True)
+class Route:
+    """Where the model tier sends its requests, and under whose spelling.
+
+    The Messages API is the same wherever it is served from, so a route is not
+    a second backend -- it is a base URL, a credential and a naming rule. One
+    class keeps the prompt, the schema, the failure handling and the candidate
+    construction identical whichever way the request leaves the building,
+    which is the only way a measurement taken through one is comparable to a
+    measurement taken through the other.
+    """
+
+    name: str
+    #: None means the SDK's own default, which is api.anthropic.com.
+    base_url: str | None
+    #: Tried in order; the first one set wins.
+    key_vars: tuple[str, ...]
+    #: Prepended to the model id when it does not already carry a slash.
+    model_prefix: str = ""
+
+    def credential(self) -> str | None:
+        for var in self.key_vars:
+            value = os.environ.get(var)
+            if value:
+                return value
+        return None
+
+    def model_id(self, model: str) -> str:
+        return model if "/" in model or not self.model_prefix else (
+            f"{self.model_prefix}{model}"
+        )
+
+    def billed_model(self, model: str) -> str:
+        """The model id to price, which is not always the one on the wire."""
+        return model.split("/")[-1]
+
+
+#: Straight to Anthropic.
+DIRECT = Route(name="anthropic", base_url=None, key_vars=("ANTHROPIC_API_KEY",))
+
+#: Through Vercel's AI Gateway, which speaks the Messages API at
+#: https://ai-gateway.vercel.sh/v1/messages and takes the same x-api-key
+#: header the SDK already sends, so the SDK needs a base URL and a different
+#: credential and nothing else. Two things do differ and both are handled
+#: here rather than left to surprise a reader: the gateway names models
+#: creator-first, as anthropic/claude-opus-5, and a prefixed id would miss
+#: the price table and be costed at the fallback rate.
+VERCEL = Route(
+    name="vercel",
+    base_url="https://ai-gateway.vercel.sh",
+    key_vars=("AI_GATEWAY_API_KEY", "VERCEL_AI_GATEWAY_API_KEY"),
+    model_prefix="anthropic/",
+)
+
+ROUTES: dict[str, Route] = {route.name: route for route in (DIRECT, VERCEL)}
+
+
 class AnthropicBackend:
     """Tier 4/5: a real LLM pass.
 
-    Requires ``ANTHROPIC_API_KEY``. The prompt demands a verbatim quote for
-    every value; any value whose quote cannot be located in the chunk is
-    dropped rather than stored without provenance.
+    Needs a credential for whichever :class:`Route` it is on --
+    ``ANTHROPIC_API_KEY`` by default, ``AI_GATEWAY_API_KEY`` through Vercel.
+    The prompt demands a verbatim quote for every value; any value whose quote
+    cannot be located in the chunk is dropped rather than stored without
+    provenance.
 
     The response shape is constrained by the API rather than negotiated in
     prose. An earlier version asked for JSON in the prompt and then pulled the
@@ -386,18 +445,23 @@ class AnthropicBackend:
     it was sitting in the tier meant to do the hard extraction.
     """
 
-    name = "anthropic"
-
     def __init__(
         self,
         model: str = "claude-opus-5",
         temperature: float = 0.0,
         max_tokens: int = 16_000,
         effort: str = "high",
+        route: Route = DIRECT,
     ) -> None:
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        #: Part of the backend's identity, because thresholds are fitted per
+        #: backend and ``load_thresholds`` refuses a mismatch. A set fitted
+        #: against one route should not be applied to another without somebody
+        #: deciding that it may be.
+        self.route = route
+        self.name = route.name
         #: This was "medium" on the theory that extraction is a reading task
         #: against text already in front of the model. The held-out documents
         #: say otherwise: the mistakes that matter here are not failures to
@@ -414,7 +478,7 @@ class AnthropicBackend:
     def with_temperature(self, temperature: float) -> "AnthropicBackend":
         """A sibling backend at a different temperature, sharing the client."""
         clone = AnthropicBackend(
-            self.model, temperature, self.max_tokens, self.effort
+            self.model, temperature, self.max_tokens, self.effort, self.route
         )
         clone._client = self._client
         return clone
@@ -428,9 +492,19 @@ class AnthropicBackend:
                     "the anthropic package is required for LLM passes; "
                     "install it or run with --backend offline"
                 ) from exc
-            if not os.environ.get("ANTHROPIC_API_KEY"):
-                raise RuntimeError("ANTHROPIC_API_KEY is not set")
-            self._client = anthropic.Anthropic()
+            key = self.route.credential()
+            if not key:
+                raise RuntimeError(
+                    f"no credential for the {self.route.name} route; set "
+                    + " or ".join(self.route.key_vars)
+                )
+            # base_url is passed explicitly rather than left to the
+            # ANTHROPIC_BASE_URL environment variable, so which endpoint a run
+            # talked to is a property of the run and not of the shell it
+            # happened to start in.
+            self._client = anthropic.Anthropic(
+                api_key=key, base_url=self.route.base_url
+            ) if self.route.base_url else anthropic.Anthropic(api_key=key)
         return self._client
 
     def extract(
@@ -446,7 +520,7 @@ class AnthropicBackend:
         client = self._ensure_client()
         prompt = build_extraction_prompt(chunk.text, specs, context)
         response = client.messages.create(
-            model=self.model,
+            model=self.route.model_id(self.model),
             max_tokens=self.max_tokens,
             # The system prompt existed in the prompts module and was never
             # sent, so the one instruction that frames the whole task -- a
@@ -464,7 +538,9 @@ class AnthropicBackend:
             llm_input_tokens=response.usage.input_tokens,
             llm_output_tokens=response.usage.output_tokens,
             llm_cost_usd=_anthropic_cost(
-                self.model, response.usage.input_tokens, response.usage.output_tokens
+                self.route.billed_model(self.model),
+                response.usage.input_tokens,
+                response.usage.output_tokens,
             ),
         )
         if response.stop_reason == "refusal":
