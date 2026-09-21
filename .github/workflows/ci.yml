@@ -61,6 +61,15 @@ jobs:
       - name: Registers are consistent
         run: python -m credit_extract.eval.families --check
 
+      # fpml() raises on an element outside the vendored snapshot, so the two
+      # binding functions check themselves whenever they are called. The field
+      # registry is the gap: its standard_term is a plain string, so a term
+      # that does not exist reaches a report as a bare URI and looks like every
+      # other one. This runs offline against the checked-in index, which is
+      # what makes it a build gate rather than a network errand.
+      - name: FpML terms resolve
+        run: python scripts/gen_fpml.py --check
+
   packaging:
     # `pip install -e .` hides two whole classes of bug, and both were live
     # here: an undeclared runtime dependency that happened to be in the dev
@@ -88,10 +97,11 @@ jobs:
           /tmp/clean/bin/credit-extract traps /tmp/agreement.html
 
   standards-drift:
-    # Upstream FIBO and ACTUS move. When they do, the vendored snapshot should
-    # be reviewed deliberately -- a term URI that changed underneath us makes
-    # every output incomparable to the last run. Informational only: a drift in
-    # someone else's repository is not a reason to fail a pull request.
+    # Upstream FIBO, ACTUS and the pinned FpML mirror move. When they do, the
+    # vendored snapshot should be reviewed deliberately -- a term URI that
+    # changed underneath us makes every output incomparable to the last run.
+    # Informational only: a drift in someone else's repository is not a reason
+    # to fail a pull request.
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -104,3 +114,11 @@ jobs:
           pip install -e ".[dev]"
       - name: Check vendored standards against upstream
         run: python scripts/vendor_standards.py --check
+
+      # The FpML schemas come from a pinned commit of a public mirror rather
+      # than from ISDA, whose download page needs a session. Pinning makes the
+      # bytes reproducible, not authentic, so this re-fetches them and fails
+      # loudly here -- and only here -- if the mirror no longer serves what the
+      # snapshot was built from.
+      - name: Check the pinned FpML schemas against the mirror
+        run: python scripts/gen_fpml.py --drift
