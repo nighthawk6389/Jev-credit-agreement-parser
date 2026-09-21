@@ -1,0 +1,118 @@
+# Tier 2 assertions: Hornbeck Offshore Services, Inc., First Incremental
+# Facility Amendment dated as of August 28, 2026.
+#
+# Fit side, never read during development. Labelled as one half of a pair with
+# KBR's Amendment No. 14: both price off a five-level leverage grid, and the
+# two grids number their levels in opposite directions.
+#
+#   Hornbeck   Grid Pricing Level | Total Net Leverage Ratio | SOFR | Base
+#              1  <= 0.50:1.00   2.75%  1.75%      <- level 1 is the BEST
+#              5  >  2.50:1.00   3.75%  2.75%
+#
+#   KBR        Pricing Level | Consolidated Net Leverage Ratio | Term SOFR ...
+#              1  > 4.25:1.00   2.25%                          <- level 1 is the WORST
+#              5  < 1.25:1.00   1.25%
+#
+# So "Pricing Level 1" means the cheapest money in one agreement and the
+# dearest in the other, and both call it Level 1. Any rule that keys off the
+# level number rather than the leverage band is right about one and wrong
+# about the other, and each document on its own looks like it establishes the
+# convention.
+
+document: hornbeck_offshore_2026
+corpus_name: D_hornbeck-offshore-services-inc-hlx_2026-09-01_0001193125-26-378529_d102206dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: hornbeck_sofr_adjustment_is_ten_basis_points
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.10%"
+    note: >
+      '"Term SOFR Adjustment" means a rate per annum equal to 0.10%.'
+
+      The second real credit spread adjustment in the corpus and the first
+      stated as a bare percentage -- Compass Diversified writes the same rate
+      as "0.10% (10.00 basis points)". So the pair covers both renderings of
+      the same number, and neither document uses the phrase "credit spread
+      adjustment".
+
+      It is also the same defined-term name that BrightSpring uses for a rate
+      of 0.00%. Two agreements, identical term, identical construction, values
+      100 basis points apart in effect: one adds a tenth of a point to every
+      SOFR loan and the other adds nothing. Nothing about the name or the
+      surrounding drafting distinguishes them, which is the argument for
+      reading the value rather than recognising the shape.
+
+  - id: hornbeck_top_margin_is_pricing_level_five
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "3.75%"
+    note: >
+      'Grid Pricing Level | Total Net Leverage Ratio | SOFR Rate Margin | Base
+      Rate Margin: 1 <= 0.50:1.00 2.75% 1.75%; 2 <= 1.50:1.00 3.00% 2.00%; 3
+      <= 2.00:1.00 3.25% 2.25%; 4 <= 2.50:1.00 3.50% 2.50%; 5 > 2.50:1.00
+      3.75% 2.75%.'
+
+      Level 5 at the worst leverage, and the Base Rate column tops at 2.75% --
+      which is also the SOFR margin at Level 1, so 2.75% appears twice in the
+      table meaning the best SOFR margin and the worst base rate margin. A
+      pipeline that lands on the right number from the wrong column cannot be
+      distinguished from one that read correctly unless it cites the cell.
+
+      Pricing Level 5 also applies without regard to leverage whenever a
+      Compliance Certificate is overdue, which is now the fifth document with
+      that mechanic and makes it the most common non-financial determinant of
+      pricing in the corpus.
+
+  - id: hornbeck_covenant_springs_on_any_revolver_draw
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: financial_covenant.level
+    expect: "1.00 to 1.00"
+    note: >
+      'the Borrower shall not permit the Revolving Credit Facility Net
+      Leverage Ratio on the last day of each Test Period (each such date, a
+      "Measurement Date") to be greater than 1.00 to 1.00 if any Revolving
+      Loans or Letters of Credit are drawn (and, in the case of Letters of
+      Credit, not reimbursed) at such time.'
+
+      Two things make this unlike the other springing covenants labelled here.
+      It springs on any draw at all rather than at a utilisation threshold --
+      Latham needs the Revolving Facility Test Condition, Iridium needs 35% of
+      commitments, this one needs a single dollar outstanding. And the ratio
+      it tests is facility-specific: the Revolving Credit Facility Net
+      Leverage Ratio, not the Total Net Leverage Ratio that prices the loan in
+      the grid above.
+
+      1.00 to 1.00 is therefore not comparable to the 5.20, 6.25 and 6.90
+      levels elsewhere in the corpus, because it measures a different
+      numerator. A reader that normalises covenant levels across documents
+      without reading which ratio is being capped will conclude this borrower
+      is twenty times less levered than BrightSpring.
+
+  - id: hornbeck_floor_is_stated_only_for_the_revolver
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      There is no defined term "Floor" in this agreement. The floor is a
+      proviso inside the benchmark definition and it is facility-scoped:
+      '"Term SOFR" ... provided, that "Term SOFR" with respect to any
+      Revolving Loans shall in no event be less than 0.00% per annum.'
+
+      0.00% is the only floor the document states, and it is stated for the
+      revolving loans alone -- the term loans of this incremental facility get
+      no floor proviso at all. So the honest reading is that the revolver is
+      floored at zero and the term loans are unfloored, which is a third
+      arrangement after "one floor for everything" and Iridium's "two floors,
+      two numbers".

@@ -1,0 +1,73 @@
+# Tier 2 assertions: KBR, Inc., Amendment No. 14 to Credit Agreement, dated as
+# of July 29, 2026.
+#
+# Fit side, never read during development. The other half of the pair with
+# Hornbeck's incremental amendment: both price off a five-level leverage grid
+# and the two number their levels in opposite directions, so "Pricing Level 1"
+# is the cheapest money in Hornbeck and the dearest here.
+#
+#   Pricing Level (Pro Rata, other than Term A-2) | Consolidated Net Leverage
+#   Ratio | Term SOFR Loans; Alternative Currency Loans; Financial Letter of
+#   Credit Fee | Base Rate | Performance Letter of Credit Fee | Commitment Fee
+#     1  > 4.25:1.00                     2.25%  1.25%  1.35%  0.325%
+#     2  < 4.25:1.00, but > 3.25:1.00    2.00%  1.00%  1.20%  0.300%
+#     3  < 3.25:1.00, but > 2.25:1.00    1.75%  0.75%  1.05%  0.275%
+#     4  < 2.25:1.00, but > 1.25:1.00    1.50%  0.50%  0.90%  0.250%
+#     5  < 1.25:1.00                     1.25%  0.25%  0.75%  0.225%
+#
+# Five columns, and two of them are letter of credit fees that differ by the
+# kind of letter of credit -- Financial and Performance. The Financial L/C Fee
+# shares a column with the Term SOFR margin, so one number is simultaneously a
+# margin on two loan types and a fee on one kind of letter of credit, while
+# the Performance L/C Fee sits in its own column at a higher rate than the
+# Base Rate margin beside it.
+
+document: kbr_amendment_14_2026
+corpus_name: L_kbr-inc-kbr_2026-07-30_0001357615-26-000172_kbr-amendmentno14tocredita
+source: real
+tier: 2
+
+assertions:
+
+  - id: kbr_top_margin_is_pricing_level_one
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.25%"
+    note: >
+      Pricing Level 1, Consolidated Net Leverage Ratio greater than 4.25:1.00,
+      Term SOFR Loans 2.25%.
+
+      Level 1 is the worst level here and the best level in Hornbeck. Both
+      agreements are 2026, both are amendments to syndicated facilities, both
+      label the column "Pricing Level", and there is nothing in either
+      document that announces which convention it follows -- you have to read
+      the leverage band. A rule that takes Level 1, or that takes the first
+      row, gets 2.25% here (correct) and 2.75% in Hornbeck (wrong by a full
+      point, and wrong in the direction that understates the cost).
+
+      Four distractors in this row alone. 1.25% is the Base Rate margin and is
+      also the Term SOFR margin at Level 5, so it appears twice meaning
+      opposite things. 1.35% is the Performance Letter of Credit Fee and is
+      the largest number in the row after the margin itself. 0.325% is the
+      commitment fee. And the Term A-2 Facility is priced outside the grid
+      entirely, at "the higher of (A) 0.625% per annum for Base Rate Loans and
+      1.625% per annum for Term SOFR Loans and (B) ..." until its first
+      Compliance Certificate.
+
+  - id: kbr_commitment_fee_at_the_top_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.325%"
+    note: >
+      Pricing Level 1, Commitment Fee column. Three digits after the point,
+      where most of the corpus uses two -- 0.325%, 0.300%, 0.275%, 0.250%,
+      0.225% -- so the fee ladder steps in 2.5 basis point increments and a
+      reader that rounds loses the distinction between levels entirely.
+
+      It is the rightmost of five columns in a row of five numbers, which is
+      the hardest position to pick without reading the header, and the header
+      itself spans two lines in the filing's rendering.
