@@ -34,24 +34,64 @@ assertions:
     expect: recurring_revenue
     note: >
       "Recurring Revenue" is a defined term and "ARR Leverage" is decisive
-      vocabulary; the agreement never uses Consolidated EBITDA.
+      vocabulary: the ARR Leverage Covenant in Section 7.1(a) is the operative
+      financial covenant. That is what makes this an ARR deal, and it is not
+      the same claim as the agreement having no EBITDA -- see the two
+      assertions below, which originally said so and were wrong.
 
-  - id: hc_ebitda_addback_cap_is_not_applicable
+  # These two replace assertions that expected not_applicable_to_archetype on
+  # the reasoning "zero occurrences of Consolidated EBITDA in 571,000
+  # characters". That string search is accurate and the inference from it is
+  # not: this agreement defines "Consolidated Adjusted EBITDA" -- 53
+  # occurrences, 63 of "EBITDA" -- with a nineteen-clause add-back ladder and a
+  # "Shared Cap" of 25% over clauses (v), (xi), (xiii), (xvii) and (xix). An
+  # ARR loan covenanted on revenue still needs EBITDA for its baskets, and
+  # Health Catalyst carries both.
+  #
+  # The labels mattered more than the wording. Had the code been changed to
+  # satisfy them, it would have learned to suppress a real, capped add-back
+  # structure under not_applicable_to_archetype -- a confident status -- which
+  # is the exact silent error this project exists to prevent, in the same shape
+  # as the Air T case that motivated the evidence veto.
+
+  - id: hc_ebitda_addback_cap_is_the_shared_cap
     family: F06_structure
     member: recurring_revenue_arr
-    kind: field_status
+    kind: field_value
     target: consolidated_ebitda.addback_cap_pct
-    expect: not_applicable_to_archetype
+    expect: "25%"
     note: >
-      Zero occurrences of Consolidated EBITDA in 571,000 characters. Reporting
-      this absent would read as a missing cap rather than a different deal.
+      '"Shared Cap": with respect to any period, an amount equal to 25% of
+      Consolidated Adjusted EBITDA for such period (calculated before giving
+      effect to any such add-backs or adjustments set forth in clauses (v),
+      (xi), (xiii), (xvii) and (xix) of clause (a) of the definition of
+      Consolidated Adjusted EBITDA).' Clause (xix) is the run-rate cost
+      savings, operating expense reductions and synergies add-back, so the
+      cost-savings cap this field asks for is the Shared Cap, at 25%. The cap
+      is measured against EBITDA before the capped add-backs are applied,
+      which is the convention that makes a bare "25%" ambiguous and is why it
+      is written out here.
 
-  - id: hc_ebitda_clause_cap_is_not_applicable
+  - id: hc_ebitda_clause_cap_is_absent
     family: F06_structure
     member: recurring_revenue_arr
     kind: field_status
     target: consolidated_ebitda.addback_cap_clause_a_xvi
-    expect: not_applicable_to_archetype
+    expect: absent_from_document
+    note: >
+      This agreement has no cap at clause (a)(xvi). Clause (a)(xvi) here is
+      proportionate attribution of a joint venture's income, and it is not in
+      the Shared Cap list. The run-rate synergies add-back that this field is
+      named for sits at clause (a)(xix) instead, and its cap is the 25% Shared
+      Cap already asserted above.
+
+      Absent rather than 25%, deliberately. A clause reference is the only
+      thing distinguishing this field from addback_cap_pct, so reporting the
+      right number against a clause that does not contain it would put a
+      correct value behind a citation that does not support it -- which is the
+      one move no tier here is allowed to make. The clause-numbered field is a
+      registry convention that assumes a drafting order this agreement does
+      not follow.
 
   - id: hc_no_borrowing_base
     family: F06_structure

@@ -160,6 +160,80 @@ def test_the_archetype_cannot_suppress_a_term_the_document_names():
     assert inapplicable_fields(abl, ["initial_term_loan.maturity_date"], quiet)
 
 
+def test_collateral_vocabulary_does_not_veto_suppression():
+    """The veto's other failure mode, found on Golub's BDC warehouse.
+
+    A fund-level facility describes the loans it may *buy* in the vocabulary
+    of the loans a company *owes*, and the veto read that as evidence this
+    deal had those terms. "Delayed draw" appears nineteen times in
+    cik1901612 and every one is inside "Delayed Drawdown Collateral Loan", a
+    category of asset; the facility has no delayed draw of its own. All four
+    of the archetype's inapplicable groups were vetoed this way, so nothing
+    was suppressed and three correct answers sat in review.
+
+    This is the same underlying mistake as the Air T case above, pointing the
+    other way: the question is never whether the words are present, it is
+    whose balance sheet they are on.
+    """
+    from credit_extract.models.archetypes import (
+        PROFILES, inapplicable_fields, suppression_vetoes,
+    )
+
+    abl = PROFILES["abl_revolver"]
+    portfolio = (
+        'the Aggregate Adjusted Collateral Balance of Eligible Collateral '
+        'Loans that are Revolving Collateral Loans or Delayed Drawdown '
+        'Collateral Loans may not exceed 5% of the Maximum Portfolio Amount'
+    )
+    assert inapplicable_fields(
+        abl, ["initial_term_loan.commitment"], portfolio
+    ), "collateral vocabulary is not evidence about this facility"
+    assert suppression_vetoes(abl, portfolio) == {}
+
+    # One use away from the collateral description is enough to veto. The
+    # asymmetry is the point: a missed veto ends in a confident wrong answer,
+    # a spurious one only ends in review.
+    mixed = portfolio + "  The Borrower shall repay the Term Loan in full."
+    assert not inapplicable_fields(abl, ["initial_term_loan.commitment"], mixed)
+    assert suppression_vetoes(abl, mixed) == {"term_amortization": "term loan"}
+
+
+def test_the_ebitda_veto_sees_an_adjusted_ebitda_definition():
+    """Health Catalyst defines EBITDA and never writes "Consolidated EBITDA".
+
+    The evidence phrases were ["consolidated ebitda", "combined ebitda",
+    "leverage ratio"], and this agreement's term is "Consolidated *Adjusted*
+    EBITDA" -- 53 occurrences that none of the first two match. Only
+    "leverage ratio" caught it, which is a veto firing for a reason unrelated
+    to the thing it is protecting.
+
+    It matters because two labels asserted not_applicable_to_archetype here
+    on the strength of that same string search, and the document carries a
+    nineteen-clause add-back ladder capped at 25%.
+    """
+    from credit_extract.models.archetypes import FIELD_GROUPS, PROFILES
+
+    arr = PROFILES["recurring_revenue"]
+    assert "ebitda_covenants" in arr.inapplicable_groups
+
+    hc = (
+        '" Consolidated Adjusted EBITDA ": with respect to the Borrower and '
+        'its consolidated Subsidiaries for any period, the Consolidated Net '
+        'Income of the Borrower and its Subsidiaries for such period'
+    )
+    assert FIELD_GROUPS["ebitda_covenants"].evidenced_in(hc) == "ebitda"
+
+    # An ARR loan that genuinely has no EBITDA still gets the suppression the
+    # profile is for -- widening the phrase must not empty the archetype out.
+    from credit_extract.models.archetypes import inapplicable_fields
+
+    pure = (
+        "the Borrower shall maintain Annualized Recurring Revenue of not less "
+        "than $40,000,000 as of the last day of each fiscal quarter"
+    )
+    assert inapplicable_fields(arr, ["consolidated_ebitda.addback_cap_pct"], pure)
+
+
 def test_a_fee_letter_is_only_external_where_the_fees_actually_live_in_it():
     """Validator E could not fire on the case it exists for.
 

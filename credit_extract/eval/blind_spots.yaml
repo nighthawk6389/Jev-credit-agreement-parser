@@ -172,6 +172,28 @@ untestable_in_this_environment:
       separates them. A wrong archetype is worse than none, because it marks
       applicable fields not_applicable_to_archetype and suppresses real terms
       silently. See docs/corpus_findings.md for the table.
+
+      What stands between a wrong archetype and a wrong answer is the evidence
+      veto, and it has now failed in both directions on fit-side documents.
+      Air T showed it firing too little: a real Consolidated Term Loan reported
+      as a term the deal kind cannot have. Golub's BDC warehouse showed it
+      firing too much, which costs coverage rather than correctness but costs
+      it in bulk -- a fund facility describes the loans it may buy in the
+      vocabulary of the loans a company owes, so all four inapplicable groups
+      were vetoed by their own collateral and nothing was suppressed at all.
+      "Delayed draw" appears nineteen times there and every one is inside
+      "Delayed Drawdown Collateral Loan". A phrase now only vetoes where some
+      use of it sits outside a collateral description.
+
+      Health Catalyst showed the third way it fails, which is neither: the
+      phrase list can simply miss the term. The agreement writes "Consolidated
+      Adjusted EBITDA" 53 times and "Consolidated EBITDA" never, so the veto
+      caught it only through "leverage ratio" -- the right outcome by an
+      unrelated route. Two labels had been written asserting the opposite, on
+      that same string search, and satisfying them would have taught the
+      pipeline to suppress a capped add-back ladder under a confident status.
+      The lesson is about labels as much as code: a string search is evidence
+      about strings, and a label that reasons from one inherits its blind spot.
     remedy: >
       set JEV_API_KEY and refit thresholds; they are tagged per backend. This
       one will not yield to more keywords -- the measurement above is the

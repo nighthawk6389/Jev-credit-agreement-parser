@@ -1,9 +1,14 @@
 """Deal archetypes, detected before extraction and used to route it.
 
 An ABL has a borrowing base where a term loan has a commitment. A
-recurring-revenue loan has no EBITDA anywhere, so every EBITDA-keyed extractor
-returns null and every EBITDA-keyed invariant fires -- on a completely correct
-document. A NAV line is covenanted on portfolio value.
+recurring-revenue loan is covenanted on revenue, so every EBITDA-keyed
+invariant fires -- on a completely correct document. A NAV line is covenanted
+on portfolio value.
+
+What an archetype says is what a deal of this kind *usually* has, and it is
+never allowed to be the last word. A profile that ruled a field out is checked
+against the document before anything is suppressed, because suppression is the
+one path by which a misclassification reaches a reader as a settled answer.
 
 Without this, recall on a mixed corpus means nothing: the pipeline is penalised
 for not finding an EBITDA covenant in a loan that has none by design, and a
@@ -42,6 +47,60 @@ Archetype = Literal[
 #: usually decided by the title page and the first few definitions.
 DETECTION_WINDOW = 30_000
 
+#: Compound nouns that name an asset the borrower *holds*, not a facility it
+#: owes under. They exist because a fund-level or warehouse facility describes
+#: its collateral in the vocabulary of ordinary corporate lending, and that
+#: vocabulary then reads as though this deal had those terms. Golub's BDC
+#: warehouse is the case: "delayed draw" appears nineteen times and every one
+#: of them is inside "Delayed Drawdown Collateral Loan", a category of loan the
+#: fund may buy. The facility has no delayed draw of its own.
+#:
+#: Every entry is a compound, and that is the whole of the safety argument. A
+#: bare "obligor" or "loan" would match an operating-company agreement on every
+#: page and cancel vetoes that ought to fire; "collateral loan" and "loan
+#: asset" are terms of art that essentially only appear where a portfolio is
+#: being described.
+_COLLATERAL_NOUNS = (
+    "collateral loan",
+    "collateral obligation",
+    "collateral debt",
+    "loan asset",
+    "portfolio investment",
+    "portfolio company",
+    "underlying loan",
+    "eligible loan",
+)
+
+#: How far either side of an occurrence to look for one of those nouns.
+#: Roughly a clause. It has to be tight: at 140 characters a genuine
+#: obligation one sentence downstream of a collateral description still had a
+#: collateral noun in view, so "The Borrower shall repay the Term Loan in
+#: full", appearing after a paragraph about the portfolio, read as more
+#: portfolio. Adjacency in characters is only a proxy for being part of the
+#: same noun phrase, and the proxy holds at clause scale and breaks above it.
+_COLLATERAL_WINDOW = 60
+
+
+def _only_describes_collateral(lowered: str, phrase: str) -> bool:
+    """True when every use of ``phrase`` sits in a collateral description.
+
+    ``lowered`` is the document, already lowercased once by the caller --
+    these documents run to half a million characters and the phrase list is
+    walked per group.
+    """
+    start = lowered.find(phrase)
+    if start < 0:
+        return False
+    while start >= 0:
+        window = lowered[
+            max(0, start - _COLLATERAL_WINDOW):
+            start + len(phrase) + _COLLATERAL_WINDOW
+        ]
+        if not any(noun in window for noun in _COLLATERAL_NOUNS):
+            return False
+        start = lowered.find(phrase, start + len(phrase))
+    return True
+
 
 class FieldGroup(BaseModel):
     """A set of fields that stand or fall together under an archetype."""
@@ -70,10 +129,19 @@ class FieldGroup(BaseModel):
         return any(fnmatch.fnmatch(field_name, p) for p in self.patterns)
 
     def evidenced_in(self, text: str) -> str | None:
-        """The first phrase this document uses that contradicts suppression."""
+        """The first phrase this document uses that contradicts suppression.
+
+        A phrase only counts where it describes *this* facility. Where every
+        occurrence of it sits beside one of ``_COLLATERAL_NOUNS``, the document
+        is describing what the borrower holds rather than what it owes, and the
+        phrase is not evidence that this deal has the thing. One occurrence
+        away from that context is enough to veto: the asymmetry is deliberate,
+        because a missed veto ends in a confident wrong answer and a spurious
+        one only ends in review.
+        """
         lowered = text.lower()
         for phrase in self.evidence:
-            if phrase in lowered:
+            if phrase in lowered and not _only_describes_collateral(lowered, phrase):
                 return phrase
         return None
 
@@ -88,7 +156,14 @@ FIELD_GROUPS: dict[str, FieldGroup] = {
                 "financial_covenant.*", "opening_total_leverage_ratio",
                 "consolidated_ebitda.*", "incremental.leverage_based_test",
             ],
-            evidence=["consolidated ebitda", "combined ebitda", "leverage ratio"],
+            # Bare "ebitda", not "consolidated ebitda". Health Catalyst is an
+            # ARR loan that never once writes "Consolidated EBITDA" and defines
+            # "Consolidated Adjusted EBITDA" 53 times, with a 25% Shared Cap
+            # over five of its add-back clauses. The narrower phrases missed it
+            # completely and only "leverage ratio" happened to catch it, which
+            # is a veto firing for the wrong reason on the way to the right
+            # answer. A document that says EBITDA at all has EBITDA machinery.
+            evidence=["ebitda", "leverage ratio"],
         ),
         FieldGroup(
             id="ebitda_baskets",
@@ -263,9 +338,15 @@ PROFILES: dict[str, ArchetypeProfile] = {
                 "rather than EBITDA"
             ),
             rationale=(
-                "There is no EBITDA in the document at all, so every "
-                "EBITDA-keyed extractor returns null spuriously and every "
-                "EBITDA-keyed invariant fires on a correct agreement."
+                "The covenant is keyed to recurring revenue, so the "
+                "EBITDA-keyed invariants fire on a correct agreement. What "
+                "this profile must not assume is that EBITDA is *absent*: "
+                "Health Catalyst, the corpus's only real ARR agreement, runs "
+                "an ARR Leverage Covenant and defines Consolidated Adjusted "
+                "EBITDA with a capped add-back ladder. ARR loans commonly "
+                "carry both, one for the covenant and one for the baskets, so "
+                "suppression here is left to the evidence veto rather than "
+                "assumed."
             ),
         ),
         ArchetypeProfile(
