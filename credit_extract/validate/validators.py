@@ -317,7 +317,21 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
             backend=ctx.session.backend.name,
             notes="minimum absence probability across all chunks",
         ))
-        if probability >= threshold:
+        # A field can be empty because the document says nothing, or because
+        # the extractor read something this field's type cannot hold. Only the
+        # first is absence, and confirming the second would be a silent error
+        # with a probability printed next to it.
+        untypable = field.qualifiers.get("untypable_value")
+        if untypable:
+            field.status = "needs_review"
+            field.validation_confidence = probability
+            field.notes = (
+                f"stated as {untypable!r} and not absent: the extractor read a "
+                "value this field's type cannot carry, so the record holds no "
+                "number and the document holds one. Absence was scored at "
+                f"{probability:.2f} and is not the question here"
+            )
+        elif probability >= threshold:
             field.status = "absent_from_document"
             field.validation_confidence = probability
             field.notes = (

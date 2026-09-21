@@ -173,13 +173,30 @@ def reconcile(
 
         valued = [c for c in found if c.value is not None]
         if not valued:
+            # A pass that produced no value still produced a reading, and the
+            # reading is the whole content of this field. Flattening it to
+            # "produced no value" threw away the span it cited, why it could
+            # not be typed, and the qualifiers that say so -- and the negative
+            # space check then wrote over what was left with "the extractor
+            # probably missed it", which is the opposite of what happened.
+            best = max(found, key=lambda c: c.confidence)
+            qualifiers = {}
+            for candidate in found:
+                qualifiers.update(candidate.qualifiers)
             fields[name] = ExtractedField[Any].single(
                 value=None,
+                spans=[s for s in (best.span,) if s],
                 status="needs_review",
                 field_class=spec.field_class,
                 criticality=spec.criticality,
                 standard_term=spec.standard_term,
-                notes="passes reported the field present but produced no value",
+                extraction_confidence=best.confidence,
+                pass_support=len({c.pass_id for c in found}),
+                qualifiers=qualifiers,
+                notes=(
+                    best.notes
+                    or "passes reported the field present but produced no value"
+                ),
             )
             continue
 

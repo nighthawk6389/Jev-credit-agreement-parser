@@ -412,7 +412,9 @@ def run_pipeline(
             }
             for pair in overrides if pair.overrides
         ],
-        review_queue=_review_queue(fields),
+        review_queue=_review_queue(
+            fields, [c for c in reconciliation.conflicts if not c.resolved]
+        ),
         chain=_chain_report(document_set, operative, amendment_verdicts),
         archetype=archetype.model_dump(),
         blind_spots=_blind_spot_notice(archetype),
@@ -437,6 +439,16 @@ def run_pipeline(
                 ) or "nothing extracted"
             ),
             f"chunks swept: {len(sweep)}",
+            # Empty on every offline run and on any healthy model run. When it
+            # is not empty, part of the document was never read by the
+            # extractor, and no absence in this report can be taken at face
+            # value until a reader knows that.
+            "chunks the extractor could not read: " + (
+                "; ".join(extracted.unread_chunks[:5])
+                + (f" (+{len(extracted.unread_chunks) - 5} more)"
+                   if len(extracted.unread_chunks) > 5 else "")
+                if extracted.unread_chunks else "none"
+            ),
             f"override findings: "
             f"{sum(1 for o in overrides if o.overrides)} of {len(overrides)} tested",
             f"fibo gaps: {sorted(fibo_map.gaps())}",
@@ -686,15 +698,34 @@ def _status_counts(fields: dict[str, ExtractedField]) -> dict[str, int]:
     return counts
 
 
-def _review_queue(fields: dict[str, ExtractedField]) -> list[dict[str, Any]]:
-    """Fields a human should look at, most economically material first."""
+def _review_queue(
+    fields: dict[str, ExtractedField],
+    conflicts: list[Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Fields a human should look at, most economically material first.
+
+    A conflicted field has no value, and printing one anyway is how a reader
+    ends up quoting a number the pipeline never asserted. Eleven candidate
+    closing dates at equal weight resolve to whichever the reconciler happened
+    to order first; the record says "conflicted" and the queue said
+    "= 2019-11-26" three characters later. The competing values go in their
+    own key and the single value stays empty.
+    """
+    competing = {
+        c.field: [str(item.get("value")) for item in c.candidates]
+        for c in (conflicts or [])
+    }
     queue = [
         {
             "field": name,
             "status": field.status,
             "criticality": field.criticality,
             "criticality_label": field.criticality_label,
-            "value": str(field.value) if field.value is not None else None,
+            "value": (
+                None if field.status == "conflicted"
+                else str(field.value) if field.value is not None else None
+            ),
+            "competing_values": competing.get(name, []),
             "extraction_confidence": field.extraction_confidence,
             "validation_confidence": field.validation_confidence,
             "why": field.notes,

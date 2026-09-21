@@ -377,6 +377,15 @@ def _ranges(ctx: InvariantContext) -> list[InvariantViolation]:
         spec = FIELD_REGISTRY.get(name)
         if spec is None or field.value is None:
             continue
+        if spec.kind not in ("percent", "ratio"):
+            continue
+        # A bool is an int in Python and Decimal("False") raises rather than
+        # returning anything, so a single populated boolean field took the
+        # whole report down with a ConversionSyntax three frames deep. Nothing
+        # in this check applies to one: booleans have their own kind and no
+        # range to be outside of.
+        if isinstance(field.value, bool):
+            continue
         if not isinstance(field.value, (int, float, Decimal)):
             continue
         value = Decimal(str(field.value))
@@ -525,6 +534,13 @@ def _citations_cite_a_value(ctx: InvariantContext) -> list[InvariantViolation]:
             if field.external_document:
                 # An external reference legitimately cites the sentence that
                 # points elsewhere while holding no value of its own.
+                continue
+            if field.qualifiers.get("untypable_value"):
+                # The second legitimate case, and it only appeared once a
+                # model tier ran: the reader cited a real passage, the passage
+                # states a value, and the field's declared type cannot hold
+                # it. The span is evidence for something -- it is the record
+                # that cannot carry it -- and the qualifier says exactly what.
                 continue
             span = variant.spans[0]
             violations.append(
