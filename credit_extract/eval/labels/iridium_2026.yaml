@@ -1,0 +1,157 @@
+# Tier 2 assertions: Iridium Communications Inc., Amended and Restated Credit
+# Agreement (Term B-3 / Term B-4 tranches and a 2023 Revolving Facility).
+#
+# Fit side, never read during development. Picked for F07_benchmark, the
+# family with the worst real pass rate, and it supplies two things the corpus
+# has never had.
+#
+# A floor that is not zero:
+#
+#   "Floor" means a rate of interest equal to (i) with respect to Term Loans,
+#   0.75% and (ii) with respect to Revolving Loans, 0.00%.
+#
+# Every previously labelled document floors its benchmark at zero -- Aspen,
+# Crane NXT, BrightSpring, StepStone, Latham, Constellation. Several of them
+# state the floor twice, once per facility, and the two always agree, so
+# nothing so far has tested what happens when they do not. Here they differ by
+# 75 basis points in a single defined term, and a field holding one number is
+# right about one facility and wrong about the other whichever it picks.
+#
+# And an MFN threshold that exists:
+#
+#   ... constitute MFN Qualifying Term Loans and is subject to an Effective
+#   Yield that is greater than the Effective Yield applicable to such Term B-4
+#   Loans by more than 0.50% ...
+#
+# Every MFN assertion in the corpus until now has been an absence. This is the
+# first document where the field has a value, which means it is the first one
+# that can tell a pipeline that finds nothing apart from one that finds the
+# right thing.
+
+document: iridium_2026
+corpus_name: O_iridium-communications-inc-irdm_2026-09-15_0000950103-26-013945_dp253331-ex1001
+source: real
+tier: 2
+
+assertions:
+
+  # -- F07 benchmark: a split floor and no adjustment ----------------------
+
+  - id: iridium_term_loan_floor_is_75_basis_points
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.75%"
+    note: >
+      '"Floor" means a rate of interest equal to (i) with respect to Term
+      Loans, 0.75% and (ii) with respect to Revolving Loans, 0.00%.'
+
+      0.75% because this field is read against the term loans, consistently
+      with mfn_threshold_pct beside it, which the registry scopes explicitly
+      to the Initial Term Loans. The revolver's floor is 0.00% and is equally
+      correct about the revolver; the field cannot hold both and the note is
+      where the other one goes.
+
+      Two failure modes this is the first document to separate. A pipeline
+      that reports 0.00% may have read limb (ii) or may have a default that
+      happens to agree with every other document in the corpus, and until now
+      nothing could tell those apart. A pipeline that reports 0.75% has at
+      least read a limb.
+
+      The Benchmark Replacement provision also floors the replacement: "if the
+      Benchmark Replacement as determined pursuant to clause (1) or (2) above
+      would be less than the Floor, the Benchmark Replacement will be deemed
+      to be the Floor". So the same defined term floors the current benchmark
+      and its successor, at two different rates depending on the facility.
+
+  - id: iridium_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "credit spread adjustment" occurs zero times. The six occurrences of
+      "spread adjustment" are the Benchmark Replacement Adjustment -- 'the
+      spread adjustment ... (which may be a positive or negative value or
+      zero) that has been selected' on a replacement of the benchmark -- which
+      sets no rate today.
+
+      Fifth document with this construction. It is the single most repeated
+      piece of drafting in the corpus and the single most reliable way to
+      produce a false positive on this field.
+
+  # -- F04 absence, inverted: an MFN that is actually there ----------------
+
+  - id: iridium_mfn_threshold_is_fifty_basis_points
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_value
+    target: mfn_threshold_pct
+    expect: "0.50%"
+    note: >
+      '... which new Tranche, Permitted Pari Passu Loans or such Indebtedness
+      ... constitute MFN Qualifying Term Loans and is subject to an Effective
+      Yield that is greater than the Effective Yield applicable to such Term
+      B-4 Loans by more than 0.50%, the margin per annum ... required to cause
+      the Effective Yield applicable to such then existing Term B-4 Loans to
+      equal ...'.
+
+      The positive case this field has been missing. Air T, Schneider,
+      Constellation Brands, StepStone and Evernorth all assert its absence,
+      and a check that returns nothing passes all five of them -- so those
+      assertions on their own cannot distinguish a working extractor from one
+      that never fires.
+
+      0.50% is the differential, not a rate anyone pays, and the field holds
+      the differential. The number is easy to confuse with the two 0.50%
+      commitment fee rates in the Applicable Commitment Fee Rate grid and
+      with the 0.50% in the Alternate Base Rate's federal funds limb; three
+      unrelated uses of the same figure in one agreement.
+
+  # -- F10 conditionality: springing on utilisation ------------------------
+
+  - id: iridium_covenant_springs_at_35_percent_utilisation
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: financial_covenant.level
+    expect: "6.25:1.00"
+    note: >
+      '10.11 Financial Covenant. (a) Holdings and the Restricted Subsidiaries
+      shall not permit the Consolidated First Lien Net Leverage Ratio at the
+      end of any Test Period ... to be greater than 6.25:1.00; provided that
+      the foregoing shall only be tested if the Aggregate Exposure exceeds 35%
+      of Aggregate Commitments (excluding (w) issued and undrawn Letters of
+      Credit ...)'.
+
+      Springing on revolver utilisation, like Latham, but measured against
+      commitments rather than by a defined condition, and with its own
+      exclusions for undrawn and cash collateralised letters of credit. It
+      also does not begin until the first full fiscal quarter after the
+      Amendment and Restatement Effective Date, so there is a period at the
+      front with no covenant at any utilisation.
+
+      3.50:1.00 is the number to avoid: it is the Consolidated First Lien Net
+      Leverage Ratio threshold in the commitment fee grid, it is the same
+      ratio by name, and it prices the facility rather than covenanting it.
+
+  - id: iridium_commitment_fee_at_the_top_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.50%"
+    note: >
+      'Applicable Commitment Fee Rate: Pricing Level 1, Consolidated First
+      Lien Net Leverage Ratio equal to or greater than 3.50:1.00, 0.50%;
+      Pricing Level 2, less than 3.50:1.00, 0.375%.'
+
+      Two levels only, and the grid has a penalty limb that is not a level:
+      'Pricing Level 1 shall apply without regard to the Consolidated First
+      Lien Net Leverage Ratio' whenever financial statements or a Compliance
+      Certificate are overdue, or at the Majority Lenders' election during an
+      Event of Default. So the top of the grid is reachable by not filing
+      paperwork as well as by leverage, which is a condition no field holds
+      and which makes "the rate at a given date" depend on a delivery record.
