@@ -1,0 +1,67 @@
+# Tier 2 assertions: Eagle Point Trinity Senior Secured Lending Company, First
+# Amendment to Credit Agreement, dated as of June 26, 2026.
+#
+# Fit side, never read during development. A BDC borrowing against a portfolio
+# of senior secured loans, and the document with the hardest floor in the
+# corpus:
+#
+#   "Floor" means a rate of interest equal to one-half of one percent (0.50%)
+#   per annum.
+#
+# Non-zero, and spelled out before it is written down. Eighteen labelled
+# documents floor at zero; Iridium floors term loans at 0.75% in plain
+# numerals; this one is the only case that is both non-zero and written as
+# English first. A reader that takes the first number it meets in the sentence
+# gets "one", and a reader that matches a numeral gets the right answer only
+# because the drafter repeated himself in parentheses.
+#
+# It is also the corpus's most fee-letter-dependent agreement -- twenty-six
+# references -- and its headings are invisible: 13 sections detected in 637,549
+# characters, on a filing whose pages are broken by .jpg images.
+
+document: eagle_point_trinity_2026
+corpus_name: C_eagle-point-trinity-senior-secured-lending-co_2026-08-14_0002027033-26-000011_ex101-firstamendmenttocr
+source: real
+tier: 2
+
+assertions:
+
+  - id: eagle_point_floor_is_fifty_basis_points_in_words
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.50%"
+    note: >
+      '"Floor" means a rate of interest equal to one-half of one percent
+      (0.50%) per annum.'
+
+      The second non-zero floor in the corpus and the only one written in
+      words. Valvoline's floor is the bare word "zero" and produces nothing
+      from a numeric parser; this one produces 1, or 0.5, or 0.50%, depending
+      on which token is reached first, and only the last is right.
+
+      The pair matters because the two failures look identical downstream. A
+      pipeline returning nothing for Valvoline and 1 for Eagle Point has one
+      empty field and one criticality-5 field that is wrong by a factor of
+      two hundred, and both came from the same inability to read a number
+      spelled as English.
+
+  - id: eagle_point_maturity_is_three_years_after_an_undated_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: null
+    note: >
+      '"Maturity Date" means the earlier of (a) the date that is three (3)
+      years after the earlier of the dates specified in clauses (b) and (c) of
+      the definition of Termination Date and (b) the date declared by the
+      Administrative Agent or occurring automatically in respect of the
+      occurrence of an Event of ...'.
+
+      Four hops and it does not land. The maturity is three years after the
+      earlier of two limbs of another defined term, and those limbs are
+      themselves events. StepStone's chain is the same depth and resolves,
+      because its last hop is "the date of this Agreement"; this one ends at
+      an event and stops.

@@ -1,0 +1,81 @@
+# Tier 2 assertions: SB Energy (Big Five Intermediate Holdco 1, LLC), Credit
+# Agreement dated as of January 24, 2024.
+#
+# HOLDOUT. Nothing seen in this document may be used to tune anything: no
+# patterns, no thresholds, no prompt changes. It is a test and not a source.
+#
+# It reached the labelling queue by mistake and the mistake is worth recording,
+# because it is the same one that cost five labels their corpus names. SB
+# Energy filed two credit agreements in this accession, Exhibit 10.5 and
+# Exhibit 10.6. The fit-side scan selected Exhibit 10.6; the glob used to read
+# it, "N_sb-energy", matched Exhibit 10.5 first. One character of filename
+# apart, opposite sides of the split.
+#
+# No code in this session was changed on the strength of anything here -- the
+# archetype veto came from Golub and Health Catalyst, the inline heading
+# pattern from StepStone, the mutation guard from Crane NXT, all fit or
+# contaminated. Exhibit 10.6 remains unlabelled and unread and is still
+# available as a fit-side document.
+#
+# What it is: the corpus's first project financing, and the first document any
+# archetype other than the usual three claims -- project_finance at 0.70, on a
+# facility with LC Tranches, FERC and the Federal Power Act. Until now the
+# project_finance profile had no real example at all; it was defined, given
+# decisive signals, and never exercised.
+
+document: sb_energy_2026
+corpus_name: N_sb-energy-inc_2026-09-01_0001628280-26-059639_exhibit105-creditagreement
+source: real
+tier: 2
+
+assertions:
+
+  - id: sb_energy_is_project_finance
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: archetype
+    expect: project_finance
+    note: >
+      The first document in the corpus to exercise this profile. Its decisive
+      signals are an offtake agreement, an EPC contract and a project company,
+      and the supporting ones a debt service coverage ratio and a completion
+      guarantee; the borrower is a holdco in a solar structure regulated under
+      the Federal Power Act, with LC Tranches sized to project obligations.
+
+      Recorded against the F06 member for borrowing-base structure because the
+      family register has no project_finance member of its own. That is itself
+      the finding: eleven trap families and none of them names the deal type
+      whose economics are furthest from a corporate credit agreement.
+
+  - id: sb_energy_floor_is_zero_percent_in_words
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means a rate of interest equal to zero percent (0%).'
+
+      Words then numeral, and the numeral has no decimal places where
+      Fidelity's has two and nScale's has two without the words. Four
+      documents in one batch, four renderings, one value.
+
+  - id: sb_energy_closing_date_is_an_event
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: closing_date
+    expect: null
+    note: >
+      '"Closing Date" means the date upon which all conditions set forth in
+      Section 5.1 are satisfied or waived.'
+
+      The same construction as Aspen and Constellation Brands, and the fourth
+      document where this field has no answer. January 24, 2024 is on the
+      cover and is the execution date.
+
+      The near miss here is sharper than usual: the agreement also defines a
+      "Closing Date Certificate ... dated the Closing Date", so the date
+      exists on a document that is not this one -- which is Aspen's situation
+      exactly, where the Lender's notice of the Closing Date is conclusive and
+      not in the filing.

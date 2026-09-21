@@ -1,0 +1,70 @@
+# Tier 2 assertions: Fidelity Private Credit Company LLC, Credit Agreement as
+# amended by the Second Amendment.
+#
+# Fit side, never read during development. A BDC facility with the heaviest
+# borrowing-base machinery in the corpus -- "borrowing base" occurs 196 times,
+# more than twice the next document -- and a covenant that belongs to the
+# Investment Company Act rather than to credit:
+#
+#   (b) Asset Coverage Ratio. The Borrower will not permit the Asset Coverage
+#   Ratio to be less than 1.50 to 1 at any time.
+#
+# That is the 1940 Act leverage limit for a business development company,
+# expressed as a coverage floor. It is the fourth distinct covenant shape in
+# the corpus that cannot go in financial_covenant.level -- after fixed charge
+# coverage twice and a debt service coverage ratio -- and the first that comes
+# from a statute rather than from the lenders.
+
+document: fidelity_private_credit_2026
+corpus_name: E_fidelity-private-credit-co-llc_2026-08-27_0001193125-26-369737_ck0002112554-ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: fidelity_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      The Asset Coverage Ratio is assets over debt and the covenant is a floor
+      on it: not less than 1.50 to 1. A leverage cap is debt over earnings and
+      the agreement sets none.
+
+      1.50 to 1 is the number a pipeline will find and it is the wrong way up.
+      Reported as a maximum leverage level it says this fund is capped at one
+      and a half turns, where what the clause says is that assets must stay at
+      least half again the size of borrowings -- roughly two turns of leverage,
+      in the opposite direction.
+
+  - id: fidelity_floor_is_zero_in_words_and_numerals
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means zero percent (0.00%).'
+
+      The fourth rendering of a zero floor in this batch alone: plain "0.00%"
+      (nScale), "zero percent (0%)" (SB Energy), the bare word "zero"
+      (Valvoline), and this one. All four mean the same thing and only two are
+      reachable by matching a numeral with a percent sign.
+
+  - id: fidelity_maturity_is_stated
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-25
+    note: >
+      '"Maturity Date" means the earlier to occur of (a) August 25, 2031 and
+      (b) the date on which all Commitments have been terminated and the
+      aggregate amount of Loans outstanding has been repaid in full ...'.
+
+      An "earlier to occur of" that resolves, because limb (b) is a
+      termination event with no date. Same construction as Eagle Point's,
+      which does not resolve, and the difference is one stated date in limb
+      (a). The two together are the control pair for that shape.

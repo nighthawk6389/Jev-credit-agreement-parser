@@ -1,0 +1,54 @@
+# Tier 2 assertions: nScale Ltd., Credit Agreement (Exhibit 10.18B).
+#
+# Fit side, never read during development. A short label: the document is
+# conventional apart from its maturity, which is the corpus's first extendable
+# one.
+
+document: nscale_2026
+corpus_name: R_nscale-ltd_2026-09-18_0001193125-26-395475_ck0002110365-ex10-18b
+source: real
+tier: 2
+
+assertions:
+
+  - id: nscale_maturity_is_whichever_extension_applies
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: null
+    note: >
+      '"Maturity Date" means the Initial Maturity Date, the First Extension
+      Maturity Date or the Second Extension Maturity Date, as applicable;
+      provided, however, in each case, if such date is not a Business Day,
+      then the Maturity Date shall be the immediately preceding Business
+      Day.'
+
+      Three candidate dates and the definition does not choose between them --
+      "as applicable" defers to whether the borrower has exercised its
+      extension options, which the agreement cannot know. So the field has no
+      answer at the agreement's own date, and it has three answers over the
+      life of the facility.
+
+      This is a different failure from the undated-event cases. Aspen,
+      Constellation Brands and SB Energy have no date to report; this one has
+      too many, each of them real and resolvable, with no rule in the document
+      for picking one. A pipeline that reports the Initial Maturity Date has
+      assumed no extension was taken.
+
+      The rounding proviso is worth noting separately: maturity moves to the
+      immediately PRECEDING business day, where most agreements roll forward.
+      A date-normalising step that applies the usual modified-following
+      convention will be one to three days late on every one of the three.
+
+  - id: nscale_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means a rate of interest equal to 0.00%.' Plain numerals, which
+      in this batch makes it the exception: Fidelity writes "zero percent
+      (0.00%)", SB Energy "zero percent (0%)" and Eagle Point "one-half of one
+      percent (0.50%)".
