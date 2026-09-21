@@ -1,0 +1,184 @@
+# Tier 2 assertions: Latham Group, Inc. (Project Pamplona), Credit Agreement
+# dated as of August 20, 2026.
+#
+# Fit side, never read during development. A sponsor-style first lien credit
+# agreement: term loans plus a revolver, springing leverage covenant with a
+# cure right, MFN protection on incremental facilities, an excess cash flow
+# sweep. On paper the most ordinary document in the batch.
+#
+# It is here because of what the filing does not contain. The Applicable Rate
+# definition introduces the revolver's pricing grid --
+#
+#   "(b) any Initial Revolving Loan, the rate per annum applicable to the
+#   relevant Class of Loans in the table set forth below under the caption
+#   'ABR Spread or Canadian Prime Rate for Initial Revolving Loans', 'Term
+#   SOFR Rate, Alternate Currency Daily Rate and Alternate Currency Term Rate
+#   for Initial Revolving Loans', as the case may be, based upon the First
+#   Lien Net Leverage Ratio:"
+#
+# -- and then there is no table. The raw HTML goes from that colon through a
+# page-break image and the page number to the next sentence, which says the
+# rate "shall be adjusted quarterly ... in accordance with the table above"
+# and, a clause later, "set forth below in Category 1 of the applicable table
+# set forth above". The document cites the missing table twice, in both
+# directions, and names the captions of its columns.
+#
+# This is the filing and not the ingester. There are zero <table> elements in
+# the four thousand characters following the anchor, and tables elsewhere in
+# the same exhibit survive ingestion intact -- the Commitment Fee Rate grid a
+# few lines later comes through with all three of its categories. So the
+# operative margin for the revolving facility is simply not in the public
+# record, while the prose that depends on it is.
+#
+# The register has no entry for this. Its F03 members cover fee letters,
+# sponsor models, disclosure letters, side letters, omitted schedules and
+# redactions -- all of them documents. This is a table in the body of the
+# agreement itself, and the nearest member is redacted_from_filing, used here
+# for effect rather than intent: nothing suggests anyone redacted it.
+
+document: latham_group_2026
+corpus_name: A_latham-group-inc-swim_2026-08-21_0001833197-26-000036_lathampoolspamplona-cred
+source: real
+tier: 2
+
+assertions:
+
+  # -- F03: a pricing grid the filing does not contain ---------------------
+
+  - id: latham_revolver_grid_is_not_in_the_filing
+    family: F03_external_reference
+    member: redacted_from_filing
+    kind: field_status
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: external_reference
+    note: >
+      The only pricing grid in this agreement is the revolver's, and it is
+      absent from the exhibit while two sentences on either side of it cite
+      "the table above". Its column captions are quoted in the prose, so the
+      shape of what is missing is known and none of the numbers are.
+
+      external_reference rather than absent_from_document, for the same reason
+      as StepStone's Schedule B: the agreement is not silent about its
+      revolving margin, it states where the margin lives and that part is not
+      in the public record. Reporting it absent would say this revolver prices
+      at nothing.
+
+      4.00% is the answer to avoid and it is a good one, because it is real,
+      stated in plain text two clauses earlier, and is an Applicable Rate: '(a)
+      any Initial Loan, (x) 4.00% per annum in the case of Term SOFR Rate
+      Loans and (y) 3.00% per annum in the case of ABR Loans'. It is the term
+      loans' flat rate. It is not in a grid, it is not the revolver's, and
+      nothing in the document says it is the highest of anything -- a pipeline
+      that reports it has answered a question about a different facility.
+
+  # -- F07 benchmark -------------------------------------------------------
+
+  - id: latham_floor_is_zero_and_also_floors_the_base_rate
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means (a) with respect to the Initial Term Loans, 0.00% per
+      annum and (b) with respect to the Revolving Loans, 0.00% per annum.'
+      Stated twice, once per facility, which is itself worth noting: a floor
+      is a per-facility term here and a single field holds one number for
+      both only because they agree.
+
+      The Floor is also limb (d) of the Alternate Base Rate: 'a rate per annum
+      equal to the highest of (a) the Federal Funds Effective Rate ... plus
+      0.50%, (b) ... the Term SOFR Rate ... plus 1.00%, (c) the Prime Rate and
+      (d) the Floor'. So the same 0.00% floors the benchmark and participates
+      in the base rate, which is the distinction this member exists for. The
+      0.50% and 1.00% in that definition are base-rate construction spreads
+      and neither is a margin.
+
+  - id: latham_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "credit spread adjustment", "spread adjustment" and "sofr adjustment"
+      all occur zero times, and the document defines no term of the form "X
+      Adjustment". The Term SOFR Rate is taken from CME and the margin is
+      added to it directly.
+
+      The Effective Yield definition mentions interest rate floors and a
+      deemed addition to the margin where a benchmark sits below a floor, but
+      that is the MFN measuring stick for incremental debt, not a rate this
+      facility pays -- the same construction as Crane NXT, and the reason the
+      probe for a renamed adjustment matters more than the obvious phrase.
+
+  # -- F10 conditionality: springing, and curable --------------------------
+
+  - id: latham_covenant_springs_on_revolver_usage
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: financial_covenant.level
+    expect: "5.20:1.00"
+    note: >
+      'on which the Revolving Facility Test Condition is then satisfied (and
+      on such date, only to the extent the Revolving Facility Test Condition
+      is then satisfied), Holdings shall not permit the First Lien Net
+      Leverage Ratio to be greater than 5.20:1.00.'
+
+      Springing on revolver usage rather than on a date: the Revolving
+      Facility Test Condition turns on the outstanding amount of revolving
+      loans and drawn letters of credit, excluding undrawn and cash
+      collateralised letters of credit and, for the first four fiscal quarters
+      after closing, certain amounts besides. So the covenant does not exist
+      on a day the revolver is undrawn, and 5.20:1.00 is the level when it is
+      tested.
+
+      Section 6.10(b) then adds a Cure Right exercisable during the Test
+      Period or up to 15 Business Days after financial statements are due, so
+      a breach is not a breach until the cure window closes. A field holding
+      one ratio cannot express either condition, and the note is where they go.
+
+  - id: latham_commitment_fee_at_the_top_category
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.50%"
+    note: >
+      'First Lien Net Leverage Ratio / Commitment Fee Rate: Category 1 Greater
+      than 2.25:1.00 0.50%; Category 2 Equal to or less than 2.25:1.00 and
+      greater than 1.75:1.00 0.375%; Category 3 Equal to or less than 1.75:1.00
+      0.25%.'
+
+      Included as the counterweight to the missing grid above. This table is in
+      the text, in the same definition block, a few lines later, and comes
+      through ingestion with all three categories intact -- which is what
+      establishes that the absent revolver grid is the filing's doing and not
+      the parser's.
+
+      Category 1 is the highest fee at the worst leverage, so the grid runs the
+      conventional way round, unlike Constellation Brands' ratings grid and
+      Cooper-Standard's availability grid.
+
+  # -- F05 versioning: a closing date that shows its working ---------------
+
+  - id: latham_closing_date_is_stated_and_resolved
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-08-20
+    note: >
+      '"Closing Date" means August 20, 2026, the date on which the conditions
+      specified in Section 4.01 were satisfied (or waived in accordance with
+      Section 9.02).'
+
+      The fourth shape this field takes in the corpus and the only one that
+      gives both halves: the date and the event, with the event in the past
+      tense. Aspen and Constellation Brands give the event alone and it never
+      resolves; StepStone gives "the date of this Agreement" and resolves in
+      one hop; BrightSpring gives a bare date. This one is the same sentence
+      as Aspen's with a date welded to the front, which is a useful control --
+      a rule that keys off "the date on which the conditions specified in
+      Section 4.01 are satisfied" and declines will decline here too, wrongly.

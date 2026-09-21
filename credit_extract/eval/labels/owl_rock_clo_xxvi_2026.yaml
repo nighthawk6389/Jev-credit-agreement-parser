@@ -1,0 +1,109 @@
+# Tier 2 assertions: Owl Rock CLO XXVI, LLC (Blue Owl Capital Corporation),
+# Indenture and Security Agreement with BNY Mellon Trust Company as Trustee,
+# dated as of September 2, 2026.
+#
+# Fit side, never read during development. The corpus's first CLO indenture,
+# and it is not a credit agreement in any sense the registry was built for:
+# an issuer and a trustee, notes in classes rather than loans in tranches,
+# Collateral Obligations bought under a Loan Sale Agreement, an S&P CDO
+# Monitor Test, a Target Initial Par Condition and EU Securitization
+# Regulation Article 7 reporting.
+#
+# The label is short on purpose. Most of the registry has no counterpart here,
+# and asserting forty absences would measure the registry's fit rather than
+# the pipeline's reading. What is worth pinning is the three places this
+# document repeats a trap the corpus has already seen, in a new setting.
+#
+# "Collateral Obligation" occurs 717 times, which makes it the strongest test
+# yet of the rule that vocabulary attached to a collateral noun is not
+# evidence about the facility -- the rule was derived from Golub's warehouse,
+# where the phrase occurs a few dozen times.
+
+document: owl_rock_clo_xxvi_2026
+corpus_name: H_blue-owl-capital-corp-obdc_2026-09-08_0001193125-26-385210_d168192dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: owlrock_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-09-02
+    note: >
+      '"Closing Date": September 2, 2026.' A bare date, and the cover agrees.
+
+      The Effective Date beside it is the interesting one and is not this
+      field: 'The earlier to occur of (i) December 20, 2026 and (ii) the first
+      date on which the Collateral Manager certifies to the Trustee and the
+      Collateral Administrator that the Target Initial Par Condition has been
+      satisfied.' That is a shape the corpus did not have -- an undated event
+      with a dated outer bound, so it resolves to "no later than 20 December
+      2026" and to no single day. A reader who takes December 20 has taken a
+      long-stop for a date.
+
+  - id: owlrock_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      Eleven occurrences of "spread adjustment" and every one is inside the
+      Benchmark Replacement Adjustment: 'the spread adjustment ... (which may
+      be a positive or negative value or zero) that has been selected,
+      endorsed or recommended by the Relevant Governmental Body', then the
+      ISDA Fallback Adjustment, then a Collateral Manager selection. It
+      applies on the Benchmark Replacement Date and sets no rate before it.
+
+      Fourth document in the corpus with this exact construction -- Aspen,
+      StepStone and Crane NXT are the others -- and it is the drafting that
+      made the naive check fire on forty correctly-drafted agreements before
+      it was narrowed. A CLO indenture reaching it as well is worth recording
+      because it shows the pattern is not confined to corporate credit
+      agreements.
+
+      The Interest Rate on the notes is 'the Benchmark for such Interest
+      Accrual Period plus the spread specified in Section 2.3', so the spread
+      that is actually paid lives in the note schedule and is not an
+      adjustment at all.
+
+  - id: owlrock_ebitda_belongs_to_the_obligors
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_status
+    target: consolidated_ebitda.addback_cap_pct
+    expect: absent_from_document
+    note: >
+      The issuer is a special purpose vehicle with no operations and no
+      EBITDA. The eleven EBITDA figures in the document all belong to somebody
+      else: 'is issued by an Obligor with a most-recently calculated EBITDA
+      (calculated in accordance with the Underlying Documents) of at least
+      U.S.$15,000,000' and, for a Cov-Lite Loan, 'at least U.S.$40,000,000'.
+      They are eligibility floors for what the CLO may buy.
+
+      Fourth document where EBITDA sits on somebody else's balance sheet --
+      Star Mountain, Golub and StepStone are the others -- and the first where
+      the borrower could not possibly have any. $15,000,000 and $40,000,000
+      are both plausible as an add-back cap or a covenant threshold if read
+      without their subject.
+
+  - id: owlrock_no_financial_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      No leverage covenant and no coverage covenant on the issuer. A CLO
+      constrains itself through collateral quality and coverage tests -- the
+      S&P CDO Monitor Test, overcollateralisation and interest coverage on the
+      note classes -- which measure the portfolio against the notes rather
+      than debt against earnings, and no field in the registry holds one.
+
+      Absent rather than not_applicable_to_archetype, because the classifier
+      returns unknown at 0.24 here and no archetype profile has ruled the
+      field out. If a securitization archetype is ever added, this assertion
+      should be revisited rather than deleted.
