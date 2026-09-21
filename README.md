@@ -44,7 +44,7 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 221 tests
+pytest -q                                          # 223 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 ```
@@ -300,6 +300,8 @@ The four in `corpus/real/` are the ones with Tier 2 labels:
 | Health Catalyst / Silver Point | recurring-revenue term loan | no Consolidated EBITDA anywhere; 70 redacted terms; two references to a reserved section |
 | GBDC 4 Funding III / BNP Paribas | BDC warehouse revolver | borrowing base and advance rates, no term loan; 33 exhibits not attached |
 | Wells Fargo Third Amendment | prose amendment | 18 effects the parser read as **zero** — "as follows" without "to read", targets like `2.1(a)(ii)(B)(3)` |
+| Wheels Up No. 4 + No. 5 | a real **chain** | the conformed agreement alone reports the revolver expiring two years early |
+| BRC Group, two 2026 filings | *not* a chain | same CIK, different facilities — CIK is not a chain key |
 | Ares Capital CP Funding No. 18 | **blackline** | an amendment mechanism the pipeline had no concept of |
 
 The last one is the reason the ingester no longer writes struck-through text

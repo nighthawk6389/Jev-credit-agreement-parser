@@ -29,10 +29,31 @@ from pydantic import BaseModel, Field, PrivateAttr
 from ..ingest.normalize import NormalizedDocument
 from ..models.core import Span
 
-#: ``"Term" means ...`` / ``"Term" shall mean ...`` / ``"Term" has the meaning``
+#: ``"Term" means ...``, ``"Term" shall mean ...``, ``"Term" has the meaning``
+#: -- and ``"Term": ...``, which is a whole drafting convention rather than a
+#: variant.
+#:
+#: Measured over 25 real agreements, ten use the colon form and four use it
+#: almost exclusively: 317 to 491 colon definitions against 5 to 9 written
+#: with "means". Without it the graph saw one defined term in a 571,000
+#: character agreement and three in a 588,000 character one -- so the closure,
+#: the cycle detection and the external-reference flagging, which is most of
+#: what this module is for, had nothing to work on and said so silently.
+#:
+#: The colon alternative is safe here only because the search is confined to
+#: the definitions article: a quoted phrase followed by a colon is common
+#: enough in ordinary prose, and unconstrained it would manufacture terms out
+#: of every quotation in the document.
+#: The whitespace inside the quotes is not cosmetic. EDGAR filings set a
+#: defined term as its own styled run, so the quotes and the term arrive as
+#: separate nodes and the normalizer writes ``" Floor "``, not ``"Floor"``.
+#: Requiring the term to start immediately after the quote matched one
+#: definition in a 571,000-character agreement whose definitions article is
+#: 189,000 characters long.
 _DEFINITION_RE = re.compile(
-    r'"(?P<term>[A-Z][^"\n]{1,90}?)"\s*'
-    r'(?P<verb>means|shall mean|has the meaning|shall have the meaning)\b',
+    r'"\s*(?P<term>[A-Z][^"\n]{1,90}?)\s*"\s*'
+    r'(?:(?P<verb>means|shall mean|has the meaning|shall have the meaning)\b'
+    r'|(?P<colon>:)\s)',
 )
 
 #: Signals that a defined term *is* a document outside this agreement.
@@ -168,6 +189,14 @@ class DefinitionGraph(BaseModel):
 
         Iterative rather than recursive, because a chain a few hundred
         definitions long is ordinary and the recursion limit is not.
+
+        ``uses`` is a set, and its iteration order varies between processes
+        under hash randomisation. Because an edge back into a term already on
+        the current path contributes nothing, a different traversal order
+        breaks a cycle at a different edge and reports a different depth: the
+        same agreement gave 197, 196 and 194 terms at depth three or more on
+        three consecutive runs. Sorting fixes the order, and a number that
+        moves on identical input is worth less than no number.
         """
         if self._depths is not None:
             return self._depths
@@ -184,7 +213,7 @@ class DefinitionGraph(BaseModel):
                     on_stack.discard(name)
                     node = self.nodes.get(name)
                     best = 0
-                    for used in node.uses if node else ():
+                    for used in sorted(node.uses) if node else ():
                         if used in on_stack or used not in self.nodes:
                             continue          # back edge, or a dangling cite
                         best = max(best, 1 + depth.get(used, 0))
@@ -195,7 +224,7 @@ class DefinitionGraph(BaseModel):
                 on_stack.add(name)
                 stack.append((name, True))
                 node = self.nodes.get(name)
-                for used in node.uses if node else ():
+                for used in sorted(node.uses) if node else ():
                     if used in self.nodes and used not in depth:
                         stack.append((used, False))
         self._depths = depth

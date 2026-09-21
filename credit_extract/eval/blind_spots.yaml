@@ -105,9 +105,13 @@ untestable_in_this_environment:
       missing is labels. 104 documents are a corpus; without ground truth they
       measure whether the pipeline *runs*, not whether it is right.
     consequence: >
-      Every accuracy number in this report still comes from documents written
-      by the same hand that wrote the parser, and the real ones have shown
-      repeatedly what that is worth: recall collapsed from roughly thirty
+      Most accuracy numbers in this report still come from documents written
+      by the same hand that wrote the parser. F05 is now the exception: two
+      real amendment chains are labelled, and one of them -- Wheels Up
+      Amendments No. 4 and No. 5 -- is the family's defining case, where
+      reading the 547,000-character conformed agreement alone reports the
+      revolver as expiring two years early. The real documents have shown
+      repeatedly what synthetic labels are worth: recall collapsed from roughly thirty
       fields of thirty-eight to between zero and three; both amendments parsed
       to no effects at all; a blackline mechanism the pipeline had no concept
       of was reporting a deleted figure as the facility size, and it turns out
@@ -127,9 +131,20 @@ untestable_in_this_environment:
     consequence: >
       OfflineJev is a deterministic lexical stand-in, not a calibrated model.
       Validators B, C, D, E and G are exercised end to end but their
-      judgements are keyword matches. Archetype dispatch in particular leans
-      on a semantic choice that the stand-in approximates crudely.
-    remedy: set JEV_API_KEY and refit thresholds; they are tagged per backend.
+      judgements are keyword matches. Archetype dispatch is the clearest
+      casualty and it is now measured: across the 62 corpus documents whose
+      stratum implies an archetype, the deterministic classifier gets 17
+      right and 14 confidently wrong, and four alternative configurations
+      trade those two against each other at roughly one for one without
+      improving either. The distinguishing vocabulary sits deep in a document
+      and the shared vocabulary sits on the cover, so no anchoring rule
+      separates them. A wrong archetype is worse than none, because it marks
+      applicable fields not_applicable_to_archetype and suppresses real terms
+      silently. See docs/corpus_findings.md for the table.
+    remedy: >
+      set JEV_API_KEY and refit thresholds; they are tagged per backend. This
+      one will not yield to more keywords -- the measurement above is the
+      argument for not trying.
 
   - id: ANTHROPIC_API
     families: [F01_integrity, F09_definitional_depth, F11_layout]
