@@ -253,3 +253,67 @@ path today; that path is served by `OfflineJev`, a lexical stand-in, which is
 why it does not help here. This is a credential-shaped gap, not a pattern one,
 and the numbers above are the argument against trying to close it with more
 keywords.
+
+## What happened the first time a model tier's output ran through the pipeline
+
+There is no `ANTHROPIC_API_KEY` in this environment, so the tier meant to do
+the hard extraction had never run, and every recall number here measured
+anchored patterns. That was recorded as a blind spot and treated as a caveat.
+It was not a caveat. Nothing downstream of extraction had ever been fed a
+model's answers, and it showed.
+
+The reading was made by hand, checked in as JSON with a verbatim quote for
+every value, and replayed through the identical path by `--backend recorded`:
+Essential Properties Realty Trust's Eighth Amendment, stratum I, held out by
+the frozen split, 522,738 normalized characters, read before any label for it
+existed. 24 fields, every quote locating in the document.
+
+The first replay did not produce a report. It raised
+`decimal.InvalidOperation` three frames inside the range invariant, because
+`bool` is `int` in Python and `Decimal("False")` raises rather than returning
+anything. Three registry fields are booleans and no run in the project's
+history had populated one. **Any populated boolean field took the whole report
+down.**
+
+Behind that, four more, each of which had been invisible for the same reason:
+
+* **A covenant written as a percentage was reported as no covenant.** The
+  Consolidated Leverage Ratio covenant is "60%" — a REIT covenant is debt over
+  asset value, not a multiple of EBITDA — and the field is typed as a ratio.
+  Coercion returned `None`, reconciliation flattened the candidate to "passes
+  reported the field present but produced no value" and dropped the span it
+  cited, and the negative-space check wrote "the extractor probably missed it"
+  over the top. The extractor had quoted the section correctly. A value the
+  record cannot hold now keeps its citation, carries the written form, and is
+  not eligible to be confirmed absent.
+* **The review queue printed a value for fields the pipeline refused to
+  resolve.** `closing_date` has eleven candidates at equal weight on this
+  document — the amendment date, the restatement date, the defined Closing
+  Date and eight recited amendment dates — and the queue read
+  `closing_date = 2019-11-26` three characters after the word `conflicted`.
+  Conflicted fields now print their competing values and no single one.
+* **A base rate spread was filed as the Eurodollar margin.** The text
+  pricing-grid parser assumes two margin columns. Investment-grade grids have
+  four — revolver and term loan, against SOFR and base rate — and it named the
+  last one the Eurodollar margin: 0.550% into a criticality-5 field at 0.93
+  confidence, outranking every other tier, where the answer is 1.550%. It now
+  reads the rows and declines to name a column it cannot identify.
+* **An invariant had an unexamined case.** `citations_cite_a_value` holds that
+  a span on a valueless field is not a citation of anything, which was written
+  from evidence: the offending spans were whole chunks of 8,379 characters and
+  up, against 162 for any real citation. The covenant above cites 112
+  characters and states a value the field cannot carry. That is a third case,
+  alongside external references, and it is now exempt.
+
+On the 19 assertions labelled for that document the deterministic tier passes
+10 and the replay passes 17, with no silent error either way. **That is not a
+measurement of model recall and must not be quoted as one** — the same reader
+wrote the reading and the labels, so agreement between them is
+self-consistency. It measures something else, which nobody had measured: given
+correct extractions with correct citations, does the machinery carry them to a
+correct record. Before this week, on five counts, it did not.
+
+The ordering that makes such a number mean anything is enforced rather than
+documented. A recording carries `recorded_before_labels`, CI fails on one that
+claims otherwise, and the honest thing to do with a reading made after the
+labels is to throw it away.

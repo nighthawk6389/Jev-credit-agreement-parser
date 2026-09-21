@@ -169,11 +169,37 @@ means anything, and this guide is missing a rule.
 Add the rule here when that happens. That is how this file is supposed to
 grow.
 
+## If you are also recording a model reading
+
+A recording (`credit_extract/extract/recordings/<document>.json`) is what a
+model read out of the document, replayed by `--backend recorded`. It is not
+ground truth and it is not a cache: it is one reader's claim, scored against
+labels written separately.
+
+**Make the recording first, and do not look at the labels while you make it.**
+That ordering is the only thing that makes the resulting number mean anything.
+If the same reader writes both, the score is a measure of self-consistency and
+will read close to 100%, which is worse than no number at all because it looks
+like one. Each file carries `recorded_before_labels`; CI fails on a recording
+that claims otherwise, and the honest thing to do with a recording made after
+the labels is to throw it away.
+
+Where you cannot separate the readers -- as with the one checked in -- say so
+in the recording's `note` and do not quote the agreement as model recall. It
+still measures something worth having: whether correct extractions with
+correct citations survive to a correct record.
+
+Every value needs a quote that is verbatim from the *normalized* text, not
+from the raw filing. Ingestion excises struck blackline runs and rewrites
+whitespace, and a quote that does not locate is dropped exactly as a live
+model's fabrication would be.
+
 ## When you are done
 
 ```bash
 python -m credit_extract.eval.families --check     # families and members exist
 python -m credit_extract.eval.split --check        # the document is assigned
+python -m credit_extract.extract.recorded --check  # any recording is scorable
 python -m credit_extract.eval.family_report        # what your labels say
 ```
 

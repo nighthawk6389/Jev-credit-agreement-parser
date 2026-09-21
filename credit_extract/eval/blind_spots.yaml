@@ -158,12 +158,49 @@ untestable_in_this_environment:
 
   - id: ANTHROPIC_API
     families: [F01_integrity, F09_definitional_depth, F11_layout]
-    reason: ANTHROPIC_API_KEY is not configured.
+    status: partially_lifted
+    reason: >
+      ANTHROPIC_API_KEY is not configured, so no live model pass has ever run.
+      What has run is one reading, made by hand and checked in: a reader read
+      Essential Properties' Eighth Amendment end to end, wrote 24 extractions
+      with a verbatim quote each into
+      credit_extract/extract/recordings/, and --backend recorded replays them
+      through the identical path -- same quote location, same reconciliation,
+      same validators, same statuses.
     consequence: >
-      Extraction runs on anchored patterns rather than an LLM pass. Recall is
-      lower than production would be, and the orphan sweep is carrying more
-      weight than it would with a real extractor behind it.
-    remedy: set ANTHROPIC_API_KEY and run with --backend anthropic.
+      Two different things were unknown here and only one of them still is.
+
+      What is now known is that the machinery downstream of extraction was not
+      ready for a model tier, because nothing had ever fed it one. The first
+      replay crashed the pipeline outright: three registry fields are booleans,
+      a bool is an int in Python, Decimal("False") raises, and no run had ever
+      populated one. Behind that: a leverage covenant written as "60%" against
+      a ratio-typed field was coerced to None and then reported as "the
+      extractor probably missed it" on a section the extractor had quoted
+      correctly; reconciliation flattened every valueless candidate to
+      "produced no value", discarding the span it cited; the review queue
+      printed "closing_date = 2019-11-26" next to status conflicted on a field
+      with eleven candidates at equal weight; and the text pricing-grid reader
+      was naming the last column of a four-column investment-grade grid the
+      Eurodollar margin, putting a base rate spread of 0.550% into a
+      criticality-5 field at 0.93 confidence, where the answer is 1.550%. All
+      five are fixed and all five have regression tests.
+
+      On the same 19 assertions the deterministic tier passes 10 and the
+      replay passes 17, with no silent error either way. That number is NOT
+      model recall and must not be quoted as one: the same reader wrote the
+      reading and the labels, so the agreement between them is
+      self-consistency. What it measures is whether correct extractions with
+      correct citations survive to a correct record, and the answer before
+      this week was that they did not.
+
+      What is still unknown is whether a model produces those extractions.
+      Recall on a live pass remains unmeasured, and the orphan sweep is still
+      carrying weight a real extractor would take off it.
+    remedy: >
+      set ANTHROPIC_API_KEY and run with --backend anthropic, against the
+      documents that already carry both labels and a recording, so the live
+      pass can be compared with a reading rather than only with the rules.
 
   - id: FPML_SCHEMAS
     families: [F06_structure, F07_benchmark]

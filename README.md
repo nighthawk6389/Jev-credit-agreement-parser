@@ -44,13 +44,17 @@ credit-extract extract credit_extract/eval/gold/fixture_meridian_2017.html \
 # The four traps, as an acceptance check.
 credit-extract traps credit_extract/eval/gold/fixture_meridian_2017.html
 
-pytest -q                                          # 247 tests
+pytest -q                                          # 263 tests
 python -m credit_extract.eval.harness --calibrate  # refit thresholds
 python -m credit_extract.eval.family_report --gate # per-family coverage + blind spots
 
 # Labelling a new agreement.
 python -m credit_extract.eval.split --show         # which side each document is on
 python -m credit_extract.eval.label <document>     # scaffold a label file to correct
+
+# The model tier without a key: replay a reading that was checked in.
+python -m credit_extract.extract.recorded --check  # which readings are scorable
+credit-extract extract <document> --backend recorded
 ```
 
 Against the live services:
@@ -59,6 +63,28 @@ Against the live services:
 export ANTHROPIC_API_KEY=... JEV_API_KEY=...
 credit-extract extract agreement.htm --backend anthropic --jev api --out result.json
 ```
+
+### The model tier, without a model
+
+`--backend recorded` puts a checked-in reading where the model would sit. A
+reader reads the document, writes each extraction with a verbatim quote into
+`credit_extract/extract/recordings/`, and the backend replays it through the
+identical path: the same quote location, so a quote that is not in the chunk is
+dropped as a fabrication exactly as a live one would be, then the same
+reconciliation, validators and statuses. It refuses rather than falling back
+when no recording covers the document, because a silent fall back to the rules
+would report the rules' recall as the model tier's.
+
+One rule makes the result worth anything, and it is enforced: **a recording must
+be made before that document's labels exist, by a reader who has not seen
+them.** Each file carries `recorded_before_labels` and CI fails on a recording
+that claims otherwise. Where the same reader writes both, as with the one
+checked in, agreement between them is self-consistency and must not be quoted
+as model recall -- what it measures is whether correct extractions with correct
+citations survive to a correct record. On the first document run this way they
+did not: see the `ANTHROPIC_API` entry in the blind-spot register for the five
+defects that found, from a boolean field crashing the whole report to a base
+rate spread being filed as the Eurodollar margin.
 
 ## What it produces
 
@@ -477,6 +503,8 @@ credit_extract/
               precedence.py     notwithstanding / subject to, as a directed graph
   extract/    passes.py         deterministic + LLM backends, pass planning
               reconcile.py      agreement, conflict, single-pass suspicion
+              recorded.py       a model reading, checked in and replayed
+              recordings/       one JSON per document read that way
               prompts/          extraction and re-read prompts
   validate/   jev.py            System One client, batching, budget, offline stand-in
               validators.py     A-G

@@ -1,0 +1,349 @@
+# Tier 2 assertions: Essential Properties Realty Trust / Essential Properties,
+# L.P., Eighth Amendment to Amended and Restated Credit Agreement, 2026.
+#
+# Held out by the frozen split before any label for it existed. Stratum I,
+# investment grade revolver, and it is the real thing: a $1,300,000,000
+# unsecured revolver plus three term loan tranches, priced off a five-level
+# credit-rating grid, with the whole Amended Credit Agreement attached to the
+# amendment as a conformed copy.
+#
+# These labels were produced by a model reading the source text, not by a
+# credit analyst; every assertion quotes the passage it rests on.
+#
+# Picked for the three families the per-family table reports as undersampled,
+# and it carries all three without being contrived:
+#
+#   F02  the pricing grid is a table inside a definition, and a
+#        "notwithstanding the foregoing in this definition" clause moves the
+#        answer one level without touching the table.
+#   F03  the arranger fees are payable "in accordance with the terms of each
+#        fee letter", lower case, never a defined term -- which is the shape
+#        the fee-letter rule added for Martin Marietta deliberately does not
+#        catch, so this document is the negative case for it.
+#   F10  three separate conditional overlays on terms that the record stores
+#        as scalars: a leverage test that improves pricing by one level, a
+#        covenant that steps up on a Material Acquisition, and an ESG
+#        adjustment that does not exist yet and may never.
+#
+# The document also has an unusually rich F05 surface. Three dates are on the
+# first page -- September 14 2026 (this amendment), April 12 2019 (the
+# restatement) and June 25 2018 (the Closing Date, being the date of the
+# $300,000,000 agreement that was restated) -- and eleven amendment dates are
+# recited. A first-date-found reader has an eleven-way choice and no way to
+# know it is choosing.
+
+document: essential_properties_amendment_8_2026
+corpus_name: I_essential-properties-realty-trust-inc-eprt_2026-09-16_0001728951-26-000066_ex101-8thamendcreditagreem
+source: real
+tier: 2
+
+assertions:
+
+  # -- F05 versioning: which date is the Closing Date ------------------------
+
+  - id: eprt_closing_date_is_the_defined_term
+    family: F05_versioning
+    member: superseded_by_amendment_and_restatement
+    kind: field_value
+    target: closing_date
+    expect: 2018-06-25
+    note: >
+      '" Closing Date ": June 25, 2018.' That is the date of the
+      $300,000,000 Revolving Credit Agreement this one amended and restated,
+      not the date of the restatement and not the date of this amendment.
+      The cover page of the conformed agreement says "dated as of April 12,
+      2019" and the amendment is dated September 14, 2026, so all three are
+      on the page and only one is the defined term. The recitals then list
+      seven prior amendments with their own dates. Any reader that takes a
+      date from proximity rather than from the definition has eleven wrong
+      answers available.
+
+  - id: eprt_closing_date_is_not_asserted_wrongly
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: closing_date
+    expect: conflicted
+    note: >
+      The honest outcome while the extractor cannot tell these dates apart.
+      A field with eleven candidates at equal weight must not be confirmed
+      at any of them: a confident wrong closing date is a silent error, and
+      an unresolved one is a question. This assertion is written to fail if
+      the pipeline ever starts asserting a value here without also getting
+      it right -- if it later resolves to 2018-06-25 and confirms it, this
+      assertion should be replaced, not deleted.
+
+  # -- F02 precedence: the grid is a table inside a definition ---------------
+
+  - id: eprt_margin_is_the_highest_in_the_grid
+    family: F02_precedence
+    member: table_overrides_definition
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: 1.55
+    note: >
+      The Applicable Margin definition contains a five-row table with four
+      margin columns: Revolving Term SOFR (0.675% to 1.350%), Revolving Base
+      Rate, Term Loan Term SOFR (0.750% to 1.550%) and Term Loan Base Rate.
+      The field is defined as "the highest Eurodollar Applicable Margin in
+      the pricing grid", and the Eurodollar successor here is Term SOFR, so
+      the answer is 1.550% -- the term loan column at Credit Rating Level 5.
+      Three wrong answers are easier to reach than the right one. 0.675% is
+      the top printed row, which is the best rating and the lowest margin.
+      1.350% is the same cell for the revolver only. 0.550% is the Term Loan
+      Base Rate at Level 5, a different rate on the same row, and is what
+      the deterministic grid reader currently returns.
+
+  - id: eprt_a_notwithstanding_clause_moves_the_grid
+    family: F02_precedence
+    member: notwithstanding_override
+    kind: text_present
+    target: "In addition and notwithstanding the foregoing in this definition"
+    expect: true
+    note: >
+      The clause that follows overrides the table it sits under: if the
+      Consolidated Leverage Ratio is at or below 0.35:1.00 and the Credit
+      Rating Level is 3 or better, the Applicable Margin is taken from the
+      level one above the one the ratings actually support. The grid is
+      therefore not sufficient to price the loan, and a record holding only
+      the grid figure is holding a number that the next sentence can move.
+      This assertion pins the passage so that an ingester change which drops
+      it fails here rather than silently in pricing.
+
+  - id: eprt_the_margin_definition_stacks_provisos
+    family: F02_precedence
+    member: stacked_provisos
+    kind: invariant_fired
+    target: proviso_depth_is_readable
+    expect: true
+    note: >
+      The Applicable Margin definition runs a table, then a proviso on when a
+      rating change takes effect, then a second paragraph beginning "In
+      addition and notwithstanding the foregoing in this definition" with two
+      lettered branches, one of which has its own "so long as" condition and
+      its own deeming rule for a late Compliance Certificate. Section 1.1 of
+      this agreement stacks four provisos and the invariant says so. That is
+      the right outcome: at this depth the operative meaning is not readable
+      from the clause, and a pipeline that reports a margin from it without
+      flagging the stack is claiming a certainty the drafting does not
+      support.
+
+  # -- F03 external reference: the lower-case fee letter --------------------
+
+  - id: eprt_arranger_fees_sit_in_an_unfiled_fee_letter
+    family: F03_external_reference
+    member: side_letter
+    kind: text_present
+    target: "in accordance with the terms of each fee letter between the Borrower and such Joint Lead Arranger"
+    expect: true
+    note: >
+      A condition precedent to this amendment is that each Joint Lead
+      Arranger has been paid "all of the fees payable to such Joint Lead
+      Arranger ... in the amounts then due ... in accordance with the terms
+      of each fee letter between the Borrower and such Joint Lead Arranger".
+      Lower case, no definition, no Fee Letter as a defined term anywhere in
+      the conformed agreement. The amounts are not in this document and are
+      not in any filing.
+
+  - id: eprt_fee_letter_rule_does_not_fire_here
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_external_kind
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      The negative case for the rule added with Martin Marietta, and the
+      reason that rule was written narrowly. That rule marks a fee field
+      external_by_design only where the agreement both defines a Fee Letter
+      and says the fees are payable under it. Here neither holds: the fee
+      letters are lower case and undefined, and the fee this field carries
+      is not one of them -- the Facility Fee is priced in the agreement, in
+      a grid, and paid to the Lenders. Marking it external would be wrong
+      in a way that costs recall on a field the document actually answers.
+
+  # -- F09: a term whose definition is in another loan document -------------
+
+  - id: eprt_draw_deadline_is_outside_the_document
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    kind: field_status
+    target: delayed_draw.must_draw_by_date
+    expect: external_reference
+    note: >
+      The Fifth Amendment Term Loan Commitment terminates on "the 180th day
+      after the Fifth Amendment Effective Date", and this agreement defines
+      that date as '" Fifth Amendment Effective Date ": has the meaning
+      assigned to such term in the Fifth Amendment.' The Fifth Amendment is
+      dated July 11, 2024, but a date an agreement bears is not the date it
+      became effective, so arithmetic from it would be a guess with a
+      calculation in front of it. The deadline is real, it is material, and
+      it is not in this document.
+
+  # -- F10 conditionality: three overlays on three scalars ------------------
+
+  - id: eprt_leverage_test_improves_pricing_by_one_level
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: text_present
+    target: "then the Applicable Margin for each type of Loan shall be based on the Credit Rating Level that is one level above"
+    expect: true
+    note: >
+      Ratings-based pricing with a leverage override on top: at or below
+      0.35:1.00 the borrower prices one level better than its ratings, and
+      between 0.35 and 0.375 it keeps the improvement for one quarter if it
+      was below 0.35 in the quarter before. The stored margin is a scalar
+      and this is a function of two variables, one of which is measured
+      quarterly and one of which is announced by three rating agencies.
+
+  - id: eprt_covenant_steps_up_on_a_material_acquisition
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: text_present
+    target: "the Borrower may on two non-consecutive occasions elect a one-time step up to 65% for four"
+    expect: true
+    note: >
+      The leverage covenant is 60%, except for four quarters after a
+      Material Acquisition, when the Borrower may elect 65%, on two
+      non-consecutive occasions, and not for eight consecutive quarters.
+      A record holding 60% is right today and wrong for up to eight of the
+      next forty quarters, and nothing in the scalar says which.
+
+  - id: eprt_esg_adjustment_does_not_exist_yet
+    family: F10_conditionality
+    member: post_ipo_only
+    kind: text_present
+    target: "shall be entitled, but shall not be required, to establish specified key performance indicators"
+    expect: true
+    note: >
+      Section 2.25 provides for ESG margin adjustments of up to 0.02% either
+      way, but only after an ESG Amendment that the Borrower is entitled and
+      not required to negotiate, within a year of this amendment, subject to
+      a Majority Lender objection right. There is a Sustainability
+      Structuring Agent on the cover page and there is no KPI in the
+      document. A pipeline that reports a sustainability-linked margin
+      adjustment here is reporting a term that does not exist.
+
+  # -- F08 units: a covenant a ratio field cannot hold -----------------------
+
+  - id: eprt_leverage_covenant_is_a_percentage
+    family: F08_units
+    member: ratio_formatting
+    kind: field_value
+    target: financial_covenant.level
+    expect: "60%"
+    note: >
+      'Permit the Consolidated Leverage Ratio as of the last day of any
+      fiscal quarter of the Parent REIT to exceed 60%'. A REIT leverage
+      covenant is debt over total asset value and is quoted as a
+      percentage; the field is typed as a ratio, which in this registry
+      means a multiple like 3.50:1.00. Reading 60% into a ratio field
+      yields either nothing or a leverage covenant of sixty times. The
+      correct record carries the number the document states and says it is
+      a percentage -- which is what this assertion is for, and it is
+      currently unmet: the value is dropped and the field reports no value
+      at all.
+
+  - id: eprt_coverage_ratios_are_not_leverage_levels
+    family: F08_units
+    member: ratio_formatting
+    kind: field_value
+    target: financial_covenant.final_level
+    expect: null
+    note: >
+      Section 7.1 states six covenants in three formats: two leverage tests as
+      percentages (60% and 50%), a fixed charge coverage ratio as "1.50 to
+      1.00", and an unencumbered interest coverage ratio as "1.75:1.00". Only
+      the percentages are leverage levels, and the two ratios are floors
+      rather than caps -- the borrower must stay above them. They are also the
+      only two figures in the section that a ratio-typed field can parse, so
+      they are exactly what a reader looking for a leverage covenant picks up.
+      There is no stepped-down final level in this agreement and the field
+      must stay empty; 1.50 or 1.75 landing here would report a leverage
+      covenant that is neither a covenant level nor the right direction.
+
+  # -- the economics, so the recall number means something -------------------
+
+  - id: eprt_revolver_commitment
+    family: F05_versioning
+    member: superseded_by_amendment_and_restatement
+    kind: field_value
+    target: revolver.commitment
+    expect: 1300000000
+    note: >
+      'The aggregate amount of the Total Revolving Credit Commitments as of
+      the Eighth Amendment Effective Date is $1,300,000,000.' The figure
+      already includes the $300,000,000 of incremental commitments this
+      amendment provides. $300,000,000 also appears as the size of the
+      superseded 2018 agreement, in the same document, which is the number
+      a reader lands on by searching for a dollar figure near "Revolving
+      Credit Agreement".
+
+  - id: eprt_revolver_maturity
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-02-06
+    note: >
+      '" Revolving Credit Termination Date ": February 6, 2029, as such date
+      may be extended pursuant to Section 2.6(a).' Two discretionary
+      extensions are available, each with a fee and a notice window, so the
+      stated date is a floor rather than a settled maturity.
+
+  - id: eprt_term_loan_maturity_is_per_tranche
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: initial_term_loan.maturity_date
+    expect: 2024-04-12
+    note: >
+      Term Loan Maturity Date is defined as four dates, one per tranche:
+      Initial April 12 2024, Second Tranche January 25 2028, Fourth
+      Amendment August 24 2027, Fifth Amendment July 11 2027. The registry
+      has one field for the initial tranche and the right answer for it is
+      a date that has already passed. Three live tranches have nowhere to
+      go, and a record that reports "the" term loan maturity from this
+      document is reporting one quarter of the answer.
+
+  - id: eprt_lc_sublimit_survives_the_annex
+    family: F01_integrity
+    member: dropped_table_rows
+    kind: field_value
+    target: lc_sublimit
+    expect: 10000000
+    note: >
+      'a revolving credit facility in the amount of $1,300,000,000, which
+      shall include an up to $10,000,000 letter of credit subfacility'. The
+      same $10,000,000 is the last column total of the Annex A commitment
+      schedule, alongside $400,000,000, $450,000,000, $450,000,000 and
+      $1,300,000,000. Two independent statements of one figure, so a
+      dropped Annex row is detectable here rather than invisible: if the
+      table stops being read this assertion still passes on the recital,
+      and the revolver total is the one that would move.
+
+  - id: eprt_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: null
+    note: >
+      '" Adjusted Term SOFR ": for purposes of any calculation, the rate per
+      annum equal to Term SOFR for such calculation, except that if ... less
+      than zero, then ... deemed to be zero.' Term SOFR with a zero floor
+      and nothing added. Forty agreements in this corpus correctly have no
+      credit spread adjustment and this is one of them; the field must stay
+      empty rather than pick up the 0.10% that a SOFR transition agreement
+      would carry.
+
+  - id: eprt_zero_floor_is_a_value
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: 0
+    note: >
+      The agreement says Adjusted Term SOFR "shall be deemed to be zero" if
+      it would be negative. That is a floor of zero, set deliberately, and
+      it is not the same fact as an agreement with no floor. Reporting the
+      field as absent loses a term the drafters wrote a sentence for.
