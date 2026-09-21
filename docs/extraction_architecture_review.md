@@ -1,6 +1,11 @@
 # Extraction architecture review and path forward
 
-Date: 2026-09-20
+Drafted 2026-09-20 against `main` at `212d7ab`; corrected 2026-09-21 against
+`9d1ceeb`, after PR #3 merged. Three claims in the original did not survive
+being checked against the code, and each is marked **Correction** where it
+appeared rather than quietly deleted — a review whose errors are edited out is
+harder to trust than one that shows them. The strategy is unchanged; two of
+the three were arguments for things the repository already does.
 
 ## Executive decision
 
@@ -64,6 +69,13 @@ It reported:
 - live Jev, live Anthropic extraction, and real-corpus labels as unresolved
   environmental or evidence gaps.
 
+Those figures still hold on `9d1ceeb`. The four failures are worth naming
+because they are the report's most informative rows: F07 benchmark 2 pass / 1
+fail, F08 units 2 / 2, and **F10 conditionality 0 pass / 1 fail** — the
+family's only assertion. None is a silent error; all four route to review,
+which is why the headline reads zero while three families are measurably not
+working. Read the pass/fail columns, not the headline alone.
+
 The zero-silent-error result is useful but narrow. A wrong or missing result
 routed to review is not counted as a silent error. That is the correct safety
 metric for auto-confirmation, but it is not extraction recall and it does not
@@ -110,16 +122,30 @@ verification are the correct defenses.
 
 ### 1. Make semantic extraction model-first
 
-The offline rule backend is currently the default. In layered mode, a rule that
-finds a field prevents the model from considering that field in the same
-chunk. Reconciliation also ranks deterministic candidates ahead of model
-candidates. This is safe only after every privileged rule has demonstrated
-very high precision on held-out real documents.
+The offline rule backend is currently the default, and in layered mode a rule
+that finds a field prevents the model from considering that field in the same
+chunk. `LayeredBackend.extract` computes `settled` from whatever the rules
+returned and passes the model only `remaining`, so a pattern that fires — at
+whatever precision — silently removes that field from the model's view. That
+is safe only after every privileged rule has demonstrated very high precision
+on held-out real documents, and nothing has yet been measured on a held-out
+document at all.
 
 Retain deterministic extraction only for forms that are mechanically
 unambiguous, such as a well-formed table cell with a known header, an exact
 date definition, or a signature role. Treat all other rules as candidate
 generators, not authoritative answers.
+
+    Correction. An earlier draft of this section also said reconciliation
+    ranks deterministic candidates ahead of model candidates, and read that as
+    a second instance of the same problem. It is not. `ValueGroup.deterministic`
+    is true only for the `deterministic:tables` pass id, whose sole emitter is
+    the table parser; the anchored rules carry ordinary pass ids and compete on
+    independent-segmentation support and confidence like any model candidate.
+    So the only tier reconciliation privileges is a parsed table cell with a
+    known header — precisely the one this section argues should be privileged.
+    The layered suppression above is the real defect, and it is a different
+    mechanism in a different module.
 
 ### 2. Use provider-enforced structured output
 
@@ -128,10 +154,16 @@ substring from free-form text. Replace that boundary with schema-constrained
 output from a provider or a maintained extraction library. Preserve the
 existing rule that a non-null value without a locatable quote is discarded.
 
-### 3. Replace repeated sampling with targeted iteration
+### 3. Give the passes distinct jobs
 
-Multiple temperatures over the same document are correlated readings, not
-independent evidence. Use stages with distinct jobs:
+Passes today differ by *view* — the same specs asked of structural,
+definitional and sliding segmentations — and reconciliation counts agreement
+across those views as support. What they do not differ by is **question**:
+every pass asks for the whole field set, so a field three passes missed was
+missed three times in the same way, and a field three passes found was found
+by three readings of text that overlap heavily.
+
+Use stages with distinct jobs instead:
 
 1. identify facilities, operative sections, and relevant definitions;
 2. extract values, conditions, variants, and evidence into a strict schema;
@@ -143,6 +175,20 @@ An optional verifier model should see the proposed value and its evidence and
 answer a different question from the extractor. Keep it only if an ablation
 shows that it catches errors at acceptable cost without merely echoing the
 first model.
+
+    Correction. An earlier draft argued this as "replace repeated sampling
+    with targeted iteration", on the grounds that multiple temperatures over
+    one document are correlated readings rather than independent evidence.
+    That is true and the pipeline already acts on it. `plan_passes` walks the
+    segmentations first and only raises temperature once every view has been
+    covered, and its docstring gives the same reason in nearly the same words:
+    "two passes over different views of the document disagree for reasons that
+    mean something; two passes over the same view at different temperatures
+    mostly resample the same reading". At the default `--passes 3` against
+    three segmentations, temperature never leaves 0.0. The recommendation
+    above stands on its own merits; the sampling criticism was aimed at a
+    design this repository does not have, and rewriting `plan_passes` would
+    replace a solved problem with the same problem.
 
 ### 4. Decouple the internal schema from standards export
 
@@ -159,10 +205,18 @@ through explicit export adapters. A standards mapping is complete only when a
 real pipeline result populates and serializes it; a verified element name or a
 Pydantic class alone is not end-to-end coverage.
 
-The verified standards projection proposed in
+The standards projection in
 [PR #3](https://github.com/nighthawk6389/Jev-credit-agreement-parser/pull/3)
-is useful infrastructure. Its benefit should be measured as mapping coverage
-and interoperability, separately from extraction accuracy.
+is useful infrastructure, and it **merged** after this review was drafted. Its
+benefit should be measured as mapping coverage and interoperability,
+separately from extraction accuracy — and on that measure the gap is now
+concrete rather than hypothetical. `Facility`, `PikTerms`, `CommitmentTerms`,
+`FacilityClassification`, `CreditRating` and `PartyReferences` are all defined
+in `fpml_model.py`, and `grep -rn "Facility(" credit_extract/` returns nothing
+outside the tests: the pipeline emits a flat `fields` dictionary and never
+constructs one. Forty FpML element names are verified against pinned schemas
+and **zero of them are populated by a real run**, which is exactly the
+distinction this section draws.
 
 ### 5. Simplify validation until each tier proves incremental value
 
@@ -322,10 +376,20 @@ until an ingestion or validation replacement wins on the frozen corpus.
 
 ## Immediate next pull requests
 
-1. **Gold-schema and labeling guide**: freeze the first field set and
-   adjudication rules.
-2. **Real labels, batch 1**: label 10 diverse documents and add a document-level
-   evaluation split.
+1. ~~**Gold-schema and labeling guide**: freeze the first field set and
+   adjudication rules.~~ — done in
+   [PR #5](https://github.com/nighthawk6389/Jev-credit-agreement-parser/pull/5),
+   with one amendment: the field set is the existing registry at criticality
+   4 or higher (37 fields, which is this document's 25–40) rather than a new
+   list that would then drift from the one the pipeline actually extracts.
+   The document-level split moved here from step 2, because it has to be
+   frozen *before* any labels exist — afterwards a labeller knows which side
+   would flatter the result. 27 of the 100 harvested documents are held out,
+   stratified, assigned by hash of the name and re-derived in CI so no
+   document can change sides later.
+2. **Real labels, batch 1**: label 10 diverse documents with
+   `python -m credit_extract.eval.label`, following
+   `docs/labelling_guide.md`.
 3. **Model baseline**: integrate schema-constrained grounded extraction with no
    custom semantic validators beyond citation checking.
 4. **Ablation harness**: compare current, model-only, and hybrid pipelines on
