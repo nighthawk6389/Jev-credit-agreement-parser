@@ -570,3 +570,85 @@ def test_a_cross_reference_that_ends_a_sentence_is_not_a_heading():
         "and to the Administrative Agent within two Business Days."
     )
     assert detect_sections(prose) == []
+
+
+def test_a_party_name_stops_at_the_party_before_it():
+    """Three silent errors in one report, all the same over-capture.
+
+    ``_ENTITY`` admits any run of capitals, spaces and commas, so on a cover
+    page the leftmost match swallows the whole party list up to the role:
+
+        expected  TRUIST BANK
+        got       WHEREAS, the Borrower and Truist Bank
+
+    A party name is a run of capitalised tokens, and the words separating one
+    party from the next -- "and", "from time to time", "party hereto" -- are
+    lowercase. Requiring every token to be capitalised stops the match at the
+    boundary and the scan moves on to the name that precedes the role.
+    """
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as (?:the )?Administrative Agent")
+
+    swallowed = (
+        "WHEREAS, the Borrower and TRUIST BANK , as the Administrative Agent"
+    )
+    assert rule.search(swallowed).group(1) == "TRUIST BANK"
+
+    listed = (
+        "among IDEX CORPORATION , as the Company, and CERTAIN OF ITS "
+        "SUBSIDIARIES , as Designated Borrowers, BANK OF AMERICA, N.A. , "
+        "as Administrative Agent, Swing Line Lender"
+    )
+    assert rule.search(listed).group(1) == "BANK OF AMERICA, N.A."
+
+    # "of" is the one lowercase word a party name may contain, because
+    # institutions are full of it. "the" is not, or "the Borrower and X"
+    # comes back.
+    mixed = "and Bank of America, N.A., as Administrative Agent"
+    assert rule.search(mixed).group(1) == "Bank of America, N.A."
+
+
+def test_a_party_name_survives_a_space_before_its_comma():
+    """The normaliser leaves "TRUIST BANK , as" where the source had markup
+    between the name and the comma, and a rule anchored on ",\\s*as" matches
+    nothing at all on those filings -- which is a miss rather than a wrong
+    answer, and so quieter than the over-capture above."""
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(
+        _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Administrative Agent"
+    )
+    for spacing in (
+        "and PNC BANK, NATIONAL ASSOCIATION, as Administrative Agent",
+        "and PNC BANK, NATIONAL ASSOCIATION , as Administrative Agent",
+        "and PNC BANK, NATIONAL ASSOCIATION ,  as the Administrative Agent",
+        "and PNC BANK, NATIONAL ASSOCIATION, in its capacities as the "
+        "Administrative Agent",
+    ):
+        assert rule.search(spacing).group(1) == "PNC BANK, NATIONAL ASSOCIATION"
+
+
+def test_a_name_cut_by_a_chunk_boundary_is_not_a_party():
+    """The defect that survived every other guard.
+
+    The passes run over three segmentations, so a chunk can begin mid-word --
+    "WELLS FARGO BANK, NATIONAL ASSO|CIATION" -- and the next chunk opens with
+    "CIATION, as Administrative Agent". That fragment matched, competed with
+    the real name on equal terms, and reconciliation reported a flat 50/50
+    distribution: the field went to ``conflicted`` and the export withheld it
+    on all three facilities of the document.
+    """
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(
+        _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Administrative Agent"
+    )
+    fragment = "CIATION, as Administrative Agent (in such capacity)"
+    assert rule.search(fragment) is None
+
+    whole = "(the \" Borrower \"), WELLS FARGO BANK, NATIONAL ASSOCIATION, as Administrative Agent"
+    assert rule.search(whole).group(1) == "WELLS FARGO BANK, NATIONAL ASSOCIATION"

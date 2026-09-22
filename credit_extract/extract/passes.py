@@ -801,6 +801,65 @@ class Rule:
 
 _ENTITY = r"([A-Z][A-Za-z0-9 ,.&'\-]{3,80}?)"
 
+#: A party name, and the reason it is not ``_ENTITY``.
+#:
+#: ``_ENTITY`` admits any run of capitals, spaces and commas, so on a cover
+#: page the leftmost match swallows the whole party list up to the role. The
+#: corpus caught it three times in one report, each a confident wrong answer:
+#:
+#:     expected  TRUIST BANK
+#:     got       WHEREAS, the Borrower and Truist Bank
+#:
+#:     expected  BANK OF AMERICA, N.A.
+#:     got       B219846, the LENDERS from time to time party hereto and
+#:               BANK OF AMERICA, N.A.
+#:
+#: A party name is a run of capitalised tokens. The words that separate one
+#: party from the next -- "and", "from time to time", "party hereto",
+#: "individually as a Lender" -- are lowercase, so requiring every token to be
+#: capitalised stops the match at the boundary and the scan moves on to the
+#: name that actually precedes the role.
+#:
+#: "of" is the exception, because institutions are full of it: Bank of
+#: America, Bank of New York Mellon, Bank of Nova Scotia. "the" is
+#: deliberately *not* an exception -- admitting it lets "the Borrower and
+#: Truist Bank" back in, and no agent in this corpus is named "The ...".
+#: The comma is the last piece, and the rule is narrower than "allow commas".
+#: Inside a party name a comma introduces a corporate suffix -- "BANK OF
+#: AMERICA, N.A.", "PNC BANK, NATIONAL ASSOCIATION", "MUFG BANK, LTD." -- and
+#: in a party list it introduces another party. Admitting commas freely lets
+#: the run hop from one entry to the next: "..., as Designated Borrowers, BANK
+#: OF AMERICA, N.A., as Administrative Agent" comes back as "Designated
+#: Borrowers, BANK OF AMERICA, N.A.", a role welded to the name after it.
+#:
+#: So a comma is allowed only before a suffix from a closed set. Everything
+#: else in a name is separated by spaces, and the lowercase connectives that
+#: separate parties stop the run on their own.
+_SUFFIX = (
+    r"N\.A\.|N\.V\.|S\.A\.|L\.P\.|L\.L\.C\.|LLC|Inc\.?|PLC|plc|AG"
+    r"|LTD\.?|Ltd\.?|LIMITED|Limited"
+    r"|NATIONAL ASSOCIATION|National Association"
+)
+#: And the lookbehind, for the boundary case that survived everything above.
+#: The passes run over three segmentations, so a chunk can begin mid-word --
+#: "WELLS FARGO BANK, NATIONAL ASSO|CIATION" -- and the next chunk opens with
+#: "CIATION, as Administrative Agent". That fragment is a perfectly good match
+#: and it competed with the real name on equal terms: reconciliation saw a
+#: flat 50/50 distribution, marked the field conflicted, and the export
+#: withheld it.
+#:
+#: Requiring a real non-alphanumeric character before the name rejects it. At
+#: offset 0 of a chunk there is no character at all, so the lookbehind fails;
+#: mid-word it fails too. The cost is a party name that legitimately opens a
+#: chunk, which becomes a miss rather than a wrong answer -- the cheaper of
+#: the two, and the field says needs_review rather than conflicted.
+_PARTY = (
+    r"(?<=[^A-Za-z0-9])"
+    r"([A-Z][A-Za-z0-9&'.\-]*"
+    r"(?: +(?:[A-Z][A-Za-z0-9&'.\-]*|of)){0,7}"
+    r"(?:\s*,\s*(?:" + _SUFFIX + r"))?)"
+)
+
 #: A percentage, however the drafter chose to write it. Requiring a literal
 #: "%" means every clause quoted in basis points reads as an absent field --
 #: and "50 basis points" is as common as "0.50%" in pricing and MFN clauses.
@@ -829,16 +888,16 @@ _PCT = r"[\d.]+\s*(?:%|bps\b|basis\s+points)"
 #: "is this form common and unambiguous enough that a pattern beats a model".
 OFFLINE_RULES: tuple[Rule, ...] = (
     # -- parties -------------------------------------------------------------
-    Rule("borrower.legal_name", _ENTITY + r",\s*as (?:the )?Borrower", 0.90, 0),
-    Rule("holdings.legal_name", _ENTITY + r",\s*as Holdings", 0.90, 0),
+    Rule("borrower.legal_name", _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Borrower", 0.90, 0),
+    Rule("holdings.legal_name", _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Holdings", 0.90, 0),
     Rule("administrative_agent.legal_name",
-         _ENTITY + r",\s*as Administrative Agent", 0.90, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Administrative Agent", 0.90, 0),
     Rule("collateral_agent.legal_name",
-         _ENTITY + r",\s*as (?:Administrative Agent and )?Collateral Agent", 0.85, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Administrative Agent and )?Collateral Agent", 0.85, 0),
     Rule("arranger.legal_name",
-         _ENTITY + r",\s*as (?:Lead |Sole |Joint )*(?:Lead )?Arranger", 0.85, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Lead |Sole |Joint )*(?:Lead )?Arranger", 0.85, 0),
     Rule("syndication_agent.legal_name",
-         _ENTITY + r",\s*as Syndication Agent", 0.90, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent", 0.90, 0),
     # -- dates ---------------------------------------------------------------
     Rule("closing_date", r'"Closing Date"\s+means\s+([^.]+)\.', 0.95),
     Rule("closing_date", r"dated as of ([A-Z][a-z]+ \d{1,2}, \d{4})", 0.70),
