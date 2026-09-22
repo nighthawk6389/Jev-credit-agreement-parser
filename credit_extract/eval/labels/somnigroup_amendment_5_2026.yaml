@@ -92,3 +92,38 @@ assertions:
       does not contain. Sysco's is the same construction counting from a First
       Amendment Effective Date, and StepStone's five-year anniversary is the
       one that resolves, because its chain ends at a date on the cover.
+
+  - id: somnigroup_mfn_threshold_is_fifty_basis_points
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: mfn_threshold_pct
+    expect: "0.50%"
+    note: >
+      "if the All-in Yield for any such Incremental Term Loans denominated in
+      U.S. dollars ... exceeds the All-in Yield for the 2025 Refinancing Term
+      B Loans by more than 50 basis points (the amount of such excess above 50
+      basis points being referred to herein as the "Yield Differential")".
+      Paired with Cumberland's 75 basis points, and the pair carries a second
+      distinction the field cannot hold: Cumberland measures the *interest
+      rate margin* and Somnigroup measures *All-in Yield*, which includes OID
+      and upfront fees. Two documents, one field, two different quantities
+      compared against two thresholds -- and only the threshold survives into
+      the record.
+
+  - id: somnigroup_mfn_sunset_counts_from_an_amendment
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_status
+    target: mfn_sunset
+    expect: external_reference
+    note: >
+      The protection covers loans "incurred on or prior to the six-month
+      anniversary of the Amendment No. 3 Effective Date" -- and Amendment No.
+      3 is not this exhibit, so its effective date is not in the filing.
+      external_reference rather than a date, and the contrast with Cumberland
+      is the point: the same six-month sunset, computable there because the
+      Closing Date is stated, and not computable here because the anchor is a
+      term of another document. The guide's four-case test resolves it on the
+      first row -- this is an agreement citing another document, and the
+      citation is quotable.

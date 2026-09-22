@@ -89,3 +89,25 @@ assertions:
       resolves to a different value per currency, and the field holds one
       number. Sanmina is the fit-side document that punishes the same
       assumption on credit spread adjustments.
+
+  - id: tailored_brands_names_a_dip_it_is_not
+    family: F06_structure
+    member: second_lien
+    kind: text_present
+    target: "Senior Secured, Super-Priority Debtor-In-Possession Credit Agreement, dated as of August 4, 2020"
+    expect: true
+    note: >
+      The recitals: "during the Cases, the Lenders provided financing to the
+      Borrowers as debtors and debtors-in-possession pursuant to that Senior
+      Secured, Super-Priority Debtor-In-Possession Credit Agreement, dated as
+      of August 4, 2020". The corpus has no DIP facility. A search for DIP
+      vocabulary returns 41 documents and every one of them is referring to
+      somebody else's -- a permitted-debt basket, an EBITDA add-back, or,
+      here, the agreement this one refinanced. This document has the strongest
+      DIP signal in the harvest (a Petition Date, Chapter 11 Cases, super-
+      priority, debtors-in-possession) and is an exit facility. That makes it
+      the fifth and most explicit instance of the pattern in task #35: a
+      document naming another facility in full, by title and date, and being
+      classified by the words it uses to name it. It is also why the roadmap's
+      Phase 1 requirement of two examples per deal family cannot be met for
+      DIP from this harvest -- the family is absent, not unlabelled.

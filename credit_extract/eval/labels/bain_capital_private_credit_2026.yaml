@@ -89,3 +89,20 @@ assertions:
       filing, and the control for the Floor assertion above: the same document
       that leaves a rate open states a date outright, so a failure on the
       Floor cannot be blamed on the document being uniformly evasive.
+
+  - id: bain_page_numbers_are_dashed_and_frequent
+    family: F11_layout
+    member: table_split_across_pages
+    kind: report_count
+    target: orphan_chunks
+    expect: 0
+    note: >
+      Bain renders its page numbers as "- 7 -", "- 10 -", "- 34 -" and so on,
+      66 of which land mid-sentence. The assertion is on the orphan sweep
+      rather than on the text because the question worth asking is downstream:
+      does furniture at that density manufacture orphans? A count of the
+      pipeline's own working is a tripwire and not a proposition about the
+      deal -- the harness marks it non-confident for exactly that reason -- so
+      a change here is something to investigate rather than a silent error. It
+      is filed under F11 because the thing that would move it is a
+      segmentation change, and segmentation is what page furniture breaks.

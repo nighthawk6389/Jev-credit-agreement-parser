@@ -45,17 +45,28 @@ assertions:
 
       January 12, 2028 is a Wednesday, so the proviso does not bite and the
       stated date is the answer. What the proviso does is set the business day
-      convention, and it sets it to *preceding* -- the value rolls backward
-      into the prior business day, not forward into the next one.
+      convention *for this term*, and it sets it to preceding -- the value
+      rolls backward into the prior business day, not forward into the next.
 
-      Following is the overwhelmingly common convention and the one a reader
-      supplies without noticing they have supplied it. Preceding is the one
-      written here. The date extracted today is right either way; the
-      convention is the part that is carried into any downstream schedule, and
-      it is one word buried after a semicolon in a definition whose headline
-      value is unambiguous. That combination -- a right answer sitting on top
-      of a term that is easy to read past -- is what makes it worth pinning
-      on the copy rather than repeating the SOFR Adjustment.
+      CORRECTED on a second pass. This note first said that preceding "is the
+      one written here", as though the document had a convention. It does not.
+      A count over the same text gives four:
+
+          next succeeding Business Day        6
+          next preceding Business Day         4
+          immediately preceding Business Day  1
+          next following Business Day         1
+
+      Succeeding is the more common one inside Compass itself, so the original
+      framing had the document backwards while being right about the clause.
+
+      That makes the finding better rather than weaker: **the business day
+      convention is a property of a term, not of a document.** The Maturity
+      Date rolls backward while other dates in the same agreement roll
+      forward, and a pipeline that extracts "the convention" for a filing has
+      asked a question the filing does not answer. The date extracted today is
+      right either way; the convention is what gets carried into any
+      downstream schedule, and it is one word after a semicolon.
 
   - id: compass_duplicate_carries_the_same_sofr_adjustment
     family: F05_versioning

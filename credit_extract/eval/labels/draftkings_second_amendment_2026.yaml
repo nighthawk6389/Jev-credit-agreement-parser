@@ -88,3 +88,18 @@ assertions:
       needs_review rather than a value: the chain is real and resolvable, but
       nothing in this filing settles it, and a confident answer here has a
       50% chance of being the retained share reported as the swept share.
+
+  - id: draftkings_abr_floor_is_applied_by_a_notwithstanding
+    family: F02_precedence
+    member: notwithstanding_override
+    kind: text_present
+    target: "Notwithstanding the foregoing, if the ABR as so determined would be less than the Floor, such rate shall be deemed to be equal to the Floor"
+    expect: true
+    note: >
+      The Floor definition gives two numbers -- 1.00% for ABR, 0.00% for Term
+      SOFR -- and says nothing about how either applies. This sentence, in a
+      different definition, is what makes the ABR figure operative. So the
+      floor is split across two clauses that must both be read: the value is
+      in one and the mechanism in the other, and either alone is incomplete. A
+      reader who finds the definition and stops has a number with no rule; one
+      who finds this sentence and stops has a rule with no number.

@@ -106,3 +106,56 @@ assertions:
       the same structure -- 91 days before some other instrument's maturity --
       so three of the twenty held-out documents have a maturity that is not
       the date they state.
+
+  - id: cumberland_mfn_threshold_is_stated_in_basis_points
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: mfn_threshold_pct
+    expect: "0.75%"
+    note: >
+      The MFN trigger is written in basis points and the field holds a
+      percent: the incremental margin may not exceed the Initial Term Loans'
+      margin "by more than 75 basis points, then the interest rate margin with
+      respect to the Initial Term Loans of a like currency ... shall be
+      increased". 75 basis points is 0.75%, and the document never writes that
+      figure. Every other MFN threshold a reader meets is quoted as a
+      percentage, so this is the conversion the field forces and the one place
+      a factor of a hundred would pass unnoticed -- 75% is not an absurd-
+      looking number in a document full of percentages.
+
+  - id: cumberland_mfn_sunsets_after_six_months
+    family: F04_absence
+    member: no_mfn_sunset
+    kind: field_value
+    target: mfn_sunset
+    expect: 2026-08-10
+    note: >
+      The MFN applies only to a facility "that is incurred on or prior to the
+      date that is six (6) months after the Closing Date", and the Closing
+      Date is stated: February 10, 2026. Six months is 10 August 2026. This is
+      F04's positive case and the corpus has had only negatives. The Meridian
+      fixture asserts an MFN with no sunset; this is an MFN with one,
+      computable, from two facts in different definitions. Reporting
+      absent_from_document here would say the protection runs for the life of
+      the facility, which is the error the fixture's assertion exists to make
+      visible from the other direction.
+
+  - id: cumberland_margin_steps_down_only_after_an_ipo
+    family: F10_conditionality
+    member: post_ipo_only
+    kind: text_present
+    target: "at all times following the consummation of a Qualified IPO, the Applicable Rate otherwise applicable pursuant to the preceding provisions shall be reduced by 0.25%"
+    expect: true
+    note: >
+      F10's post_ipo_only member, and the first real instance in the corpus.
+      The Applicable Rate is set by a three-level commitment-fee grid earlier
+      in the same definition, and this sentence reduces whatever that grid
+      produces by a quarter point, permanently, on an event that may never
+      happen. Asserted as text because the field holds one number and the
+      document has two: the grid's and the grid's minus 0.25%. Which is
+      operative depends on a corporate event, so neither is the rate.
+      Aveanna's ratings-based reduction is the same shape keyed to a rating
+      rather than an IPO, and Cumberland carries both a notwithstanding that
+      lowers the rate and a proviso that pins its commitment fee to the worst
+      level -- overrides in both directions in one agreement.

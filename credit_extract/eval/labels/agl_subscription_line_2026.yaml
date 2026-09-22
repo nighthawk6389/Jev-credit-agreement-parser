@@ -102,3 +102,59 @@ assertions:
       That makes this the cleanest test of whether page furniture displaces a
       real value: the field code is adjacent to the answer, numeric, and
       repeated more often than any actual term in the document.
+
+  - id: agl_adjustment_is_canadian_and_tenor_dependent
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      The only credit spread adjustment here is Canadian and there are two of
+      them: '"CORRA Adjustment" means, with respect to CORRA, (i) in the case
+      of one (1)-month Interest Period, 0.29547% (29.547 basis points) per
+      annum and (ii) in the case of three (3)-month Interest Period, 0.32138%
+      (32.138 basis points) per annum.' "SOFR Adjustment" occurs zero times,
+      and the dollar loans carry no adjustment component at all -- so the
+      field, which asks for the adjustment on this facility's benchmark, is
+      affirmatively empty. Three traps in one definition. The currency is
+      wrong, which is Sanmina's trap. The value is tenor-dependent, so there
+      is no single number to hold, which is new. And each figure is stated
+      twice, as a percent to five decimal places and as basis points to three
+      -- the most precise bps-and-percent pair in the corpus, where a factor-
+      of-a-hundred error produces 29.547%, a rate no facility has ever paid
+      and no range check would accept.
+
+  - id: agl_corra_adjustment_is_stated_to_five_decimals
+    family: F08_units
+    member: bps_vs_percent
+    kind: text_present
+    target: "0.29547% (29.547 basis points) per annum"
+    expect: true
+    note: >
+      Asserted as text because no field can hold it: the value belongs to a
+      Canadian benchmark at a one-month tenor, and the registry has one
+      adjustment field with no currency and no tenor. Five decimal places is
+      itself the finding. Every other adjustment in the corpus is a round
+      figure -- 0.10%, 0.00%, 0.25% -- and this one is the output of a
+      published CORRA-to-CDOR conversion carried through at full precision.
+      Any normalisation that rounds to two decimals, which is what a percent
+      field usually does, loses 0.00547% and reports a number the agreement
+      does not contain.
+
+  - id: agl_page_furniture_survives_into_the_operative_text
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "DOCPROPERTY \"DocID\" \\* MERGEFORMAT USActive 64201697.6"
+    expect: true
+    note: >
+      A Word field code, unexpanded, carrying a document-management identifier
+      and a revision number. It appears 181 times -- once per page -- and 71
+      of those land between two lowercase letters, which is to say inside a
+      sentence rather than between paragraphs. This is the largest volume of
+      page furniture in the corpus and the least visible, because a field code
+      is not a number and does not look like a page. Bain Capital carries the
+      same defect as "- 34 -", KBR and Vivid Seats as bare digits. Three
+      renderings of one problem, and only the bare digit is the one anybody
+      would think to strip.

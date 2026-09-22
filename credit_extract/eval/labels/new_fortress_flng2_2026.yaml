@@ -86,10 +86,21 @@ assertions:
       Section 4.1 rather than pointing to a document that is elsewhere.
 
       The business day proviso is the part worth recording for its own sake:
-      "the immediately preceding Business Day", the third instance of a
-      backward-rolling convention in the corpus after Compass Diversified and
-      nVent Electric. Three documents, three different drafting firms, all
-      rolling backward, against a market convention that rolls forward. The
-      convention is not extracted by anything today; what this pins is that
-      when it is, the corpus already disagrees with the assumption a reader
-      would bring.
+      "the immediately preceding Business Day", the third term in the corpus
+      to roll backward after Compass Diversified's Maturity Date and nVent's.
+
+      CORRECTED on a second pass. This note first read "three documents ...
+      all rolling backward", which was an over-generalisation from a clause to
+      a filing. All three carry both directions:
+
+          Compass Diversified   succeeding 7, preceding 5
+          New Fortress Energy   succeeding 6, preceding 3
+          nVent Electric        succeeding 6, preceding 2
+
+      So no document in the corpus has *a* business day convention. Each has
+      several, assigned per term, and in all three the maturity is the one
+      that rolls backward while the majority of the document rolls forward.
+      That is the real finding and it is sharper than the one it replaces:
+      the convention cannot be extracted at document level at all, and a
+      reader who supplies "following" without noticing -- which is the market
+      default -- is wrong about precisely the term that matters most.
