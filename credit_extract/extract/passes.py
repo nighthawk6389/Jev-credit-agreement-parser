@@ -854,10 +854,23 @@ _SUFFIX = (
 #: chunk, which becomes a miss rather than a wrong answer -- the cheaper of
 #: the two, and the field says needs_review rather than conflicted.
 _PARTY = (
-    r"(?<=[^A-Za-z0-9])"
-    r"([A-Z][A-Za-z0-9&'.\-]*"
-    r"(?: +(?:[A-Z][A-Za-z0-9&'.\-]*|of)){0,7}"
-    r"(?:\s*,\s*(?:" + _SUFFIX + r"))?)"
+    r"(?<=[^A-Za-z0-9])("
+    # Two or more tokens, optionally closing with a corporate suffix. The
+    # "at least two" is what keeps a common noun out: "compliance with the
+    # terms of this Agreement, as the Administrative Agent or any Lender may
+    # reasonably request" is ordinary prose, and "Agreement" was matching it.
+    # No agent or borrower in the corpus is a single bare word.
+    #
+    # A digit may appear inside a name but never start one -- "GBDC 4 FUNDING
+    # III LLC" broke at the "4" when only capitalised tokens could continue a
+    # run, and came back as "FUNDING III LLC".
+    r"[A-Z][A-Za-z0-9&'.\-]*"
+    r"(?: +(?:[A-Z][A-Za-z0-9&'.\-]*|of|\d+)){1,7}"
+    r"(?:\s*,\s*(?:" + _SUFFIX + r"))?"
+    # Or one token and a suffix, which is how a single-word company signs:
+    # "HEALTHSTREAM, INC.", "Cadeler, A/S".
+    r"|[A-Z][A-Za-z0-9&'.\-]*\s*,\s*(?:" + _SUFFIX + r")"
+    r")"
 )
 
 #: A percentage, however the drafter chose to write it. Requiring a literal

@@ -126,16 +126,29 @@ assertions:
   - id: cumberland_farms_has_two_administrative_agents
     family: F01_integrity
     member: doubly_defined_term
-    kind: field_value
-    target: administrative_agent.legal_name
-    expect: "JPMorgan Chase Bank, N.A."
+    kind: text_present
+    target: "JPMorgan Chase Bank, N.A. and J.P. Morgan SE, as Administrative Agent"
+    expect: true
     note: >
       The cover names two: "JPMorgan Chase Bank, N.A. and J.P. Morgan SE, as
       Administrative Agent" -- a US entity and its European affiliate, both
       holding the role, because the facility is multi-currency and a euro-
-      denominated tranche needs an agent inside the EU. The field holds one
-      name and the document gives two, so the assertion picks the US entity
-      and records that the choice is a convention rather than a reading.
+      denominated tranche needs an agent inside the EU.
+
+      CORRECTED. This first asserted the US entity as the field's value while
+      recording, in the same breath, that the choice was "a convention rather
+      than a reading" -- which is a thing a label must not do. A label is
+      ground truth about the document, and the document does not settle which
+      of the two the field should hold. Asserting a convention as ground truth
+      makes the pipeline wrong for agreeing with the document instead of with
+      me: the extractor takes J.P. Morgan SE, the last party named before the
+      role, which is at least as defensible a reading as the first.
+
+      So the assertion is now the fact the document does settle, as text --
+      that both entities hold the role, in one clause. What the field should
+      do with that is a schema question, since PartyReferences.agent is a
+      single string where a multi-currency facility has an agent per
+      jurisdiction, and not something a label can decide by fiat.
       Tailored Brands has the same structure with a Canadian affiliate --
       "JPMORGAN CHASE BANK, N.A. TORONTO BRANCH, as Canadian Administrative
       Agent" -- but there the roles are separately titled, so the field is not
