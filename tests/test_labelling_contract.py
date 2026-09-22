@@ -468,3 +468,83 @@ def test_a_bare_amendment_cannot_confirm_absence():
         + " AMENDMENT NO. 1 TO CREDIT AGREEMENT may be entered into hereafter."
     )
     assert not bare(late)
+
+
+def test_every_assertion_carries_a_note():
+    """The note is where the quotation goes.
+
+    An assertion with no quotation cannot be checked by anyone but its author,
+    which is the failure mode the whole guide exists to prevent. Twelve
+    assertions had none -- all in the two label files written before the guide
+    existed, so the convention had never been enforced on the documents that
+    established it.
+    """
+    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
+    bare = [
+        f"{path.stem}::{assertion.id}"
+        for path in sorted(labels.glob("*.yaml"))
+        for assertion in load_assertion_file(path).assertions
+        if not (assertion.note or "").strip()
+    ]
+    assert bare == [], f"assertions with no note: {bare}"
+
+
+def test_absence_is_never_argued_from_a_string_count_alone():
+    """The Health Catalyst failure, as a standing check.
+
+    Two labels there asserted absence on the strength of a string search, and
+    the search itself was wrong -- the agreement writes "Consolidated Adjusted
+    EBITDA" 53 times and "Consolidated EBITDA" never. Satisfying them would
+    have taught the pipeline to suppress a real capped add-back ladder under a
+    confident status.
+
+    A count is a lead. The claim has to be structural: a quotation, a section,
+    or a stated reason why the term cannot be there. All 15 absence assertions
+    in the corpus pass, so this locks in a property rather than describing an
+    aspiration.
+    """
+    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
+    counted = re.compile(
+        r"zero (times|occurrences)|does not (occur|appear)"
+        r"|never (once )?(writes|says|uses)|no occurrence",
+        re.I,
+    )
+    structural = re.compile(
+        r"[\"“].{10,}?[\"”]|Section \d|because|so there is|there is no"
+        r"|instead|rather than|has no |are enumerated|none of them",
+        re.I | re.S,
+    )
+    offenders = []
+    for path in sorted(labels.glob("*.yaml")):
+        for assertion in load_assertion_file(path).assertions:
+            note = assertion.note or ""
+            if assertion.expect != "absent_from_document":
+                continue
+            if counted.search(note) and not structural.search(note):
+                offenders.append(f"{path.stem}::{assertion.id}")
+    assert offenders == [], (
+        "absence argued from a count with no structural claim: " + str(offenders)
+    )
+
+
+def test_the_guide_distinguishes_an_instrument_that_exists_from_one_that_does_not():
+    """The second-pass finding, and the rule that was underdetermined.
+
+    "external_reference needs the pointer quoted" was written for agreements
+    citing other documents. A financial-statement footnote does not point
+    anywhere -- it describes an instrument -- so the rule as first written
+    would have rejected Greenfire, Rezolve and JRD Unico, all three sound,
+    while having already admitted the Comtech label, which was wrong.
+
+    What separates them is whether the instrument exists. The guide now says
+    so in four cases rather than two, and this test fails if that table is
+    dropped.
+    """
+    text = GUIDE.read_text()
+    assert "whether the instrument exists" in text
+    for anchor in (
+        "names an instrument that demonstrably exists",
+        "an instrument nobody has entered into",
+        "carrying neither a citation nor an identification",
+    ):
+        assert anchor in text, f"the guide no longer covers: {anchor}"

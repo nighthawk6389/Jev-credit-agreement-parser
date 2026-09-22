@@ -115,6 +115,37 @@ teaches it to be.
 sentence that points elsewhere, you have an absence or a not-found, not an
 external reference.
 
+That rule was written for agreements and a second pass over the corpus found
+it underdetermined for everything else. A financial-statement footnote
+describing a facility does not *point* anywhere — it describes an instrument —
+and the rule as stated would reject three sound labels while having already
+admitted one wrong one. So it is four cases, not two, and the question to ask
+first is **whether the instrument exists**:
+
+| the document | example | status |
+| --- | --- | --- |
+| is an agreement and cites another document | `"as set forth in the Fee Letter"` | `external_reference` — quote the citation |
+| is not an agreement, and names an instrument that demonstrably exists | Greenfire's `"$50 million revolving reserved-based credit facility"`, closed in Q4 2025; Rezolve's facility amended seven times; JRD Unico's `"2018 Private Placement Notes"` | `external_reference` — quote the identification |
+| defines a term for an instrument nobody has entered into | Elmet's `"Borrowing Base"`, meaning the lending value under `"a credit facility with lenders"` that does not exist | `absent_from_document` |
+| is a partial amendment, silent on the field, carrying neither a citation nor an identification | Comtech's Amendment No. 5, where `"Applicable Margin"` occurs zero times | `needs_review` |
+
+The middle two are the ones that look alike and are not. Both are documents
+that are not agreements, describing credit terms; the difference is that in one
+the agreement exists somewhere and in the other it does not, and
+`external_reference` asserts that it does. Getting that backwards invents an
+agreement or denies one.
+
+The fourth row is the corrected Comtech label and the reason this table exists.
+A bare amendment is the case where *both* of the first two tests fail: nothing
+is cited and nothing is identified, so nothing is settled. Reporting
+`absent_from_document` there says the facility has no margin; reporting
+`external_reference` asserts a pointer the document does not contain.
+
+**Every assertion carries a note.** It is where the quotation goes, and an
+assertion with no quotation cannot be checked by anyone but its author — which
+is the failure mode this whole guide exists to prevent. `tests/
+test_labelling_contract.py` enforces it.
+
 ### Amendments, specifically
 
 - A term the amendment **restates** — label the restated value.

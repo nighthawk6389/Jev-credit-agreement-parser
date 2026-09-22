@@ -25,6 +25,15 @@ assertions:
     kind: invariant_fired
     target: amortization_row_count_matches_quarters
     expect: true
+    note: >
+      Trap 1's mechanism, asserted separately from the trap. The fixture's
+      amortization table repeats two quarterly rows, so the row count no
+      longer matches the number of quarters between the closing date and the
+      maturity -- arithmetic in Python over a parsed table, which is the one
+      place this project will not ask a model.
+
+      Note added on a second pass; the assertion predates the guide's
+      requirement that every one carry its reasoning.
 
   - id: duplicated_rows_overstate_the_total
     family: F01_integrity
@@ -40,6 +49,11 @@ assertions:
     kind: trap_caught
     target: trap_1
     expect: true
+    note: >
+      The same defect end to end: duplicated amortization rows have to be
+      caught, not merely detectable. Paired with the invariant assertion above
+      because an invariant that fires while the trap reports nothing is a
+      wiring failure, and one report cannot distinguish the two.
 
   # -- F02 precedence -----------------------------------------------------
   - id: hardcoded_ebitda_table_overrides_the_definition
@@ -48,6 +62,16 @@ assertions:
     kind: trap_caught
     target: trap_2
     expect: true
+    note: >
+      Trap 2: an opening-EBITDA figure hardcoded in a table where the
+      definition governs. The fixture states a Consolidated EBITDA in a
+      compliance table that the definition would compute differently, and the
+      table is the thing a reader sees first.
+
+      This is the synthetic ancestor of what the real corpus later supplied in
+      quantity -- Aveanna's ratings override beneath a complete grid,
+      Cumberland Farms' proviso pinning its grid to Level 1. The fixture had
+      to assert it before any real document did.
 
   # -- F03 external reference ---------------------------------------------
   - id: addback_cap_is_external
@@ -64,6 +88,19 @@ assertions:
     kind: field_value
     target: consolidated_ebitda.addback_cap_clause_a_xvi
     expect: null
+    note: >
+      Clause (a)(xvi) of Consolidated EBITDA adds back '"run-rate" cost
+      savings, operating expense reductions and synergies set forth in the
+      Sponsor Model, in an amount not to exceed, with respect to each such
+      item, the amount set forth' there -- and the definition of Sponsor Model
+      closes with "For the avoidance of doubt, the Sponsor Model is not a Loan
+      Document and is not attached hereto."
+
+      So the cap is real, material, capped by reference, and nowhere in the
+      document. null is the value; the status assertion beside it carries the
+      external_reference. The blind-spot register notes that real sponsor-model
+      carve-outs are drafted many ways and this fixture's was written to be
+      found, which is the limit of what it proves.
 
   # -- F04 absence --------------------------------------------------------
   - id: mfn_has_no_sunset
@@ -72,6 +109,16 @@ assertions:
     kind: field_status
     target: mfn_sunset
     expect: absent_from_document
+    note: >
+      "Sunset" occurs zero times in the fixture, and the MFN protection it
+      does carry has no expiry clause attached -- the protection runs for the
+      life of the facility.
+
+      absent_from_document and not needs_review, because the absence is
+      affirmative: a deal with MFN and no sunset is a real and common
+      arrangement, which is the whole point of F04's no_mfn_sunset member. The
+      failure it guards is reporting nothing found and letting a reader infer
+      the protection expires.
 
   - id: mfn_protection_itself_is_present
     family: F04_absence
@@ -98,6 +145,14 @@ assertions:
     kind: field_value
     target: initial_term_loan.commitment
     expect: 150500000
+    note: >
+      "The aggregate amount of the Initial Term Loan Commitments on the
+      Closing Date is $150,500,000."
+
+      Filed under dropped_table_rows rather than as a plain value: the figure
+      is stated in prose and also summed by the amortization table, so it is
+      the control on trap 1. A dropped row changes the table's total and not
+      the sentence, and the two disagreeing is the signal.
 
   - id: term_loan_maturity
     family: F01_integrity
@@ -105,3 +160,12 @@ assertions:
     kind: field_value
     target: initial_term_loan.maturity_date
     expect: "2024-08-01"
+    note: >
+      '"Initial Term Loan Maturity Date" means August 1, 2024.'
+
+      Stated outright, and the second control on trap 1: the row count
+      invariant needs both ends of the schedule to be trustworthy before a
+      mismatch means anything. Closing Date is August 1, 2017, so the fixture
+      spans exactly seven years and the quarter count is checkable by hand --
+      which is why a synthetic fixture is still worth having after 105 real
+      documents.

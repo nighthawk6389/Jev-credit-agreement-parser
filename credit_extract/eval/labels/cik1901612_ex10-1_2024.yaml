@@ -37,6 +37,15 @@ assertions:
     kind: field_status
     target: initial_term_loan.commitment
     expect: not_applicable_to_archetype
+    note: >
+      "REVOLVING CREDIT AND SECURITY AGREEMENT among GBDC 4 FUNDING III LLC,
+      as Borrower" -- and "term loan" occurs zero times in the whole document.
+
+      not_applicable_to_archetype rather than absent_from_document, which is
+      the distinction the status exists for: this is not an agreement that
+      happens to be silent about a term loan, it is a revolving warehouse that
+      cannot have one. Note added on a second pass; the assertion predates the
+      guide's requirement that every one carry its quotation.
 
   - id: gbdc_has_no_delayed_draw
     family: F06_structure
@@ -44,6 +53,17 @@ assertions:
     kind: field_status
     target: delayed_draw.commitment
     expect: not_applicable_to_archetype
+    note: >
+      The harder half of the pair, and the one that produced a real defect.
+      "Delayed draw" occurs nineteen times and every one of them is inside
+      "Delayed Drawdown Collateral Loan" -- a category of asset the warehouse
+      may buy, not a tranche it has. The suppression veto read those nineteen
+      as evidence this facility had a delayed draw of its own and cancelled
+      the suppression, leaving three correct answers in review.
+
+      So the count is the trap and the answer is still not_applicable: whose
+      balance sheet the words are on is the question, and here it is the
+      obligors'.
 
   - id: gbdc_term_loan_maturity_is_not_applicable
     family: F06_structure
@@ -51,6 +71,11 @@ assertions:
     kind: field_status
     target: initial_term_loan.maturity_date
     expect: not_applicable_to_archetype
+    note: >
+      Follows gbdc_has_no_term_loan: a facility with no term loan has no term
+      loan maturity. Kept as a separate assertion because suppression is
+      per-field, and a profile that rules the commitment inapplicable while
+      leaving the maturity in review would be reporting half an answer.
 
   # -- the parties, which is where recall on a real filing starts ----------
   - id: gbdc_borrower
@@ -59,6 +84,16 @@ assertions:
     kind: field_value
     target: borrower.legal_name
     expect: GBDC 4 FUNDING III LLC
+    note: >
+      Named on the cover, "among GBDC 4 FUNDING III LLC, as Borrower", and
+      five times in the document.
+
+      The near-miss is Golub Capital BDC 4, Inc., which appears on the same
+      cover line "as Equityholder and as Servicer" and is the entity a reader
+      would recognise. The borrower is the bankruptcy-remote SPV; the sponsor
+      is not a party to the debt. Filing the sponsor here would attribute a
+      facility to the wrong balance sheet, which is the same error the
+      archetype assertions above guard field by field.
 
   - id: gbdc_administrative_agent
     family: F01_integrity
@@ -66,6 +101,15 @@ assertions:
     kind: field_value
     target: administrative_agent.legal_name
     expect: BNP PARIBAS
+    note: >
+      "BNP PARIBAS, as Administrative Agent", on the cover, one of three roles
+      named in the same sentence -- Borrower, Administrative Agent,
+      Equityholder and Servicer. Four occurrences in the document.
+
+      The cover page of a warehouse names more parties in one sentence than
+      most agreements name anywhere, which is why this is filed under F01
+      rather than as administrative trivia: the failure it guards is picking
+      the wrong one of four names that are 40 characters apart.
 
   # -- F01 integrity -------------------------------------------------------
   - id: gbdc_unattached_exhibits_are_a_filing_artifact
