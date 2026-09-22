@@ -159,3 +159,91 @@ assertions:
       rather than an IPO, and Cumberland carries both a notwithstanding that
       lowers the rate and a proviso that pins its commitment fee to the worst
       level -- overrides in both directions in one agreement.
+
+  - id: cumberland_farms_syndicated_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "s\n\n5\n\nt"
+    expect: true
+    note: >
+      57 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Cumberland writes them without spaces, "-21-", where Bain writes
+      "- 34 -" and KBR a bare digit. Asserted with the exact bytes, newlines
+      included, because the question is whether normalisation leaves them
+      there and a paraphrase could not tell. Four renderings of one defect are
+      now pinned across the corpus: a bare digit, a dashed number with spaces,
+      one without, and an unexpanded Word field code.
+
+  - id: cumberland_farms_syndicated_carries_several_business_day_conventions
+    family: F08_units
+    member: ratio_formatting
+    kind: text_present
+    target: "immediately preceding Business Day"
+    expect: true
+    note: >
+      This agreement uses 5 different business day conventions: immediately
+      preceding business day 8; next succeeding business day 7; next preceding
+      business day 3; immediately succeeding business day 3; next following
+      business day 1. 11 roll forward and 11 roll backward. So the convention
+      is a property of a term, not of a document, and "the business day
+      convention" is a question this filing does not answer. Five conventions
+      -- the most of any document here, in the longest document here.
+      Corrected from an earlier reading that took one proviso for the
+      document's rule. The assertion targets the most frequent phrasing
+      because that is the one a sampling reader would meet first -- and on
+      several of these documents it is not the one that governs the maturity.
+
+  - id: cumberland_farms_syndicated_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-02-10
+    note: >
+      " Closing Date " means February 10, 2026. Stated outright, which is the
+      shape that resolves -- against the eleven in this corpus that give an
+      event instead and never resolve at all, and against Latham's, which
+      gives both. The anchor the MFN sunset counts six months from, so this
+      assertion and cumberland_mfn_sunsets_after_six_months stand or fall
+      together -- which is the point of asserting both rather than only the
+      derived one.
+
+  - id: cumberland_farms_syndicated_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.
+
+  - id: cumberland_farms_syndicated_has_two_administrative_agents
+    family: F01_integrity
+    member: doubly_defined_term
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMorgan Chase Bank, N.A."
+    note: >
+      The cover names two: "JPMorgan Chase Bank, N.A. and J.P. Morgan SE, as
+      Administrative Agent" -- a US entity and its European affiliate, both
+      holding the role, because the facility is multi-currency and a euro-
+      denominated tranche needs an agent inside the EU. The field holds one
+      name and the document gives two, so the assertion picks the US entity
+      and records that the choice is a convention rather than a reading.
+      Tailored Brands has the same structure with a Canadian affiliate --
+      "JPMORGAN CHASE BANK, N.A. TORONTO BRANCH, as Canadian Administrative
+      Agent" -- but there the roles are separately titled, so the field is not
+      forced to choose. Here they are not.

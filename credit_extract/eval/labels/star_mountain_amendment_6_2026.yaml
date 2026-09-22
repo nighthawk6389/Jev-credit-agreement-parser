@@ -170,3 +170,32 @@ assertions:
       highest percentage in the definition -- which is what "top level" means
       on every other document in this corpus -- gets the wrong one here
       precisely because there are no levels.
+
+  - id: star_mountain_amendment_6_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2021-07-02
+    note: >
+      " Closing Date " means July 2, 2021. Stated outright, which is the shape
+      that resolves -- against the eleven in this corpus that give an event
+      instead and never resolve at all, and against Latham's, which gives
+      both. Five years before the Sixth Amendment that carries it, on the BDC
+      warehouse whose Advance Rate is keyed to somebody else's EBITDA.
+
+  - id: star_mountain_amendment_6_floor_is_stated
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.50%"
+    note: >
+      " Floor " means a rate of interest equal to 0.50%. Stated outright and
+      unconditional -- the shape that resolves, against the five documents
+      whose Floor is defined as "the benchmark rate floor, if any, provided in
+      this Agreement" and only two of those resolve in a trailing sentence.
+      The only floor in the corpus between zero and 0.75%, on the BDC
+      warehouse. Worth pinning because the surrounding documents cluster at
+      0.00% and 1.00%, so a plausible-looking wrong answer here is one of
+      those.

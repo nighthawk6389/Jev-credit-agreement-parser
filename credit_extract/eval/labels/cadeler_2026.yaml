@@ -72,3 +72,44 @@ assertions:
       Asserted on the document's own text rather than on the invariant,
       because asserting that the invariant stays quiet would bless the defect
       rather than record it.
+
+  - id: cadeler_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "English law"
+    note: >
+      "governed by English law" The corpus is near-uniform on this field and
+      that is what makes it worth asserting at scale: of the agreements that
+      state a governing law, all but five say New York. The five are the
+      meaningful negatives -- Cadeler's LMA facility (English law), KNOT
+      Offshore's (Norwegian law), ATII's warrant (California) and ProFrac's
+      two stock transfers (Delaware) -- and four of the five are documents
+      that are not US credit agreements. A field whose answer is the same 90%
+      of the time is exactly where a pipeline looks competent by guessing, and
+      where the only evidence that it is reading rather than guessing is the
+      handful of documents where the answer differs.
+
+  - id: cadeler_margin_escalates_without_a_ceiling
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: text_present
+    target: "the Margin applicable to such quarterly period shall increase by 50 basis points above the Margin applicable to the immediately preceding quarterly period"
+    expect: true
+    note: >
+      Cadeler prices on a ladder that never stops climbing, and the field
+      holds one number: (b) Step Up Date B two point eight five per cent.
+      (2.85%) (c) Step Up Date C three point one zero per cent. (3.10%) (d)
+      Step Up Date D three point six zero per cent. (3.60%) (e) thereafter +50
+      basis points every three months, forever Three things make this the
+      sharpest margin in the corpus. The increments are not uniform -- 25
+      basis points from B to C, then 50 from C to D -- so a rule that infers
+      the step from the first pair is wrong about the second. The recurring
+      clause has no ceiling and no end date, so there is no highest margin to
+      extract and "the top of the grid" has no referent at all. And every
+      figure is stated twice, in words and numerals in the LMA style, which is
+      the one construction in this corpus where a numeral/word check has
+      something real to compare. Asserted as text because no single value is
+      the answer. Every other stepdown here moves a level between two stated
+      numbers on a stated date; this one moves it indefinitely.

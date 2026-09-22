@@ -96,3 +96,38 @@ assertions:
       Seventh document with this construction. The count is the point: it is
       the most common drafting in the corpus by a wide margin, so a check that
       fires on it is wrong far more often than it is right.
+
+  - id: flowers_amendment_3_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.
+
+  - id: flowers_amendment_3_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMorgan Chase Bank, N.A."
+    note: >
+      "JPMorgan Chase Bank, N.A., as Administrative Agent" on the cover. The
+      counterweight to governing law, which is New York almost everywhere.
+      This field has real variety -- sixteen distinct institutions across the
+      corpus -- so a pipeline cannot look competent on it by guessing. Three
+      of the sixteen are not banks: Global Loan Agency Services Limited,
+      Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
+      rather than lenders, which is the direct-lending and project-finance
+      pattern and the one a reader expecting a bank name will misread.

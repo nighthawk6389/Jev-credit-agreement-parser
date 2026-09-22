@@ -106,3 +106,41 @@ assertions:
       a change here is something to investigate rather than a silent error. It
       is filed under F11 because the thing that would move it is a
       segmentation change, and segmentation is what page furniture breaks.
+
+  - id: bain_capital_private_credit_carries_several_business_day_conventions
+    family: F08_units
+    member: ratio_formatting
+    kind: text_present
+    target: "next succeeding Business Day"
+    expect: true
+    note: >
+      This agreement uses 1 different business day conventions: next
+      succeeding business day 8. 8 roll forward and 0 roll backward. So the
+      convention is a property of a term, not of a document, and "the business
+      day convention" is a question this filing does not answer. Bain is the
+      control and the only document in the corpus with a single convention,
+      which is what makes the others' plurality a finding rather than an
+      artefact of counting. Corrected from an earlier reading that took one
+      proviso for the document's rule. The assertion targets the most frequent
+      phrasing because that is the one a sampling reader would meet first --
+      and on several of these documents it is not the one that governs the
+      maturity.
+
+  - id: bain_capital_private_credit_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

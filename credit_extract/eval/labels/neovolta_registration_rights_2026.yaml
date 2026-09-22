@@ -45,3 +45,22 @@ assertions:
       If the guard is ever loosened, this is the assertion that goes red
       first, and it goes red at 0.70 -- above the suppression threshold, in
       the family whose members are the ones most often ruled inapplicable.
+
+  - id: neovolta_registration_rights_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by and construed and enforced in accordance with the internal
+      laws of the State of New York" The corpus is near-uniform on this field
+      and that is what makes it worth asserting at scale: of the agreements
+      that state a governing law, all but five say New York. The five are the
+      meaningful negatives -- Cadeler's LMA facility (English law), KNOT
+      Offshore's (Norwegian law), ATII's warrant (California) and ProFrac's
+      two stock transfers (Delaware) -- and four of the five are documents
+      that are not US credit agreements. A field whose answer is the same 90%
+      of the time is exactly where a pipeline looks competent by guessing, and
+      where the only evidence that it is reading rather than guessing is the
+      handful of documents where the answer differs.

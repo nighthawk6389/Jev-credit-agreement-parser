@@ -47,3 +47,22 @@ assertions:
       proximity window around a collateral noun, derived from one document. A
       sixth instance is the cheapest evidence available that the window
       generalises.
+
+  - id: slr_hc_bdc_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

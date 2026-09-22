@@ -66,3 +66,39 @@ assertions:
       benchmark rate floor, if any, provided in this Agreement". Same defined
       term, same section of the same standard form, and one of them says a
       number while the others say "whatever this agreement provides".
+
+  - id: hillman_solutions_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "t\n\n3\n\ns"
+    expect: true
+    note: >
+      109 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Hillman carries the most of any agreement here. Asserted with
+      the exact bytes, newlines included, because the question is whether
+      normalisation leaves them there and a paraphrase could not tell. Four
+      renderings of one defect are now pinned across the corpus: a bare digit,
+      a dashed number with spaces, one without, and an unexpanded Word field
+      code.
+
+  - id: hillman_solutions_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

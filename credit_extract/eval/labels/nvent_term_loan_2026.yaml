@@ -117,3 +117,56 @@ assertions:
       Energy. Compass's date is stated and lands on a Wednesday, so the
       proviso is inert there and the convention is pure metadata; here it
       would decide the answer if the anniversary ever resolved.
+
+  - id: nvent_term_loan_carries_several_business_day_conventions
+    family: F08_units
+    member: ratio_formatting
+    kind: text_present
+    target: "next succeeding Business Day"
+    expect: true
+    note: >
+      This agreement uses 2 different business day conventions: next
+      succeeding business day 6; next preceding business day 2. 6 roll forward
+      and 2 roll backward. So the convention is a property of a term, not of a
+      document, and "the business day convention" is a question this filing
+      does not answer. Same shape: the Maturity Date is one of the two
+      backward uses against six forward ones. Corrected from an earlier
+      reading that took one proviso for the document's rule. The assertion
+      targets the most frequent phrasing because that is the one a sampling
+      reader would meet first -- and on several of these documents it is not
+      the one that governs the maturity.
+
+  - id: nvent_term_loan_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.
+
+  - id: nvent_term_loan_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      "BANK OF AMERICA, N.A., as Administrative Agent" on the cover. The
+      counterweight to governing law, which is New York almost everywhere.
+      This field has real variety -- sixteen distinct institutions across the
+      corpus -- so a pipeline cannot look competent on it by guessing. Three
+      of the sixteen are not banks: Global Loan Agency Services Limited,
+      Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
+      rather than lenders, which is the direct-lending and project-finance
+      pattern and the one a reader expecting a bank name will misread.

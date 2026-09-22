@@ -127,3 +127,40 @@ assertions:
       term of another document. The guide's four-case test resolves it on the
       first row -- this is an agreement citing another document, and the
       citation is quotable.
+
+  - id: somnigroup_amendment_5_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "o\n\n31\n\nn"
+    expect: true
+    note: >
+      6 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Somnigroup's six are the fewest of the large agreements, and it
+      is also the one that defines its terms with a colon. Asserted with the
+      exact bytes, newlines included, because the question is whether
+      normalisation leaves them there and a paraphrase could not tell. Four
+      renderings of one defect are now pinned across the corpus: a bare digit,
+      a dashed number with spaces, one without, and an unexpanded Word field
+      code.
+
+  - id: somnigroup_amendment_5_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

@@ -58,3 +58,17 @@ assertions:
       '"Closing Date" means July 30, 2025.' Stated, and here as the control
       against the maturity above: the same document answers one date field
       outright and cannot answer the other at all.
+
+  - id: blackrock_monticello_floor_is_stated
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      "Floor" means 0.00%. Stated outright and unconditional -- the shape that
+      resolves, against the five documents whose Floor is defined as "the
+      benchmark rate floor, if any, provided in this Agreement" and only two
+      of those resolve in a trailing sentence. Written without the spaces the
+      normaliser usually leaves around the quotation marks, which is a
+      reminder that the anchor patterns cannot rely on them.

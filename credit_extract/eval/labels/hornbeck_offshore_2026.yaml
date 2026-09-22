@@ -146,3 +146,53 @@ assertions:
       different document. Greenfire's single "second lien credit agreement"
       in a financial statement footnote is the same failure caught by the
       non-agreement guard instead.
+
+  - id: hornbeck_offshore_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: ";\n\n6\n\np"
+    expect: true
+    note: >
+      36 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Hornbeck's are bare digits, the rendering that looks most like
+      data. Asserted with the exact bytes, newlines included, because the
+      question is whether normalisation leaves them there and a paraphrase
+      could not tell. Four renderings of one defect are now pinned across the
+      corpus: a bare digit, a dashed number with spaces, one without, and an
+      unexpanded Word field code.
+
+  - id: hornbeck_offshore_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-08-13
+    note: >
+      " Closing Date " means August 13, 2024. Stated outright, which is the
+      shape that resolves -- against the eleven in this corpus that give an
+      event instead and never resolve at all, and against Latham's, which
+      gives both. On a First Incremental Facility Amendment dated August 28,
+      2026 -- two years and one facility later, and the date on the cover is
+      not this field.
+
+  - id: hornbeck_offshore_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

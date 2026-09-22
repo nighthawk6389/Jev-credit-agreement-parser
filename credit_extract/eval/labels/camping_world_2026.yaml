@@ -96,3 +96,37 @@ assertions:
       different ratio in a different agreement, which is a coincidence worth
       noting: a corpus-wide rule that learned "1.10:1.00 is a coverage floor"
       would be right twice for the wrong reason.
+
+  - id: camping_world_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.
+
+  - id: camping_world_floor_is_stated
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      " Floor " means a rate of interest equal to 0.0%. Stated outright and
+      unconditional -- the shape that resolves, against the five documents
+      whose Floor is defined as "the benchmark rate floor, if any, provided in
+      this Agreement" and only two of those resolve in a trailing sentence.
+      Stated as "0.0%" with one decimal place where every other zero floor in
+      the corpus writes "0.00%". The value is the same and the string is not,
+      so a rule keyed to the literal misses it.

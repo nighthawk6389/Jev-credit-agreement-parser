@@ -94,3 +94,36 @@ assertions:
       incremental without MFN protection rather than an agreement with no
       incremental to protect, which is the case in Evernorth and Constellation
       Brands.
+
+  - id: valvoline_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-03-01
+    note: >
+      " Closing Date " means March 1, 2023. Stated outright, which is the
+      shape that resolves -- against the eleven in this corpus that give an
+      event instead and never resolve at all, and against Latham's, which
+      gives both. Stated plainly, which is what makes it useful here:
+      Valvoline is otherwise a document of absences, and a field that resolves
+      is the control on the ones that do not.
+
+  - id: valvoline_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

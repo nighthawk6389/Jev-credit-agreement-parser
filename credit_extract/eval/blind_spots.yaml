@@ -162,6 +162,44 @@ untestable_from_public_filings:
       the borrowing base suppresses the tests the borrowing base is measured
       by. Both are held out, both recorded, neither repaired.
 
+  - id: F06_dip
+    family: F06_structure
+    member: second_lien
+    reason: >
+      A debtor-in-possession facility is filed by the debtor under a
+      bankruptcy court's order, and the harvest's strata are drawn from
+      ordinary 8-K and 10-Q exhibits. Searching all 100 documents for DIP
+      vocabulary returns 41 of them and not one is a DIP.
+    consequence: >
+      The roadmap's Phase 1 asks for at least two examples from each
+      economically distinct deal family and names DIP among them. That
+      requirement cannot be met from this harvest, and the reason is worth
+      stating precisely rather than leaving as an unlabelled gap: the family
+      is absent, not unlabelled.
+
+      Every one of the 41 hits is a document referring to somebody else's DIP
+      -- a permitted-debt basket, an EBITDA add-back, an L/C clause about a
+      counterparty in Chapter 11. Tailored Brands has the strongest signal in
+      the corpus, with a Petition Date, Chapter 11 Cases, super-priority
+      language and debtors-in-possession, and it is the exit facility that
+      refinanced the DIP. Its own recitals name the instrument in full:
+      "pursuant to that Senior Secured, Super-Priority Debtor-In-Possession
+      Credit Agreement, dated as of August 4, 2020". Cumberland Farms scores
+      next and every hit is a false positive -- "debtor-in-possession" in a
+      letter-of-credit payment clause, "carve-out" as basket vocabulary, and a
+      "final order" of the Amsterdam Court of Appeal about a Dutch works
+      council.
+
+      So the corpus establishes the negative case for this family thoroughly
+      and the positive case not at all. What that leaves untested is the whole
+      of it: the Interim and Final Orders that authorise the facility, the
+      professional-fee Carve-Out, roll-ups, adequate protection, and a
+      borrower whose every obligation is subject to a court's approval. A
+      pipeline meeting its first DIP will meet all of that at once.
+
+      Fixing it needs a harvest, not a label: DIP agreements are filed, just
+      not in the strata this one drew from.
+
   - id: F09_term_defined_in_other_loan_document
     family: F09_definitional_depth
     member: term_defined_in_other_loan_document

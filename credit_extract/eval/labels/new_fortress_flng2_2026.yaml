@@ -104,3 +104,59 @@ assertions:
       the convention cannot be extracted at document level at all, and a
       reader who supplies "following" without noticing -- which is the market
       default -- is wrong about precisely the term that matters most.
+
+  - id: new_fortress_flng2_carries_several_business_day_conventions
+    family: F08_units
+    member: ratio_formatting
+    kind: text_present
+    target: "next succeeding Business Day"
+    expect: true
+    note: >
+      This agreement uses 4 different business day conventions: next
+      succeeding business day 4; immediately preceding business day 2;
+      immediately succeeding business day 2; next preceding business day 1. 6
+      roll forward and 3 roll backward. So the convention is a property of a
+      term, not of a document, and "the business day convention" is a question
+      this filing does not answer. Its Maturity Date rolls backward while the
+      majority of the document rolls forward, which is the arrangement that
+      makes a document-level answer wrong rather than merely incomplete.
+      Corrected from an earlier reading that took one proviso for the
+      document's rule. The assertion targets the most frequent phrasing
+      because that is the one a sampling reader would meet first -- and on
+      several of these documents it is not the one that governs the maturity.
+
+  - id: new_fortress_flng2_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.
+
+  - id: new_fortress_flng2_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WILMINGTON TRUST, NATIONAL ASSOCIATION"
+    note: >
+      "WILMINGTON TRUST, NATIONAL ASSOCIATION, as Administrative Agent" on the
+      cover. The counterweight to governing law, which is New York almost
+      everywhere. This field has real variety -- sixteen distinct institutions
+      across the corpus -- so a pipeline cannot look competent on it by
+      guessing. Three of the sixteen are not banks: Global Loan Agency
+      Services Limited, Wilmington Trust and Cantor Fitzgerald Securities are
+      agency businesses rather than lenders, which is the direct-lending and
+      project-finance pattern and the one a reader expecting a bank name will
+      misread.

@@ -64,3 +64,19 @@ assertions:
       after an undated Funding Date; StepStone is a five-year anniversary of a
       Closing Date that resolves to the cover; this is a duration from an
       amendment whose effective date lives elsewhere.
+
+  - id: sysco_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      "BANK OF AMERICA, N.A., as Administrative Agent" on the cover. The
+      counterweight to governing law, which is New York almost everywhere.
+      This field has real variety -- sixteen distinct institutions across the
+      corpus -- so a pipeline cannot look competent on it by guessing. Three
+      of the sixteen are not banks: Global Loan Agency Services Limited,
+      Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
+      rather than lenders, which is the direct-lending and project-finance
+      pattern and the one a reader expecting a bank name will misread.

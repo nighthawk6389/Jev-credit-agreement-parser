@@ -59,3 +59,39 @@ assertions:
       lien-based. The classifier declining is right, and it is right for a
       reason worth keeping -- payment subordination and lien subordination are
       different things that the word "subordinated" does not distinguish.
+
+  - id: comtech_subordinated_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "t\n\n-2-\n\no"
+    expect: true
+    note: >
+      2 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Two marks in 39,607 characters -- the smallest instance, and
+      proof the defect is not a function of length. Asserted with the exact
+      bytes, newlines included, because the question is whether normalisation
+      leaves them there and a paraphrase could not tell. Four renderings of
+      one defect are now pinned across the corpus: a bare digit, a dashed
+      number with spaces, one without, and an unexpanded Word field code.
+
+  - id: comtech_subordinated_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by, and construed in accordance with laws other than the laws
+      of the State of New York" The corpus is near-uniform on this field and
+      that is what makes it worth asserting at scale: of the agreements that
+      state a governing law, all but five say New York. The five are the
+      meaningful negatives -- Cadeler's LMA facility (English law), KNOT
+      Offshore's (Norwegian law), ATII's warrant (California) and ProFrac's
+      two stock transfers (Delaware) -- and four of the five are documents
+      that are not US credit agreements. A field whose answer is the same 90%
+      of the time is exactly where a pipeline looks competent by guessing, and
+      where the only evidence that it is reading rather than guessing is the
+      handful of documents where the answer differs.

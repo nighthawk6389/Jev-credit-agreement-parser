@@ -89,3 +89,54 @@ assertions:
       value or zero) of (i) the average of the EURIBOR Rate for the five most
       recent Business Days', which builds a Euro fallback rate rather than
       adding a spread. Same construction as SanDisk.
+
+  - id: cumberland_farms_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-02-10
+    note: >
+      " Closing Date " means February 10, 2026. Stated outright, which is the
+      shape that resolves -- against the eleven in this corpus that give an
+      event instead and never resolve at all, and against Latham's, which
+      gives both. Also the anchor for this deal's MFN sunset, which runs six
+      months from it. The sibling exhibit states the same date, and the two
+      exhibits are the same Second Amendment filed twice.
+
+  - id: cumberland_farms_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.
+
+  - id: cumberland_farms_has_two_administrative_agents
+    family: F01_integrity
+    member: doubly_defined_term
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMorgan Chase Bank, N.A."
+    note: >
+      The cover names two: "JPMorgan Chase Bank, N.A. and J.P. Morgan SE, as
+      Administrative Agent" -- a US entity and its European affiliate, both
+      holding the role, because the facility is multi-currency and a euro-
+      denominated tranche needs an agent inside the EU. The field holds one
+      name and the document gives two, so the assertion picks the US entity
+      and records that the choice is a convention rather than a reading.
+      Tailored Brands has the same structure with a Canadian affiliate --
+      "JPMORGAN CHASE BANK, N.A. TORONTO BRANCH, as Canadian Administrative
+      Agent" -- but there the roles are separately titled, so the field is not
+      forced to choose. Here they are not.

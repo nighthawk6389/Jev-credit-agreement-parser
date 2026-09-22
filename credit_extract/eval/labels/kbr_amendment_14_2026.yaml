@@ -71,3 +71,54 @@ assertions:
       It is the rightmost of five columns in a row of five numbers, which is
       the hardest position to pick without reading the header, and the header
       itself spans two lines in the filing's rendering.
+
+  - id: kbr_amendment_14_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "y\n\n2\n\ns"
+    expect: true
+    note: >
+      76 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. KBR's pricing grid has one of these landing between two rows, in
+      a grid whose rows are numbered 1 to 5. Asserted with the exact bytes,
+      newlines included, because the question is whether normalisation leaves
+      them there and a paraphrase could not tell. Four renderings of one
+      defect are now pinned across the corpus: a bare digit, a dashed number
+      with spaces, one without, and an unexpanded Word field code.
+
+  - id: kbr_amendment_14_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2018-11-12
+    note: >
+      " Closing Date " means November 12, 2018. Stated outright, which is the
+      shape that resolves -- against the eleven in this corpus that give an
+      event instead and never resolve at all, and against Latham's, which
+      gives both. Amendment No. 14 states the same 2018 date as Amendment No.
+      13, which is on the other side of the split. The pair is the corpus's
+      only chance to check that a field survives eight years and one amendment
+      unchanged.
+
+  - id: kbr_amendment_14_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

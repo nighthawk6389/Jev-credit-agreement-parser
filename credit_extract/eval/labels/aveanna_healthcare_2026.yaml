@@ -101,3 +101,59 @@ assertions:
       this document compete for that role -- the Twelfth Amendment Effective
       Date, the 2026 Term Loan funding, the filing date -- and the defined
       term names none of them.
+
+  - id: aveanna_healthcare_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "l\n\n2\n\nt"
+    expect: true
+    note: >
+      91 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Aveanna's 91 sit in the longest agreement outside Cumberland
+      Farms. Asserted with the exact bytes, newlines included, because the
+      question is whether normalisation leaves them there and a paraphrase
+      could not tell. Four renderings of one defect are now pinned across the
+      corpus: a bare digit, a dashed number with spaces, one without, and an
+      unexpanded Word field code.
+
+  - id: aveanna_healthcare_carries_several_business_day_conventions
+    family: F08_units
+    member: ratio_formatting
+    kind: text_present
+    target: "next succeeding Business Day"
+    expect: true
+    note: >
+      This agreement uses 4 different business day conventions: next
+      succeeding business day 6; next preceding business day 2; immediately
+      succeeding business day 2; immediately preceding business day 1. 8 roll
+      forward and 3 roll backward. So the convention is a property of a term,
+      not of a document, and "the business day convention" is a question this
+      filing does not answer. Four conventions in one agreement, the joint
+      highest in the corpus. Corrected from an earlier reading that took one
+      proviso for the document's rule. The assertion targets the most frequent
+      phrasing because that is the one a sampling reader would meet first --
+      and on several of these documents it is not the one that governs the
+      maturity.
+
+  - id: aveanna_healthcare_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by, and shall be construed in accordance with, the rules of
+      the ISP, and as to matters not governed by the ISP, the laws of the
+      State of New York" The corpus is near-uniform on this field and that is
+      what makes it worth asserting at scale: of the agreements that state a
+      governing law, all but five say New York. The five are the meaningful
+      negatives -- Cadeler's LMA facility (English law), KNOT Offshore's
+      (Norwegian law), ATII's warrant (California) and ProFrac's two stock
+      transfers (Delaware) -- and four of the five are documents that are not
+      US credit agreements. A field whose answer is the same 90% of the time
+      is exactly where a pipeline looks competent by guessing, and where the
+      only evidence that it is reading rather than guessing is the handful of
+      documents where the answer differs.

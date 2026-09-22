@@ -77,3 +77,35 @@ assertions:
       that never uses the word Floor. The two together are the pair F07 needs:
       a named floor whose subject is elsewhere, and an unnamed floor whose
       subject is in the same sentence.
+
+  - id: accelevation_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "s\n\n-2-\n\na"
+    expect: true
+    note: >
+      84 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. Accelevation is the worst of them: the marks fall inside the
+      phrase "next preceding business day" itself, so a term splits across a
+      page break. Asserted with the exact bytes, newlines included, because
+      the question is whether normalisation leaves them there and a paraphrase
+      could not tell. Four renderings of one defect are now pinned across the
+      corpus: a bare digit, a dashed number with spaces, one without, and an
+      unexpanded Word field code.
+
+  - id: accelevation_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-01-02
+    note: >
+      " Closing Date " shall mean January 2, 2025. Stated outright, which is
+      the shape that resolves -- against the eleven in this corpus that give
+      an event instead and never resolve at all, and against Latham's, which
+      gives both. Twenty months before the filing, on the agreement its own
+      joinder conforms -- and the joinder, filed beside it, carries the same
+      date under an amendment dated September 5, 2025.

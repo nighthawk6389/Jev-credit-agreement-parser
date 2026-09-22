@@ -73,3 +73,39 @@ assertions:
 
       A pipeline that returns 0.00% here, on the grounds that the definition
       says the floor may be zero, has invented a rate.
+
+  - id: blue_owl_core_income_page_furniture_splits_a_sentence
+    family: F11_layout
+    member: table_split_across_pages
+    kind: text_present
+    target: "g\n\n-6-\n\na"
+    expect: true
+    note: >
+      23 page marks land between two lowercase letters -- inside a sentence
+      rather than between paragraphs -- and each is surrounded by blank lines,
+      so anything segmenting on paragraph breaks sees one sentence as two
+      blocks. The warehouse pair carry them at a quarter of Hillman's density.
+      Asserted with the exact bytes, newlines included, because the question
+      is whether normalisation leaves them there and a paraphrase could not
+      tell. Four renderings of one defect are now pinned across the corpus: a
+      bare digit, a dashed number with spaces, one without, and an unexpanded
+      Word field code.
+
+  - id: blue_owl_core_income_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      "governed by the laws of the State of New York" The corpus is near-
+      uniform on this field and that is what makes it worth asserting at
+      scale: of the agreements that state a governing law, all but five say
+      New York. The five are the meaningful negatives -- Cadeler's LMA
+      facility (English law), KNOT Offshore's (Norwegian law), ATII's warrant
+      (California) and ProFrac's two stock transfers (Delaware) -- and four of
+      the five are documents that are not US credit agreements. A field whose
+      answer is the same 90% of the time is exactly where a pipeline looks
+      competent by guessing, and where the only evidence that it is reading
+      rather than guessing is the handful of documents where the answer
+      differs.

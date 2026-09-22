@@ -64,3 +64,18 @@ assertions:
       winning, so the two documents disagree about which date a reader should
       reach for, which is the point: the answer is not "the later date" or
       "the title date" but the defined term.
+
+  - id: accelevation_joinder_floor_is_stated
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.75%"
+    note: >
+      " Floor " shall mean 0.75% per annum. Stated outright and unconditional
+      -- the shape that resolves, against the five documents whose Floor is
+      defined as "the benchmark rate floor, if any, provided in this
+      Agreement" and only two of those resolve in a trailing sentence. The
+      joinder carries the agreement's floor unchanged, which is the control on
+      the pair: same text, same value, and an archetype that differed only
+      because a preamble moved a phrase past the detection window.

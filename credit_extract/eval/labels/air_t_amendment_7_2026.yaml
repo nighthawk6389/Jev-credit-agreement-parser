@@ -182,3 +182,22 @@ assertions:
       "excess cash flow" returns zero matches in any case. Section 2.07(a),
       which this amendment restates in its entirety, is a borrowing-base
       overadvance cure rather than a cash sweep.
+
+  - id: air_t_amendment_7_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "Minnesota"
+    note: >
+      "governed by and construed in accordance with the internal laws of the
+      State of Minnesota" The corpus is near-uniform on this field and that is
+      what makes it worth asserting at scale: of the agreements that state a
+      governing law, all but five say New York. The five are the meaningful
+      negatives -- Cadeler's LMA facility (English law), KNOT Offshore's
+      (Norwegian law), ATII's warrant (California) and ProFrac's two stock
+      transfers (Delaware) -- and four of the five are documents that are not
+      US credit agreements. A field whose answer is the same 90% of the time
+      is exactly where a pipeline looks competent by guessing, and where the
+      only evidence that it is reading rather than guessing is the handful of
+      documents where the answer differs.
