@@ -216,12 +216,36 @@ def _describe(spec: FieldSpec) -> str:
     return line
 
 
+_PRIORS_TEMPLATE = """\
+ALREADY READ BY A CHEAPER PASS
+------------------------------
+{priors}
+
+Verify each against the excerpt below. Report a different value if the text
+says otherwise -- overturning a wrong earlier reading is the most useful thing
+you can do here. Agreeing without checking is worse than reporting nothing,
+because it turns one reading into what looks like two.
+
+"""
+
+
 def build_extraction_prompt(
-    chunk_text: str, specs: list[FieldSpec], context: str = ""
+    chunk_text: str,
+    specs: list[FieldSpec],
+    context: str = "",
+    priors: str = "",
 ) -> str:
-    """Assemble the extraction prompt for one chunk."""
+    """Assemble the extraction prompt for one chunk.
+
+    ``context`` and ``priors`` are kept apart and headed separately. They were
+    briefly the same argument, which put "revolver.commitment: an earlier pass
+    read 1300000000" under a heading reading DEFINED TERMS IN SCOPE -- telling
+    the model that a prior value was a definition to resolve.
+    """
     lines = [_describe(spec) for spec in specs]
     context_block = _CONTEXT_TEMPLATE.format(context=context) if context.strip() else ""
+    if priors.strip():
+        context_block += _PRIORS_TEMPLATE.format(priors=priors.strip())
     return _EXTRACTION_TEMPLATE.format(
         context_block=context_block,
         chunk=chunk_text,

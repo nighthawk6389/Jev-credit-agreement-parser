@@ -44,7 +44,33 @@ class ValueGroup:
 
     @property
     def segmentations(self) -> set[str]:
-        return {c.segmentation for c in self.candidates}
+        """Independent views of the document that reached this value.
+
+        A candidate that merely echoed a value it was shown does not count:
+        the model tier is handed what the cheaper tiers found so that it can
+        overturn a wrong rule, and the price of that is that agreement with
+        the prior is no longer evidence. One wrong regex, shown to three
+        passes, would otherwise arrive as three-way corroboration.
+
+        An echo still contributes its span, its confidence and its value --
+        it is excluded from *support*, not from the record.
+        """
+        return {c.segmentation for c in self.candidates if not c.echoes}
+
+    @property
+    def echoed_segmentations(self) -> set[str]:
+        """Views that agreed with a value they were shown. Weak evidence."""
+        return {c.segmentation for c in self.candidates if c.echoes}
+
+    @property
+    def overturned(self) -> bool:
+        """True where some pass was shown a different value and rejected it.
+
+        The reason for showing the prior in the first place, and worth
+        knowing about a value: it survived a reader who had seen the
+        alternative.
+        """
+        return any(c.overturns for c in self.candidates)
 
     @property
     def pass_ids(self) -> set[str]:

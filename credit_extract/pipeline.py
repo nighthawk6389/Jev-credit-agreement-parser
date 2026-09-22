@@ -512,6 +512,30 @@ def run_pipeline(
                 ) or "nothing extracted"
             ),
             f"chunks swept: {len(sweep)}",
+            # What the ladder did, stage by stage. Worth printing rather than
+            # inferring: the division of labour between the definitions and
+            # the sections is the design, and a run where orientation settles
+            # nothing means the graph is not carrying the weight it is here
+            # to carry.
+            *(
+                [f"ladder {line}" for line in extracted.stage_log]
+                if extracted.stage_log else []
+            ),
+            # Agreement with a value the pass was shown, at the span it was
+            # shown. Not corroboration, and counted separately so a run where
+            # the model mostly confirms the rules cannot look like a run where
+            # two readers independently agreed.
+            f"anchored agreement: {extracted.echoes()} echo(es); "
+            + (
+                f"overturned {', '.join(extracted.overturns())}"
+                if extracted.overturns() else "nothing overturned"
+            ),
+            # Absence is only worth what the search behind it was worth.
+            "section sweep: " + (
+                "exhaustive" if extracted.swept_exhaustively
+                else "CUT SHORT by the budget -- absence claims in this run "
+                     "are not safe"
+            ),
             # How much of the verified FpML mapping this run actually earned.
             # Zero is a real answer and the one the deterministic tier gives:
             # a facility appears only where its commitment is settled, and a

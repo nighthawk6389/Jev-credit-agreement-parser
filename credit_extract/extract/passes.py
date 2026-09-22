@@ -270,6 +270,17 @@ class Candidate:
     #: The value with its unit attached, resolved at the point of extraction --
     #: which is the only place that still has the raw text and the table scale.
     quantity: Quantity | None = None
+    #: The prior value this pass was shown before it answered, as a key.
+    #:
+    #: The model tier is shown what the cheaper tiers already found, so it can
+    #: overturn a wrong regex rather than silently duplicating it. That is
+    #: worth having and it costs something: a pass that agrees with a value it
+    #: was *shown* is not independent evidence for that value, and counting it
+    #: as corroboration would let one wrong rule manufacture high confidence
+    #: across every pass that saw it. ``echoes`` is the test, and
+    #: ``reconcile`` excludes echoes from support while still keeping the
+    #: candidate -- an echo is weak evidence, not no evidence.
+    anchored_on: str | None = None
 
     def key(self) -> str:
         """Value identity for agreement counting. Never compared as floats."""
@@ -280,6 +291,42 @@ class Candidate:
         if isinstance(self.value, str):
             return " ".join(self.value.split()).casefold()
         return repr(self.value)
+
+    #: Where the prior value was read from, when one was shown. The span is
+    #: what separates a parrot from a second reading -- see :attr:`echoes`.
+    anchored_span: Span | None = None
+
+    @property
+    def echoes(self) -> bool:
+        """True when this pass was shown a value and merely repeated it.
+
+        An echo is not a second reading; it is the same reading seen twice,
+        and the distinction decides whether corroboration means anything once
+        the model tier is allowed to see what the cheaper tiers found.
+
+        The test is the *citation*, not the value. A pass shown
+        "$1,300,000,000" that returns it while quoting the same clause has
+        added nothing. One that returns it quoting a different clause has
+        found the figure elsewhere in the document, and that is genuine
+        support however it was prompted -- so it is not an echo.
+        """
+        if self.anchored_on is None or self.anchored_on != self.key():
+            return False
+        if self.span is None or self.anchored_span is None:
+            # No citation to compare. Treat as an echo: the conservative
+            # reading, since the alternative credits support we cannot see.
+            return True
+        return self.span.jaccard(self.anchored_span) > 0.0
+
+    @property
+    def overturns(self) -> bool:
+        """True when this pass was shown a value and disagreed with it.
+
+        The opposite of an echo and the reason for showing the prior at all:
+        a model that contradicts a regex it was handed is the strongest
+        signal either tier produces, and reconciliation treats it as one.
+        """
+        return self.anchored_on is not None and self.anchored_on != self.key()
 
 
 class ExtractionBackend(Protocol):
@@ -514,11 +561,12 @@ class AnthropicBackend:
         specs: list[FieldSpec],
         context: str,
         pass_id: str,
+        priors: str = "",
     ) -> tuple[list[Candidate], CostLedger]:
         from .prompts import EXTRACTION_SYSTEM, build_extraction_prompt
 
         client = self._ensure_client()
-        prompt = build_extraction_prompt(chunk.text, specs, context)
+        prompt = build_extraction_prompt(chunk.text, specs, context, priors)
         response = client.messages.create(
             model=self.route.model_id(self.model),
             max_tokens=self.max_tokens,
@@ -1172,6 +1220,37 @@ def table_candidates(doc: NormalizedDocument) -> list[Candidate]:
 # ---------------------------------------------------------------------------
 
 
+def _extract_with_priors(
+    backend: Any,
+    doc: NormalizedDocument,
+    chunk: Chunk,
+    specs: list[FieldSpec],
+    context: str,
+    pass_id: str,
+    priors: str = "",
+) -> tuple[list["Candidate"], CostLedger]:
+    """Call ``backend.extract``, passing priors only if it accepts them.
+
+    ``ExtractionBackend`` is a Protocol and third-party implementations exist
+    that predate the argument -- ``RecordedBackend`` among them, which replays
+    a reading and has no prompt to put a prior into. Probing once here keeps
+    the ladder from having to know which backends are which, and keeps a
+    backend that ignores priors from being a TypeError.
+    """
+    import inspect
+
+    if priors:
+        try:
+            accepts = "priors" in inspect.signature(backend.extract).parameters
+        except (TypeError, ValueError):  # pragma: no cover - exotic callables
+            accepts = False
+        if accepts:
+            return backend.extract(
+                doc, chunk, specs, context, pass_id=pass_id, priors=priors
+            )
+    return backend.extract(doc, chunk, specs, context, pass_id=pass_id)
+
+
 class LayeredBackend:
     """Deterministic rules take the easy fields; the model takes the rest.
 
@@ -1251,7 +1330,12 @@ class LayeredBackend:
         specs: list[FieldSpec],
         context: str,
         pass_id: str,
+        priors: str = "",
     ) -> tuple[list[Candidate], CostLedger]:
+        # The rules never see priors. They are patterns, not readers: showing
+        # one a prior could not change what it matches, and passing it through
+        # would only invite a future rule to agree with something instead of
+        # matching it.
         found, cost = self.deterministic.extract(
             doc, chunk, specs, context, pass_id=f"{pass_id}/rules"
         )
@@ -1263,8 +1347,9 @@ class LayeredBackend:
         if not remaining:
             return found, cost
 
-        inferred, model_cost = self.model.extract(
-            doc, chunk, remaining, context, pass_id=f"{pass_id}/model"
+        inferred, model_cost = _extract_with_priors(
+            self.model, doc, chunk, remaining, context,
+            pass_id=f"{pass_id}/model", priors=priors,
         )
         cost.merge(model_cost)
         return [*found, *inferred], cost
@@ -1290,6 +1375,16 @@ class PassResult:
     #: taking any absence in this run at face value.
     unread_chunks: list[str] = dc_field(default_factory=list)
 
+    #: Per-field, the chunks actually searched for it. Empty on a flat run;
+    #: populated by the ladder, where it is the evidence behind any later
+    #: claim that a field is absent from the document.
+    searched: dict[str, set[str]] = dc_field(default_factory=dict)
+    #: One line per stage of each ladder pass, for the report.
+    stage_log: list[str] = dc_field(default_factory=list)
+    #: False when a budget stopped a sweep before every section was offered
+    #: every open field, which makes absence claims unsafe for this run.
+    swept_exhaustively: bool = True
+
     def by_tier(self) -> dict[str, int]:
         """Distinct fields each tier settled.
 
@@ -1297,16 +1392,40 @@ class PassResult:
         thing to watch: rules answering less over time means the pattern set
         has drifted from what documents look like, and the model answering
         everything means the cheap tier has stopped earning its place.
+
+        The ladder splits the model tier in two, because the split is the
+        point: ``orient`` is what the definitions answered and ``sweep`` is
+        what had to be hunted section by section.
         """
         tiers: dict[str, set[str]] = {}
         for candidate in self.candidates:
-            tier = (
-                "model" if candidate.pass_id.endswith("/model")
-                else "tables" if candidate.pass_id.endswith(":tables")
-                else "rules"
-            )
+            pass_id = candidate.pass_id
+            if pass_id.endswith("/orient"):
+                tier = "model:orient"
+            elif pass_id.endswith("/sweep"):
+                tier = "model:sweep"
+            elif pass_id.endswith("/model"):
+                tier = "model"
+            elif pass_id.endswith(":tables"):
+                tier = "tables"
+            else:
+                tier = "rules"
             tiers.setdefault(tier, set()).add(candidate.field)
         return {tier: len(fields) for tier, fields in sorted(tiers.items())}
+
+    def echoes(self) -> int:
+        """Candidates that agreed with a value they were shown.
+
+        Worth reporting rather than only acting on: a run where most model
+        answers are echoes is one where the model tier is confirming the rules
+        rather than reading, and the corroboration in the confidence numbers
+        is thinner than the pass count suggests.
+        """
+        return sum(1 for c in self.candidates if c.echoes)
+
+    def overturns(self) -> list[str]:
+        """Fields where a pass rejected a value it had been shown."""
+        return sorted({c.field for c in self.candidates if c.overturns})
 
 
 #: Temperatures used for passes beyond the first round over each segmentation.
@@ -1336,6 +1455,110 @@ def plan_passes(
     return plan
 
 
+def _run_ladder_passes(
+    doc: NormalizedDocument,
+    segments: dict[str, list[Chunk]],
+    backend: "LayeredBackend",
+    specs: list[FieldSpec],
+    graph: Any,
+    include_tables: bool,
+    budget_usd: float | None,
+    passes: int,
+) -> PassResult:
+    """Rules once, then ``passes`` independent ladder passes over the document.
+
+    The independence is the thing to protect. Each pass gets its own
+    segmentation and its own temperature, and each is shown only the
+    *deterministic* tier's answers -- never another pass's -- so agreement
+    between two passes remains evidence about the document rather than about
+    what they were both told. Within a pass, the sweep does see what that
+    pass's own orientation stage found, because "find what is still missing"
+    needs to know what is missing.
+    """
+    from .ladder import (
+        _prior_keys, _prior_spans, deterministic_stage, orientation_stage,
+        run_ladder,
+    )
+
+    populated = [kind for kind, chunks in segments.items() if chunks]
+    if not populated:
+        return PassResult(
+            candidates=[], cost=CostLedger(), chunks_seen=0,
+            contributing_chunks=set(),
+        )
+
+    # Stage 1, once. Three runs of a deterministic tier produce three
+    # identical answers, and counting those as corroboration would invent
+    # support for a value only one reader ever produced.
+    rules_chunks = segments.get("structural") or segments[populated[0]]
+    rules = deterministic_stage(
+        doc, rules_chunks, specs, backend.deterministic, include_tables
+    )
+
+    # Stage 2, also once. The definitions do not change between passes, so
+    # three orientation runs would buy one view's worth of evidence at three
+    # times the price -- and would arrive at reconciliation looking like
+    # three-way corroboration for a value one reader produced once.
+    oriented = orientation_stage(
+        doc, graph, specs, backend.model, "orient", _prior_keys(rules.candidates),
+        budget_usd, rules.cost,
+    )
+
+    grounding = [*rules.candidates, *oriented.candidates]
+    priors = _prior_keys(grounding)
+    prior_spans = _prior_spans(grounding)
+    answered = {c.field for c in grounding if c.value is not None}
+
+    total = PassResult(
+        candidates=list(grounding),
+        cost=rules.cost,
+        chunks_seen=sum(
+            s.chunks_visited for s in (*rules.stages, *oriented.stages)
+        ),
+        contributing_chunks=(
+            set(rules.contributing_chunks) | set(oriented.contributing_chunks)
+        ),
+        searched={**rules.searched, **oriented.searched},
+        stage_log=[
+            f"{s.describe()}" for s in (*rules.stages, *oriented.stages)
+        ],
+        swept_exhaustively=oriented.swept_exhaustively,
+    )
+    total.cost.merge(oriented.cost)
+    total.unread_chunks.extend(
+        u for s in (*rules.stages, *oriented.stages) for u in s.unread
+    )
+
+    for kind, temperature, pass_id in plan_passes(populated, passes):
+        worker = getattr(
+            backend.model, "with_temperature", lambda _t: backend.model
+        )(temperature)
+        result = run_ladder(
+            doc, segments[kind], specs, worker, graph, pass_id=pass_id,
+            priors=priors, prior_spans=prior_spans, already_answered=answered,
+            budget_usd=budget_usd, spent=total.cost,
+        )
+        for candidate in result.candidates:
+            candidate.segmentation = candidate.segmentation or kind
+        total.candidates.extend(result.candidates)
+        total.cost.merge(result.cost)
+        total.contributing_chunks |= result.contributing_chunks
+        total.chunks_seen += sum(s.chunks_visited for s in result.stages)
+        total.swept_exhaustively &= result.swept_exhaustively
+        for stage in result.stages:
+            total.stage_log.append(f"{pass_id}: {stage.describe()}")
+            total.unread_chunks.extend(stage.unread)
+        for name, chunks in result.searched.items():
+            total.searched.setdefault(name, set()).update(chunks)
+    return total
+
+
+def _prior_keys_for(candidates: list[Candidate]) -> dict[str, str]:
+    from .ladder import _prior_keys
+
+    return _prior_keys(candidates)
+
+
 def run_passes(
     doc: NormalizedDocument,
     segments: dict[str, list[Chunk]],
@@ -1345,13 +1568,32 @@ def run_passes(
     include_tables: bool = True,
     budget_usd: float | None = None,
     passes: int = 3,
+    ladder: bool = True,
 ) -> PassResult:
     """Run the target list over every segmentation, at least ``passes`` times.
 
     One pass per segmentation by default, so a field found by all three has
     genuinely independent support rather than three samples of the same view.
+
+    ``ladder=False`` restores the flat walk -- every chunk of every
+    segmentation asked for every field. It is kept reachable rather than
+    deleted because it is the baseline the ladder has to beat, and a change
+    to the extraction strategy that cannot be measured against the strategy
+    it replaced is a change nobody can defend.
     """
     specs = specs or list(FIELD_REGISTRY.values())
+
+    # The ladder is the way a layered backend is meant to be driven: the rules
+    # read the whole document once, then each pass orients on the definition
+    # graph and sweeps its sections, asking only for what is still open
+    # document-wide. Without a model tier there is nothing to orient, so the
+    # flat walk below is still the right thing for a rules-only run.
+    if ladder and isinstance(backend, LayeredBackend) and backend.model is not None:
+        return _run_ladder_passes(
+            doc, segments, backend, specs, graph, include_tables,
+            budget_usd, passes,
+        )
+
     candidates: list[Candidate] = []
     cost = CostLedger()
     contributing: set[str] = set()
