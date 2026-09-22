@@ -21,6 +21,29 @@ families:
     title: defects that parse cleanly
     silent_error_budget: 0.0
     min_n: 5
+    notes: >
+      Read this row's N with its composition in mind. Of its real
+      propositions, 67 are a governing law and 25 an administrative agent's
+      name -- plain extraction rather than traps -- and roughly a dozen are
+      the integrity defects the family is named for: a duplicated
+      amortization row, a cross-reference to a section that does not exist, a
+      numeral disagreeing with its own words.
+
+      They are filed here deliberately and the binding is narrower than it
+      looks. A garbled-but-parseable party name is an F01 defect exactly as
+      the family defines one, and the corpus shows the rate is not small: of
+      31 administrative-agent candidates a regex produced from cover pages, 8
+      were mangled enough to drop rather than assert -- "LENDERS party hereto
+      and J.P. MORGAN SE", "Holdings and the Borrower", "SunTrust Bank ,
+      individually as a Lender and". Each of those parses cleanly and is
+      wrong, which is the family's whole subject.
+
+      What the row therefore does not tell you is how well the seven
+      invariants in defended_by are exercised. Those are tested by the dozen,
+      not by the hundred, and no aggregate here separates the two. The guide
+      warns that an assertion filed under the wrong family makes that family
+      look tested when it is not; this note is the alternative to silently
+      proving the warning right.
     defended_by:
       - amortization_dates_strictly_increasing
       - amortization_row_count_matches_quarters

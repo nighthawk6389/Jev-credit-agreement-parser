@@ -13,6 +13,7 @@ register beside it.
 
 from __future__ import annotations
 
+import textwrap
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -221,6 +222,9 @@ class FamilyCoverage(BaseModel):
     confirmed_wrong: int = 0
     min_n: int = 5
     silent_error_budget: float = 0.0
+    #: Carried from the register so a caveat about what the row counts travels
+    #: with the row. A coverage number nobody can interpret is worse than none.
+    notes: str = ""
 
     @property
     def pass_rate(self) -> float:
@@ -297,6 +301,18 @@ class CoverageReport(BaseModel):
                 f"{coverage.failed:5d} {coverage.silent_error_rate:7.3f}"
                 + ("  " + "; ".join(flags) if flags else "")
             )
+        annotated = [
+            (key, self.families[key].notes)
+            for key in sorted(self.families) if self.families[key].notes
+        ]
+        if annotated:
+            lines.append("")
+            lines.append("  WHAT THESE ROWS COUNT")
+            for key, note in annotated:
+                lines.append(f"    [{key}]")
+                for para in note.strip().split("\n\n"):
+                    wrapped = textwrap.fill(" ".join(para.split()), 72)
+                    lines.append(textwrap.indent(wrapped, "      "))
         lines.append("")
         lines.append(self.blind_spots.headline())
         lines.append("")
@@ -311,6 +327,7 @@ def empty_coverage(register: FamilyRegister | None = None) -> dict[str, FamilyCo
             family=family.id,
             min_n=family.min_n,
             silent_error_budget=family.silent_error_budget,
+            notes=family.notes,
         )
         for family in register
     }
