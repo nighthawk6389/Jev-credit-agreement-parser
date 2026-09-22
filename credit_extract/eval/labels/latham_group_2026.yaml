@@ -200,3 +200,28 @@ assertions:
       discuss debt junior to itself, while a first lien agreement of this size
       negotiates the subject at length. The signal ran in the wrong direction
       and its strength ran in the wrong direction too.
+
+  - id: latham_section_headings_are_inline_and_mixed_case
+    family: F11_layout
+    member: grid_rendered_as_text
+    kind: text_present
+    target: "Section 2.01. Commitments"
+    expect: true
+    note: >
+      Found on the second pass and the worst segmentation in the corpus:
+      944,674 characters in 13 sections, 72,667 characters each, where every
+      comparable agreement runs 5,000 to 6,000. The thirteen were the ARTICLE
+      divisions. All 263 Sections inside them were invisible. The house style
+      is the cause. A heading reads "Section 2.01. Commitments" and a
+      reference reads "pursuant to Section 9.02" -- identical but for a full
+      stop after the number, so the upper-case inline rule, which works on the
+      filing that reads "SECTION 2.07. Repayment of Loans", finds nothing
+      here, and the bare-number rule is held off by the lookbehinds that keep
+      it away from cross-references. The consequence is not a missing heading,
+      it is that every span, chunk and review hint on this document resolved
+      to a seventy-thousand-character blob, and the orphan sweep asks its
+      questions of chunks. So a document whose label already records a missing
+      pricing grid was also being measured at fourteen times the granularity
+      of its peers. Now 127 sections at 7,438 characters. Asserted as text
+      rather than as a count, because the count is the pipeline's working and
+      this is a fact about the filing.

@@ -528,3 +528,45 @@ def test_a_clause_cross_reference_is_extracted():
         "in accordance with clause 5.4 (Lenders' participation) and Section 2.3"
     ) if m.group(1)}
     assert found == {"5.4", "2.3"}
+
+
+def test_a_mixed_case_section_heading_is_found_when_the_case_test_cannot_help():
+    """Latham Pool Products segmented worse than any document in the corpus.
+
+    944,674 characters in 13 sections -- 72,667 each, against 5,000 to 6,000
+    for every comparable agreement. The thirteen were the ARTICLE divisions;
+    all 263 Sections inside them were invisible, so every span, chunk and
+    review hint on that filing resolved to a seventy-thousand-character blob.
+
+    The house style writes "Section 2.01. Commitments" for a heading and
+    "pursuant to Section 9.02" for a reference. Identical but for a full stop,
+    so the upper-case rule finds nothing and the bare rule is held off by the
+    lookbehinds that keep it away from cross-references.
+    """
+    from credit_extract.ingest.normalize import detect_sections
+
+    inline = (
+        "ARTICLE 2 THE CREDITS Section 2.01. Commitments. (a) Subject to the "
+        "terms hereof, each Lender agrees to make Loans. Section 2.02. Loans "
+        "and Borrowings. (a) Each Loan shall be made as part of a Borrowing."
+    )
+    found = {marker.section_id for marker in detect_sections(inline)}
+    assert {"2.01", "2.02"} <= found
+
+
+def test_a_cross_reference_that_ends_a_sentence_is_not_a_heading():
+    """The trailing full stop is necessary and not sufficient.
+
+    A reference can end a sentence, and then the capital that follows is the
+    next sentence rather than a title. The title pattern is what separates
+    them: "Commitments." is Title Case closing with a stop, where "The
+    Collateral Manager shall give notice thereof" dies at "shall".
+    """
+    from credit_extract.ingest.normalize import detect_sections
+
+    prose = (
+        "The Advance Rate shall be redetermined in accordance with Section "
+        "6.4. The Collateral Manager shall give notice thereof to each Lender "
+        "and to the Administrative Agent within two Business Days."
+    )
+    assert detect_sections(prose) == []

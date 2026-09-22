@@ -693,6 +693,39 @@ _INLINE_NUMBERED_SECTION_RE = re.compile(
     r"(?:[ ,;]+(?:[A-Z][A-Za-z']*|of|to|as|and|the|in|on|for|or|etc|Etc)){0,9})"
     r"\.\s",
 )
+#: And the same house style in mixed case, where the case test above cannot
+#: help. Latham Pool Products writes "Section 2.01. Commitments" for a heading
+#: and "pursuant to Section 9.02" for a reference -- identical but for a full
+#: stop, so ``_INLINE_SECTION_RE``'s upper-case rule finds nothing and
+#: ``_INLINE_NUMBERED_SECTION_RE`` is held off by the lookbehinds that keep it
+#: away from cross-references.
+#:
+#: The result was the worst segmentation in the corpus: 944,674 characters in
+#: 13 sections, 72,667 characters each, against 5,000 to 6,000 for every
+#: comparable agreement. The thirteen are the ARTICLE divisions; all 263
+#: Sections inside them were invisible, so every span, every chunk and every
+#: review hint on that document resolved to a seventy-thousand-character blob.
+#:
+#: The trailing full stop after the number is necessary and not sufficient:
+#: 263 occurrences carry it and are headings, 1,034 do not and are references
+#: -- but a reference can also *end a sentence*, and then the capital that
+#: follows is the next sentence rather than a title. "in accordance with
+#: Section 6.4. The Collateral Manager shall give notice thereof" is the case,
+#: and it is already in the test suite because the bare rule below had to
+#: survive it.
+#:
+#: So the title pattern carries the weight here too, and it is the same one:
+#: Title Case words with the connectives real headings use, closing with a
+#: full stop. "Commitments." and "Loans and Borrowings." match; "The
+#: Collateral Manager shall give notice thereof" stops dead at "shall", which
+#: is neither capitalised nor a connective, and the required full stop is then
+#: not there.
+_INLINE_TITLED_SECTION_RE = re.compile(
+    r"(?<![A-Za-z])Section\s+(?P<num>\d{1,2}\.\d{1,2}[A-Za-z]?)\.\s+"
+    r"(?P<title>[A-Z][A-Za-z']*"
+    r"(?:[ ,;]+(?:[A-Z][A-Za-z']*|of|to|as|and|the|in|on|for|or|etc|Etc)){0,9})"
+    r"\s*\.\s",
+)
 #: And the LMA shape, where the heading is a table row rather than a run of
 #: text. Cadeler's facility agreement renders as "| 2.3 | Effectiveness | (a) |
 #: Subject to paragraph (b) below ..." -- the number in one cell, the title in
@@ -745,6 +778,7 @@ def detect_sections(text: str) -> list[SectionMarker]:
         # so a filing that reads correctly today cannot be changed by this.
         for rx, level in ((_INLINE_ARTICLE_RE, "article"),
                           (_INLINE_SECTION_RE, "section"),
+                          (_INLINE_TITLED_SECTION_RE, "section"),
                           (_INLINE_NUMBERED_SECTION_RE, "section"),
                           (_TABLE_CLAUSE_RE, "section")):
             for match in rx.finditer(text):

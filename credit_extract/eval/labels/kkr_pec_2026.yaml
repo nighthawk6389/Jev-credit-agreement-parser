@@ -63,3 +63,18 @@ assertions:
       The practical difference is what a reader should do next. For Aspen
       there is nothing to look up; for this one there is, and saying so is the
       whole value of the status.
+
+  - id: kkr_pec_headings_are_inline_and_mixed_case
+    family: F11_layout
+    member: grid_rendered_as_text
+    kind: text_present
+    target: "Section 1.01. Definitions"
+    expect: true
+    note: >
+      The second document the mixed-case heading rule recovers: 13 sections
+      before, 112 after, 32,743 characters each down to 3,800. Worth its own
+      assertion rather than a mention in Latham's, because the two filings
+      share nothing but the style -- different sponsor, different counsel,
+      different deal -- and a fix justified on one document is a fix fitted to
+      one document. Three filings in the harvest are drafted this way and all
+      three were segmenting into article-sized blobs.
