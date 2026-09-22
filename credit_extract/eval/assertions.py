@@ -27,6 +27,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
+from ..models.core import CONFIDENT_STATUSES as _CONFIDENT_STATUSES
 from .families import FamilyRegister, load_families
 
 AssertionKind = Literal[
@@ -51,11 +52,10 @@ AssertionKind = Literal[
 SCAFFOLD_MARKER = "VERIFY"
 
 #: Statuses the pipeline presents as settled. Anything else is a review flag,
-#: and a wrong answer behind a review flag is not a silent error.
-CONFIDENT_STATUSES = frozenset(
-    {"confirmed", "absent_from_document", "external_reference",
-     "not_applicable_to_archetype"}
-)
+#: and a wrong answer behind a review flag is not a silent error. Defined in
+#: ``models.core`` and re-exported here, because the output structure asserts
+#: under the same set and a second copy could drift.
+CONFIDENT_STATUSES = _CONFIDENT_STATUSES
 
 #: Tolerance for percentage and ratio comparisons.
 NUMERIC_TOLERANCE = Decimal("0.005")

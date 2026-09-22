@@ -1232,6 +1232,18 @@ class LayeredBackend:
         ask = getattr(self.model, "reread_findings", None)
         return ask(doc, chunk) if ask is not None else []
 
+    def unplaced(self) -> list[str]:
+        """Delegate the drift report to the model tier, which alone has one.
+
+        Same reason as ``reread_findings``: the pipeline looks for this on the
+        backend it was handed, and every recorded run hands it one of these
+        wrappers. Without the delegation a recording whose quote no chunk held
+        was dropped and nothing could say so, which reports a reading the
+        model *did* make as one it did not.
+        """
+        ask = getattr(self.model, "unplaced", None)
+        return ask() if ask is not None else []
+
     def extract(
         self,
         doc: NormalizedDocument,

@@ -49,6 +49,8 @@ from .models.core import (
 from .models.archetypes import (
     ArchetypeDetection, inapplicable_fields, suppression_vetoes,
 )
+from .models.agreement import AmendmentLink, CreditAgreement
+from .models.assemble import build_agreement
 from .models.export import FacilityExport, build_facilities, export_summary
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.pricing import Pricing, parse_pricing
@@ -82,6 +84,12 @@ class ExtractionResult(BaseModel):
     #: repository are verified against pinned schemas and, until this existed,
     #: none of them was ever populated by a run.
     facilities: list[FacilityExport] = Field(default_factory=list)
+    #: The same record in the shape the market has: one agreement, its
+    #: metadata, and a tranche per tranche with its own terms, conditions,
+    #: reference data and schedules. Unlike ``facilities`` this drops nothing
+    #: -- every slot carries its status -- so it is the record, and
+    #: ``facilities`` is the interchange format.
+    agreement: CreditAgreement | None = None
     archetype: ArchetypeDetection = Field(default_factory=ArchetypeDetection)
     #: The rate, decomposed. A CSA folded into the margin overstates the yield
     #: and then overstates every MFN comparison made against it.
@@ -414,6 +422,27 @@ def run_pipeline(
 
     facilities = build_facilities(fields)
 
+    # The structured record. Built from the same fields as ``facilities`` and
+    # differing in what it is allowed to drop: nothing. A reading that did not
+    # settle crosses carrying its status, and the tranche it belongs to is a
+    # tranche rather than a copy of the deal.
+    agreement = build_agreement(
+        fields,
+        agreement_id=doc.document_id,
+        document_id=doc.document_id,
+        source_path=str(source),
+        archetype=archetype.model_dump(),
+        chain=_amendment_links(document_set),
+        # Recorded readings whose quote no chunk held. ``RecordedBackend``
+        # has always been able to report these and nothing ever asked, so
+        # readings that silently did not count looked like readings the model
+        # never made.
+        unplaced_readings=(
+            extraction_backend.unplaced()
+            if hasattr(extraction_backend, "unplaced") else ()
+        ),
+    )
+
     # -- report --------------------------------------------------------------
     cost = CostLedger()
     cost.merge(extracted.cost)
@@ -492,6 +521,22 @@ def run_pipeline(
                 f"{k}={v}" for k, v in export_summary(facilities).items()
                 if k != "withheld_by_reason"
             ),
+            # The structured record, which drops nothing. The three coverage
+            # numbers are three different problems: settled is done, unsettled
+            # with a value is a calibration question, and empty is recall.
+            "agreement: " + ", ".join([
+                f"tranches={len(agreement.tranches)}"
+                f" (established {len(agreement.established_tranches())})",
+                *(f"{k}={v}" for k, v in agreement.coverage().items()),
+                f"inherited_from_deal={len(agreement.assembly.inherited_slots)}",
+            ]),
+            # Recorded readings whose quote no chunk held. Empty on every run
+            # that is not replaying a recording, and never silent when it is:
+            # a reading that did not count is not a reading nobody made.
+            "unplaced model readings: " + (
+                ", ".join(agreement.assembly.unplaced_readings)
+                if agreement.assembly.unplaced_readings else "none"
+            ),
             # Tier 4, which had never run: the ladder describes a targeted
             # re-read of the chunks the sweep flagged and nothing supplied one.
             # A line that reads "0 rescued" over a hundred orphans is a
@@ -535,6 +580,7 @@ def run_pipeline(
         actus_mappings=mappings,
         archetype=archetype,
         facilities=facilities,
+        agreement=agreement,
         pricing=pricing,
         document=doc,
         definition_graph=graph,
@@ -706,6 +752,26 @@ def _implied_set(
         amendment_number=number,
         title=title,
     )])
+
+
+def _amendment_links(document_set: DocumentSet | None) -> list[AmendmentLink]:
+    """The chain, in the structured record's shape.
+
+    A single-document run has no chain and gets an empty tuple, which is not
+    the same as a chain nobody looked for -- ``run_document_set`` is the only
+    caller that can supply one.
+    """
+    if document_set is None:
+        return []
+    return [
+        AmendmentLink(
+            document_id=d.document_id,
+            sequence=d.amendment_number,
+            dated=d.effective_date,
+            restates=d.supersedes_chain,
+        )
+        for d in document_set.chain
+    ]
 
 
 def _chain_report(

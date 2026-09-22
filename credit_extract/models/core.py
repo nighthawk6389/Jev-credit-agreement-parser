@@ -38,6 +38,16 @@ RESOLVED_NULL_STATES: frozenset[str] = frozenset(
      "not_applicable_to_archetype"}
 )
 
+#: Statuses the pipeline presents as settled. Anything else is a review flag,
+#: and a wrong answer behind a review flag is not a silent error. This lives
+#: here rather than in the eval package because the output structure needs the
+#: same set to say what it is asserting, and two copies of the definition that
+#: drifted would move the silent-error denominator without anything failing.
+CONFIDENT_STATUSES: frozenset[str] = frozenset(
+    {"confirmed", "absent_from_document", "external_reference",
+     "not_applicable_to_archetype"}
+)
+
 #: Why a magnitude is not in this document. These are different facts and
 #: conflating them corrupts a corpus: the first is a deal characteristic, the
 #: second is an artifact of how the document was filed.
