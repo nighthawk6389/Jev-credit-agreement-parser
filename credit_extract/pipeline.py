@@ -303,7 +303,10 @@ def run_pipeline(
         doc, segments, extraction_backend, graph=graph, budget_usd=budget_usd,
         passes=passes,
     )
-    reconciliation = reconcile(extracted.candidates)
+    # The view count travels with the run: the ladder sweeps two segmentations
+    # and the flat walk three, and "corroborated by every view" has to mean
+    # the same thing in both.
+    reconciliation = reconcile(extracted.candidates, total_passes=extracted.views)
     fields = reconciliation.fields
 
     principal = fields.get("initial_term_loan.commitment")

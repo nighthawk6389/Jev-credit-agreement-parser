@@ -35,10 +35,14 @@ fields that share it. Fields whose answers live in Article I are settled here,
 from the text that defines them, before a single section is swept.
 
 **Stage 3 -- the section sweep.** Whatever stage 2 leaves open is looked for
-section by section. Every section is visited -- see ABSENCE below -- but each
-visit asks only for the fields still open at that point, so the schema shrinks
-as the document is read rather than staying at fifty-six for half a million
-characters.
+section by section, over the structural and sliding views only -- see
+:data:`SWEEP_SEGMENTATIONS` for why the definitional one is not among them.
+Every section is visited -- see ABSENCE below -- but each visit asks only for
+the fields still open at that point, so the schema shrinks as the document is
+read rather than staying at fifty-six for half a million characters.
+
+    flat walk   592 chunks x 3 passes  =  1,776 calls,  9.5M characters
+    ladder       5 + 103 + 124         =    232 calls,  1.26M characters
 
 WHAT THE MODEL IS SHOWN, AND WHAT THAT COSTS
 ============================================
@@ -56,11 +60,16 @@ evidence, not no evidence. A pass that was shown a value and returned a
 different one -- :attr:`~.passes.Candidate.overturns` -- is the strongest
 signal either tier produces, and is why the prior is shown at all.
 
-The prior shown to every pass is the **deterministic tier's**, identical
-across all three. A pass never sees another pass's model findings, or the
-three would stop being independent and ``pass_support`` would mean nothing.
-Within one pass, stage 3 does see stage 2's findings, because "iterate to find
-what is missing" requires knowing what is missing.
+The prior shown to every pass is the **deterministic tier's and the
+orientation stage's**, identical for both sweeps. A sweep never sees the other
+sweep's findings, or the two would stop being independent and ``support``
+would mean nothing.
+
+Corroboration is relative to the views that actually ran. With the
+definitional sweep dropped there are two, so a value both sweeps reach at
+different spans is fully corroborated -- ``_extraction_confidence`` divides by
+the real view count rather than a literal 3, which previously reported "we ran
+fewer views" as "this value was less corroborated".
 
 ABSENCE, AND WHY THE SWEEP DOES NOT STOP EARLY
 ==============================================
@@ -100,6 +109,38 @@ ORIENTATION_MAX_CHARS = 24_000
 #: anchor puts the fields that depend on the same defined term in one request,
 #: which is the whole reason the graph is worth consulting.
 _GROUP_ON_FIRST_ANCHOR = True
+
+#: The views the section sweep walks. The definitional segmentation is
+#: deliberately **not** among them, and this is the largest single cost
+#: decision in the pipeline.
+#:
+#: That segmentation is one chunk per defined term, so on Essential Properties
+#: it is 365 chunks and 1.9 million characters -- 61% of the calls and 60% of
+#: the text of a full run -- and what it sends is mostly boilerplate that
+#: cannot carry a registry field at all:
+#:
+#:     [Affiliate]       11,139 chars   "as to any Person, any other Person
+#:                                       that, directly or indirectly, is in
+#:                                       control of..."
+#:     [Bail-In Action]   2,620 chars   EU resolution-authority boilerplate
+#:     [Bankruptcy Code]  1,610 chars   a statutory reference
+#:
+#: each sent with all fifty-six targets attached. The registry names sixteen
+#: definition anchors and five of them resolve in that document, so 360 of the
+#: 365 chunks were sent on spec. Even the one that should pay -- Applicable
+#: Margin -- opens with 600 characters of table of contents, because use-sites
+#: include the TOC entry.
+#:
+#: The orientation stage does that job properly: it starts from the fields,
+#: resolves their anchors through the graph, and sends the closure. Five calls,
+#: and the Closing Date chunk is 33 characters asking for one field rather than
+#: 13,944 asking for fifty-six.
+#:
+#: The cost of dropping it is a third independent view, so ``support`` now tops
+#: out at two. That was chosen deliberately over keeping a third pass that
+#: differed only by temperature, which ``plan_passes`` itself describes as the
+#: weaker signal.
+SWEEP_SEGMENTATIONS: tuple[str, ...] = ("structural", "sliding")
 
 
 @dataclass

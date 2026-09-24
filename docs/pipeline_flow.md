@@ -150,10 +150,32 @@ run cut short by a budget says so.
 
 ### Cost
 
-| | calls |
-|---|---|
-| old flat walk: 592 chunks × 3 passes, all 56 fields every time | 1,776 |
-| ladder: 5 orient + 103 + 124 + 365 sweep | 597 |
+| | calls | text sent |
+|---|---|---|
+| old flat walk: 592 chunks × 3 passes, all 56 fields every time | 1,776 | 9.5M chars |
+| ladder, sweeping all three views | 597 | 3.18M chars |
+| **ladder as it stands: 5 orient + 103 structural + 124 sliding** | **232** | **1.26M chars** |
+
+The definitional sweep is gone, and that was the largest single cost decision
+in the pipeline. It walked one chunk per defined term — 365 chunks, 1.9M
+characters, 61% of the calls — and what it sent was mostly boilerplate that no
+registry field could live in: 11,139 characters of `"Affiliate"`, 2,620 of
+`"Bail-In Action"`, each with all fifty-six targets attached. The registry
+names sixteen definition anchors and five resolve in that document, so 360 of
+365 chunks were sent on spec. Even `"Applicable Margin"` opened with 600
+characters of table of contents, because use-sites include the TOC entry.
+
+The orientation stage does that job from the other end and sends 33 characters
+for the closing date, asking one field rather than fifty-six.
+
+**The cost is the third view.** `support` now tops out at 2, so
+reconcile's `support < 2` has quietly become a *unanimity* rule where it used
+to be a majority-of-three rule. On Essential Properties that demotes three
+fields from `confirmed` to `needs_review` — `revolver.commitment`,
+`initial_term_loan.commitment` and `rating.credit_quality` — with the values
+unchanged. Two of those three were resting on fictitious support anyway (all
+their candidates cite one span), but the tightening is real and is why that
+rule needs fitting rather than inheriting.
 
 The flat walk is still reachable as `run_passes(ladder=False)`. It is the
 baseline the ladder has to beat, and a change to extraction that cannot be

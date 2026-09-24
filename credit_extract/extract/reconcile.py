@@ -140,7 +140,14 @@ def _extraction_confidence(group: ValueGroup, total_passes: int) -> float:
     base = group.best.confidence
     if group.deterministic:
         return min(0.99, max(base, 0.95))
-    corroboration = min(group.support, 3) / 3.0
+    # Corroboration is relative to the views that were actually run, not to a
+    # literal 3. This argument was accepted and then ignored in favour of a
+    # hardcoded denominator, which was harmless only while every run had three
+    # segmentations to sweep. The ladder sweeps two, so the old form capped
+    # every corroborated value at 2/3 and reported "we ran fewer views" as
+    # "this value was less corroborated" -- which are different facts.
+    views = max(1, total_passes)
+    corroboration = min(group.support, views) / views
     return round(min(0.99, 0.45 * base + 0.55 * corroboration), 4)
 
 

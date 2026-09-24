@@ -1384,6 +1384,11 @@ class PassResult:
     #: False when a budget stopped a sweep before every section was offered
     #: every open field, which makes absence claims unsafe for this run.
     swept_exhaustively: bool = True
+    #: How many independent views of the document this run actually swept.
+    #: Reconciliation needs it to say what full corroboration means: a value
+    #: found by every view that ran is fully corroborated, and how many ran is
+    #: a property of the run rather than a constant.
+    views: int = 3
 
     def by_tier(self) -> dict[str, int]:
         """Distinct fields each tier settled.
@@ -1476,11 +1481,14 @@ def _run_ladder_passes(
     needs to know what is missing.
     """
     from .ladder import (
-        _prior_keys, _prior_spans, deterministic_stage, orientation_stage,
-        run_ladder,
+        SWEEP_SEGMENTATIONS, _prior_keys, _prior_spans, deterministic_stage,
+        orientation_stage, run_ladder,
     )
 
-    populated = [kind for kind, chunks in segments.items() if chunks]
+    # The sweep walks structural and sliding only. The definitional
+    # segmentation is the orientation stage's job and doing it twice cost 61%
+    # of the calls -- see SWEEP_SEGMENTATIONS for the measurement.
+    populated = [k for k in SWEEP_SEGMENTATIONS if segments.get(k)]
     if not populated:
         return PassResult(
             candidates=[], cost=CostLedger(), chunks_seen=0,
@@ -1523,13 +1531,22 @@ def _run_ladder_passes(
             f"{s.describe()}" for s in (*rules.stages, *oriented.stages)
         ],
         swept_exhaustively=oriented.swept_exhaustively,
+        views=max(1, len(populated)),
     )
     total.cost.merge(oriented.cost)
     total.unread_chunks.extend(
         u for s in (*rules.stages, *oriented.stages) for u in s.unread
     )
 
-    for kind, temperature, pass_id in plan_passes(populated, passes):
+    # One pass per view, never more. ``passes`` may lower that -- a caller
+    # asking for one pass gets one -- but it may not raise it, because
+    # ``plan_passes`` fills passes beyond the view count by repeating a
+    # segmentation at a different temperature, and a temperature round is a
+    # resample of the same view rather than a second look at the document.
+    # Spending on one and counting it as corroboration is the thing the echo
+    # rule exists to prevent.
+    planned = plan_passes(populated, min(passes, len(populated)))
+    for kind, temperature, pass_id in planned:
         worker = getattr(
             backend.model, "with_temperature", lambda _t: backend.model
         )(temperature)

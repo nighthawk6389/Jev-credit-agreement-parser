@@ -261,6 +261,54 @@ def test_fields_with_no_anchor_are_left_to_the_sweep():
 # ---------------------------------------------------------------------------
 
 
+def test_the_sweep_does_not_walk_the_definitional_segmentation():
+    """One chunk per defined term was 61% of the calls and 60% of the text on
+    a real agreement, sending 11,000 characters of "Affiliate" boilerplate
+    with all fifty-six targets attached. The orientation stage reads the
+    definitions the registry actually names, in five calls."""
+    from credit_extract.extract.ladder import SWEEP_SEGMENTATIONS
+
+    assert "definitional" not in SWEEP_SEGMENTATIONS
+    assert SWEEP_SEGMENTATIONS == ("structural", "sliding")
+
+
+def test_corroboration_is_relative_to_the_views_that_ran():
+    """The denominator was a hardcoded 3 while the argument saying otherwise
+    was accepted and ignored. Harmless while every run had three
+    segmentations; with two it reported "we ran fewer views" as "this value
+    was less corroborated", which are different facts."""
+    from credit_extract.extract.reconcile import _extraction_confidence
+
+    both = ValueGroup(key="k", value=1, candidates=[
+        _cand(segmentation="structural"), _cand(segmentation="sliding"),
+    ])
+    assert both.support == 2
+
+    # Found by every view that ran is full corroboration, whether that is two
+    # views or three.
+    two = _extraction_confidence(both, total_passes=2)
+    three_view_equivalent = _extraction_confidence(
+        ValueGroup(key="k", value=1, candidates=[
+            _cand(segmentation=s) for s in ("structural", "sliding", "definitional")
+        ]),
+        total_passes=3,
+    )
+    assert two == three_view_equivalent
+
+    # And a value found by one of two is still short of it.
+    one = _extraction_confidence(
+        ValueGroup(key="k", value=1, candidates=[_cand()]), total_passes=2
+    )
+    assert one < two
+
+
+def test_a_zero_view_count_cannot_divide_by_zero():
+    from credit_extract.extract.reconcile import _extraction_confidence
+
+    group = ValueGroup(key="k", value=1, candidates=[_cand()])
+    assert 0.0 <= _extraction_confidence(group, total_passes=0) <= 0.99
+
+
 def test_the_ladder_records_which_sections_were_searched_per_field():
     """Validator C is the only thing that may call a field absent, and that
     is a confident status inside the silent-error budget. It needs to be able
