@@ -317,11 +317,20 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         return {}
 
     # Lowest absence probability across chunks = strongest evidence of presence.
+    #
+    # The initialiser is 1.0, which is the identity for a minimum and is also
+    # the most confident possible claim that the field is absent. That is only
+    # safe if the loop below actually runs: a field asked of no chunk keeps
+    # 1.0 and sails past the threshold, and ``absent_from_document`` is a
+    # CONFIDENT status counted in the silent-error budget. So the asked count
+    # is tracked and a field nobody asked about is not entitled to an answer.
     min_absence: dict[str, float] = {name: 1.0 for name in pending}
     witness: dict[str, Span] = {}
+    asked = 0
     for chunk in ctx.chunks:
         if not chunk.text.strip():
             continue
+        asked += 1
         questions: list[Question] = [
             Noul(
                 name=name,
@@ -361,7 +370,20 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         # first is absence, and confirming the second would be a silent error
         # with a probability printed next to it.
         untypable = field.qualifiers.get("untypable_value")
-        if _amends_an_agreement_it_does_not_carry(ctx.doc):
+        if not asked:
+            # Nothing was swept, so 1.0 is the initialiser showing through
+            # rather than evidence. "Absent from a document nobody read" is
+            # the purest form of the failure this validator exists to prevent,
+            # and it arrives wearing the maximum confidence the scale has.
+            field.status = "needs_review"
+            field.validation_confidence = None
+            field.notes = (
+                "absence not testable: no chunk carried any text to ask of, "
+                f"so none of the {len(ctx.chunks)} chunk(s) in this run was "
+                "swept. A field nobody looked for is not a field confirmed "
+                "missing"
+            )
+        elif _amends_an_agreement_it_does_not_carry(ctx.doc):
             # The third reason a field can be empty, and the one the corpus
             # found last. Comtech's Amendment No. 5 amends sections of a credit
             # agreement the filing does not contain; "Applicable Margin" occurs
@@ -395,7 +417,7 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
             field.validation_confidence = probability
             field.notes = (
                 f"affirmatively confirmed absent at {probability:.2f} across "
-                f"{len(ctx.chunks)} chunks"
+                f"{asked} swept chunk(s)"
             )
         else:
             field.status = "needs_review"

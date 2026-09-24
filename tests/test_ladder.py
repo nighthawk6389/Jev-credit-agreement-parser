@@ -272,6 +272,30 @@ def test_the_sweep_does_not_walk_the_definitional_segmentation():
     assert SWEEP_SEGMENTATIONS == ("structural", "sliding")
 
 
+def test_orientation_reads_definitions_not_use_sites():
+    """The definitional *segmentation* merges a definition with a padded
+    window at up to twelve use sites, and on a real agreement those windows
+    pick up table-of-contents entries -- the chunk for "Applicable Margin"
+    opened with 600 characters of page numbers. That segmentation is no longer
+    swept, so the noise is gone from the live path.
+
+    It is gone because ``_closure_chunk`` builds from ``node.span``, the
+    definition itself. Nothing stops a future change reaching for
+    ``node.use_sites`` to widen the context, which would put the TOC back into
+    the stage that now carries all the definitional weight. This is the guard.
+    """
+    import inspect
+
+    from credit_extract.extract import ladder
+
+    source = inspect.getsource(ladder._closure_chunk)
+    assert "use_sites" not in source, (
+        "the orientation stage must build from definition spans; use sites "
+        "carry table-of-contents entries"
+    )
+    assert "node, \"span\", None" in source or 'node, "span"' in source
+
+
 def test_corroboration_is_relative_to_the_views_that_ran():
     """The denominator was a hardcoded 3 while the argument saying otherwise
     was accepted and ignored. Harmless while every run had three

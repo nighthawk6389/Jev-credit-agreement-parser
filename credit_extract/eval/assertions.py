@@ -143,6 +143,16 @@ class AssertionOutcome(BaseModel):
     #: is keyed on. ``document`` above is the pipeline's internal id -- a hash
     #: that says nothing about which side of the split this was measured on.
     label_document: str = ""
+    #: How many independent views backed the winning value, where this
+    #: assertion is about a field. ``reconcile`` demotes a field below a
+    #: support floor, and that floor was never fitted against anything --
+    #: carrying the number here is what lets it be. None for assertions that
+    #: are not about a field's value.
+    support: int | None = None
+    #: The field's criticality, so the fit can be read per class rather than
+    #: pooled: a wrong notice address and a wrong maturity are not the same
+    #: error and should not share a floor.
+    criticality: int | None = None
 
     @property
     def silent_error(self) -> bool:
@@ -234,6 +244,8 @@ def evaluate_assertion(
     observed: Any = None
     confident = True
     detail = ""
+    support: int | None = None
+    criticality: int | None = None
 
     if kind in ("field_value", "field_status", "field_external_kind", "field_unit"):
         field = result.fields.get(assertion.target)
@@ -246,6 +258,8 @@ def evaluate_assertion(
                 detail=f"{assertion.target} is not an extraction target",
             )
         confident = _field_confident(field)
+        support = getattr(field, "pass_support", None)
+        criticality = getattr(field, "criticality", None)
         if kind == "field_value":
             observed = field.value
         elif kind == "field_status":
@@ -356,6 +370,7 @@ def evaluate_assertion(
         family=assertion.family, member=assertion.member, kind=kind,
         passed=passed, expected=assertion.expect, observed=observed,
         confident=confident, source=source, detail=detail,
+        support=support, criticality=criticality,
     )
 
 

@@ -33,6 +33,17 @@ SPAN_AGREEMENT_THRESHOLD = 0.30
 #: Pass ids from deterministic parsing, which need no corroboration.
 DETERMINISTIC_PREFIX = "deterministic:"
 
+#: How many independent views must back a value before it may be presented as
+#: settled. Every other threshold in this repository is fitted against
+#: labelled outcomes; this one was a literal 2, chosen when a run always had
+#: three segmentations to sweep, and it governs the same decision.
+#:
+#: Dropping the definitional sweep made that stop being harmless: with three
+#: views ``< 2`` was a majority rule, with two it is unanimity.
+#: ``eval/support_fit.py`` is the fitter, and the number lives there so the
+#: rule and its evidence cannot drift apart.
+from ..eval.support_fit import SUPPORT_FLOOR  # noqa: E402
+
 
 @dataclass
 class ValueGroup:
@@ -284,7 +295,7 @@ def reconcile(
                 field=name,
                 candidates=field.alternatives,
             ))
-        elif winner.support < 2 and not winner.deterministic:
+        elif winner.support < SUPPORT_FLOOR and not winner.deterministic:
             field.status = "needs_review"
             field.notes = (
                 "single-pass discovery: found by "
