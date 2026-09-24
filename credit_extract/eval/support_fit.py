@@ -37,6 +37,47 @@ this fits on is the non-deterministic remainder, which is small. And the fit
 is over the whole corpus, fit side included; a floor tuned on documents the
 rules were built against is optimistic by construction, which is why the
 report splits it.
+
+WHAT THE FIRST RUN ACTUALLY FOUND
+=================================
+
+Not a verdict on the floor. Four outcomes fall below it, so the answer is
+INCONCLUSIVE and :data:`SUPPORT_FLOOR` stays a policy. What the run did find
+is a defect in ``support`` itself::
+
+     support     n  passed  precision
+           1     4       2      0.500
+           2    20      18      0.900
+           3    43      22      0.512
+
+More independent views, worse precision. That inverts the premise the whole
+corroboration model rests on, and it is not noise. Sixteen of the support-3
+failures are one field -- ``closing_date`` -- and within that field alone the
+inversion is stark::
+
+    closing/effective date assertions    support 2:  12/13 = 0.923
+                                         support 3:   9/24 = 0.375
+    everything else                      support 2:   6/7  = 0.857
+                                         support 3:  13/19 = 0.684
+
+A closing date appears in the preamble, in the definitions, and in every
+amendment recital, so it is found by every segmentation -- and the extractor
+picks the wrong instance. High support on a recurring string is evidence that
+**the string is everywhere**, not that the reading is right. For a value
+stated once, agreement across views means what it is supposed to mean; for a
+value stated eleven times, it means the opposite.
+
+This is a limit of the span test in ``Candidate.echoes`` too, and worth being
+plain about since that test is new. It distinguishes a parrot from a second
+reading by asking whether the citation moved. For ``closing_date`` the
+citations genuinely differ -- they are simply all wrong instances, so the
+spans diverge and the candidates count as independent support for a value
+nobody should trust.
+
+Fixing it is not a threshold change. It needs the extractor to decide *which*
+occurrence of a recurring value is the operative one, which is what the
+definition graph is for: the closing date is a defined term, and the
+definition is the answer while the recitals are mentions.
 """
 
 from __future__ import annotations
@@ -54,6 +95,18 @@ from .split import load_split
 #: Support levels below this are demoted by ``reconcile``. Imported there so
 #: there is one definition, and named so a reader can find this module from
 #: the rule.
+#:
+#: **This is a documented policy, not a fitted number**, and the distinction is
+#: the point of having run the fit. Of the labelled outcomes the floor can act
+#: on -- fields that produced a value -- four fall below it, one of them on the
+#: held-out side. Four outcomes settle nothing, so the honest result is
+#: INCONCLUSIVE and the floor keeps its value on the grounds that a value
+#: reached by one view of the document is weaker evidence than one reached by
+#: several, which is an argument rather than a measurement.
+#:
+#: What it would take to fit it: enough labelled fields that land at support 1
+#: with a value. The corpus produces almost none, because the deterministic
+#: tier either finds a thing in every view or in none.
 SUPPORT_FLOOR = 2
 
 #: Kinds whose outcome is about a field's value, and so whose support means
