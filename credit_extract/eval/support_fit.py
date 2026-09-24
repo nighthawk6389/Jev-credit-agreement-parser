@@ -96,10 +96,27 @@ class Bucket:
 def buckets_from(
     outcomes: Iterable[AssertionOutcome], side: str | None = None
 ) -> dict[int, Bucket]:
-    """Group labelled field outcomes by the support behind them."""
+    """Group labelled field outcomes by the support behind them.
+
+    Only outcomes where the pipeline produced a **value** are counted, and
+    that restriction is the whole validity of the fit.
+
+    ``reconcile``'s floor sits on the branch that runs after a winning value
+    has been chosen. A field no pass produced a candidate for takes an earlier
+    branch, keeps ``pass_support`` at 0, and is never demoted by the floor
+    because there is nothing to demote. Counting those outcomes measures
+    whether the extractor finds things, which is a real question and not this
+    one -- and on this corpus it swamps the answer: 212 of 216 below-floor
+    outcomes were fields with no candidate at all, which dragged the
+    below-floor precision to 0.097 and made the floor look vindicated by
+    evidence that never bore on it.
+    """
     out: dict[int, Bucket] = {}
     for outcome in outcomes:
         if outcome.kind not in _VALUE_KINDS or outcome.support is None:
+            continue
+        if outcome.observed is None:
+            # No value, so the floor could not have acted on it either way.
             continue
         if outcome.source != "real":
             # A synthetic fixture's support says more about the fixture than
@@ -188,6 +205,11 @@ def main(argv: list[str] | None = None) -> int:
         "--no-mutations", action="store_true",
         help="skip mutants; halves the runtime and changes no real outcome",
     )
+    parser.add_argument(
+        "--save", type=Path,
+        help="write the outcomes as JSON so the fit can be re-cut without "
+             "another full corpus pass -- read back with --outcomes",
+    )
     args = parser.parse_args(argv)
 
     if args.outcomes:
@@ -199,6 +221,11 @@ def main(argv: list[str] | None = None) -> int:
         ensure_corpus_unpacked()
         run = run_coverage(include_mutations=not args.no_mutations)
         outcomes = run.outcomes
+
+    if args.save:
+        args.save.write_text(
+            json.dumps([o.model_dump(mode="json") for o in outcomes], indent=1)
+        )
 
     print(report(outcomes, args.floor))
     return 0
