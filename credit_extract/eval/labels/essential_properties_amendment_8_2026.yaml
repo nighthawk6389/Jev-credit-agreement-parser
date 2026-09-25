@@ -63,15 +63,30 @@ assertions:
     member: operative_version_ambiguous
     kind: field_status
     target: closing_date
-    expect: conflicted
+    expect: confirmed
     note: >
-      The honest outcome while the extractor cannot tell these dates apart.
-      A field with eleven candidates at equal weight must not be confirmed
-      at any of them: a confident wrong closing date is a silent error, and
-      an unresolved one is a question. This assertion is written to fail if
-      the pipeline ever starts asserting a value here without also getting
-      it right -- if it later resolves to 2018-06-25 and confirms it, this
-      assertion should be replaced, not deleted.
+      REPLACED, on the condition this assertion named for itself.
+
+      It expected 'conflicted', and said: "written to fail if the pipeline
+      ever starts asserting a value here without also getting it right -- if
+      it later resolves to 2018-06-25 and confirms it, this assertion should
+      be replaced, not deleted." That is what happened, so this is the
+      replacement rather than a deletion.
+
+      What changed is not a threshold. The eleven candidates came from one
+      rule, 'dated as of ([A-Z][a-z]+ \d{1,2}, \d{4})', which reads the
+      execution date of whatever instrument the sentence is about -- and every
+      recital carries one. It fired nineteen times here. The rule meant to
+      read the definition wanted '"Closing Date" means' and this document
+      writes a colon, so it never fired at all. The extractor now reads the
+      term where the document settles it, and the recital rule is gone.
+
+      Read with its sibling above, which pins the value at 2018-06-25, the
+      pair says the thing worth protecting: not merely that the field is
+      settled, but that the settled value is the defined term's date and not
+      a recital's. Either one alone would be weaker -- 'confirmed' with no
+      value check would pass on a confidently wrong date, which is the
+      failure the original assertion existed to catch.
 
   # -- F02 precedence: the grid is a table inside a definition ---------------
 
