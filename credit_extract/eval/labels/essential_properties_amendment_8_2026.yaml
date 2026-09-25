@@ -63,30 +63,30 @@ assertions:
     member: operative_version_ambiguous
     kind: field_status
     target: closing_date
-    expect: confirmed
+    expect: conflicted
     note: >
-      REPLACED, on the condition this assertion named for itself.
+      The honest outcome while the extractor cannot tell these dates apart.
+      A field with eleven candidates at equal weight must not be confirmed
+      at any of them: a confident wrong closing date is a silent error, and
+      an unresolved one is a question. This assertion is written to fail if
+      the pipeline ever starts asserting a value here without also getting
+      it right -- if it later resolves to 2018-06-25 and confirms it, this
+      assertion should be replaced, not deleted.
 
-      It expected 'conflicted', and said: "written to fail if the pipeline
-      ever starts asserting a value here without also getting it right -- if
-      it later resolves to 2018-06-25 and confirms it, this assertion should
-      be replaced, not deleted." That is what happened, so this is the
-      replacement rather than a deletion.
+      NOT YET REPLACED, and the near miss is worth recording. The definitions
+      tier now reads '" Closing Date ": June 25, 2018.' and wins the ranking
+      outright, so the sibling assertion above passes and the *value* is the
+      defined term's. The status is still 'conflicted', because the eleven
+      recital dates are still candidates -- the definition outranks them, it
+      does not remove them.
 
-      What changed is not a threshold. The eleven candidates came from one
-      rule, 'dated as of ([A-Z][a-z]+ \d{1,2}, \d{4})', which reads the
-      execution date of whatever instrument the sentence is about -- and every
-      recital carries one. It fired nineteen times here. The rule meant to
-      read the definition wanted '"Closing Date" means' and this document
-      writes a colon, so it never fired at all. The extractor now reads the
-      term where the document settles it, and the recital rule is gone.
-
-      Read with its sibling above, which pins the value at 2018-06-25, the
-      pair says the thing worth protecting: not merely that the field is
-      settled, but that the settled value is the defined term's date and not
-      a recital's. Either one alone would be weaker -- 'confirmed' with no
-      value check would pass on a confidently wrong date, which is the
-      failure the original assertion existed to catch.
+      So the condition named above is half met: it resolves to 2018-06-25 and
+      does not confirm it. This assertion was briefly edited to expect
+      'confirmed' during an experiment that deleted the recital rule
+      altogether; that experiment was reverted on the evidence (it fixed 19
+      assertions and broke 14), and the edit went with it. Ground truth does
+      not move to match a behaviour, least of all a behaviour that was itself
+      reverted a commit later.
 
   # -- F02 precedence: the grid is a table inside a definition ---------------
 

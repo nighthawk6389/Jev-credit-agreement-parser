@@ -158,7 +158,14 @@ assertions:
     member: undefined_term_used
     kind: report_count
     target: orphan_chunks
-    expect: 143
+    expect: 141
     note: >
       A tripwire on the sweep, not a target. 182 tables in this document and
       the field model reaches almost none of them.
+
+      Was 143, and it fired -- which is what a tripwire is for. The
+      definitions tier now produces candidates from two chunks the sweep
+      previously saw nothing in, so those two stopped being orphans. Fewer
+      uncaptured chunks is the right direction, and the number moves with it
+      rather than being frozen: a tripwire exists to make a change noticed and
+      explained, not to forbid one.
