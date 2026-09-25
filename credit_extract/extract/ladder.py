@@ -95,6 +95,7 @@ from ..ingest.normalize import NormalizedDocument
 from ..ingest.segment import Chunk
 from ..models.core import CostLedger, Span
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
+from .definitions import definition_candidates
 from .passes import (
     Candidate, ExtractionFailed, _extract_with_priors, table_candidates,
 )
@@ -539,6 +540,7 @@ def deterministic_stage(
     specs: list[FieldSpec],
     rules: Any,
     include_tables: bool = True,
+    graph: Any = None,
 ) -> LadderResult:
     """Stage 1, over the whole document once.
 
@@ -556,6 +558,18 @@ def deterministic_stage(
         result.cost.deterministic_calls += 1
         record.calls += 1
         record.settled.update(c.field for c in found if c.value is not None)
+
+    # A field whose value is a defined term is settled by its definition, and
+    # the graph already knows which span that is. Free, and it runs before the
+    # prose rules so that "dated as of" cannot outvote the definitions article.
+    from_definitions = definition_candidates(doc, graph, specs)
+    if from_definitions:
+        result.candidates.extend(from_definitions)
+        result.cost.deterministic_calls += 1
+        record.calls += 1
+        record.settled.update(
+            c.field for c in from_definitions if c.value is not None
+        )
 
     if rules is None:
         return result

@@ -961,7 +961,19 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent", 0.90, 0),
     # -- dates ---------------------------------------------------------------
     Rule("closing_date", r'"Closing Date"\s+means\s+([^.]+)\.', 0.95),
-    Rule("closing_date", r"dated as of ([A-Z][a-z]+ \d{1,2}, \d{4})", 0.70),
+    # "dated as of" was here at 0.70 and is gone. It reads the *execution*
+    # date of whatever instrument the sentence is about, which is not the
+    # closing date, and in an amendment it is usually some other agreement's
+    # date entirely -- every recital carries one. It matched 19 times on
+    # Essential Properties, yielding 11 distinct dates, and 527 distinct dates
+    # across the harvested corpus. All of them arrived tagged
+    # ``deterministic:``, which is a flat 0.95 in reconcile and the top of the
+    # ranking key, so a recital outranked the definitions article.
+    #
+    # ``extract/definitions.py`` reads the term where the document settles it.
+    # Where no definition states a date the honest answer is no candidate:
+    # many of these agreements define the Closing Date as an event, and
+    # several labels assert exactly that.
     Rule("initial_term_loan.maturity_date",
          r'"Initial Term Loan Maturity Date"\s+means\s+([^.]+)\.', 0.95),
     Rule("revolver.maturity_date",
@@ -1500,7 +1512,8 @@ def _run_ladder_passes(
     # support for a value only one reader ever produced.
     rules_chunks = segments.get("structural") or segments[populated[0]]
     rules = deterministic_stage(
-        doc, rules_chunks, specs, backend.deterministic, include_tables
+        doc, rules_chunks, specs, backend.deterministic, include_tables,
+        graph=graph,
     )
 
     # Stage 2, also once. The definitions do not change between passes, so
@@ -1619,6 +1632,15 @@ def run_passes(
 
     if include_tables:
         candidates.extend(table_candidates(doc))
+        cost.deterministic_calls += 1
+
+    # The flat walk gets the definitions tier too. It is the baseline the
+    # ladder is measured against, and a baseline missing a free tier the
+    # ladder has would flatter the ladder rather than test it.
+    from .definitions import definition_candidates
+    from_definitions = definition_candidates(doc, graph, specs)
+    if from_definitions:
+        candidates.extend(from_definitions)
         cost.deterministic_calls += 1
 
     populated = [kind for kind, chunks in segments.items() if chunks]
