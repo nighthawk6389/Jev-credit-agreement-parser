@@ -961,19 +961,23 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent", 0.90, 0),
     # -- dates ---------------------------------------------------------------
     Rule("closing_date", r'"Closing Date"\s+means\s+([^.]+)\.', 0.95),
-    # "dated as of" was here at 0.70 and is gone. It reads the *execution*
-    # date of whatever instrument the sentence is about, which is not the
-    # closing date, and in an amendment it is usually some other agreement's
-    # date entirely -- every recital carries one. It matched 19 times on
-    # Essential Properties, yielding 11 distinct dates, and 527 distinct dates
-    # across the harvested corpus. All of them arrived tagged
-    # ``deterministic:``, which is a flat 0.95 in reconcile and the top of the
-    # ranking key, so a recital outranked the definitions article.
+    # A cover or recital date, and a weak one: it reads the execution date of
+    # whatever instrument the sentence is about, which in an amendment is
+    # often some other agreement's. It matched 19 times on Essential
+    # Properties for 11 distinct dates, and 527 distinct dates corpus-wide.
     #
-    # ``extract/definitions.py`` reads the term where the document settles it.
-    # Where no definition states a date the honest answer is no candidate:
-    # many of these agreements define the Closing Date as an event, and
-    # several labels assert exactly that.
+    # It was deleted for one commit, and the corpus said that was too blunt:
+    # 19 assertions were fixed and 14 broken, 11 of them by reporting nothing
+    # where the recital date had been right. The definition cannot arbitrate
+    # either -- "defined but states no date" covers both StepStone, whose
+    # closing date IS the cover date, and Janus, whose closing date is an
+    # event. Telling those apart is judgement, which is the model tier's job.
+    #
+    # So it stays, at a confidence below the definitions tier, and
+    # ``ValueGroup.from_definition`` puts the definition ahead of it in the
+    # ranking. Where the document settles the term, that wins; where it does
+    # not, a cover date is better than nothing and is flagged accordingly.
+    Rule("closing_date", r"dated as of ([A-Z][a-z]+ \d{1,2}, \d{4})", 0.55),
     Rule("initial_term_loan.maturity_date",
          r'"Initial Term Loan Maturity Date"\s+means\s+([^.]+)\.', 0.95),
     Rule("revolver.maturity_date",

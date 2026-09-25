@@ -92,6 +92,27 @@ class ValueGroup:
         return any(c.pass_id.startswith(DETERMINISTIC_PREFIX) for c in self.candidates)
 
     @property
+    def from_definition(self) -> bool:
+        """True where some candidate was read from the term's own definition.
+
+        This outranks everything else, including the rest of the deterministic
+        tier, and the reason is not confidence -- it is that the document said
+        where the term is settled. ``closing_date`` is the case that forced it:
+        a cover page says "dated as of April 12, 2019", the recitals list seven
+        prior amendments with their own dates, and the definitions article says
+        '" Closing Date ": June 25, 2018.' All of those are deterministic
+        matches at 0.95, so before this the ranking was a coin toss among
+        eleven candidates and the answer it returned was 2019-11-26.
+
+        A mention is evidence that a date exists. A definition is evidence that
+        it is *this* one.
+        """
+        return any(
+            c.pass_id == f"{DETERMINISTIC_PREFIX}definitions"
+            for c in self.candidates
+        )
+
+    @property
     def best(self) -> Candidate:
         return max(self.candidates, key=lambda c: c.confidence)
 
@@ -253,7 +274,10 @@ def reconcile(
             grouped[key].candidates.append(candidate)
         ranked = sorted(
             grouped.values(),
-            key=lambda g: (g.deterministic, g.support, g.best.confidence),
+            key=lambda g: (
+                g.from_definition, g.deterministic, g.support,
+                g.best.confidence,
+            ),
             reverse=True,
         )
         winner = ranked[0]

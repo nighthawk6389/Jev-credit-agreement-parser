@@ -169,18 +169,69 @@ def test_a_kind_with_no_parser_is_declined_not_guessed():
 # ---------------------------------------------------------------------------
 
 
-def test_dated_as_of_is_no_longer_a_closing_date_rule():
-    """It read the execution date of whatever instrument the sentence was
-    about -- in an amendment, usually some other agreement's -- and every
-    recital carries one."""
+def test_the_recital_date_fallback_ranks_below_the_definitions_tier():
+    """It was deleted for one commit and the corpus said that was too blunt:
+    19 assertions fixed, 14 broken, 11 of them by reporting nothing where the
+    recital date had been right. So it stays, at a confidence below the
+    definitions tier rather than the 0.70 it had.
+
+    The definition cannot arbitrate its use either. "Defined but states no
+    date" covers StepStone, whose closing date IS the cover date, and Janus,
+    whose closing date is an event -- so presence of a definition does not
+    predict which answer is wanted, and telling them apart is judgement.
+    """
     from credit_extract.extract.passes import OFFLINE_RULES
 
-    patterns = [
-        getattr(r.pattern, "pattern", r.pattern)
-        for r in OFFLINE_RULES if r.field == "closing_date"
+    rules = [r for r in OFFLINE_RULES if r.field == "closing_date"]
+    recital = [
+        r for r in rules
+        if "dated as of" in getattr(r.pattern, "pattern", r.pattern)
     ]
-    assert patterns, "closing_date should still have a rule"
-    assert not any("dated as of" in p for p in patterns), (
-        "the recital-date fallback manufactured 527 distinct dates across "
-        "the corpus"
+    assert recital, "the cover-date fallback earns its place on 11 documents"
+    assert recital[0].confidence < CONFIDENCE, (
+        "a recital date must not outrank a value read from the term's own "
+        "definition"
     )
+
+
+def test_a_value_from_the_definition_outranks_a_deterministic_rival():
+    """The ranking, not the confidence, is what fixed closing_date. Eleven
+    candidates all matched deterministically at 0.95, so before definition
+    precedence the winner was effectively arbitrary -- and on Essential
+    Properties it was 2019-11-26."""
+    from credit_extract.extract.passes import Candidate
+    from credit_extract.extract.reconcile import reconcile
+
+    span_def = Span(start=100, end=140, text="x" * 40)
+    span_recital = Span(start=900, end=940, text="y" * 40)
+    candidates = [
+        Candidate(
+            field="closing_date", value=date(2019, 11, 26), span=span_recital,
+            confidence=0.95, pass_id="deterministic:rules",
+            segmentation="structural",
+        ),
+        Candidate(
+            field="closing_date", value=date(2018, 6, 25), span=span_def,
+            confidence=0.90, pass_id="deterministic:definitions",
+            segmentation="definitional",
+        ),
+    ]
+    result = reconcile(candidates, specs={"closing_date": FIELD_REGISTRY["closing_date"]})
+
+    assert result.fields["closing_date"].value == date(2018, 6, 25), (
+        "the definition must win despite the lower confidence"
+    )
+
+
+def test_definition_precedence_needs_a_definition_candidate():
+    """The flag is about where a value was read, not about the segmentation
+    it happened to arrive on."""
+    from credit_extract.extract.passes import Candidate
+    from credit_extract.extract.reconcile import ValueGroup
+
+    plain = ValueGroup(key="k", value=1, candidates=[Candidate(
+        field="closing_date", value=1, span=Span(start=0, end=4, text="abcd"),
+        confidence=0.9, pass_id="deterministic:rules",
+        segmentation="definitional",
+    )])
+    assert not plain.from_definition
