@@ -30,6 +30,31 @@ one is the same arbitrary choice the deal-level field makes today.
 So instead: read the attribution the document itself makes, and where it makes
 none, decline out loud.
 
+WHAT IT REACHES, MEASURED AFTER THE FACT
+========================================
+
+Run over the whole harvest, the attribution route produces candidates on
+**one** document: Latham, the case below. Not the six the scan predicted, and
+the reasons are worth having written down.
+
+* Somnigroup, Universal Health Services and Essential Properties write a grid,
+  which is refused on purpose -- a tranche id does not resolve an axis of rate
+  type or credit rating.
+* Sanmina names one class twice at two prices, an axis of time; Valvoline the
+  same. Refused on purpose.
+* Iridium and Hillman are two of the 19 documents where the definitions-region
+  detector picks a few hundred characters out of a million and the graph comes
+  back empty, so nothing in this module can run on them at all. That has its
+  own task and it is the thing that would widen this route most.
+
+The other half of the change reaches more: declining out loud fires on **21
+documents, 32 field-readings**, 16 of them an Applicable Margin stated as a
+grid. Those are 16 documents whose margin can no longer be reported absent.
+
+So the honest summary is that the attribution is built, correct, cheap and
+currently exercised by one document and one model-tier route that has never
+run; and the refusal it comes with is what is doing the work today.
+
 THE SAFETY PROPERTY
 ===================
 
