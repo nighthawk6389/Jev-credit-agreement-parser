@@ -548,3 +548,57 @@ def test_the_guide_distinguishes_an_instrument_that_exists_from_one_that_does_no
         "carrying neither a citation nor an identification",
     ):
         assert anchor in text, f"the guide no longer covers: {anchor}"
+
+
+# ---------------------------------------------------------------------------
+# A comparison that does not happen is worse than one that fails
+# ---------------------------------------------------------------------------
+
+
+def test_a_percent_label_compares_against_a_decimal():
+    """``expect: 0.75%`` is how the document writes it and what the guide asks
+    for. It arrived as the string '0.75%', raised InvalidOperation in
+    _as_decimal, and sent values_equal down the text branch to compare
+    '0.75%' against '0.75'.
+
+    Invisible for as long as the field found nothing -- no value, no
+    comparison. The moment the floor rules started working, 25 correct
+    extractions arrived as silent errors: confirmed, right, and scored wrong.
+    """
+    from decimal import Decimal
+
+    from credit_extract.eval.assertions import values_equal
+
+    assert values_equal("0.75%", Decimal("0.75"))
+    assert values_equal("0.00%", Decimal("0"))
+    assert values_equal("$1,300,000", Decimal("1300000"))
+
+
+def test_stripping_decoration_does_not_rescale():
+    """Only decoration goes. A percent stored as a fraction is still a
+    different number, or the fix would manufacture agreement."""
+    from decimal import Decimal
+
+    from credit_extract.eval.assertions import values_equal
+
+    assert not values_equal("0.75%", Decimal("0.0075"))
+    assert not values_equal("100%", Decimal("1"))
+
+
+def test_a_ratio_still_falls_to_the_text_branch():
+    """3.50:1.00 must not parse as a number, or 3.50:1.00 and 3.50:2.00 would
+    compare on their first component alone."""
+    from decimal import Decimal
+
+    from credit_extract.eval.assertions import _as_decimal, values_equal
+
+    assert _as_decimal("3.50:1.00") is None
+    assert not values_equal("3.50:1.00", Decimal("3.5"))
+    assert values_equal("3.50:1.00", "3.50:1.00")
+
+
+def test_decoration_alone_is_not_a_number():
+    from credit_extract.eval.assertions import _as_decimal
+
+    for junk in ("%", "$", " ", "-", ".", ","):
+        assert _as_decimal(junk) is None, junk

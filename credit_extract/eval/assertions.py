@@ -19,6 +19,7 @@ computable from Tier 2 labels rather than only from Tier 1.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -207,11 +208,40 @@ def load_assertions(
 # ---------------------------------------------------------------------------
 
 
+#: Decoration a label may carry around a number because the document does.
+#: A percent sign, a currency symbol, thousands separators, and the
+#: non-breaking space some filings put before the sign.
+_DECORATION = re.compile(r"[%$,\s ]")
+
+
 def _as_decimal(value: Any) -> Decimal | None:
+    """Parse a labelled or extracted magnitude, ignoring its decoration.
+
+    The decoration stripping is not cosmetic tolerance, it is the difference
+    between a comparison that happens and one that silently does not. A label
+    written ``expect: 0.75%`` -- which is how the document writes it, and what
+    the labelling guide asks for -- arrived here as the string ``'0.75%'``,
+    raised ``InvalidOperation``, returned None, and sent ``values_equal`` down
+    the text branch to compare ``'0.75%'`` against ``'0.75'``.
+
+    That was invisible for as long as the field found nothing: no value, no
+    comparison. The moment the floor rules started working, 25 correct
+    extractions arrived as silent errors -- confirmed, right, and scored wrong,
+    which is the one failure mode this harness exists to measure and so the
+    worst place to have a bug.
+
+    Only decoration is removed. Nothing here rescales, so a percent stored as
+    a fraction still compares unequal to one stored as a number, and a ratio
+    like ``3.50:1.00`` still fails to parse and falls to the text branch where
+    it belongs.
+    """
     if value is None or isinstance(value, bool):
         return None
+    text = _DECORATION.sub("", str(value))
+    if not text or text in ("-", "+", "."):
+        return None
     try:
-        return Decimal(str(value))
+        return Decimal(text)
     except (InvalidOperation, ValueError):
         return None
 
