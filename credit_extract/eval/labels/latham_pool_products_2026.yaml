@@ -1,0 +1,244 @@
+# Tier 2 assertions: Latham Pool Products, Inc. / Jefferies Finance LLC,
+# Credit Agreement dated as of August 20, 2026.
+#
+# Fit side of the frozen split. A first-lien term loan and revolver for a
+# pool manufacturer, arranged by Jefferies with Santander and Standard
+# Chartered: $300,000,000 of Initial Term Loans and a $75,000,000 Initial
+# Revolving Facility.
+#
+# These labels were produced by a model reading the source text, not by a
+# credit analyst; every assertion quotes the passage it rests on.
+#
+# PICKED FOR ONE SENTENCE
+#
+#   "Floor" means (a) with respect to the Initial Term Loans, 0.00% per annum
+#   and (b) with respect to the Revolving Loans, 0.00% per annum.
+#
+# The registry holds one `libor_floor_pct` for the whole agreement and this
+# document states the term twice, once per tranche. Of the 100 harvested
+# agreements about six write a pricing term that way, and this is the benign
+# half of the shape: both tranches carry the same number, so there IS a
+# deal-level answer and refusing it would throw away a value the document
+# states plainly. Iridium is the other half -- 0.75% on the term loan and
+# 0.00% on the revolver -- and its deal-level slot must decline.
+#
+# So this document is here to hold the easy case down. It is the only labelled
+# agreement that exercises per-tranche attribution at all, and the three floor
+# assertions below are what keep the deal-level slot and the two attributed
+# variants from drifting apart.
+#
+# Iridium cannot be labelled for the same purpose yet: its definitions live in
+# the amended-and-restated agreement attached as an exhibit, and the region
+# detector stops at the amendment's own boilerplate Article I, so the graph
+# returns zero nodes on it. That is one of 19 documents with the same defect
+# and it has its own task.
+
+document: latham_pool_products_2026
+corpus_name: A_latham-group-inc-swim_2026-08-21_0001833197-26-000036_lathampoolspamplona-cred
+source: real
+tier: 2
+
+assertions:
+
+  # -- F07 benchmark: one floor, stated per tranche -------------------------
+
+  - id: latham_floor_is_zero_and_the_document_says_so_twice
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: 0
+    note: >
+      '"Floor" means (a) with respect to the Initial Term Loans, 0.00% per
+      annum and (b) with respect to the Revolving Loans, 0.00% per annum.'
+
+      Two percentages, one value. A deal-level field must report 0.00% here
+      rather than treat the repetition as a disagreement, and rather than
+      decline for having found more than one number -- which is what the
+      definitions tier did before it could tell attribution from conflict.
+
+      A zero floor set deliberately is not the same fact as no floor, which is
+      why this is a value assertion and not an absence.
+
+  - id: latham_the_term_loan_floor_is_read_for_the_term_loan
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: tranche_value
+    target: libor_floor_pct
+    for_tranche: initial_term_loan
+    expect: 0
+    note: >
+      'with respect to the Initial Term Loans, 0.00% per annum'. The clause
+      names the tranche, so the value is a reading for that tranche and not the
+      deal-level number handed down to it. The distinction is visible in the
+      output: an attributed value carries no `basis`, an inherited one carries
+      the sentence saying the registry had only a deal-wide field.
+
+  - id: latham_the_revolver_floor_is_read_for_the_revolver
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: tranche_value
+    target: libor_floor_pct
+    for_tranche: revolver
+    expect: 0
+    note: >
+      'with respect to the Revolving Loans, 0.00% per annum'. Asserted
+      separately from the term loan's because the two are separate readings
+      that happen to agree, and a pipeline that produced one variant for both
+      would pass a single assertion while having lost the attribution.
+
+  - id: latham_has_no_credit_spread_adjustment
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_status
+    target: accrual.credit_spread_adjustment_pct
+    expect: absent_from_document
+    note: >
+      "Term SOFR Adjustment" occurs zero times in this agreement and "Credit
+      Spread Adjustment" zero times. '"Term SOFR" means for any Interest
+      Period, the rate per annum equal to the Term SOFR Screen Rate two US
+      Government Securities Business Days prior to the commencement of such
+      Interest Period' -- the screen rate, with nothing added to it.
+
+      A 2026 agreement on Term SOFR with no adjustment is the common case and
+      not an omission: the adjustment existed to make Term SOFR comparable to
+      LIBOR during the transition, and a facility that never had LIBOR loans
+      has nothing to adjust to. The field must stay empty rather than pick up
+      the 0.10% that a transition agreement carries.
+
+  # -- F01 integrity: the parties, and one that comes out garbled -----------
+
+  - id: latham_borrower
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: LATHAM POOL PRODUCTS, INC.
+    note: >
+      'CREDIT AGREEMENT dated as of August 20, 2026 among LATHAM POOL
+      PRODUCTS, INC., as the Borrower and the Borrower Representative'.
+
+      The near-miss is Latham Group, Inc., the listed parent whose ticker the
+      filing is indexed under and which is not a party to this agreement; the
+      other is Latham International Manufacturing Corp., which is Holdings.
+      Three Latham entities on one cover page, one of them the obligor.
+
+  - id: latham_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: JEFFERIES FINANCE LLC
+    note: >
+      'JEFFERIES FINANCE LLC as Administrative Agent and an Issuing Bank'.
+      The same name appears four lines later as the first of three Joint Lead
+      Arrangers, so the name alone does not settle the role and the role
+      alone does not settle the name.
+
+  - id: latham_holdings_is_not_a_job_title
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: holdings.legal_name
+    expect: LATHAM INTERNATIONAL MANUFACTURING CORP.
+    note: >
+      'LATHAM INTERNATIONAL MANUFACTURING CORP. as Holdings', on the cover.
+
+      Written against a confident wrong answer, and the answer was fixed in the
+      same change. What the pipeline reported was 'Chief Financial Officer
+      LATHAM INTERNATIONAL MANUFACTURING CORP.' at status confirmed: the cover
+      form has no comma before "as Holdings" so the rule never matched it, and
+      the signature block -- 'Title: Chief Financial Officer LATHAM
+      INTERNATIONAL MANUFACTURING CORP., as Holdings' -- does. Every token is
+      capitalised, so the run swallowed the signatory's title. The company name
+      right and the field wrong is the F01 defect exactly as the family defines
+      it.
+
+      The expectation here is the company name and has not moved; the fix was
+      to stop four title words from appearing inside a party-name run. This
+      note records what was found rather than what passes, because a label that
+      only ever described current behaviour would measure nothing.
+
+  - id: latham_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'governed by the laws of the State of New York'. Near-uniform across the
+      corpus, which is what makes it worth asserting at scale rather than
+      interesting on any one document.
+
+  # -- F06 structure: two tranches, sized separately ------------------------
+
+  - id: latham_initial_term_loan_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: 300000000
+    note: >
+      'the Borrower has requested that the Lenders extend credit under this
+      Agreement in the form of (a) Initial Term Loans on the Closing Date in
+      an aggregate principal amount of $300,000,000 and (b) an Initial
+      Revolving Facility with an available amount of $75,000,000.'
+
+      One recital sizes both facilities, which is the trap: the two numbers
+      sit in one sentence 60 characters apart and the larger one is first.
+
+  - id: latham_revolving_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: 75000000
+    note: >
+      'an Initial Revolving Facility with an available amount of $75,000,000',
+      from the same recital as the term loan above.
+
+      Currently not found -- the revolver's size is stated in a recital rather
+      than in a commitment schedule, and the patterns look for the latter. A
+      deal whose term loan is reported and whose revolver is not looks like a
+      single-tranche deal, and nothing in the output says otherwise.
+
+  - id: latham_closing_date_is_in_its_own_definition
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: closing_date
+    expect: 2026-08-20
+    note: >
+      '"Closing Date" means August 20, 2026, the date on which the conditions
+      specified in Section 4.01 were satisfied (or waived in accordance with
+      Section 9.02).'
+
+      A definition that states the date AND describes the event, in past
+      tense. Filed under F09 rather than F05 because the proposition is about
+      where the value lives -- in the defined term, which is the route that had
+      to be built for this field at all -- and not about which version of the
+      deal governs.
+
+      The cover also reads 'dated as of August 20, 2026', so both routes agree
+      here and this document cannot distinguish them. It is worth asserting
+      anyway: this field's history is of the recital route winning on documents
+      where they disagree, and an agreement where they agree is the control.
+
+  # -- coverage -------------------------------------------------------------
+
+  - id: latham_uncaptured_content_is_swept
+    family: F01_integrity
+    member: undefined_term_used
+    kind: report_count
+    target: orphan_chunks
+    compare: at_most
+    expect: 300
+    note: >
+      A tripwire on the sweep, not a target. 284 chunks in a 72-section
+      agreement produced nothing the field model recognises, which is what a
+      56-field registry against a full credit agreement looks like.
+
+      A ceiling rather than an exact count, for the reason every other
+      coverage label in this corpus now gives: fewer uncaptured chunks is
+      always fine and more is the thing to investigate, and freezing the
+      number teaches a reader that ground truth follows the code.

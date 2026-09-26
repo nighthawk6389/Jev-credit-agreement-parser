@@ -425,11 +425,12 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
             axis = field.qualifiers.get("indexed_by")
             field.notes = (
                 f"defined, and its definition carries several values "
-                f"({unsettled}) rather than one, so this is not absence: the "
-                "term is in the document and resolving it needs "
-                + (f"a {axis}" if axis else "the axis it is indexed by")
-                + f". Absence scored {probability:.2f} and is the wrong "
-                  "question"
+                f"({unsettled}) rather than one"
+                + (f", indexed by {axis}" if axis else "")
+                + ", so this is not absence: the term is in the document and "
+                  "what is missing is which of these is the value, or what "
+                  f"reduction over them is. Absence scored {probability:.2f} "
+                  "and is the wrong question"
             )
         elif probability >= threshold:
             field.status = "absent_from_document"

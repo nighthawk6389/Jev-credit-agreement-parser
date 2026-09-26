@@ -83,10 +83,39 @@ The registry is flat and names its tranches: `initial_term_loan.commitment`,
   tranche in a `note` on a field you did label.
 
 This rule is a stopgap and it is worth saying so: the flat registry cannot
-represent a multi-tranche deal, `Facility` exists in the model and is never
-constructed by the pipeline, and the right fix is a facility list rather than
-a labelling convention. Until then, "largest by commitment, and say so" is at
-least a rule two people can follow identically.
+represent a multi-tranche deal, and "largest by commitment, and say so" is at
+least a rule two people can follow identically. The output structure is no
+longer the gap it was — `models/agreement.py` builds a tranche list and
+`models/assemble.py` fills it — but the registry a label targets is still flat.
+
+### A term the document prices per tranche
+
+Some agreements state one term twice, once per tranche, in a single definition:
+
+```
+"Floor" means (a) with respect to the Initial Term Loans, 0.00% per annum and
+(b) with respect to the Revolving Loans, 0.00% per annum.
+```
+
+Use `kind: tranche_value` with `for_tranche:` to assert the value the document
+attributed to one tranche, and a separate assertion per tranche. `field_value`
+on the same target asserts the **deal-level** answer, which is a different
+proposition:
+
+- **the tranches carry the same number** — there is a deal-level answer and it
+  is that number. Assert it with `field_value`, and the per-tranche readings
+  with `tranche_value`. Latham is the worked example.
+- **the tranches differ** — there is no deal-level answer. `field_value` should
+  expect `null`, and each real number belongs in its own `tranche_value`.
+  Asserting either tranche's number as the deal-level value teaches the
+  pipeline to pick one arbitrarily.
+
+Do not reach for this when the term is written as a **grid**. About six of the
+hundred harvested agreements price a term per tranche in words; far more index
+it by rate type, leverage level, credit rating or period, and a tranche id
+resolves none of those. A grid is not a per-tranche statement and labelling it
+as one asserts a reading the document does not make — quote the grid in the
+note and label the field `needs_review`, or leave it out.
 
 ### Nulls: four different things
 

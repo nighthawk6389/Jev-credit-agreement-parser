@@ -416,9 +416,19 @@ Essential Properties indexes Applicable Margin by Credit Rating Level ×
 facility × rate type, and 45 of 100 harvested agreements define their pricing
 term with no percentage in it at all — there is no per-tranche field that could
 hold the answer either, because the axis is not the tranche. Those are reported
-as a grid with the axis named, not as a number and not as absence. Resolving
-one needs a leverage ratio or a rating, which is an input the pipeline is not
-given. Everything else is still filled from the deal-level field and marked
+as a grid with the axis named, not as a number and not as absence.
+
+Reading one is the model tier's job, and note that a registry field can be
+*defined* as a reduction over a grid rather than a cell of it:
+`applicable_margin.eurodollar_top_level_pct` is "the highest Eurodollar
+Applicable Margin in the pricing grid". So the deterministic tier declining is
+not the same as the field being unresolvable — it is the tier saying it has the
+numbers in reading order and not the rows and columns they sit in, which is what
+the reduction needs. On Essential Properties the label records three wrong
+answers easier to reach than the right one, all of them a percentage from the
+same table.
+
+Everything else is still filled from the deal-level field and marked
 `inherited`, so the remaining gap is visible in the output rather than papered
 over.
 

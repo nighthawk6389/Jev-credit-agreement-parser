@@ -888,11 +888,55 @@ _ENTITY = r"([A-Z][A-Za-z0-9 ,.&'\-]{3,80}?)"
 #: So a comma is allowed only before a suffix from a closed set. Everything
 #: else in a name is separated by spaces, and the lowercase connectives that
 #: separate parties stop the run on their own.
+#:
+#: The list is case-sensitive because the party rules run with ``flags=0``, and
+#: for a long time it held ``Inc\.?`` and no uppercase form -- while a cover
+#: page is written in capitals. "LATHAM POOL PRODUCTS, INC., as the Borrower"
+#: therefore matched nothing at all: the run stopped at "PRODUCTS" because the
+#: comma could not be crossed, and the rule then wanted "as the Borrower" where
+#: the text had "INC., as the Borrower". Adding the uppercase forms, and the
+#: corporate words the list never had, recovers the borrower on six documents
+#: and the agent and holdings on one each, changes no name it already read, and
+#: regresses none. Every word here is one that *follows* a name and never
+#: introduces a party, which is the property that makes a comma before it safe.
 _SUFFIX = (
-    r"N\.A\.|N\.V\.|S\.A\.|L\.P\.|L\.L\.C\.|LLC|Inc\.?|PLC|plc|AG"
+    r"N\.A\.|N\.V\.|S\.A\.|L\.P\.|L\.L\.C\.|LLC|Inc\.?|INC\.?|PLC|plc|AG"
     r"|LTD\.?|Ltd\.?|LIMITED|Limited"
     r"|NATIONAL ASSOCIATION|National Association"
+    r"|CORP\.?|Corp\.?|CORPORATION|Corporation|COMPANY|Company|CO\."
+    r"|LLP|L\.L\.P\.|ULC|GmbH|B\.V\.|S\.p\.A\."
 )
+
+#: Words that cannot appear anywhere inside a party-name run.
+#:
+#: A signature block puts the entity name immediately after the signatory's
+#: title, and the normalised text runs them together: "Title: Chief Financial
+#: Officer LATHAM INTERNATIONAL MANUFACTURING CORP., as Holdings". Every token
+#: is capitalised, so the run swallowed the title and the field came back
+#: 'Chief Financial Officer LATHAM INTERNATIONAL MANUFACTURING CORP.' at status
+#: confirmed -- the company name right, the field wrong, which is the F01
+#: defect the family is named for.
+#:
+#: Banning these only where a run *starts* would not help, because the engine
+#: would then start at "Financial". Banning them at every token position makes
+#: the run fail through the title and restart at the entity name. No company in
+#: this corpus is named with any of these four words, which is what makes a
+#: blanket ban safe where one on "Financial" or "Vice" would not be -- "THE
+#: FINANCIAL INSTITUTIONS PARTY HERETO" is on the same cover page.
+_NOT_IN_A_NAME = r"(?!(?:Officer|President|Treasurer|Secretary)\b)"
+
+#: Words that cannot *open* a run, being capitalised only for sitting at the
+#: start of a sentence. Aspen's recital reads "Between ASPEN TECHNOLOGY, INC.,
+#: as the Borrower", and the widened suffix list above gained it as 'Between
+#: ASPEN TECHNOLOGY, INC.' -- a name recovered and immediately garbled. Unlike
+#: the four above, these may legitimately appear later in a name, so the ban is
+#: positional.
+_NOT_FIRST_IN_A_NAME = (
+    r"(?!(?:Between|Among|Amongst|Whereas|Dated|Signed|Title|Name)\b)"
+)
+
+#: One capitalised token of a party name.
+_NAME_TOKEN = _NOT_IN_A_NAME + r"[A-Z][A-Za-z0-9&'.\-]*"
 #: And the lookbehind, for the boundary case that survived everything above.
 #: The passes run over three segmentations, so a chunk can begin mid-word --
 #: "WELLS FARGO BANK, NATIONAL ASSO|CIATION" -- and the next chunk opens with
@@ -917,12 +961,13 @@ _PARTY = (
     # A digit may appear inside a name but never start one -- "GBDC 4 FUNDING
     # III LLC" broke at the "4" when only capitalised tokens could continue a
     # run, and came back as "FUNDING III LLC".
-    r"[A-Z][A-Za-z0-9&'.\-]*"
-    r"(?: +(?:[A-Z][A-Za-z0-9&'.\-]*|of|\d+)){1,7}"
+    + _NOT_FIRST_IN_A_NAME + _NAME_TOKEN
+    + r"(?: +(?:" + _NAME_TOKEN + r"|of|\d+)){1,7}"
     r"(?:\s*,\s*(?:" + _SUFFIX + r"))?"
     # Or one token and a suffix, which is how a single-word company signs:
     # "HEALTHSTREAM, INC.", "Cadeler, A/S".
-    r"|[A-Z][A-Za-z0-9&'.\-]*\s*,\s*(?:" + _SUFFIX + r")"
+    r"|" + _NOT_FIRST_IN_A_NAME + r"[A-Z][A-Za-z0-9&'.\-]*\s*,\s*(?:"
+    + _SUFFIX + r")"
     r")"
 )
 

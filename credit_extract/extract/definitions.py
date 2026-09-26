@@ -336,12 +336,25 @@ def _unsettled(
     reads the qualifier and refuses to call the field absent -- the same route
     ``untypable_value`` already takes.
 
-    It asserts nothing. The claim is only "this term is defined and its
-    definition carries numbers", which is true whether the definition is a
-    pricing grid, a step-down schedule or an amendment history. Where the axis
-    is nameable the note names it, because that tells a reader what would have
-    to be supplied to resolve the term; where it is not, the note says how many
-    values there are and quotes them, and leaves the reading to whoever looks.
+    It asserts nothing, and it is careful not to assert a gap either. The claim
+    is only "this term is defined and its definition carries these numbers",
+    which is true whether the definition is a pricing grid, a step-down
+    schedule or an amendment history.
+
+    In particular it does not claim the field is unresolvable.
+    ``applicable_margin.eurodollar_top_level_pct`` is *defined* as "the highest
+    Eurodollar Applicable Margin in the pricing grid", so for that field a grid
+    is the expected shape and a reduction over it is the answer -- and the
+    reduction is not available here, because ``_distinct_values`` returns the
+    percentages in reading order with no idea which column each sits in.
+    Essential Properties' grid has four margin columns and the label for it
+    records three wrong answers that are easier to reach than the right one:
+    0.675% is the top row, 1.350% is the same cell for the revolver, 0.550% is
+    the Base Rate on the right row. A max over the flattened list would
+    sometimes hit 1.550% and sometimes not, at 0.90 from the definitions
+    article, which is the authoritative-looking wrong answer this module's
+    header warns about. Reading the grid is the model tier's job; saying it is
+    a grid is this tier's.
     """
     values = _distinct_values(body, spec.kind)
     if len(values) < 2:
@@ -366,9 +379,11 @@ def _unsettled(
         notes=(
             f"the definition of {term!r} carries {len(values)} values "
             f"({quoted})"
-            + (f", indexed by {axis.group(0)}" if axis else "")
-            + ", so it settles no single one. The definition is the term; one "
-              "value out of it is not"
+            + (f" and is indexed by {axis.group(0)}" if axis else "")
+            + ", so this tier settles none of them. Whether one of these is "
+              "the field's value, or a reduction over them is, needs the "
+              "grid's own rows and columns -- which a list of the numbers in "
+              "reading order is not"
         ),
     )]
 

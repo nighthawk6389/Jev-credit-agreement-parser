@@ -652,3 +652,79 @@ def test_a_name_cut_by_a_chunk_boundary_is_not_a_party():
 
     whole = "(the \" Borrower \"), WELLS FARGO BANK, NATIONAL ASSOCIATION, as Administrative Agent"
     assert rule.search(whole).group(1) == "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+
+
+def test_a_cover_page_in_capitals_reaches_the_borrower():
+    """``_SUFFIX`` is matched case-sensitively and for a long time held
+    ``Inc\\.?`` with no uppercase form -- while a cover page is written in
+    capitals. So "LATHAM POOL PRODUCTS, INC., as the Borrower" matched
+    *nothing*: a comma inside a name is allowed only before a suffix, the run
+    stopped at "PRODUCTS", and the rule then wanted "as the Borrower" where the
+    text had "INC., as the Borrower".
+
+    Six borrowers, one agent and one Holdings in the harvest were lost to that,
+    with no name changed and none regressed when the uppercase forms went in.
+    """
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as (?:the )?Borrower")
+    cover = (
+        "CREDIT AGREEMENT dated as of August 20, 2026 among LATHAM POOL "
+        "PRODUCTS, INC., as the Borrower and the Borrower Representative"
+    )
+    assert rule.search(cover).group(1) == "LATHAM POOL PRODUCTS, INC."
+
+
+def test_a_signature_block_title_does_not_become_part_of_the_name():
+    """'Title: Chief Financial Officer LATHAM INTERNATIONAL MANUFACTURING
+    CORP., as Holdings' -- every token capitalised, so the run swallowed the
+    title and the field came back confirmed with the company name right and
+    the field wrong. That is the F01 defect the family is named for, and it was
+    a real one on a fit-side document.
+
+    Banning the four title words only where a run *starts* would not fix it:
+    the engine would begin at "Financial" instead.
+    """
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as Holdings")
+    block = (
+        "By: /s/ Oliver Gloe Name: Oliver Gloe Title: Chief Financial Officer "
+        "LATHAM INTERNATIONAL MANUFACTURING CORP., as Holdings By:"
+    )
+    assert rule.search(block).group(1) == (
+        "LATHAM INTERNATIONAL MANUFACTURING CORP."
+    )
+
+
+def test_a_sentence_initial_connective_does_not_open_a_name():
+    """Aspen's recital reads "Between ASPEN TECHNOLOGY, INC., as the Borrower".
+    Widening the suffix list recovered that name and immediately garbled it as
+    'Between ASPEN TECHNOLOGY, INC.' -- a capitalised word that is capitalised
+    only for starting a sentence.
+    """
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as (?:the )?Borrower")
+    recital = "Between ASPEN TECHNOLOGY, INC., as the Borrower, and EMERSON"
+    assert rule.search(recital).group(1) == "ASPEN TECHNOLOGY, INC."
+
+
+def test_a_bank_is_still_read_with_its_national_association():
+    """The widened list must not have cost the case the narrow one bought."""
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as (?:the )?Administrative Agent")
+    for text, expected in (
+        ('(the " Borrower "), WELLS FARGO BANK, NATIONAL ASSOCIATION, as '
+         "Administrative Agent", "WELLS FARGO BANK, NATIONAL ASSOCIATION"),
+        ("and MORGAN STANLEY SENIOR FUNDING, INC., as Administrative Agent",
+         "MORGAN STANLEY SENIOR FUNDING, INC."),
+        ("hereto and JEFFERIES FINANCE LLC, as Administrative Agent",
+         "JEFFERIES FINANCE LLC"),
+    ):
+        assert rule.search(text).group(1) == expected, text

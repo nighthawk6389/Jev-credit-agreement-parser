@@ -33,6 +33,7 @@ from .families import FamilyRegister, load_families
 
 AssertionKind = Literal[
     "field_value",          # the field carries this value
+    "tranche_value",        # the value the document attributed to one tranche
     "field_status",         # the field resolved to this status
     "field_external_kind",  # external_by_design vs omitted_from_filing
     "field_unit",           # the stored quantity carries this unit
@@ -74,6 +75,14 @@ class Assertion(BaseModel):
     #: For ``resolve``: the point in time and the state to resolve against.
     at: date | None = None
     state: dict[str, Any] = Field(default_factory=dict)
+    #: For ``tranche_value``: which tranche's reading to assert on.
+    #:
+    #: ``field_value`` reads ``field.value``, which is ``variants[0]`` -- the
+    #: deal-level answer. Where a document prices its tranches separately the
+    #: real content is in the attributed variants, and without this there is no
+    #: way for the corpus to assert on them at all: the behaviour would be
+    #: tested by unit tests over quoted bodies and unmeasured on any document.
+    for_tranche: str | None = None
     #: How ``expect`` is compared. ``eq`` for every proposition about a deal:
     #: a margin is the margin, and "close enough" is not a reading.
     #:
@@ -95,6 +104,16 @@ class Assertion(BaseModel):
                 raise ValueError(f"{self.id}: kind {self.kind} requires a target")
         if self.kind == "resolve" and self.at is None:
             raise ValueError(f"{self.id}: resolve assertions require `at`")
+        if self.kind == "tranche_value" and not self.for_tranche:
+            raise ValueError(
+                f"{self.id}: tranche_value assertions require `for_tranche` -- "
+                "the whole point is which tranche the value was attributed to"
+            )
+        if self.for_tranche and self.kind != "tranche_value":
+            raise ValueError(
+                f"{self.id}: for_tranche is only read by tranche_value, so on "
+                f"{self.kind} it would be silently ignored"
+            )
         if self.compare == "at_most" and self.kind != "report_count":
             # A ceiling on a deal term would let a wrong answer pass for being
             # small enough, which is the opposite of what this corpus measures.
@@ -296,7 +315,8 @@ def evaluate_assertion(
     support: int | None = None
     criticality: int | None = None
 
-    if kind in ("field_value", "field_status", "field_external_kind", "field_unit"):
+    if kind in ("field_value", "tranche_value", "field_status",
+                "field_external_kind", "field_unit"):
         field = result.fields.get(assertion.target)
         if field is None:
             return AssertionOutcome(
@@ -309,7 +329,31 @@ def evaluate_assertion(
         confident = _field_confident(field)
         support = getattr(field, "pass_support", None)
         criticality = getattr(field, "criticality", None)
-        if kind == "field_value":
+        if kind == "tranche_value":
+            # The variant the document attributed to this tranche. No such
+            # variant is a miss, not a pass with None: the assertion says the
+            # document names a value for this tranche, and not finding the
+            # attribution is exactly the failure being measured. It is also not
+            # a *confident* miss, because a field carrying no reading for a
+            # tranche asserts nothing about it.
+            attributed = next(
+                (v for v in field.variants
+                 if getattr(v, "applies_to", None) == assertion.for_tranche),
+                None,
+            )
+            observed = attributed.value if attributed is not None else None
+            confident = (
+                attributed is not None
+                and attributed.status in CONFIDENT_STATUSES
+            )
+            support = getattr(attributed, "pass_support", None)
+            detail = (
+                f"attributed to {assertion.for_tranche}"
+                if attributed is not None
+                else f"no variant is attributed to {assertion.for_tranche}; "
+                     f"the field carries {[getattr(v, 'applies_to', None) for v in field.variants]}"
+            )
+        elif kind == "field_value":
             observed = field.value
         elif kind == "field_status":
             observed = field.status
