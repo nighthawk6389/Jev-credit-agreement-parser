@@ -248,7 +248,11 @@ def test_the_fpml_projection_withholds_what_the_structure_carries():
     withheld = revolver.withheld_from_fpml(agreement)
 
     assert "totalCommitmentAmount" not in crossing
-    assert "needs_review" in withheld["totalCommitmentAmount"]
+    # The reason is now in words rather than the status name: a consumer
+    # reading "external_reference" learns nothing, and "the value is in a
+    # document this agreement points at" is the fact that matters.
+    assert "not settled" in withheld["totalCommitmentAmount"]
+    assert "threshold" in withheld["totalCommitmentAmount"]
     assert crossing["governingLaw"] == "New York"
     # But the structure still has it, which is the whole point of the split.
     assert revolver.terms.commitment.value == Decimal("500")

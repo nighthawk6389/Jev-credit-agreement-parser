@@ -79,6 +79,114 @@ TrancheKind = Literal[
 #: archetype is a confident answer about the deal but not a term to act on.
 ACTIONABLE: frozenset[str] = frozenset({"confirmed", "absent_from_document"})
 
+#: Why a value did not cross, in words, per status. The distinction these draw
+#: is the whole reason the projection withholds rather than emitting None:
+#: FpML reads ``None`` as "this facility has no such term", and only one of
+#: these statuses means that. An ``external_reference`` rendered as ``None``
+#: would report a deal with no floor where the truth is a floor in a fee
+#: letter -- which is a silent error with a schema's authority behind it.
+WITHHELD_WITH_REASON: dict[str, str] = {
+    "external_reference": "the value is in a document this agreement points at",
+    "not_applicable_to_archetype": "this deal kind has no such term",
+    "needs_review": "not settled: below the calibrated threshold",
+    "conflicted": "not settled: the passes disagreed and nothing resolved it",
+}
+
+
+# -- the FpML projection -------------------------------------------------
+#
+# ONE declaration of what crosses, consumed by two places: this class,
+# which emits element names and values, and ``models/export.py``, which
+# fills the typed ``fpml_model.Facility``. Scope used to live in both --
+# ``build_facilities`` addressed 26 paths and ``to_fpml`` projected 13 --
+# so a consumer got a different FpML view depending on which it read.
+# Coverage cannot diverge from a table.
+#
+# ``source`` is ``tranche:<dotted>`` or ``agreement:<dotted>``, resolved
+# against this tranche and its agreement; the handful of values that are
+# derived rather than stored are named resolvers.
+#: element, where the value comes from, and the attribute it fills on
+#: ``fpml_model.Facility`` (None where the model has no such field).
+FPML_BINDINGS: tuple[tuple[str, str, str | None], ...] = (
+    ("totalCommitmentAmount", "tranche:terms.commitment",
+     "commitment_amount"),
+    ("currentCommitment", "tranche:terms.outstanding",
+     "commitment.current_amount"),
+    ("originalCommitment", "tranche:terms.original_commitment",
+     "commitment.original_amount"),
+    ("unavailableToUtilizeAmount", "tranche:terms.unavailable_amount",
+     "commitment.unavailable_amount"),
+    ("maturityDate", "tranche:terms.maturity_date", "maturity_date"),
+    ("startDate", "agreement:metadata.dates.closing_date",
+     "effective_date"),
+    ("spread", "tranche:terms.accrual.spread_pct", "accrual.spread_pct"),
+    ("spreadAdjustment",
+     "tranche:terms.accrual.credit_spread_adjustment_pct",
+     "accrual.credit_spread_adjustment_pct"),
+    ("floorRate", "tranche:terms.accrual.floor_pct", "accrual.floor_pct"),
+    ("capRate", "tranche:terms.accrual.cap_pct", "accrual.cap_pct"),
+    ("mustDrawByDate", "tranche:terms.availability_end_date",
+     "commitment.must_draw_by_date"),
+    ("refusalAllowed", "derived:refusal_allowed",
+     "commitment.refusal_allowed"),
+    ("lien", "tranche:lien", "classification.lien"),
+    ("seniority", "tranche:seniority", "classification.seniority"),
+    ("feature", "tranche:feature", "classification.feature"),
+    ("governingLaw", "agreement:metadata.governing_law",
+     "classification.governing_law"),
+    ("multiCurrency", "agreement:metadata.multi_currency",
+     "classification.multi_currency"),
+    ("borrower", "agreement:metadata.parties.borrower", "parties.borrower"),
+    # FpML gives accruingFeeOption one name for what the market quotes as
+    # several distinct fees, so only the commitment fee takes it. Putting a
+    # fronting fee there too would emit two different terms under one
+    # element and a consumer could not tell which it had; the others are in
+    # NOT_IN_FPML.
+    ("accruingFeeOption", "tranche:terms.fees.commitment_fee_pct",
+     "fees.commitment_fee_pct"),
+    ("accruingPikOption", "tranche:terms.accrual.pik_rate_pct", None),
+    ("pikSpread", "tranche:terms.accrual.pik_spread_pct", None),
+    ("classification", "agreement:metadata.industry_classification",
+     None),
+    ("creditRating", "derived:rating", None),
+    ("creditQuality", "derived:credit_quality", None),
+)
+
+
+
+#: Values this record settles that FpML 5.x has no element for, and what
+#: each would have to be flattened into to travel.
+#:
+#: These were the hidden half of the old two-path export. ``export.py``
+#: populated them onto the ``Facility`` pydantic model -- whose docstring
+#: says it combines "FpML economics with FIBO semantics" -- so a reader of
+#: that object could not tell which of its fields were FpML and which were
+#: this repository's own. ``agent`` and ``guarantor`` and ``tickingFee``
+#: are simply not declared in the pinned schemas.
+NOT_IN_FPML: tuple[tuple[str, str], ...] = (
+    ("agreement:metadata.parties.administrative_agent",
+     "FpML 5.x declares no agent element on a facility"),
+    ("agreement:metadata.parties.guarantors",
+     "no guarantor element; FpML models guarantees as a separate product"),
+    ("tranche:terms.fees.ticking_fee_pct", "accruingFeeOption is taken by the "
+                                   "commitment fee; FpML does not name "
+                                   "fee types apart"),
+    ("tranche:terms.fees.fronting_fee_pct", "as above -- one element, several "
+                                    "market fees"),
+    ("tranche:terms.fees.lc_participation_fee_pct", "as above"),
+    ("tranche:terms.accrual.alternate_base_rate_spread_pct",
+     "FpML carries one spread per rate option; the ABR margin needs its "
+     "own option rather than its own element"),
+    ("tranche:terms.accrual.pik_toggle_step_up_pct",
+     "no element for the cost of the PIK election"),
+    ("tranche:sublimit_of", "FpML nests sub-facilities structurally rather than "
+                    "by reference, so this cannot travel as a scalar"),
+    ("agreement:metadata.ratings",
+     "FpML carries creditRating and creditQuality but names no element for the "
+     "agency that issued them, and an unattributed rating is not a rating"),
+)
+
+
 
 class Asserted(BaseModel, Generic[T]):
     """A value, and everything a reader needs to decide whether to trust it.
@@ -452,6 +560,39 @@ class Tranche(BaseModel):
         """
         return sorted(p for p, a in self.leaves().items() if a.inherited)
 
+    def _resolve(self, source: str, agreement: "CreditAgreement") -> Asserted:
+        """The ``Asserted`` a binding's ``source`` names."""
+        kind, _, path = source.partition(":")
+        if kind == "derived":
+            return self._derived(path, agreement)
+        target: Any = self if kind == "tranche" else agreement
+        for part in path.split("."):
+            target = getattr(target, part, None)
+            if target is None:
+                return Asserted()
+        return target if isinstance(target, Asserted) else Asserted()
+
+    def _derived(self, name: str, agreement: "CreditAgreement") -> Asserted:
+        """Values FpML wants that this record stores in another shape."""
+        if name == "refusal_allowed":
+            # A boolean about certainty of funds, which this model carries as
+            # a condition because the agreement states it as one.
+            return next(
+                (
+                    Asserted[bool](
+                        value=c.resolved, status="confirmed", spans=c.spans,
+                        source_field=c.source_field,
+                    )
+                    for c in self.conditions
+                    if c.kind == "availability" and c.resolved is not None
+                ),
+                Asserted[bool](),
+            )
+        if name in ("rating", "credit_quality") and agreement.metadata.ratings:
+            first = agreement.metadata.ratings[0]
+            return first.rating if name == "rating" else first.credit_quality
+        return Asserted()
+
     def to_fpml(self, agreement: "CreditAgreement") -> dict[str, Any]:
         """Project into the verified FpML element names, strictly.
 
@@ -470,38 +611,47 @@ class Tranche(BaseModel):
         return crossing
 
     def withheld_from_fpml(self, agreement: "CreditAgreement") -> dict[str, str]:
-        """Element -> why it did not cross into the FpML projection."""
+        """Element -> why it did not cross into the FpML projection.
+
+        Every key here is an element FpML *has*, whose value this run did not
+        settle. That is a statement about the run. For values the run settled
+        and FpML has nowhere to put, see :meth:`not_expressible_in_fpml`, which
+        is a statement about the format -- keeping them apart matters because a
+        consumer reading "withheld" about a confirmed agent name would conclude
+        the agent was unknown.
+        """
         _, withheld = self._project(agreement)
         return withheld
+
+    def not_expressible_in_fpml(
+        self, agreement: "CreditAgreement"
+    ) -> dict[str, str]:
+        """Settled values FpML cannot carry, and why. Not a run failure.
+
+        Only settled ones: an unsettled value that FpML also has no element
+        for is already accounted for as unsettled, and reporting it twice
+        would overstate what the format costs.
+        """
+        out: dict[str, str] = {}
+        for source, why in NOT_IN_FPML:
+            if _holds_a_settled_value(self, agreement, source):
+                out[source.partition(":")[2]] = why
+        return out
 
     def _project(
         self, agreement: "CreditAgreement"
     ) -> tuple[dict[str, Any], dict[str, str]]:
-        # element name -> the Asserted that fills it. Deal-level elements come
-        # from the agreement, which is the point of the split: in FpML they sit
-        # on the facility, and here they are read once.
-        mapping: dict[str, Asserted] = {
-            "totalCommitmentAmount": self.terms.commitment,
-            "maturityDate": self.terms.maturity_date,
-            "startDate": agreement.metadata.dates.closing_date,
-            "spread": self.terms.accrual.spread_pct,
-            "spreadAdjustment": self.terms.accrual.credit_spread_adjustment_pct,
-            "floorRate": self.terms.accrual.floor_pct,
-            "capRate": self.terms.accrual.cap_pct,
-            "mustDrawByDate": self.terms.availability_end_date,
-            "lien": self.lien,
-            "seniority": self.seniority,
-            "feature": self.feature,
-            "governingLaw": agreement.metadata.governing_law,
-            "multiCurrency": agreement.metadata.multi_currency,
-        }
+        """Walk :data:`FPML_BINDINGS`, the one declaration of what crosses."""
         crossing: dict[str, Any] = {}
         withheld: dict[str, str] = {}
-        for element, asserted in mapping.items():
+        for element, source, _attr in FPML_BINDINGS:
+            asserted = self._resolve(source, agreement)
             if not asserted.settled:
+                reason = WITHHELD_WITH_REASON.get(
+                    asserted.status, f"status {asserted.status}"
+                )
                 withheld[element] = (
-                    f"{asserted.source_field or element}: "
-                    f"not settled ({asserted.status})"
+                    f"{asserted.source_field or source}: {reason}"
                 )
             elif asserted.value is None:
                 # absent_from_document: None here means what FpML reads it as,
@@ -738,6 +888,44 @@ class CreditAgreement(BaseModel):
         """
         return sum(1 for a in self.leaves().values() if a.confident)
 
+
+
+def _holds_a_settled_value(
+    tranche: "Tranche", agreement: "CreditAgreement", source: str
+) -> bool:
+    """Whether ``source`` names something this record actually settled.
+
+    Handles the collection-valued paths as well as the scalar ones, which is
+    not a nicety: ``parties.guarantors`` is a tuple of :class:`Asserted` and a
+    scalar resolver returns an empty one for it, so the entry would match
+    nothing and a confirmed guarantor would be reported as neither carried nor
+    inexpressible. Same shape of miss as the ``parties.agent`` path that named
+    a field the model does not have.
+    """
+    kind, _, path = source.partition(":")
+    target: Any = tranche if kind == "tranche" else agreement
+    for part in path.split("."):
+        target = getattr(target, part, None)
+        if target is None:
+            return False
+    if isinstance(target, Asserted):
+        return target.settled and target.value is not None
+    if isinstance(target, (tuple, list)):
+        return any(
+            isinstance(item, Asserted) and item.settled and item.value is not None
+            for item in target
+        ) or any(
+            any(
+                isinstance(v, Asserted) and v.settled and v.value is not None
+                for v in _walk(item, "").values()
+            )
+            for item in target if isinstance(item, BaseModel)
+        )
+    if isinstance(target, BaseModel):
+        return any(
+            a.settled and a.value is not None for a in _walk(target, "").values()
+        )
+    return False
 
 def _walk(model: BaseModel, prefix: str) -> dict[str, Asserted]:
     """Collect every ``Asserted`` under ``model``, keyed by dotted path."""

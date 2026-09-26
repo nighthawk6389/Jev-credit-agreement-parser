@@ -51,6 +51,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from .agreement import FPML_BINDINGS, CreditAgreement
 from .core import ExtractedField
 from .fpml_model import (
     AccrualTerms, CommitmentTerms, CreditRating, Facility,
@@ -82,6 +83,12 @@ class FacilityExport(BaseModel):
     #: element path -> the field it came from, so a value in the export can be
     #: taken back to its span in the record.
     provenance: dict[str, str] = Field(default_factory=dict)
+    #: Values this record settles that FpML has no element for -- an agent,
+    #: a guarantor, a ticking fee. A statement about the format, not about
+    #: the run, and kept apart from ``withheld`` for that reason: a reader
+    #: told a confirmed agent name was "withheld" would conclude the agent
+    #: was unknown.
+    not_expressible: dict[str, str] = Field(default_factory=dict)
 
     @property
     def populated(self) -> int:
@@ -119,125 +126,88 @@ class _Builder:
         return value
 
 
-def _facility(
-    fields: dict[str, ExtractedField],
-    facility_id: str,
-    facility_type: FacilityType,
-    commitment_field: str,
-    maturity_field: str,
-) -> FacilityExport:
-    b = _Builder(fields, facility_id)
-    facility = Facility(
-        facility_id=facility_id,
-        facility_type=facility_type,
-        commitment_amount=b.take("commitment_amount", commitment_field),
-        effective_date=b.take("effective_date", "closing_date"),
-        maturity_date=b.take("maturity_date", maturity_field),
-        accrual=AccrualTerms(
-            spread_pct=b.take(
-                "accrual.spread_pct",
-                "applicable_margin.eurodollar_top_level_pct",
-            ),
-            credit_spread_adjustment_pct=b.take(
-                "accrual.credit_spread_adjustment_pct",
-                "accrual.credit_spread_adjustment_pct",
-            ),
-            floor_pct=b.take("accrual.floor_pct", "libor_floor_pct"),
-            cap_pct=b.take("accrual.cap_pct", "accrual.cap_pct"),
-        ),
-        commitment=CommitmentTerms(
-            must_draw_by_date=b.take(
-                "commitment.must_draw_by_date", "delayed_draw.must_draw_by_date"
-            ),
-            refusal_allowed=b.take(
-                "commitment.refusal_allowed", "delayed_draw.refusal_allowed"
-            ),
-        ),
-        classification=FacilityClassification(
-            feature=b.take("classification.feature", "facility.feature"),
-            lien=b.take("classification.lien", "facility.lien"),
-            seniority=b.take("classification.seniority", "facility.seniority"),
-            governing_law=b.take(
-                "classification.governing_law", "facility.governing_law"
-            ),
-            multi_currency=b.take(
-                "classification.multi_currency", "facility.multi_currency"
-            ),
-        ),
-        parties=PartyReferences(
-            borrower=b.take("parties.borrower", "borrower.legal_name"),
-            agent=b.take("parties.agent", "administrative_agent.legal_name"),
-            guarantors=[
-                g for g in [b.take("parties.guarantors", "guarantor.legal_name")]
-                if g
-            ],
-        ),
-        fees=FeeTerms(
-            commitment_fee_pct=b.take("fees.commitment_fee_pct", "commitment_fee_pct"),
-            ticking_fee_pct=b.take("fees.ticking_fee_pct", "ticking_fee_pct"),
-            fronting_fee_pct=b.take("fees.fronting_fee_pct", "fronting_fee_pct"),
-        ),
-    )
-    rating = CreditRating(
-        agency=b.take("ratings.agency", "rating.agency"),
-        rating=b.take("ratings.rating", "rating.value"),
-        credit_quality=b.take("ratings.credit_quality", "rating.credit_quality"),
-        industry_classification=b.take(
-            "ratings.industry_classification", "borrower.industry_classification"
-        ),
-    )
-    if rating.model_dump(exclude_none=True):
-        facility.ratings.append(rating)
-
-    pik = PikTerms(
-        rate_pct=b.take("pik.rate_pct", "pik.rate_pct"),
-        spread_pct=b.take("pik.spread_pct", "pik.spread_pct"),
-    )
-    if pik.model_dump(exclude_none=True):
-        facility.pik = pik
-
-    return FacilityExport(
-        facility=facility, withheld=b.withheld, provenance=b.provenance
-    )
+def _set_attr(model: Any, path: str, value: Any) -> None:
+    """Assign to a dotted attribute path on an already-built model."""
+    head, _, tail = path.rpartition(".")
+    target = model
+    for part in head.split(".") if head else []:
+        target = getattr(target, part)
+    setattr(target, tail, value)
 
 
-#: The tranches the field registry can describe, and the fields that carry
-#: each one's size and maturity. A facility whose commitment field is neither
-#: confirmed nor confirmed-absent is not exported at all: a tranche with no
-#: settled size is a tranche nobody established the existence of.
-_TRANCHES: tuple[tuple[str, FacilityType, str, str], ...] = (
-    ("revolver", "revolver", "revolver.commitment", "revolver.maturity_date"),
-    ("initial_term_loan", "term_loan",
-     "initial_term_loan.commitment", "initial_term_loan.maturity_date"),
-    ("delayed_draw", "delayed_draw_term_loan",
-     "delayed_draw.commitment", "initial_term_loan.maturity_date"),
-)
+def facilities_from(agreement: CreditAgreement) -> list[FacilityExport]:
+    """Project every established tranche into the typed FpML model.
 
-
-def build_facilities(
-    fields: dict[str, ExtractedField],
-) -> list[FacilityExport]:
-    """Every tranche this record establishes, in FpML shape.
+    Driven by ``agreement.FPML_BINDINGS``, the single declaration of
+    what crosses. Before this there were two: ``build_facilities`` addressed
+    26 field paths of its own and ``Tranche.to_fpml`` projected 13 element
+    names, both were populated by every run, and nothing reconciled them -- so
+    a consumer got a different FpML view of the same document depending on
+    which one it read. Coverage cannot diverge from a table.
 
     A tranche appears only where its commitment is settled. That is a stricter
     test than "some field mentioned it", and deliberately so: the export is
     the artefact somebody downstream would act on, and a facility that exists
     in it because one unresolved candidate named a number is a deal term
-    invented by a threshold.
+    invented by a threshold. A tranche confirmed *absent* is likewise not
+    exported as an empty one -- there is no such tranche, and the right export
+    says nothing rather than saying zero.
     """
     out: list[FacilityExport] = []
-    for facility_id, kind, commitment, maturity in _TRANCHES:
-        field = fields.get(commitment)
-        if field is None or field.status not in EXPORTABLE:
+    for tranche in agreement.tranches:
+        commitment = tranche.terms.commitment
+        if not commitment.settled or commitment.value is None:
             continue
-        if field.value is None and field.status != "absent_from_document":
-            continue
-        if field.status == "absent_from_document":
-            # Confirmed absent is a fact about the deal -- there is no such
-            # tranche -- and the right export is no facility, not an empty one.
-            continue
-        out.append(_facility(fields, facility_id, kind, commitment, maturity))
+
+        facility = Facility(
+            facility_id=tranche.tranche_id,
+            facility_type=_FACILITY_TYPE.get(tranche.kind, "term_loan"),
+            currency=tranche.reference.currency,
+            sublimit_of=tranche.sublimit_of,
+        )
+        crossing = tranche.to_fpml(agreement)
+        provenance: dict[str, str] = {}
+        for element, source, attr in FPML_BINDINGS:
+            if element not in crossing or attr is None:
+                continue
+            _set_attr(facility, attr, crossing[element])
+            if crossing[element] is not None:
+                asserted = tranche._resolve(source, agreement)
+                provenance[element] = asserted.source_field or source
+
+        out.append(FacilityExport(
+            facility=facility,
+            withheld=tranche.withheld_from_fpml(agreement),
+            provenance=provenance,
+            not_expressible=tranche.not_expressible_in_fpml(agreement),
+        ))
     return out
+
+
+def build_facilities(
+    fields: dict[str, ExtractedField],
+) -> list[FacilityExport]:
+    """Assemble the record, then project it. Kept for callers holding fields.
+
+    The pipeline already builds a ``CreditAgreement`` and calls
+    ``facilities_from`` with it directly; assembling a second one here would
+    be waste and, worse, something that could drift from the first.
+    """
+    from .assemble import build_agreement
+
+    return facilities_from(build_agreement(fields, agreement_id="fields"))
+
+
+#: Tranche kind -> the FpML substitution element the typed model expects.
+_FACILITY_TYPE: dict[str, Any] = {
+    "revolver": "revolver",
+    "term_loan": "term_loan",
+    "delayed_draw_term_loan": "delayed_draw_term_loan",
+    "letter_of_credit": "letter_of_credit",
+    "swingline": "revolver",
+    "incremental": "term_loan",
+    "unknown": "term_loan",
+}
 
 
 def export_summary(exports: list[FacilityExport]) -> dict[str, Any]:

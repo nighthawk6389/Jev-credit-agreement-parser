@@ -40,7 +40,7 @@ def test_a_settled_value_crosses():
     export = build_facilities(_base())[0]
     assert export.facility.commitment_amount == Decimal("100000000")
     assert export.facility.accrual.floor_pct == Decimal("1.0")
-    assert export.provenance["accrual.floor_pct"] == "libor_floor_pct"
+    assert export.provenance["floorRate"] == "libor_floor_pct"
 
 
 def test_an_unsettled_value_does_not_cross_and_says_why():
@@ -52,8 +52,8 @@ def test_an_unsettled_value_does_not_cross_and_says_why():
         _base(**{"libor_floor_pct": _field(Decimal("1.0"), "needs_review")})
     )[0]
     assert export.facility.accrual.floor_pct is None
-    assert "not settled" in export.withheld["accrual.floor_pct"]
-    assert "accrual.floor_pct" not in export.provenance
+    assert "not settled" in export.withheld["floorRate"]
+    assert "floorRate" not in export.provenance
 
 
 def test_a_conflicted_value_does_not_cross():
@@ -61,7 +61,7 @@ def test_a_conflicted_value_does_not_cross():
         _base(**{"libor_floor_pct": _field(Decimal("1.0"), "conflicted")})
     )[0]
     assert export.facility.accrual.floor_pct is None
-    assert "passes disagreed" in export.withheld["accrual.floor_pct"]
+    assert "passes disagreed" in export.withheld["floorRate"]
 
 
 def test_confirmed_absent_crosses_as_absent():
@@ -70,7 +70,7 @@ def test_confirmed_absent_crosses_as_absent():
         _base(**{"libor_floor_pct": _field(None, "absent_from_document")})
     )[0]
     assert export.facility.accrual.floor_pct is None
-    assert "accrual.floor_pct" not in export.withheld, (
+    assert "floorRate" not in export.withheld, (
         "confirmed absent is an answer, not a withholding"
     )
 
@@ -82,7 +82,7 @@ def test_an_external_reference_is_withheld_rather_than_exported_as_absent():
     field = _field(None, "external_reference", external_document="Fee Letter")
     export = build_facilities(_base(**{"libor_floor_pct": field}))[0]
     assert export.facility.accrual.floor_pct is None
-    assert "in a document" in export.withheld["accrual.floor_pct"], (
+    assert "in a document" in export.withheld["floorRate"], (
         "absent and elsewhere are different facts and the model cannot tell "
         "them apart, so the export has to"
     )
@@ -109,3 +109,102 @@ def test_the_summary_counts_what_the_run_earned():
     assert summary["elements_populated"] >= 3
     assert summary["elements_withheld"] > 0
     assert summary["withheld_by_reason"]
+
+
+# ---------------------------------------------------------------------------
+# One declaration of what crosses
+# ---------------------------------------------------------------------------
+
+
+def test_the_two_export_paths_agree_because_they_share_a_table():
+    """``build_facilities`` used to address 26 field paths of its own while
+    ``Tranche.to_fpml`` projected 13 element names. Both were populated by
+    every run and nothing reconciled them, so a consumer got a different FpML
+    view of the same document depending on which it read."""
+    from credit_extract.models.agreement import FPML_BINDINGS
+    from credit_extract.models.assemble import build_agreement
+    from credit_extract.models.export import facilities_from
+
+    agreement = build_agreement(_base(), agreement_id="d")
+    tranche = next(t for t in agreement.tranches if t.tranche_id == "revolver")
+    export = facilities_from(agreement)[0]
+
+    declared = {element for element, _s, _a in FPML_BINDINGS}
+    projected = set(tranche.to_fpml(agreement)) | set(
+        tranche.withheld_from_fpml(agreement)
+    )
+    accounted = set(export.provenance) | set(export.withheld)
+
+    assert projected == declared, "the projection is exactly the table"
+    assert accounted <= declared, "the typed export names nothing extra"
+
+
+def test_every_projected_element_is_declared_in_the_pinned_schemas():
+    from credit_extract.models.agreement import FPML_BINDINGS
+    from credit_extract.models.fpml_model import _vendored
+
+    declared = set(_vendored()["elements"])
+    named = {element for element, _s, _a in FPML_BINDINGS}
+    assert named <= declared, f"invented: {sorted(named - declared)}"
+
+
+def test_what_fpml_cannot_carry_is_named_separately_from_what_is_unsettled():
+    """A reader told a confirmed agent name was "withheld" would conclude the
+    agent was unknown. FpML 5.x simply declares no agent element."""
+    from credit_extract.models.export import build_facilities
+
+    fields = _base(**{
+        "administrative_agent.legal_name": _field("Wells Fargo", "confirmed"),
+        "ticking_fee_pct": _field(Decimal("0.25"), "confirmed"),
+    })
+    export = build_facilities(fields)[0]
+
+    assert "metadata.parties.administrative_agent" in export.not_expressible
+    assert "no agent element" in export.not_expressible[
+        "metadata.parties.administrative_agent"
+    ]
+    assert not any("agent" in k for k in export.withheld), (
+        "not a run failure -- the format has nowhere to put it"
+    )
+
+
+def test_an_unsettled_value_is_not_also_reported_as_inexpressible():
+    """Reporting it twice would overstate what the format costs."""
+    from credit_extract.models.export import build_facilities
+
+    fields = _base(**{
+        "administrative_agent.legal_name": _field("Wells Fargo", "needs_review"),
+    })
+    export = build_facilities(fields)[0]
+    assert "metadata.parties.administrative_agent" not in export.not_expressible
+
+
+def test_every_path_in_both_tables_actually_resolves():
+    """The bug this caught: NOT_IN_FPML named ``parties.agent`` and the model's
+    field is ``parties.administrative_agent``, so the entry silently matched
+    nothing and a settled agent name was reported as neither carried nor
+    inexpressible. A table of dotted paths needs a test that they exist."""
+    from credit_extract.models.agreement import FPML_BINDINGS, NOT_IN_FPML
+    from credit_extract.models.assemble import build_agreement
+
+    agreement = build_agreement(_base(), agreement_id="d")
+    tranche = agreement.tranches[0]
+
+    for element, source, _attr in FPML_BINDINGS:
+        if source.startswith("derived:"):
+            continue
+        kind, _, path = source.partition(":")
+        target = tranche if kind == "tranche" else agreement
+        for part in path.split("."):
+            target = getattr(target, part, None)
+            assert target is not None, f"{element}: {source} breaks at {part!r}"
+
+    for source, _why in NOT_IN_FPML:
+        kind, _, path = source.partition(":")
+        target = tranche if kind == "tranche" else agreement
+        for part in path.split("."):
+            nxt = getattr(target, part, None)
+            assert nxt is not None or hasattr(target, part), (
+                f"{source} breaks at {part!r}"
+            )
+            target = nxt
