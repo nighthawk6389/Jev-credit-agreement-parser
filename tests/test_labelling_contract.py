@@ -602,3 +602,68 @@ def test_decoration_alone_is_not_a_number():
 
     for junk in ("%", "$", " ", "-", ".", ","):
         assert _as_decimal(junk) is None, junk
+
+
+# ---------------------------------------------------------------------------
+# A tripwire has to be able to say it is a tripwire
+# ---------------------------------------------------------------------------
+
+
+def test_a_ceiling_passes_below_and_at_the_limit_and_fails_above():
+    """Coverage counts got bumped twice in one session as the sweep improved,
+    which teaches a reader that ground truth follows the code. Every one of
+    those labels already said "a tripwire, not a target" in its note; the
+    harness could only compare for equality."""
+    from credit_extract.eval.assertions import Assertion, evaluate_assertion
+
+    class _Report:
+        orphan_chunks = [object()] * 140
+        review_queue: list = []
+
+    class _Result:
+        report = _Report()
+        document_id = "d"
+        fields: dict = {}
+
+    def run(ceiling: int) -> bool:
+        a = Assertion(
+            id="t", family="F01_integrity", kind="report_count",
+            target="orphan_chunks", expect=ceiling, compare="at_most",
+        )
+        return evaluate_assertion(a, _Result(), source="real").passed
+
+    assert run(145) is True      # below the ceiling
+    assert run(140) is True      # at it
+    assert run(139) is False     # above it -- the thing to investigate
+
+
+def test_a_ceiling_is_refused_on_a_proposition_about_the_deal():
+    """A ceiling on a margin would let a wrong answer pass for being small
+    enough, which is the opposite of what this corpus measures."""
+    import pytest
+
+    from credit_extract.eval.assertions import Assertion
+
+    with pytest.raises(ValueError, match="only for report_count"):
+        Assertion(
+            id="t", family="F07_benchmark", kind="field_value",
+            target="libor_floor_pct", expect="0.75%", compare="at_most",
+        )
+
+
+def test_every_coverage_tripwire_is_a_ceiling():
+    """If one is left comparing for equality it will break on the next
+    coverage improvement, and the number will get bumped again."""
+    from pathlib import Path
+
+    from credit_extract.eval.assertions import load_assertions
+    from credit_extract.eval.families import load_families
+
+    root = Path(__file__).resolve().parents[1] / "credit_extract" / "eval"
+    for file in load_assertions(root / "labels", load_families()):
+        for a in file.assertions:
+            if a.kind == "report_count" and a.target == "orphan_chunks":
+                assert a.compare == "at_most", (
+                    f"{a.id} counts uncaptured chunks exactly; coverage "
+                    "improving must not break a label"
+                )

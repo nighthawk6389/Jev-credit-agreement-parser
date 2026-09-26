@@ -74,6 +74,18 @@ class Assertion(BaseModel):
     #: For ``resolve``: the point in time and the state to resolve against.
     at: date | None = None
     state: dict[str, Any] = Field(default_factory=dict)
+    #: How ``expect`` is compared. ``eq`` for every proposition about a deal:
+    #: a margin is the margin, and "close enough" is not a reading.
+    #:
+    #: ``at_most`` exists for counts of the pipeline's own working -- how many
+    #: chunks the sweep left uncaptured, how long the review queue is. Those
+    #: labels all say the same thing in their notes: "a tripwire on the sweep,
+    #: not a target". The harness had no way to express that, so every
+    #: improvement in coverage broke them and the number got bumped, which
+    #: teaches a reader that the label follows the code. A ceiling says what
+    #: was meant: fewer uncaptured chunks is always fine, more is the thing to
+    #: investigate.
+    compare: Literal["eq", "at_most"] = "eq"
     note: str = ""
 
     @model_validator(mode="after")
@@ -83,6 +95,13 @@ class Assertion(BaseModel):
                 raise ValueError(f"{self.id}: kind {self.kind} requires a target")
         if self.kind == "resolve" and self.at is None:
             raise ValueError(f"{self.id}: resolve assertions require `at`")
+        if self.compare == "at_most" and self.kind != "report_count":
+            # A ceiling on a deal term would let a wrong answer pass for being
+            # small enough, which is the opposite of what this corpus measures.
+            raise ValueError(
+                f"{self.id}: compare: at_most is only for report_count, not "
+                f"{self.kind} -- a proposition about the deal is equal or wrong"
+            )
         return self
 
 
@@ -351,7 +370,14 @@ def evaluate_assertion(
 
     elif kind == "report_count":
         observed = _report_count(result.report, assertion.target)
-        passed = values_equal(assertion.expect, observed)
+        if assertion.compare == "at_most":
+            ceiling, actual = _as_decimal(assertion.expect), _as_decimal(observed)
+            passed = (
+                ceiling is not None and actual is not None and actual <= ceiling
+            )
+            detail = f"ceiling {assertion.expect}, observed {observed}"
+        else:
+            passed = values_equal(assertion.expect, observed)
         # A count of the pipeline's own working -- how many chunks the sweep
         # caught, how long the review queue is -- is a tripwire on the harness,
         # not a proposition about the deal. No reader is ever shown one as a

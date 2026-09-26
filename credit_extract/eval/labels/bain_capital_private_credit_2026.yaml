@@ -95,6 +95,7 @@ assertions:
     member: table_split_across_pages
     kind: report_count
     target: orphan_chunks
+    compare: at_most
     expect: 0
     note: >
       Bain renders its page numbers as "- 7 -", "- 10 -", "- 34 -" and so on,

@@ -82,5 +82,9 @@ assertions:
     member: table_split_across_pages
     kind: report_count
     target: orphan_chunks
-    expect: 28
-    note: a tripwire on the sweep, not a target
+    compare: at_most
+    expect: 30
+    note: >
+      A tripwire on the sweep, not a target -- and now a CEILING, so it can
+      say so. Observed 28. Fewer uncaptured chunks is always fine; more is
+      the thing to investigate, and 30 is where that starts.

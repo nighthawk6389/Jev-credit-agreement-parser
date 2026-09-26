@@ -67,8 +67,13 @@ assertions:
     member: undefined_term_used
     kind: report_count
     target: orphan_chunks
-    expect: 9
+    compare: at_most
+    expect: 12
     note: >
       A tripwire, not a target. Low because most of this amendment is quoted
       replacement text, which the sweep attributes to the sections it
       restates rather than reporting as uncaptured.
+
+      A ceiling rather than an exact count: observed 9, and every one of
+      these notes already claimed to be a tripwire while the harness could
+      only compare for equality. Coverage improving must not break a label.
