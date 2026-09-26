@@ -426,9 +426,15 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         _spec("lc_sublimit", "the Letter of Credit Sublimit", "money",
               "economic_terms", 3, "fpml:letterOfCreditFacility", "fpml",
               sections=["2.05"]),
-        _spec("libor_floor_pct", "the LIBO Rate floor", "percent",
+        # The field name says LIBO and the corpus does not. It is kept because
+        # renaming a registry key breaks every label that targets it, and the
+        # name is cosmetic where the anchors are not: "LIBO Rate" resolved as
+        # a defined term in 0 of 100 harvested agreements, so this field's
+        # definitional route was dead. "Floor" resolves in 35 of them, with a
+        # single clean percentage in 20.
+        _spec("libor_floor_pct", "the benchmark rate floor", "percent",
               "economic_terms", 5, "fpml:floorRate", "fpml",
-              anchors=["LIBO Rate"]),
+              anchors=["Floor", "SOFR Floor", "LIBO Rate"]),
         _spec("applicable_margin.eurodollar_top_level_pct",
               "the highest Eurodollar Applicable Margin in the pricing grid",
               "percent", "economic_terms", 5, "fpml:spread", "fpml",
@@ -461,10 +467,17 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "date", "dates", 4, "fpml:mustDrawByDate", "fpml"),
         _spec("delayed_draw.refusal_allowed", "whether a delayed draw can be refused",
               "bool", "economic_terms", 3, "fpml:refusalAllowed", "fpml"),
+        # "Credit Spread Adjustment" resolved in 0 of 100 agreements; the terms
+        # that do are SOFR-era. Deliberately NOT anchored on "Benchmark
+        # Replacement Adjustment", which resolves in 18 of 50 sampled and
+        # carries a percentage in none of them: it is the fallback machinery
+        # that computes an adjustment on transition, not a rate anybody pays.
+        # Anchoring there would hand this field a number from a mechanism.
         _spec("accrual.credit_spread_adjustment_pct",
               "the credit spread adjustment added to the benchmark", "percent",
               "economic_terms", 5, "fpml:spreadAdjustment", "fpml",
-              anchors=["Credit Spread Adjustment"]),
+              anchors=["Term SOFR Adjustment", "SOFR Adjustment",
+                       "Credit Spread Adjustment"]),
         _spec("accrual.cap_pct", "the cap on the applicable base or all-in rate",
               "percent", "economic_terms", 4, "fpml:capRate", "fpml"),
         _spec("pik.rate_pct", "the payment-in-kind interest rate", "percent",

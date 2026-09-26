@@ -143,6 +143,72 @@ def test_no_graph_is_not_a_crash():
 
 
 # ---------------------------------------------------------------------------
+# F07: the benchmark floor, and the shape that looks like one
+# ---------------------------------------------------------------------------
+
+
+def test_a_floor_stated_in_its_definition_is_read():
+    """"LIBO Rate" resolved as a defined term in 0 of 100 harvested
+    agreements, so this field's definitional route was dead and the prose rule
+    matched a phrase no document contains. "Floor" resolves in 35."""
+    graph = _graph_with(
+        "a rate of interest equal to one-half of one percent (0.50%) per annum.",
+        term="Floor",
+    )
+    found = definition_candidates(_Doc(), graph, _spec("libor_floor_pct"))
+
+    assert found and found[0].value == Decimal("0.50")
+
+
+def test_a_per_tranche_floor_at_the_same_rate_is_one_answer():
+    """" Floor ": (a) with respect to the Initial Term Loans, 0.00% per annum
+    and (b) with respect to the Revolving Loans, 0.00% per annum.' Two
+    percentages, one value -- which is the common shape and must not be
+    refused as a disagreement."""
+    graph = _graph_with(
+        "(a) with respect to the Initial Term Loans, 0.00% per annum and "
+        "(b) with respect to the Revolving Loans, 0.00% per annum.",
+        term="Floor",
+    )
+    found = definition_candidates(_Doc(), graph, _spec("libor_floor_pct"))
+
+    assert found and found[0].value == Decimal("0.00")
+
+
+def test_a_floor_defined_by_reference_to_the_agreement_is_refused():
+    """The majority shape after the usable one: 13 of 100 agreements define
+    Floor as whatever floor the agreement provides. That is a circularity, not
+    a rate, and the bodies carry percentages from the transition mechanics
+    around them -- so without the guard the tier emits one at 0.90 from the
+    definitions article, the most authoritative-looking wrong answer going.
+    """
+    graph = _graph_with(
+        "the benchmark rate floor, if any, provided in this Agreement "
+        "initially (as of the execution of this Agreement, the modification, "
+        "amendment or renewal of this Agreement, 0.50%)",
+        term="Floor",
+    )
+    assert definition_candidates(_Doc(), graph, _spec("libor_floor_pct")) == []
+
+
+def test_the_csa_is_not_anchored_on_the_fallback_machinery():
+    """"Benchmark Replacement Adjustment" resolves in 18 of 50 sampled
+    agreements and carries a percentage in none of them: it is what computes
+    an adjustment on transition, not a rate anybody pays. Anchoring there
+    would hand a criticality-5 field a number from a mechanism."""
+    anchors = FIELD_REGISTRY["accrual.credit_spread_adjustment_pct"].definition_anchors
+
+    assert "Benchmark Replacement Adjustment" not in anchors
+    assert "Term SOFR Adjustment" in anchors
+
+
+def test_the_floor_anchors_name_terms_the_corpus_actually_defines():
+    anchors = FIELD_REGISTRY["libor_floor_pct"].definition_anchors
+    assert "Floor" in anchors, "the term 35 of 100 agreements define"
+    assert anchors[0] == "Floor", "the one that resolves should be tried first"
+
+
+# ---------------------------------------------------------------------------
 # It generalises past dates
 # ---------------------------------------------------------------------------
 

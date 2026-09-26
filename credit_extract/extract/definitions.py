@@ -58,6 +58,7 @@ settle, and a wrong answer here would inherit the deterministic tier's 0.95.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ..ingest.normalize import NormalizedDocument
@@ -85,6 +86,30 @@ _PARSERS = {
 }
 
 
+#: A definition that sends the reader back to the agreement instead of stating
+#: a value. ``Floor`` is where this was found and it is the majority shape after
+#: the usable one: of 100 harvested agreements, 35 define ``Floor``, 20 with a
+#: single clean percentage and **13 like this** --
+#:
+#:     " Floor ": the benchmark rate floor, if any, provided in this Agreement
+#:     initially (as of the execution of this Agreement, the modification,
+#:     amendment or renewal of this Agreement ...)
+#:
+#: That is the Benchmark Replacement machinery defining ``Floor`` as whatever
+#: floor the agreement provides, which is a circularity rather than a rate. The
+#: bodies often carry a percentage from the surrounding transition mechanics,
+#: so without this guard the tier would emit one as the floor -- at 0.90, from
+#: the definitions article, which is the most authoritative-looking wrong
+#: answer available.
+_SELF_REFERENTIAL = re.compile(
+    r"provided in this Agreement"
+    r"|the benchmark rate floor"
+    r"|as (?:otherwise )?(?:set forth|specified|provided) (?:in|under) "
+    r"(?:this Agreement|Section)",
+    re.I,
+)
+
+
 def _sole_value(body: str, kind: str) -> tuple[Any, str] | None:
     """The single value of ``kind`` in ``body``, with the text it came from.
 
@@ -109,8 +134,6 @@ def _sole_value(body: str, kind: str) -> tuple[Any, str] | None:
 
 def _candidates_in(body: str, kind: str) -> list[str]:
     """Substrings of ``body`` that might parse as ``kind``."""
-    import re
-
     if kind == "date":
         return re.findall(
             r"[A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2}/\d{1,2}/\d{2,4}", body
@@ -150,6 +173,10 @@ def definition_candidates(
             node = graph.get(resolved)
             body = (getattr(node, "body", "") or "").strip()
             if not body or len(body) > MAX_BODY_CHARS:
+                continue
+            if _SELF_REFERENTIAL.search(body):
+                # Defines the term by pointing back at the agreement, so any
+                # percentage in it belongs to the surrounding mechanics.
                 continue
             found = _sole_value(body, spec.kind)
             if found is None:
