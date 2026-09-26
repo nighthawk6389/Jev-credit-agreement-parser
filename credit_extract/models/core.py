@@ -179,6 +179,21 @@ class Variant(BaseModel, Generic[T]):
     conditions: list[Condition] = Field(default_factory=list)
     spans: list[Span] = Field(default_factory=list)
     status: FieldStatus = "needs_review"
+    #: The tranche this value was attributed TO BY THE DOCUMENT, or None where
+    #: the document states it once for the deal.
+    #:
+    #: This is read from the text and never assigned by an assembler. The
+    #: distinction matters because it is what separates two tranches priced
+    #: differently from two passes disagreeing: '"Floor" means (i) with respect
+    #: to Term Loans, 0.75% and (ii) with respect to Revolving Loans, 0.00%' is
+    #: one field with two correct answers, and reconciling it to one value and
+    #: a conflict -- which is what happened before this existed -- reports a
+    #: dispute the document does not have.
+    #:
+    #: A value with ``applies_to`` set is a *reading* for that tranche. A
+    #: deal-wide value handed to a tranche is weaker and carries
+    #: :attr:`~..agreement.Asserted.basis` saying so.
+    applies_to: str | None = None
 
     # -- provenance and confidence ------------------------------------------
     extraction_confidence: float = Field(default=0.0, ge=0.0, le=1.0)

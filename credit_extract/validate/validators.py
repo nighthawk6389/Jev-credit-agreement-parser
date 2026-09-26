@@ -370,6 +370,7 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         # first is absence, and confirming the second would be a silent error
         # with a probability printed next to it.
         untypable = field.qualifiers.get("untypable_value")
+        unsettled = field.qualifiers.get("unsettled_in_definition")
         if not asked:
             # Nothing was swept, so 1.0 is the initialiser showing through
             # rather than evidence. "Absent from a document nobody read" is
@@ -411,6 +412,24 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
                 "value this field's type cannot carry, so the record holds no "
                 "number and the document holds one. Absence was scored at "
                 f"{probability:.2f} and is not the question here"
+            )
+        elif unsettled:
+            # The fourth reason a field can be empty, and the one that looks
+            # most like absence: the term is defined, the definition carries
+            # several values, and no one of them is the answer. Essential
+            # Properties' Applicable Margin is a table indexed by Credit Rating
+            # Level. The document states this term emphatically; what it does
+            # not state is a single number.
+            field.status = "needs_review"
+            field.validation_confidence = probability
+            axis = field.qualifiers.get("indexed_by")
+            field.notes = (
+                f"defined, and its definition carries several values "
+                f"({unsettled}) rather than one, so this is not absence: the "
+                "term is in the document and resolving it needs "
+                + (f"a {axis}" if axis else "the axis it is indexed by")
+                + f". Absence scored {probability:.2f} and is the wrong "
+                  "question"
             )
         elif probability >= threshold:
             field.status = "absent_from_document"

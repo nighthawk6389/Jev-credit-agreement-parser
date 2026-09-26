@@ -72,6 +72,21 @@ from ..models.quantities import quantity_for
 #: with a name, and the first date in it is not "the" value.
 MAX_BODY_CHARS = 1_200
 
+#: How long a body may be and still be *declined out loud*, which is a weaker
+#: claim than reading a value out of it and so earns a looser cap.
+#:
+#: The tight cap above was costing exactly the cases the decline route exists
+#: for: Essential Properties defines Applicable Margin as a table indexed by
+#: Credit Rating Level and the body is 3,796 characters, so the tier skipped it
+#: before it could report that it is a grid. The biggest grids are the longest
+#: bodies. Declining to take a value from a long body is safe in a way taking
+#: one is not.
+#:
+#: It is not unbounded, because the span travels with the candidate and a span
+#: this side of ten thousand characters is a citation while one past it is a
+#: chunk wearing a citation's clothes -- which is the defect F10 was opened for.
+MAX_DECLINED_BODY_CHARS = 8_000
+
 #: How confident a value read from its own definition is. Below the tables
 #: tier, which cites an exact cell, and above the anchored prose rules: the
 #: document designated this span as where the term is settled, and the parse
@@ -110,16 +125,46 @@ _SELF_REFERENTIAL = re.compile(
 )
 
 
-def _sole_value(body: str, kind: str) -> tuple[Any, str] | None:
-    """The single value of ``kind`` in ``body``, with the text it came from.
+#: A tranche named inside a definition, with the phrase that attributes the
+#: value to it. This is the shape that lets one definition state a different
+#: number for each tranche::
+#:
+#:     " Floor " means a rate of interest equal to (i) with respect to Term
+#:     Loans, 0.75% and (ii) with respect to Revolving Loans, 0.00%.
+#:
+#: Read from the text, which is the only place the attribution exists. Rate
+#: types -- ``for ABR Loans``, ``for Term SOFR Loans`` -- deliberately do not
+#: match: a body priced at two rate types is one tranche's price under two
+#: conventions, not two tranches.
+_ATTRIBUTED = re.compile(
+    r"(?:with respect to|in the case of|applicable to)\s+"
+    r"(?:any |each |all |the )?"
+    r"((?:Initial |Incremental |Delayed Draw |Revolving |Term |Tranche [A-Z] )*"
+    r"(?:Term Loans?|Term Facility|Term Loan Facility|Revolving Loans?|"
+    r"Revolving Credit Loans?|Revolving Credit Facility|Revolving Facility|"
+    r"Letters? of Credit|Swingline Loans?))",
+    re.I,
+)
 
-    None where there is no value, and also where there is more than one: a
-    definition offering two dates does not settle which is the term's, and
-    guessing would be exactly the failure this module exists to fix.
-    """
+#: How a named loan class maps onto the tranches ``models/assemble.py`` builds.
+#: Longest-first in ``_ATTRIBUTED`` above, so "Initial Term Loans" is captured
+#: whole and this only has to decide which tranche it is.
+def _tranche_id(named: str) -> str:
+    lowered = named.lower()
+    if "delayed draw" in lowered:
+        return "delayed_draw"
+    if "swingline" in lowered or "letter" in lowered:
+        return "lc_sublimit"
+    if "revolving" in lowered:
+        return "revolver"
+    return "initial_term_loan"
+
+
+def _distinct_values(body: str, kind: str) -> list[tuple[Any, str]]:
+    """Every distinct value of ``kind`` in ``body``, with the text it came from."""
     parser = _PARSERS.get(kind)
     if parser is None:
-        return None
+        return []
     seen: list[tuple[Any, str]] = []
     for token in _candidates_in(body, kind):
         value = parser(token)
@@ -127,9 +172,48 @@ def _sole_value(body: str, kind: str) -> tuple[Any, str] | None:
             continue
         if not any(value == held for held, _ in seen):
             seen.append((value, token))
-        if len(seen) > 1:
-            return None
-    return seen[0] if seen else None
+    return seen
+
+
+def _sole_value(body: str, kind: str) -> tuple[Any, str] | None:
+    """The single value of ``kind`` in ``body``, with the text it came from.
+
+    None where there is no value, and also where there is more than one: a
+    definition offering two dates does not settle which is the term's, and
+    guessing would be exactly the failure this module exists to fix.
+    """
+    seen = _distinct_values(body, kind)
+    return seen[0] if len(seen) == 1 else None
+
+
+def _per_tranche_values(body: str, kind: str) -> dict[str, tuple[Any, str]]:
+    """One value per tranche the body attributes a number to, or ``{}``.
+
+    Empty unless the body attributes to at least two tranches AND each of
+    their segments settles on exactly one value. That is deliberately narrow.
+    The alternative shapes are a pricing grid indexed by rate type, leverage
+    level or period -- Somnigroup prices six loan classes at two rate types
+    each, Essential Properties indexes by Credit Rating Level -- and a tranche
+    id cannot answer those either, so producing a number for them would mean
+    picking one cell of a table and calling it the term.
+    """
+    matches = list(_ATTRIBUTED.finditer(body))
+    if len(matches) < 2:
+        return {}
+    bounds = [m.end() for m in matches] + [len(body)]
+    found: dict[str, tuple[Any, str]] = {}
+    for index, match in enumerate(matches):
+        segment = body[bounds[index]:bounds[index + 1]]
+        value = _sole_value(segment, kind)
+        if value is None:
+            return {}
+        tranche = _tranche_id(match.group(1))
+        if tranche in found and found[tranche][0] != value[0]:
+            # The same tranche named twice at two prices: a period or rate-type
+            # axis hiding inside the attribution. Not settleable here.
+            return {}
+        found[tranche] = value
+    return found if len(found) >= 2 else {}
 
 
 def _candidates_in(body: str, kind: str) -> list[str]:
@@ -172,19 +256,50 @@ def definition_candidates(
                 continue
             node = graph.get(resolved)
             body = (getattr(node, "body", "") or "").strip()
-            if not body or len(body) > MAX_BODY_CHARS:
+            if not body or len(body) > MAX_DECLINED_BODY_CHARS:
                 continue
             if _SELF_REFERENTIAL.search(body):
                 # Defines the term by pointing back at the agreement, so any
                 # percentage in it belongs to the surrounding mechanics.
                 continue
-            found = _sole_value(body, spec.kind)
-            if found is None:
-                continue
-            value, as_written = found
             span = _definition_span(graph, resolved)
             if span is None:
                 continue
+            if len(body) > MAX_BODY_CHARS:
+                # Too long to read a value out of, long enough to say why.
+                out.extend(_unsettled(spec, resolved, body, span, Candidate))
+                break
+
+            per_tranche = _per_tranche_values(body, spec.kind)
+            if per_tranche:
+                for tranche_id, (value, as_written) in sorted(per_tranche.items()):
+                    out.append(Candidate(
+                        field=spec.name,
+                        value=value,
+                        span=span,
+                        confidence=CONFIDENCE,
+                        pass_id="deterministic:definitions",
+                        segmentation="definitional",
+                        applies_to=tranche_id,
+                        quantity=quantity_for(value, spec.kind,
+                                              as_written=as_written),
+                        notes=(
+                            f"the definition of {resolved!r} states this term "
+                            f"per tranche, and this is the value it gives for "
+                            f"{tranche_id}"
+                        ),
+                    ))
+                break
+
+            found = _sole_value(body, spec.kind)
+            if found is None:
+                out.extend(_unsettled(spec, resolved, body, span, Candidate))
+                # Still the field's own term, so no later anchor should answer
+                # for it: a value read from "SOFR Adjustment" when "Term SOFR
+                # Adjustment" was the term and carried a grid is the wrong
+                # clause with the right shape.
+                break
+            value, as_written = found
             out.append(Candidate(
                 field=spec.name,
                 value=value,
@@ -201,3 +316,69 @@ def definition_candidates(
             ))
             break  # the first anchor that resolves is the field's own term
     return out
+
+
+def _unsettled(
+    spec: FieldSpec, term: str, body: str, span: Span, candidate_cls: Any,
+) -> list[Any]:
+    """A valueless candidate where the definition carries several values.
+
+    This tier already declined these -- a body with several percentages in it
+    settles nothing -- but it declined them *silently*, and silence reads
+    downstream as "no pass produced a candidate", which invites the negative
+    space validator to confirm the term absent. Essential Properties states its
+    Applicable Margin as a table indexed by Credit Rating Level; reporting that
+    document as having no margin is the F10 failure with a probability printed
+    beside it.
+
+    So: no value, because there is no single value, and a span plus a qualifier
+    saying what is actually there. ``reconcile`` keeps both, and Validator C
+    reads the qualifier and refuses to call the field absent -- the same route
+    ``untypable_value`` already takes.
+
+    It asserts nothing. The claim is only "this term is defined and its
+    definition carries numbers", which is true whether the definition is a
+    pricing grid, a step-down schedule or an amendment history. Where the axis
+    is nameable the note names it, because that tells a reader what would have
+    to be supplied to resolve the term; where it is not, the note says how many
+    values there are and quotes them, and leaves the reading to whoever looks.
+    """
+    values = _distinct_values(body, spec.kind)
+    if len(values) < 2:
+        return []  # nothing of this kind in the body at all: genuinely silent
+    quoted = ", ".join(str(written) for _, written in values[:6])
+    axis = _AXIS.search(body)
+    qualifiers = {"unsettled_in_definition": quoted}
+    if axis:
+        # Carried as a qualifier and not only in the note, because the note is
+        # overwritten by whichever validator speaks last and the axis is the
+        # actionable half: it says what a reader has to supply to resolve the
+        # term, rather than merely that it is unresolved.
+        qualifiers["indexed_by"] = axis.group(0)
+    return [candidate_cls(
+        field=spec.name,
+        value=None,
+        span=span,
+        confidence=CONFIDENCE,
+        pass_id="deterministic:definitions",
+        segmentation="definitional",
+        qualifiers=qualifiers,
+        notes=(
+            f"the definition of {term!r} carries {len(values)} values "
+            f"({quoted})"
+            + (f", indexed by {axis.group(0)}" if axis else "")
+            + ", so it settles no single one. The definition is the term; one "
+              "value out of it is not"
+        ),
+    )]
+
+
+#: The axes a pricing grid is indexed by, for the note. Naming the axis is
+#: worth a line because it tells a reader what would have to be supplied to
+#: resolve the term -- a leverage ratio, a rating, a date.
+_AXIS = re.compile(
+    r"Pricing Level|Credit Rating Level|Rating Level|Leverage Ratio|"
+    r"Total Net Leverage|First Lien Net Leverage|Adjustment Date|"
+    r"Type of Loan|relevant Class",
+    re.I,
+)

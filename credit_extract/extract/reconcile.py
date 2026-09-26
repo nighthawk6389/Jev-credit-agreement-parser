@@ -23,7 +23,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
-from ..models.core import ConflictRecord, ExtractedField, Span
+from ..models.core import ConflictRecord, ExtractedField, Span, Variant
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from .passes import Candidate
 
@@ -183,6 +183,137 @@ def _extraction_confidence(group: ValueGroup, total_passes: int) -> float:
     return round(min(0.99, 0.45 * base + 0.55 * corroboration), 4)
 
 
+def _winner(candidates: list[Candidate]) -> ValueGroup | None:
+    """The best-ranked value among ``candidates``, or None if none has one."""
+    valued = [c for c in candidates if c.value is not None]
+    if not valued:
+        return None
+    grouped: dict[str, ValueGroup] = {}
+    for candidate in valued:
+        key = candidate.key()
+        if key not in grouped:
+            grouped[key] = ValueGroup(key=key, value=candidate.value, candidates=[])
+        grouped[key].candidates.append(candidate)
+    return max(
+        grouped.values(),
+        key=lambda g: (g.from_definition, g.deterministic, g.support,
+                       g.best.confidence),
+    )
+
+
+def _tranche_variants(
+    attributed: dict[str, list[Candidate]], total_passes: int,
+) -> list[Variant[Any]]:
+    """One variant per tranche the document named, ordered by tranche id.
+
+    Each is a reading, not an inheritance: the document said which tranche the
+    number is for, so the span cited is the span that says so.
+
+    The support floor applies here exactly as it does to a deal-wide value.
+    Attribution says *whose* the number is; it says nothing about whether one
+    pass finding it once is enough to present it as settled, and exempting
+    these would be a second route to ``confirmed`` with a lower bar than the
+    first.
+    """
+    variants: list[Variant[Any]] = []
+    for tranche_id in sorted(attributed):
+        group = _winner(attributed[tranche_id])
+        if group is None:
+            continue
+        thin = group.support < SUPPORT_FLOOR and not group.deterministic
+        variants.append(Variant[Any](
+            value=group.value,
+            spans=group.spans(),
+            status="needs_review" if thin else "confirmed",
+            applies_to=tranche_id,
+            extraction_confidence=_extraction_confidence(group, total_passes),
+            pass_support=group.support,
+            notes=(
+                "single-pass discovery: found by "
+                f"{sorted(group.segmentations)[0]} segmentation only, "
+                "which is a common false-positive mode"
+                if thin
+                else next((c.notes for c in group.candidates if c.notes), None)
+            ),
+        ))
+    return variants
+
+
+def _from_attributed(
+    spec: FieldSpec,
+    attributed: dict[str, list[Candidate]],
+    total_passes: int,
+) -> ExtractedField[Any]:
+    """Build a field whose only readings were attributed to tranches.
+
+    The deal-level slot is the one every validator, the calibration fit and the
+    labelling harness read, so what goes in it decides whether this is an
+    improvement or a new way to be confidently wrong. The rule:
+
+    * every tranche priced the same -- there IS a deal-level answer, and it is
+      that value. ``"Floor" means (a) with respect to the Initial Term Loans,
+      0.00% and (b) with respect to the Revolving Loans, 0.00%`` states one
+      number twice, and refusing it would throw away a reading the document
+      makes plainly.
+    * tranches priced differently -- there is NO deal-level answer, and the
+      slot declines. Iridium's floor is 0.75% on the term loan and 0.00% on
+      the revolver; either number in this slot is a silent error, and the
+      average of them is worse. The tranche variants carry the real values and
+      ``Asserted.from_field(for_tranche=...)`` is what finds them.
+    """
+    variants = _tranche_variants(attributed, total_passes)
+    distinct = {v.value for v in variants}
+    field = ExtractedField[Any](
+        field_class=spec.field_class,
+        criticality=spec.criticality,
+        standard_term=spec.standard_term,
+    )
+    if not variants:
+        # Attributed candidates that all produced no value. Nothing emits this
+        # today -- the decline route is deal-wide on purpose -- but falling
+        # through would print "the tranches differ ()" and mean nothing.
+        field.variants = [Variant[Any](
+            value=None,
+            status="needs_review",
+            notes=(
+                "passes attributed this term to "
+                f"{', '.join(sorted(attributed))} and produced no value for any "
+                "of them"
+            ),
+        )]
+        return field
+    if len(distinct) == 1:
+        agreed = variants[0]
+        field.variants = [Variant[Any](
+            value=agreed.value,
+            spans=list(agreed.spans),
+            status="confirmed",
+            extraction_confidence=agreed.extraction_confidence,
+            pass_support=agreed.pass_support,
+            notes=(
+                f"stated per tranche and the same for each of "
+                f"{', '.join(sorted(attributed))}"
+            ),
+        )] + variants
+        return field
+
+    field.variants = [Variant[Any](
+        value=None,
+        status="needs_review",
+        notes=(
+            "priced per tranche and the tranches differ ("
+            + "; ".join(f"{v.applies_to}={v.value}" for v in variants)
+            + "), so this deal-level field has no single answer; the per-"
+              "tranche variants carry the values"
+        ),
+    )] + variants
+    field.precedence_basis = (
+        "variant 0 declines because the document prices the tranches "
+        "differently; the rest are attributed by the document"
+    )
+    return field
+
+
 def reconcile(
     candidates: list[Candidate],
     specs: dict[str, FieldSpec] | None = None,
@@ -199,10 +330,26 @@ def reconcile(
     contributions: dict[str, set[str]] = defaultdict(set)
 
     for name, spec in specs.items():
-        found = by_field.get(name, [])
-        for candidate in found:
+        all_found = by_field.get(name, [])
+        for candidate in all_found:
             if candidate.span is not None:
                 contributions[name].add(f"{candidate.span.start}:{candidate.span.end}")
+
+        # Partition on the tranche the document attributed the value to. Two
+        # tranches priced differently are two answers, not a disagreement, so
+        # they must not meet in the same value grouping. The deal-wide
+        # partition is reconciled exactly as it was before this existed, and a
+        # document that states each term once has no other partition -- which
+        # is what keeps every downstream reader unchanged on those documents.
+        found = [c for c in all_found if c.applies_to is None]
+        attributed: dict[str, list[Candidate]] = defaultdict(list)
+        for candidate in all_found:
+            if candidate.applies_to is not None:
+                attributed[candidate.applies_to].append(candidate)
+
+        if not found and attributed:
+            fields[name] = _from_attributed(spec, attributed, total_passes)
+            continue
 
         if not found:
             # Not "absent" -- just not found by these passes. Validator C is the
@@ -325,6 +472,12 @@ def reconcile(
                 "single-pass discovery: found by "
                 f"{sorted(winner.segmentations)[0]} segmentation only, "
                 "which is a common false-positive mode"
+            )
+        if attributed:
+            field.variants.extend(_tranche_variants(attributed, total_passes))
+            field.precedence_basis = (
+                "variant 0 is the deal-wide reading; the rest are attributed "
+                "to a tranche by the document and govern for that tranche"
             )
         fields[name] = field
 

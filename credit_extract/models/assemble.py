@@ -177,15 +177,42 @@ INHERITED: dict[str, tuple[str, str]] = {
     ),
 }
 
-#: Fees that only a revolving commitment can carry. A term loan that is fully
-#: drawn at closing pays no commitment fee, and quoting it one -- even as an
-#: inherited value -- would be an invented term rather than a weak reading.
-_REVOLVING_ONLY_FEES = frozenset({
-    "terms.fees.commitment_fee_pct", "terms.fees.fronting_fee_pct",
-})
-
-#: Amortization belongs to a term loan. A revolver repays on maturity.
-_TERM_ONLY = frozenset({"schedules.amortization_quarterly_amount"})
+#: Inherited slot -> the tranche kinds that can carry it at all, and why the
+#: others cannot. Offering a slot to a tranche the fee cannot attach to is not
+#: a weak reading, it is an invented term: a term loan drawn in full at closing
+#: has no undrawn commitment to charge a commitment fee on, and saying it pays
+#: 0.375% is a claim the document never made about it.
+#:
+#: This is the one place where per-tranche economics is genuinely a matter of
+#: which tranche, rather than of which price. A ticking fee is charged on a
+#: commitment that has been signed and not yet drawn, which is the definition
+#: of a delayed draw; a fronting fee is what an issuing bank charges for
+#: standing behind a letter of credit. Neither is "the same term priced
+#: differently per tranche" -- they are terms only one tranche can have.
+ELIGIBLE_KINDS: dict[str, tuple[frozenset[TrancheKind], str]] = {
+    "terms.fees.commitment_fee_pct": (
+        frozenset({"revolver", "letter_of_credit", "delayed_draw_term_loan"}),
+        "a commitment fee accrues on an undrawn commitment, and a term loan "
+        "drawn in full at closing has none",
+    ),
+    "terms.fees.ticking_fee_pct": (
+        frozenset({"delayed_draw_term_loan"}),
+        "a ticking fee accrues between signing and funding, which is what a "
+        "delayed draw is; a revolver's undrawn balance pays the commitment "
+        "fee instead",
+    ),
+    "terms.fees.fronting_fee_pct": (
+        frozenset({"letter_of_credit"}),
+        "a fronting fee is charged by the issuing bank for standing behind a "
+        "letter of credit, so it attaches to the LC line, not to the "
+        "revolving commitment it draws against",
+    ),
+    "schedules.amortization_quarterly_amount": (
+        frozenset({"term_loan", "delayed_draw_term_loan"}),
+        "amortization repays principal before maturity; a revolver repays on "
+        "maturity and reborrows until then",
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -199,10 +226,6 @@ class TrancheSpec:
     availability_field: str | None = None
     refusal_field: str | None = None
     sublimit_of: str | None = None
-    #: True where this tranche revolves, which decides whether the
-    #: commitment-fee slots are offered to it at all.
-    revolving: bool = False
-    amortizing: bool = False
 
 
 #: Every tranche the field registry can currently describe. The LC sublimit is
@@ -214,13 +237,11 @@ TRANCHES: tuple[TrancheSpec, ...] = (
         "revolver", "revolver",
         commitment_field="revolver.commitment",
         maturity_field="revolver.maturity_date",
-        revolving=True,
     ),
     TrancheSpec(
         "initial_term_loan", "term_loan",
         commitment_field="initial_term_loan.commitment",
         maturity_field="initial_term_loan.maturity_date",
-        amortizing=True,
     ),
     TrancheSpec(
         "delayed_draw", "delayed_draw_term_loan",
@@ -232,14 +253,12 @@ TRANCHES: tuple[TrancheSpec, ...] = (
         maturity_field="initial_term_loan.maturity_date",
         availability_field="delayed_draw.must_draw_by_date",
         refusal_field="delayed_draw.refusal_allowed",
-        amortizing=True,
     ),
     TrancheSpec(
         "lc_sublimit", "letter_of_credit",
         commitment_field="lc_sublimit",
         maturity_field="revolver.maturity_date",
         sublimit_of="revolver",
-        revolving=True,
     ),
 )
 
@@ -286,7 +305,10 @@ def _set_path(model: Any, path: str, value: Any) -> None:
 
 
 def _tranche(
-    spec: TrancheSpec, fields: dict[str, ExtractedField], inherited: list[str],
+    spec: TrancheSpec,
+    fields: dict[str, ExtractedField],
+    inherited: list[str],
+    ruled_out: list[str],
 ) -> Tranche:
     """One tranche, with its own readings where they exist and the deal's
     where they do not."""
@@ -323,13 +345,20 @@ def _tranche(
 
     # -- handed down from the deal ----------------------------------------
     for path, (field_name, why) in INHERITED.items():
-        if path in _REVOLVING_ONLY_FEES and not spec.revolving:
+        kinds, ineligible = ELIGIBLE_KINDS.get(path, (None, ""))
+        if kinds is not None and spec.kind not in kinds:
+            ruled_out.append(f"{spec.tranche_id}.{path}: {ineligible}")
             continue
-        if path in _TERM_ONLY and not spec.amortizing:
-            continue
-        asserted = Asserted.from_field(fields, field_name, basis=why)
+        asserted = Asserted.from_field(
+            fields, field_name, basis=why, for_tranche=spec.tranche_id,
+        )
         _set_path(tranche, path, asserted)
-        if asserted.value is not None:
+        if asserted.value is not None and asserted.inherited:
+            # A value the document attributed to this tranche is a reading, so
+            # it is not counted as an inherited slot even though the registry
+            # field it came from is deal-level. ``inherited`` measures the
+            # extraction gap, and a gap that has been closed for this tranche
+            # should stop being counted.
             inherited.append(f"{spec.tranche_id}.{path}")
 
     # -- conditions --------------------------------------------------------
@@ -450,7 +479,10 @@ def build_agreement(
     now, where it costs no information.
     """
     inherited: list[str] = []
-    tranches = tuple(_tranche(spec, fields, inherited) for spec in TRANCHES)
+    ruled_out: list[str] = []
+    tranches = tuple(
+        _tranche(spec, fields, inherited, ruled_out) for spec in TRANCHES
+    )
 
     metadata = AgreementMetadata(
         agreement_id=agreement_id,
@@ -483,5 +515,6 @@ def build_agreement(
             unmapped_fields=unmapped_fields(),
             inherited_slots=tuple(sorted(inherited)),
             unplaced_readings=tuple(sorted(unplaced_readings)),
+            ineligible_slots=tuple(sorted(ruled_out)),
         ),
     )

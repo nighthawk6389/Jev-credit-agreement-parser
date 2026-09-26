@@ -113,11 +113,23 @@ def test_a_closing_date_that_is_an_event_yields_nothing():
 
 def test_a_definition_carrying_two_dates_settles_nothing():
     """Guessing between them would inherit the deterministic tier's 0.95,
-    which is the failure this module exists to fix."""
+    which is the failure this module exists to fix.
+
+    What the tier now emits instead of nothing is a candidate with no value,
+    carrying the span and both dates. That asserts nothing -- the contract this
+    test states is that no value is produced, and it still holds -- and it
+    stops the silence being read downstream as "no pass looked", which is what
+    lets the negative-space validator confirm a defined term absent.
+    """
     graph = _graph_with(
         '" Closing Date ": June 25, 2018, as amended on November 26, 2019.'
     )
-    assert definition_candidates(_Doc(), graph, _spec("closing_date")) == []
+    found = definition_candidates(_Doc(), graph, _spec("closing_date"))
+
+    assert [c.value for c in found] == [None], "no date may be asserted"
+    assert found[0].qualifiers["unsettled_in_definition"] == (
+        "June 25, 2018, November 26, 2019"
+    )
 
 
 def test_the_same_date_twice_is_still_one_answer():

@@ -281,6 +281,11 @@ class Candidate:
     #: ``reconcile`` excludes echoes from support while still keeping the
     #: candidate -- an echo is weak evidence, not no evidence.
     anchored_on: str | None = None
+    #: The tranche the *document* attributed this value to, or None for a value
+    #: it states once for the deal. Reconciliation partitions on this before it
+    #: groups by value, so two tranches priced differently do not read as two
+    #: passes disagreeing. See :attr:`~..models.core.Variant.applies_to`.
+    applies_to: str | None = None
 
     def key(self) -> str:
         """Value identity for agreement counting. Never compared as floats."""

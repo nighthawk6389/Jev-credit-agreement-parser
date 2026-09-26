@@ -248,12 +248,27 @@ class Asserted(BaseModel, Generic[T]):
         fields: dict[str, ExtractedField],
         name: str,
         basis: str = "",
+        for_tranche: str | None = None,
     ) -> "Asserted[T]":
-        """Flatten the registry field ``name``, keeping its status and spans."""
+        """Flatten the registry field ``name``, keeping its status and spans.
+
+        ``for_tranche`` asks for the reading the document attributed to that
+        tranche. Where one exists it is used and ``basis`` is dropped, because
+        the value is no longer inherited -- the document said which tranche it
+        is for. Where none exists the deal-wide variant is used with ``basis``
+        intact, which is the behaviour every field had before attribution
+        existed and is still right for the deals that state a term once.
+        """
         field = fields.get(name)
         if field is None:
             return cls.missing(source_field=name)
         variant = field.variants[0] if field.variants else None
+        if for_tranche is not None:
+            attributed = next(
+                (v for v in field.variants if v.applies_to == for_tranche), None
+            )
+            if attributed is not None:
+                variant, basis = attributed, ""
         if variant is None:  # pragma: no cover - validator guarantees one
             return cls.missing(source_field=name)
         confidence = (
@@ -379,6 +394,11 @@ class TrancheFees(BaseModel):
     commitment_fee_pct: Asserted[Decimal] = Field(default_factory=Asserted)
     ticking_fee_pct: Asserted[Decimal] = Field(default_factory=Asserted)
     fronting_fee_pct: Asserted[Decimal] = Field(default_factory=Asserted)
+    #: Paid to the revolving lenders for participating in a letter of credit,
+    #: so it attaches to the LC line and not to the revolving commitment the LC
+    #: draws against. No registry field feeds it yet; whoever adds one should
+    #: also give it an entry in ``assemble.ELIGIBLE_KINDS`` restricted to
+    #: ``letter_of_credit``, or every tranche will be quoted it.
     lc_participation_fee_pct: Asserted[Decimal] = Field(default_factory=Asserted)
     #: Set where a fee is fixed by a fee letter nobody filed. The value is real
     #: and is somewhere else, which is not the same as there being no fee.
@@ -834,6 +854,12 @@ class AssemblyReport(BaseModel):
     #: not count. Surfaced here because nothing else surfaces it.
     unplaced_readings: tuple[str, ...] = ()
     tranches_dropped: tuple[str, ...] = ()
+    #: Slots left empty because the fee or schedule cannot attach to this kind
+    #: of tranche at all, each with the reason. Distinct from a slot that is
+    #: empty because nothing was found: "a term loan pays no commitment fee"
+    #: is an answer, and a reader who cannot tell it from "we did not look" has
+    #: to go and check by hand.
+    ineligible_slots: tuple[str, ...] = ()
 
 
 class CreditAgreement(BaseModel):

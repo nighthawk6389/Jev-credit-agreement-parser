@@ -184,21 +184,59 @@ measured against what it replaced is a change nobody can defend.
 ## 5. Reconciliation
 
 `extract/reconcile.py` folds every pass's candidates into one record per field.
-Candidates are grouped by value; groups are ranked by (deterministic, support,
-confidence); the winner becomes the field.
+Candidates are grouped by value; groups are ranked by `(from_definition,
+deterministic, support, confidence)`; the winner becomes the field.
+`from_definition` heads the key because a value read from a term's own
+definition outranks one read from a recital that happens to match a regex — the
+failure that reported Essential Properties' closing date as `2019-11-26`.
 
-Two status rules live here, and neither is the fitted threshold:
+Two status rules live here:
 
 ```python
 if len(ranked) > 1:
     field.status = "conflicted"           # the passes disagreed
-elif winner.support < 2 and not winner.deterministic:
+elif winner.support < SUPPORT_FLOOR and not winner.deterministic:
     field.status = "needs_review"         # "single-pass discovery"
 ```
 
 `support` is the number of **independent segmentations** backing the value —
-echoes excluded. The `< 2` is a hardcoded number, not a fitted one, and it is
-the rule most in need of the treatment §7 gives the others.
+echoes excluded. `SUPPORT_FLOOR` lives in `eval/support_fit.py` beside the
+fitter that is meant to set it; the fit is currently INCONCLUSIVE at n=4
+labelled outcomes, so the value stays 2 as a stated policy rather than a
+measured threshold, and it says so in that module.
+
+### Before grouping: whose tranche is this?
+
+Candidates are partitioned on `Candidate.applies_to` *before* they are grouped
+by value. That field carries the tranche **the document itself** attributed the
+value to, read from the text and never assigned by an assembler:
+
+```
+" Floor " means a rate of interest equal to (i) with respect to Term Loans,
+0.75% and (ii) with respect to Revolving Loans, 0.00%.
+```
+
+Without the partition those two candidates meet in one grouping and the field
+comes out `conflicted` — reporting a dispute the document does not have. With
+it they are two variants, each `confirmed`, each citing the clause that
+attributes it.
+
+The deal-wide partition (`applies_to is None`) is reconciled exactly as it was
+before this existed and stays `variants[0]`, which is what every validator, the
+calibration fit and the labelling harness read. So a document that states each
+term once produces byte-identical output — that is the property that made the
+change safe to ship, and `tests/test_per_tranche.py` asserts it.
+
+Where the *only* readings are attributed, `variants[0]` is decided by whether
+they agree. Latham prices both tranches at 0.00%, so the deal-level answer is
+0.00%; Iridium prices the term loan at 0.75% and the revolver at 0.00%, so the
+deal-level slot **declines** and the tranche variants carry the values.
+`Asserted.from_field(for_tranche=...)` is what finds them, and a value found
+that way stops being counted as inherited.
+
+Measured on the 100-document harvest, about six documents price their tranches
+differently. That number is why this is a partition and not twenty-one new
+registry fields: see the header of `tests/test_per_tranche.py` for the scan.
 
 ## 6. The precedence graph — a different graph
 
@@ -261,6 +299,28 @@ a threshold fitted on one scorer to a different one.
 The headline metric is not accuracy. It is: **of the fields marked
 `confirmed`, what fraction were wrong?** A field routed to review was handled
 correctly even if its value was wrong.
+
+### Four reasons a field is empty, and only one is absence
+
+Validator C is the only thing entitled to return `absent_from_document`, and it
+has to rule out three other explanations first — each found by a document in the
+corpus, in this order:
+
+| the record is empty because | how C knows | what it says instead |
+|---|---|---|
+| no chunk carried any text, so nothing was swept | `asked == 0` | `needs_review`: a field nobody looked for is not a field confirmed missing |
+| the filing amends an agreement it does not carry | `_amends_an_agreement_it_does_not_carry` | `needs_review`: absence here is a fact about the amendment, not the facility |
+| the extractor read a value this field's type cannot hold | `untypable_value` qualifier | `needs_review`: the record holds no number and the document holds one |
+| the term is defined and its definition carries several values | `unsettled_in_definition` qualifier | `needs_review`, naming the axis: the grid is the term, one cell of it is not |
+| **nothing in the document addresses it** | probability ≥ threshold | `absent_from_document` — the only one that is absence |
+
+The fourth row is the newest and the one that looks most like absence. Before
+it, the definitions tier declined a multi-valued definition *silently*, and
+silence reads downstream as "no pass produced a candidate" — which is exactly
+what invites C to confirm a term absent that the document states emphatically,
+with a probability printed beside it. Now the tier emits a candidate with no
+value, the span of the definition, and the values it found; C reads the
+qualifier and declines.
 
 **Validator E is the third use of the graph** — `graph.resolve(document)` then
 `graph.get(...)`, to decide whether a missing value is *external by design* (a
@@ -346,15 +406,21 @@ deal reported the borrower three times.
 Three, stated here because a flow diagram that omits its own weak points is
 decoration.
 
-**The registry is document-level where the deal is tranche-level.** One
+**The registry is document-level where the deal is tranche-level, and for the
+hardest documents no registry shape fixes that.** One
 `applicable_margin.eurodollar_top_level_pct` for the whole agreement, when a
-revolver and a delayed-draw term loan price differently. The `Tranche` slots
-exist; the assembler fills them from the deal-level field and marks each one
-`inherited`, so the gap is visible in the output rather than papered over.
-
-**`LadderResult.searched` is recorded and unread.** Validator C still decides
-absence without consulting which sections were actually searched. Safe while
-the sweep is exhaustive; unsafe the first time a budget cuts a run short.
+revolver and a delayed-draw term loan price differently. Where the document
+attributes a value to a tranche in words, §5 now reads the attribution and the
+tranche carries its own number. Where the document states the term as a grid —
+Essential Properties indexes Applicable Margin by Credit Rating Level ×
+facility × rate type, and 45 of 100 harvested agreements define their pricing
+term with no percentage in it at all — there is no per-tranche field that could
+hold the answer either, because the axis is not the tranche. Those are reported
+as a grid with the axis named, not as a number and not as absence. Resolving
+one needs a leverage ratio or a rating, which is an input the pipeline is not
+given. Everything else is still filled from the deal-level field and marked
+`inherited`, so the remaining gap is visible in the output rather than papered
+over.
 
 **No live model pass has ever run.** `ANTHROPIC_API_KEY` is unset, so every
 model-tier number in this repository comes from three readings made by hand and
