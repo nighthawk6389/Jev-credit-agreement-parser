@@ -297,14 +297,20 @@ def _from_attributed(
         )] + variants
         return field
 
+    priced = "; ".join(f"{v.applies_to}={v.value}" for v in variants)
     field.variants = [Variant[Any](
         value=None,
         status="needs_review",
+        # Carried as a qualifier and not only in the note, because the note is
+        # overwritten by whichever validator speaks last -- and on Iridium that
+        # was Validator C saying "the extractor probably missed it -- escalate"
+        # about a field where the extractor read both values and declined to
+        # pick one. A resolved field must not be reported as a miss.
+        qualifiers={"priced_per_tranche": priced},
         notes=(
-            "priced per tranche and the tranches differ ("
-            + "; ".join(f"{v.applies_to}={v.value}" for v in variants)
-            + "), so this deal-level field has no single answer; the per-"
-              "tranche variants carry the values"
+            f"priced per tranche and the tranches differ ({priced}), so this "
+            "deal-level field has no single answer; the per-tranche variants "
+            "carry the values"
         ),
     )] + variants
     field.precedence_basis = (

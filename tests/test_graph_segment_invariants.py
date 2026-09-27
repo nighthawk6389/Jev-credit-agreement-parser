@@ -573,3 +573,104 @@ def test_an_apostrophe_does_not_open_a_definition():
     path.write_text(prose)
     graph = build_definition_graph(ingest(path))
     assert len(graph) == 0, sorted(graph.nodes)
+
+
+# ---------------------------------------------------------------------------
+# Which region is the definitions article
+# ---------------------------------------------------------------------------
+
+
+def _sectioned(*sections: tuple[str, str, str]):
+    """A document from (section_id, level, body) triples, offsets computed."""
+    from credit_extract.ingest.normalize import NormalizedDocument, SectionMarker
+
+    text = ""
+    markers = []
+    for section_id, level, body in sections:
+        markers.append(SectionMarker(
+            section_id=section_id, level=level, offset=len(text), title="",
+        ))
+        text += f"{section_id}\n{body}\n\n"
+    return NormalizedDocument(
+        document_id="d", source_path="-", source_format="txt", text=text,
+        sections=markers,
+    )
+
+
+def test_the_definitions_region_is_the_one_holding_definitions():
+    """Taking the FIRST candidate cost 19 of 100 harvested agreements their
+    whole definition graph, and every one was large -- 256 characters chosen out
+    of 1,194,418 on Cumberland Farms.
+
+    Iridium is the shape: an amendment whose own Article I says "Capitalized
+    terms used and not otherwise defined herein have the meanings given in the
+    Credit Agreement", with the real definitions in the restated agreement
+    attached as an exhibit. Two Article I's, and the old rule took the wrapper's.
+    """
+    from credit_extract.graph.definitions import _definitions_region
+
+    doc = _sectioned(
+        ("ARTICLE I", "article",
+         "Capitalized terms used and not otherwise defined herein have the "
+         "meanings given in the Credit Agreement."),
+        ("ARTICLE II", "article", "Amendments to Credit Agreement."),
+        ("ARTICLE I", "article",
+         '"Floor": 0.75% per annum.\n"Maturity Date": July 16, 2029.\n'
+         '"Closing Date": June 25, 2018.'),
+        ("ARTICLE II", "article", "The Loans."),
+    )
+    start, end = _definitions_region(doc)
+
+    assert doc.text[start:end].count("means") == 0, "not the wrapper's article"
+    assert '"Floor"' in doc.text[start:end]
+
+
+def test_iridium_now_resolves_its_defined_terms():
+    """The document the fix was written for, end to end: 0 nodes before."""
+    from pathlib import Path
+
+    from credit_extract.ingest.normalize import ingest
+
+    raw = Path("corpus/edgar/work/edgar_corpus/raw")
+    if not raw.is_dir():
+        pytest.skip("harvested corpus not present")
+    path = next(raw.glob("O_iridium*"), None)
+    if path is None:
+        pytest.skip("Iridium not in this corpus checkout")
+
+    graph = build_definition_graph(ingest(path))
+    assert len(graph.nodes) > 400
+    assert graph.resolve("Floor") == "Floor"
+
+
+def test_a_tie_keeps_the_earlier_region():
+    """24 harvested documents have two candidates holding the SAME definitions
+    -- "1.01" nested in "ARTICLE I", a few characters apart. Without the
+    tie-break the region moves on all of them for no gain, and a region that
+    moves for no gain is churn in every span the graph produces."""
+    from credit_extract.graph.definitions import _candidate_regions, _definitions_region
+
+    doc = _sectioned(
+        ("ARTICLE I", "article", '"Floor": 0.75% per annum.'),
+        ("ARTICLE II", "article", "The Loans."),
+    )
+    candidates = _candidate_regions(doc)
+    assert candidates, "Article I is a candidate"
+    assert _definitions_region(doc) == candidates[0]
+
+
+def test_a_document_with_no_definitions_falls_back_as_before():
+    """Twelve harvested documents have no defined terms at all -- financial
+    statements, footnotes, a business acquisition report. Finding nothing in
+    them is the right answer and must not become a search of the whole document
+    on a scoring rule that fires on zero."""
+    from credit_extract.graph.definitions import _candidate_regions, _definitions_region
+
+    doc = _sectioned(
+        ("ARTICLE I", "article", "Capitalized terms are defined elsewhere."),
+        ("ARTICLE II", "article", "Nothing here either."),
+    )
+    assert _definitions_region(doc) == _candidate_regions(doc)[0]
+
+    bare = _sectioned()
+    assert _definitions_region(bare) == (0, len(bare.text))

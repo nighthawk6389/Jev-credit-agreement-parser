@@ -371,6 +371,7 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         # with a probability printed next to it.
         untypable = field.qualifiers.get("untypable_value")
         unsettled = field.qualifiers.get("unsettled_in_definition")
+        per_tranche = field.qualifiers.get("priced_per_tranche")
         if not asked:
             # Nothing was swept, so 1.0 is the initialiser showing through
             # rather than evidence. "Absent from a document nobody read" is
@@ -412,6 +413,23 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
                 "value this field's type cannot carry, so the record holds no "
                 "number and the document holds one. Absence was scored at "
                 f"{probability:.2f} and is not the question here"
+            )
+        elif per_tranche:
+            # The fifth reason, and the only one where the record is empty
+            # because the pipeline got it RIGHT. Iridium's floor is 0.75% on
+            # the term loan and 0.00% on the revolver, so the deal-level field
+            # declines and the tranche variants carry the values. Validator C
+            # scored absence at 0.01 and wrote "the extractor probably missed
+            # it -- escalate" over a field where the extractor read both values
+            # and correctly refused to choose. A resolved field reported as a
+            # miss sends a reviewer looking for something already found.
+            field.status = "needs_review"
+            field.validation_confidence = probability
+            field.notes = (
+                f"priced per tranche ({per_tranche}), so the deal-level field "
+                "is empty by design and this is neither absence nor a miss: "
+                "the values are on the tranches. Nothing to escalate unless "
+                "the deal is expected to price them alike"
             )
         elif unsettled:
             # The fourth reason a field can be empty, and the one that looks

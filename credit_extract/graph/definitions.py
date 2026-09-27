@@ -352,18 +352,80 @@ class DefinitionGraph(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _definitions_region(doc: NormalizedDocument) -> tuple[int, int]:
-    """Bound the definitions article; fall back to the whole document."""
+def _candidate_regions(doc: NormalizedDocument) -> list[tuple[int, int]]:
+    """Every span a definitions article might occupy, in document order.
+
+    A section is a candidate if it says it holds defined terms, or if it is
+    Article I -- which is where a credit agreement puts them. It runs to the
+    next article-level heading.
+    """
+    out: list[tuple[int, int]] = []
     for index, section in enumerate(doc.sections):
         title = section.title.lower()
         is_definitions = "defined term" in title or title.strip() == "definitions"
         if not (is_definitions or section.section_id.upper() == "ARTICLE I"):
             continue
+        end = len(doc.text)
         for later in doc.sections[index + 1:]:
             if later.level == "article":
-                return section.offset, later.offset
-        return section.offset, len(doc.text)
-    return 0, len(doc.text)
+                end = later.offset
+                break
+        out.append((section.offset, end))
+    return out
+
+
+def _definitions_region(doc: NormalizedDocument) -> tuple[int, int]:
+    """Bound the definitions article; fall back to the whole document.
+
+    TAKE THE CANDIDATE THAT HOLDS THE MOST DEFINITIONS, NOT THE FIRST
+    =================================================================
+
+    Taking the first cost 19 of the 100 harvested agreements their entire
+    definition graph, and every one of them was large::
+
+        region=    256 of  1194418  cumberland-farms
+        region=    342 of   878282  iridium-communications
+        region=    529 of   750595  hillman-solutions
+        region=    146 of   672577  blue-owl-credit-income
+
+    A few hundred characters out of a million is not an article, and those
+    documents have hundreds of defined terms. What the first candidate lands on
+    is a boilerplate incorporation by reference. Iridium's reads "Section 1.01.
+    Definitions . Capitalized terms used and not otherwise defined herein have
+    the meanings given in the Credit Agreement", at offset 3,999, with ARTICLE
+    II at 4,318 -- so the region is 342 characters wide and holds no definition
+    at all. Iridium's real definitions are at 159,769, inside the amended and
+    restated agreement attached to the amendment as an exhibit. The document has
+    two Article I's and the old rule took the one belonging to the wrapper.
+
+    ``_drop_toc_markers`` cannot help: it anchors on the literal string "TABLE
+    OF CONTENTS", which on Iridium sits at 23,424 -- after the markers at 3,976.
+
+    So score each candidate by how many definitions it actually contains. That
+    is not a heuristic about layout, it is the thing being looked for.
+
+    Ties keep the earliest candidate, which matters more than it looks. 24
+    documents have two candidates holding the *same* definitions -- "1.01" and
+    "ARTICLE I", a few characters apart, one nested in the other -- and without
+    the tie-break the region would move on all of them for no gain. Measured
+    over the harvest, first-of-the-best changes those 24 not at all and gains
+    15 documents a full graph, Iridium's 490 definitions among them.
+
+    Where no candidate holds a definition the old behaviour stands unchanged:
+    the first candidate if there is one, the whole document if there is not.
+    Twelve documents find nothing either way -- financial statements, footnotes,
+    a business acquisition report -- and finding nothing in them is correct.
+    """
+    regions = _candidate_regions(doc)
+    best: tuple[int, int] | None = None
+    most = 0
+    for start, end in regions:
+        found = len(_DEFINITION_RE.findall(doc.text[start:end]))
+        if found > most:  # strictly greater: the earliest of the best wins
+            best, most = (start, end), found
+    if best is not None:
+        return best
+    return regions[0] if regions else (0, len(doc.text))
 
 
 def _term_pattern(terms: list[str]) -> re.Pattern[str] | None:

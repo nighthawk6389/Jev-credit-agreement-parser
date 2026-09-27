@@ -512,3 +512,63 @@ def test_eligibility_names_slots_that_exist():
     for slot, (allowed, _) in ELIGIBLE_KINDS.items():
         assert allowed <= kinds, f"{slot} names a tranche kind nothing builds"
         assert allowed, f"{slot} is offered to nothing at all"
+
+
+# ---------------------------------------------------------------------------
+# A field empty by design must not be reported as a miss
+# ---------------------------------------------------------------------------
+
+
+def test_the_declining_slot_carries_a_qualifier_not_only_a_note():
+    """On Iridium the note was overwritten by Validator C -- "absence not
+    confirmed (0.01 < 0.88); some passage appears to address this, so the
+    extractor probably missed it -- escalate" -- over a field where the
+    extractor read BOTH values and correctly refused to choose. A resolved
+    field reported as a miss sends a reviewer looking for something already
+    found, so the fact travels as a qualifier, which validators read."""
+    field = reconcile(
+        [_candidate("0.75", "initial_term_loan"), _candidate("0.00", "revolver", 200)],
+        specs=FLOOR,
+    ).fields["libor_floor_pct"]
+
+    assert field.qualifiers["priced_per_tranche"] == (
+        "initial_term_loan=0.75; revolver=0.00"
+    )
+
+
+def test_validator_c_reads_it_and_declines_to_call_absence():
+    """The fifth reason a field can be empty, and the only one where the record
+    is empty because the pipeline got it right. Driven through the validator
+    rather than asserted against its source, so a rewording does not break it
+    and a regression does."""
+    from credit_extract.ingest.segment import Chunk
+    from credit_extract.validate import validators as V
+    from credit_extract.validate.calibrate import load_thresholds
+    from credit_extract.validate.jev import JevSession, OfflineJev
+
+    class _Doc:
+        text = "a floor of 0.75% per annum applies to the Term Loans"
+
+        def slice(self, start, end):
+            return self.text[start:end]
+
+    field = ExtractedField[object].single(
+        value=None, status="needs_review",
+        qualifiers={"priced_per_tranche": "initial_term_loan=0.75; revolver=0.00"},
+    )
+    chunk = Chunk(
+        chunk_id="c0", segmentation="structural", label="c0",
+        spans=[Span(start=0, end=len(_Doc.text), text=_Doc.text)],
+        text=_Doc.text,
+    )
+    ctx = V.ValidationContext(
+        doc=_Doc(), chunks=[chunk], fields={"libor_floor_pct": field},
+        specs={"libor_floor_pct": FIELD_REGISTRY["libor_floor_pct"]},
+        session=JevSession(OfflineJev()), thresholds=load_thresholds(),
+    )
+    V.validator_c_negative_space(ctx)
+
+    assert field.status == "needs_review", "never absent_from_document"
+    assert "empty by design" in field.notes
+    assert "initial_term_loan=0.75" in field.notes
+    assert "missed" not in field.notes, "a resolved field is not a miss"
