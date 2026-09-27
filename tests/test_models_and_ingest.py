@@ -728,3 +728,46 @@ def test_a_bank_is_still_read_with_its_national_association():
          "JEFFERIES FINANCE LLC"),
     ):
         assert rule.search(text).group(1) == expected, text
+
+
+def test_a_foreign_bank_keeps_the_branch_it_lends_through():
+    """'DNB BANK ASA, NEW YORK BRANCH, as Administrative Agent' needs two comma
+    crossings -- one for ASA, one for the branch -- and a party name is
+    otherwise allowed exactly one, before a corporate suffix. So the run could
+    not span it and the engine fell back to starting after the second comma:
+    Hornbeck Offshore's agent came back as 'NEW YORK BRANCH' at status
+    confirmed. Parseable, capitalised, sitting immediately before the role, and
+    not a company.
+
+    The tail is closed rather than a general widening of comma crossings, which
+    is the failure ``_PARTY``'s docstring is mostly about: one to three
+    capitalised words then BRANCH, only at the end of a name.
+    """
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as (?:the )?Administrative Agent")
+    for text, expected in (
+        ("and DNB BANK ASA, NEW YORK BRANCH, as Administrative Agent",
+         "DNB BANK ASA, NEW YORK BRANCH"),
+        ("hereto, DEUTSCHE BANK AG, NEW YORK BRANCH, as Administrative Agent",
+         "DEUTSCHE BANK AG, NEW YORK BRANCH"),
+        ("and UBS AG, STAMFORD BRANCH, as Administrative Agent",
+         "UBS AG, STAMFORD BRANCH"),
+        ("and BANK OF AMERICA, N.A., LONDON BRANCH, as Administrative Agent",
+         "BANK OF AMERICA, N.A., LONDON BRANCH"),
+    ):
+        assert rule.search(text).group(1) == expected, text
+
+
+def test_the_branch_tail_does_not_let_a_run_hop_a_party_entry():
+    """The reason the tail is closed. A general second comma crossing would let
+    the run reach from one party entry into the next, welding a role to the name
+    after it -- which is what the one-crossing rule exists to stop."""
+    import re
+    from credit_extract.extract.passes import _PARTY
+
+    rule = re.compile(_PARTY + r"\s*,\s*as (?:the )?Administrative Agent")
+    text = ("ACME HOLDINGS, INC., as Designated Borrower, TRUIST BANK, as "
+            "Administrative Agent")
+    assert rule.search(text).group(1) == "TRUIST BANK"

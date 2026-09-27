@@ -937,6 +937,26 @@ _NOT_FIRST_IN_A_NAME = (
 
 #: One capitalised token of a party name.
 _NAME_TOKEN = _NOT_IN_A_NAME + r"[A-Z][A-Za-z0-9&'.\-]*"
+
+#: The branch a foreign bank lends through, which is part of its name here.
+#:
+#: A comma inside a party name is otherwise allowed only once, before a
+#: corporate suffix, because admitting commas freely lets a run hop from one
+#: party entry to the next. "DNB BANK ASA, NEW YORK BRANCH, as Administrative
+#: Agent" needs two crossings -- one for ASA and one for the branch -- so the
+#: run could not span it and the engine fell back to starting after the second
+#: comma. Hornbeck Offshore's agent was reported as 'NEW YORK BRANCH', at status
+#: confirmed: parseable, capitalised, sitting immediately before the role, and
+#: not a company.
+#:
+#: This is a closed tail rather than a general widening: one to three
+#: capitalised words followed by BRANCH, only at the end of a name. The corpus
+#: writes it 39 times across 13 institutions -- DEUTSCHE BANK AG, THE
+#: TORONTO-DOMINION BANK, BANCO SANTANDER, S.A., DNB BANK ASA, UBS AG STAMFORD,
+#: COMMERZBANK AKTIENGESELLSCHAFT LONDON -- and no party entry in it begins with
+#: a word ending in BRANCH, which is what makes the second crossing safe where a
+#: general one is not.
+_BRANCH = r"(?:\s*,\s*(?:[A-Z][A-Za-z]*\s+){1,3}BRANCH\b)?"
 #: And the lookbehind, for the boundary case that survived everything above.
 #: The passes run over three segmentations, so a chunk can begin mid-word --
 #: "WELLS FARGO BANK, NATIONAL ASSO|CIATION" -- and the next chunk opens with
@@ -963,12 +983,12 @@ _PARTY = (
     # run, and came back as "FUNDING III LLC".
     + _NOT_FIRST_IN_A_NAME + _NAME_TOKEN
     + r"(?: +(?:" + _NAME_TOKEN + r"|of|\d+)){1,7}"
-    r"(?:\s*,\s*(?:" + _SUFFIX + r"))?"
+    r"(?:\s*,\s*(?:" + _SUFFIX + r"))?" + _BRANCH
     # Or one token and a suffix, which is how a single-word company signs:
     # "HEALTHSTREAM, INC.", "Cadeler, A/S".
-    r"|" + _NOT_FIRST_IN_A_NAME + r"[A-Z][A-Za-z0-9&'.\-]*\s*,\s*(?:"
-    + _SUFFIX + r")"
-    r")"
+    + r"|" + _NOT_FIRST_IN_A_NAME + r"[A-Z][A-Za-z0-9&'.\-]*\s*,\s*(?:"
+    + _SUFFIX + r")" + _BRANCH
+    + r")"
 )
 
 #: A percentage, however the drafter chose to write it. Requiring a literal
