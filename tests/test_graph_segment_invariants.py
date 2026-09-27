@@ -674,3 +674,65 @@ def test_a_document_with_no_definitions_falls_back_as_before():
 
     bare = _sectioned()
     assert _definitions_region(bare) == (0, len(bare.text))
+
+
+def test_a_named_section_holding_nothing_widens_the_search():
+    """Six documents name a definitions section that holds no definition and
+    have hundreds elsewhere -- Aveanna 541, Crane NXT 505. They number their
+    top-level divisions "SECTION 1", "SECTION 2" with no titles, so the article
+    that holds the terms is never a named candidate."""
+    from credit_extract.graph.definitions import _definitions_region
+
+    doc = _sectioned(
+        ("ARTICLE I", "article", "Capitalized terms are defined in the Notes."),
+        ("SECTION 2", "article", "Nothing here."),
+        ("SECTION 3", "article",
+         '"Floor": 0.75% per annum.\n"Maturity Date": July 16, 2029.'),
+    )
+    start, end = _definitions_region(doc)
+    assert '"Floor"' in doc.text[start:end]
+
+
+def test_widening_never_reaches_a_document_that_has_no_named_section():
+    """Measured and rejected as an unconditional rule. Six documents have no
+    named candidate at all, fall back to the whole document, and pick up
+    definitions written outside the definitions article -- a QFC stay provision,
+    a benchmark-transition schedule. Narrowing them loses real terms: Limbach
+    drops ``Floor``, which would take the anchor off a criticality-5 F07 field
+    on a document that reads it correctly today.
+
+    The separation across the harvest is exact -- every document that would lose
+    has zero named candidates, every document that would gain has one holding
+    zero -- so the wider net is gated on a named candidate existing.
+    """
+    from credit_extract.graph.definitions import _candidate_regions, _definitions_region
+
+    doc = _sectioned(
+        ("SECTION 1", "article", '"Loans": the loans made hereunder.'),
+        ("SECTION 2", "article", "Operative provisions."),
+        ("SECTION 9", "article", '"Floor": 0.75% per annum.'),
+    )
+    assert _candidate_regions(doc) == [], "nothing here is a named candidate"
+
+    start, end = _definitions_region(doc)
+    assert (start, end) == (0, len(doc.text)), "the whole document, as before"
+    assert '"Floor"' in doc.text[start:end], "the late definition is still in"
+
+
+def test_the_counts_alone_would_have_approved_the_wrong_rule():
+    """Kept as a note in executable form. Comparing candidate sets by definition
+    count said "15 better, 85 equal, 0 worse" -- because that comparison does
+    not model the whole-document fallback, which is what the four losing
+    documents rely on. Printing the terms is what found the losses."""
+    from credit_extract.graph.definitions import _article_regions, _best_region
+
+    doc = _sectioned(
+        ("SECTION 1", "article", '"Loans": the loans made hereunder.'),
+        ("SECTION 9", "article", '"Floor": 0.75% per annum.'),
+    )
+    narrowed = _best_region(doc, _article_regions(doc))
+    assert narrowed is not None
+    assert '"Floor"' not in doc.text[narrowed[0]:narrowed[1]], (
+        "the highest-scoring article is not the whole document, and that is "
+        "exactly how a real term gets dropped"
+    )

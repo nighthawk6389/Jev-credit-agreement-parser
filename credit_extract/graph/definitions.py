@@ -374,6 +374,38 @@ def _candidate_regions(doc: NormalizedDocument) -> list[tuple[int, int]]:
     return out
 
 
+def _article_regions(doc: NormalizedDocument) -> list[tuple[int, int]]:
+    """Every article-level division, in document order.
+
+    A wider net than :func:`_candidate_regions`, and consulted only where that
+    one found a definitions section holding nothing -- see
+    :func:`_definitions_region`.
+    """
+    articles = [s for s in doc.sections if s.level == "article"]
+    return [
+        (
+            section.offset,
+            articles[index + 1].offset
+            if index + 1 < len(articles) else len(doc.text),
+        )
+        for index, section in enumerate(articles)
+    ]
+
+
+def _best_region(
+    doc: NormalizedDocument, regions: list[tuple[int, int]],
+) -> tuple[int, int] | None:
+    """The earliest region holding the most definitions, or None if none holds
+    any."""
+    best: tuple[int, int] | None = None
+    most = 0
+    for start, end in regions:
+        found = len(_DEFINITION_RE.findall(doc.text[start:end]))
+        if found > most:  # strictly greater: the earliest of the best wins
+            best, most = (start, end), found
+    return best
+
+
 def _definitions_region(doc: NormalizedDocument) -> tuple[int, int]:
     """Bound the definitions article; fall back to the whole document.
 
@@ -411,21 +443,53 @@ def _definitions_region(doc: NormalizedDocument) -> tuple[int, int]:
     over the harvest, first-of-the-best changes those 24 not at all and gains
     15 documents a full graph, Iridium's 490 definitions among them.
 
-    Where no candidate holds a definition the old behaviour stands unchanged:
-    the first candidate if there is one, the whole document if there is not.
-    Twelve documents find nothing either way -- financial statements, footnotes,
-    a business acquisition report -- and finding nothing in them is correct.
+    AND WHEN THE NAMED SECTION HOLDS NOTHING, WIDEN THE NET -- BUT ONLY THEN
+    ========================================================================
+
+    Six documents name a definitions section that holds no definition and have
+    hundreds elsewhere: Aveanna 541, Crane NXT 505, New Fortress 292, Genasys
+    232, loanDepot 137. They number their top-level divisions ``SECTION 1``,
+    ``SECTION 2`` with no titles, so the article that actually holds the terms
+    is never a candidate above. Scoring every article-level division reaches all
+    six.
+
+    Doing that unconditionally was measured and rejected. Six OTHER documents
+    have no named candidate at all, so they fall back to the whole document and
+    pick up definitions written outside the definitions article -- which is
+    where a QFC stay provision or a benchmark-transition schedule puts them.
+    Narrowing those to an article-level region loses real terms: Cooper Standard
+    drops ``BHC Act Affiliate``, ``Default Right``, ``QFC``; KNOT Offshore drops
+    31 including ``Basel III``, ``CRD IV`` and ``Current Liabilities``; and
+    Limbach drops ``Floor`` along with the whole benchmark-transition set. Losing
+    ``Floor`` would take the anchor off a criticality-5 F07 field on a document
+    that reads it correctly today.
+
+    The counts alone said "15 better, 85 equal, 0 worse", because a comparison
+    of candidate sets does not model the whole-document fallback. Printing the
+    *terms* is what found the four losses. The separation turned out to be exact:
+    every document that would lose has ZERO named candidates, and every document
+    that would gain has exactly ONE holding ZERO definitions. So the wider net
+    is consulted only in that second case, which cannot touch the first.
+
+    Where nothing holds a definition the old behaviour stands: the first named
+    candidate if there is one, the whole document if there is not. Six documents
+    find nothing either way -- financial statements, footnotes, a business
+    acquisition report -- and finding nothing in them is correct.
     """
     regions = _candidate_regions(doc)
-    best: tuple[int, int] | None = None
-    most = 0
-    for start, end in regions:
-        found = len(_DEFINITION_RE.findall(doc.text[start:end]))
-        if found > most:  # strictly greater: the earliest of the best wins
-            best, most = (start, end), found
+    best = _best_region(doc, regions)
     if best is not None:
         return best
-    return regions[0] if regions else (0, len(doc.text))
+    if regions:
+        # A named definitions section that holds nothing. Its existence is the
+        # signal that this document's divisions are not shaped like the rule
+        # expects, and it is what keeps this branch away from the documents that
+        # legitimately rely on the whole-document fallback.
+        wider = _best_region(doc, _article_regions(doc))
+        if wider is not None:
+            return wider
+        return regions[0]
+    return 0, len(doc.text)
 
 
 def _term_pattern(terms: list[str]) -> re.Pattern[str] | None:
