@@ -1068,8 +1068,19 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     # construed in accordance with, the law of the State of New York" -- the
     # preposition this rule keys on is followed by a comma, and requiring plain
     # whitespace after it lost a document the unguarded version read correctly.
+    # The operative word joins the span when it is adjacent, because the whole
+    # match is the citation and "by the laws of the State of New York" does not
+    # tell a reader WHAT is governed by them. A citation that omits its own verb
+    # is the same defect as a review hint wearing a citation's clothes, one size
+    # down.
+    #
+    # It is optional rather than required: Aveanna's letter-of-credit clause
+    # puts ninety characters of ISP carve-out between the verb and the
+    # jurisdiction, and requiring adjacency would lose the document entirely.
+    # Where it is adjacent the reader gets the clause; where it is not, they get
+    # what the rule could honestly reach.
     Rule("facility.governing_law",
-         r"\b(?:by|with),?\s+the\s+"
+         r"(?:governed\s+|accordance\s+)?\b(?:by|with),?\s+the\s+"
          r"(?:internal |substantive |domestic )?laws? of the "
          r"(?:State|Commonwealth) of\s+"
          r"(New York|Delaware|Minnesota|California|Illinois|Texas|Georgia|"
