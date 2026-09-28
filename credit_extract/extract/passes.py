@@ -1029,6 +1029,48 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Lead |Sole |Joint )*(?:Lead )?Arranger", 0.85, 0),
     Rule("syndication_agent.legal_name",
          _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent", 0.90, 0),
+    # -- governing law -------------------------------------------------------
+    #
+    # 69 labelled propositions, one per document, and until now not one of them
+    # was reachable: the field had no rule and no definition anchor, so every
+    # single one failed for want of five lines. It is 13% of the corpus's real
+    # assertions resting on the most formulaic sentence in a credit agreement.
+    #
+    # Anchored on "laws of the State of <X>" rather than on "governed by",
+    # because the operative verb is separated from the jurisdiction by anything
+    # the drafter fancies -- Aveanna's letter-of-credit clause reads "governed
+    # by, and shall be construed in accordance with, the rules of the ISP, and
+    # as to matters not governed by the ISP, the laws of the State of New York",
+    # which is ninety characters of carve-out between the two. The phrase
+    # "laws of the State of" appears in no other context, and requiring a named
+    # jurisdiction after it excludes the one lookalike, "the laws of the State
+    # of organization of such Subsidiary".
+    Rule("facility.governing_law",
+         r"(?:internal |substantive |domestic )?laws? of the "
+         r"(?:State|Commonwealth) of\s+"
+         r"(New York|Delaware|Minnesota|California|Illinois|Texas|Georgia|"
+         r"Massachusetts|Pennsylvania|North Carolina|South Carolina|Ohio|"
+         r"Michigan|Washington|Virginia|Maryland|Missouri|Colorado|Florida|"
+         r"Connecticut|New Jersey|Wisconsin|Indiana|Tennessee|Arizona|Nevada|"
+         r"Utah|Oregon|Kansas|Iowa|Nebraska|Oklahoma|Louisiana|Alabama|"
+         r"Kentucky|Arkansas|Mississippi|New Hampshire|Rhode Island|Vermont|"
+         r"Maine|Montana|Wyoming|Idaho|Alaska|Hawaii|West Virginia|"
+         r"North Dakota|South Dakota|New Mexico)\b",
+         0.90),
+    # The non-US shape, and the labels name it differently: a US state is
+    # "New York", a foreign law is "English law". Cadeler's LMA facility says
+    # "governed by English law" and KNOT Offshore's "governed by Norwegian
+    # law" -- no "State of", no jurisdiction noun, just the adjective. The
+    # adjectives are a closed list because "governed by applicable law" and
+    # "governed by federal law" are ordinary prose and neither is a choice of
+    # forum.
+    Rule("facility.governing_law",
+         r"governed by,? (?:and construed in accordance with,? )?"
+         r"((?:English|Norwegian|Scots|Scottish|Irish|German|French|Dutch|"
+         r"Swiss|Swedish|Danish|Finnish|Luxembourg|Singapore|Australian|"
+         r"Canadian|Japanese|Italian|Spanish|Belgian|Austrian|Portuguese|"
+         r"Brazilian|Mexican|Norwegian) law)\b",
+         0.90),
     # -- dates ---------------------------------------------------------------
     Rule("closing_date", r'"Closing Date"\s+means\s+([^.]+)\.', 0.95),
     # A cover or recital date, and a weak one: it reads the execution date of
