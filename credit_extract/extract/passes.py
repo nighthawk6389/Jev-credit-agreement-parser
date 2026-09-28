@@ -1045,7 +1045,31 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     # "laws of the State of" appears in no other context, and requiring a named
     # jurisdiction after it excludes the one lookalike, "the laws of the State
     # of organization of such Subsidiary".
+    # The one word that separates a choice of forum from a fact about the
+    # borrower's incorporation, measured over the harvest on the two states that
+    # matter:
+    #
+    #     by    66   "governed by the laws of the State of New York"
+    #     under 46   "organized or formed under the laws of the State of
+    #                 Delaware", "keep in full force and effect its legal
+    #                 existence under the laws of the State of Delaware"
+    #     with  19   "in accordance with the laws of the State of New York"
+    #     or     9   a carve-out list
+    #     than   6   "other than the laws of ..."
+    #
+    # Without this the first version of the rule reported Delaware on nine
+    # documents whose governing law is New York -- every one of them reading the
+    # borrower's state of organization out of a representation. It came out as
+    # `conflicted` rather than a silent error, because the real clause is in the
+    # document too and the two candidates refuse to resolve, but a field that
+    # declines on nine documents for a reason a preposition settles is not
+    # finished. So `by` or `with`, and nothing else.
+    # The comma is not decoration. Aspen's clause reads "governed by, and
+    # construed in accordance with, the law of the State of New York" -- the
+    # preposition this rule keys on is followed by a comma, and requiring plain
+    # whitespace after it lost a document the unguarded version read correctly.
     Rule("facility.governing_law",
+         r"\b(?:by|with),?\s+the\s+"
          r"(?:internal |substantive |domestic )?laws? of the "
          r"(?:State|Commonwealth) of\s+"
          r"(New York|Delaware|Minnesota|California|Illinois|Texas|Georgia|"
@@ -1064,7 +1088,18 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     # adjectives are a closed list because "governed by applicable law" and
     # "governed by federal law" are ordinary prose and neither is a choice of
     # forum.
+    #
+    # It also has to be a PREDICATE and not a participle, which is the whole
+    # difference between this agreement's governing law and some other
+    # document's. Cumberland Farms says "any Foreign Security Agreement governed
+    # by English law" and Lifetime Brands "any other Security Agreement governed
+    # by Dutch law" -- both attributive, both describing a different instrument
+    # -- and the first version of this rule reported them as the facility's own
+    # governing law on three documents whose answer is New York. The real clauses
+    # read "obligations connected with it ARE governed by English law" and
+    # "...in connection with it ARE governed by Norwegian law".
     Rule("facility.governing_law",
+         r"(?:are|is|shall be|will be|has been|have been)\s+"
          r"governed by,? (?:and construed in accordance with,? )?"
          r"((?:English|Norwegian|Scots|Scottish|Irish|German|French|Dutch|"
          r"Swiss|Swedish|Danish|Finnish|Luxembourg|Singapore|Australian|"
