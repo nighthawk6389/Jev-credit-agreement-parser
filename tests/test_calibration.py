@@ -189,3 +189,45 @@ def test_silent_error_rate_has_not_regressed(tmp_path):
         f"coverage {evaluation.coverage:.3f} is below {MIN_COVERAGE}; the "
         "pipeline is routing too much to review to be useful"
     )
+
+
+def test_a_new_backend_gets_a_calibration_run_instead_of_a_crash():
+    """The first run against any new scorer is necessarily the one with no
+    thresholds fitted for it -- and it is the run you need in order to fit them.
+
+    ``load_thresholds`` refuses a backend mismatch, and is right to: a
+    probability from one scorer means nothing on another's scale. But the
+    refusal is an exception, ``run_pipeline`` caught only ``FileNotFoundError``,
+    and ``config/thresholds.json`` exists tagged ``offline`` -- so the first
+    live Jev run would have died before extracting anything, on a credential
+    that costs money to obtain.
+
+    It now degrades the way a missing file does, and the run says so.
+    """
+    from pathlib import Path
+
+    from credit_extract.pipeline import run_pipeline
+    from credit_extract.validate.jev import OfflineJev
+
+    class _UnfittedBackend(OfflineJev):
+        name = "a-scorer-nothing-was-fitted-against"
+
+    source = Path("corpus/gold/meridian_2017.html")
+    if not source.exists():
+        pytest.skip("gold corpus not present")
+
+    result = run_pipeline(source, jev_backend=_UnfittedBackend())
+
+    assert result.report.thresholds_version.startswith("unfitted@"), (
+        "a run on unfitted thresholds must be labelled as one, so nothing "
+        "downstream mistakes it for a measurement"
+    )
+    assert _UnfittedBackend.name in result.report.thresholds_version
+
+
+def test_the_fitted_thresholds_are_still_refused_for_another_backend():
+    """The degradation above must not become a way to apply one scorer's
+    calibration to another. ``load_thresholds`` still raises; only the pipeline's
+    handling of that refusal changed."""
+    with pytest.raises(BackendMismatch):
+        load_thresholds(backend="some-other-scorer")

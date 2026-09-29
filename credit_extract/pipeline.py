@@ -55,7 +55,7 @@ from .models.export import FacilityExport, build_facilities, export_summary
 from .models.fiscal import FiscalCalendar, detect_fiscal_calendar
 from .models.pricing import Pricing, parse_pricing
 from .models.fpml_model import FIELD_REGISTRY, AmortizationSchedule
-from .validate.calibrate import Thresholds, load_thresholds
+from .validate.calibrate import BackendMismatch, Thresholds, load_thresholds
 from .validate.invariants import (
     BasketRecord, CovenantStep, InvariantContext, check_all,
 )
@@ -285,6 +285,29 @@ def run_pipeline(
             thresholds = Thresholds(
                 version="unfitted", backend=jev_backend.name,
                 notes="no fitted thresholds found; using the conservative default",
+            )
+        except BackendMismatch as mismatch:
+            # Thresholds exist and were fitted against a DIFFERENT scorer.
+            # ``load_thresholds`` is right to refuse -- a probability from one
+            # scorer means nothing on another's scale -- but refusing by
+            # exception made the first run against any new backend die before
+            # it extracted anything, and the first run against a new backend is
+            # necessarily the one that has no thresholds yet. That is the run
+            # you need in order to fit them.
+            #
+            # So it degrades the same way a missing file does: unfitted
+            # defaults, and the reason recorded on the object so the report and
+            # every field's ``thresholds_version`` say which scorer produced
+            # the numbers and that they were not calibrated for it. Nothing
+            # downstream can mistake such a run for a measured one.
+            thresholds = Thresholds(
+                version="unfitted", backend=jev_backend.name,
+                notes=(
+                    f"refused the fitted thresholds: {mismatch}. Using the "
+                    "conservative default, which makes this a calibration run "
+                    "and not a measurement -- fit against this backend before "
+                    "comparing its silent-error rate to anything"
+                ),
             )
 
     # -- tiers 0-1: ingest, structure, deterministic parsing ----------------
