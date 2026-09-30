@@ -40,6 +40,11 @@ from .mutations import apply_all
 
 ROOT = Path(__file__).resolve().parents[2]
 LABELS_DIR = Path(__file__).parent / "labels"
+#: Labels for documents harvested after the split was frozen and labelled
+#: before the pipeline ran on them. Not in the default run, so not in CI's
+#: gate: a test set that fails the build gets tuned until it passes, and is
+#: then no longer out of sample. Run it on purpose, with --out-of-sample.
+LABELS_OUT_OF_SAMPLE_DIR = Path(__file__).parent / "labels_out_of_sample"
 GOLD_DIR = Path(__file__).parent / "gold"
 CORPUS_DIR = ROOT / "corpus"
 
@@ -472,6 +477,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--labels", type=Path, default=LABELS_DIR)
+    parser.add_argument("--out-of-sample", action="store_true",
+                        help="score the out-of-sample set instead "
+                             f"({LABELS_OUT_OF_SAMPLE_DIR.name}); never in CI")
     parser.add_argument("--no-mutations", action="store_true")
     parser.add_argument("--gate", action="store_true",
                         help="exit non-zero when a family is over budget")
@@ -491,6 +499,8 @@ def main(argv: list[str] | None = None) -> int:
                              "for comparing two runs assertion by assertion")
     args = parser.parse_args(argv)
 
+    if args.out_of_sample:
+        args.labels = LABELS_OUT_OF_SAMPLE_DIR
     cache = answer_cache_for(args.jev, args.jev_cache, args.no_jev_cache)
     if args.workers > 1:
         run = run_coverage_parallel(

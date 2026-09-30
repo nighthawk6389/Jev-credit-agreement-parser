@@ -22,6 +22,18 @@ from credit_extract.models.fpml_model import FIELD_REGISTRY
 GUIDE = Path(__file__).resolve().parents[1] / "docs" / "labelling_guide.md"
 
 
+EVAL = Path(__file__).resolve().parents[1] / "credit_extract" / "eval"
+
+
+def label_paths() -> list[Path]:
+    """Every label file, in-sample and out of sample: one contract for both."""
+    return sorted(
+        path
+        for directory in (EVAL / "labels", EVAL / "labels_out_of_sample")
+        for path in directory.glob("*.yaml")
+    )
+
+
 def test_the_split_on_disk_is_the_one_the_rule_produces():
     """The whole value of the split is that nobody chose it.
 
@@ -133,8 +145,7 @@ def test_a_scaffold_cannot_be_loaded_as_ground_truth(tmp_path):
 def test_the_labels_that_exist_still_load():
     """The marker check runs on every load, so a false positive would take the
     whole evidence base offline."""
-    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
-    files = sorted(labels.glob("*.yaml"))
+    files = label_paths()
     assert len(files) >= 7
     for path in files:
         load_assertion_file(path)
@@ -340,9 +351,8 @@ def test_every_label_names_a_document_the_split_knows():
     known = set(split.assignment) | set(split.contaminated)
     assert known, "the frozen split should list the harvested documents"
 
-    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
     unknown: list[tuple[str, str]] = []
-    for path in sorted(labels.glob("*.yaml")):
+    for path in label_paths():
         raw = yaml.safe_load(path.read_text())
         name = raw.get("corpus_name")
         if name and name not in known:
@@ -502,10 +512,9 @@ def test_every_assertion_carries_a_note():
     existed, so the convention had never been enforced on the documents that
     established it.
     """
-    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
     bare = [
         f"{path.stem}::{assertion.id}"
-        for path in sorted(labels.glob("*.yaml"))
+        for path in label_paths()
         for assertion in load_assertion_file(path).assertions
         if not (assertion.note or "").strip()
     ]
@@ -526,7 +535,6 @@ def test_absence_is_never_argued_from_a_string_count_alone():
     in the corpus pass, so this locks in a property rather than describing an
     aspiration.
     """
-    labels = Path(__file__).resolve().parents[1] / "credit_extract" / "eval" / "labels"
     counted = re.compile(
         r"zero (times|occurrences)|does not (occur|appear)"
         r"|never (once )?(writes|says|uses)|no occurrence",
@@ -538,7 +546,7 @@ def test_absence_is_never_argued_from_a_string_count_alone():
         re.I | re.S,
     )
     offenders = []
-    for path in sorted(labels.glob("*.yaml")):
+    for path in label_paths():
         for assertion in load_assertion_file(path).assertions:
             note = assertion.note or ""
             if assertion.expect != "absent_from_document":

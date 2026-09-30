@@ -277,8 +277,12 @@ def main(argv: list[str] | None = None) -> int:
     from .families import load_families
 
     labelled: list[str] = []
-    for file in load_assertions(Path(__file__).parent / "labels", load_families()):
-        labelled.extend(file.chain or [file.corpus_name or file.document])
+    for directory in ("labels", "labels_out_of_sample"):
+        path = Path(__file__).parent / directory
+        if not path.exists():
+            continue
+        for file in load_assertions(path, load_families()):
+            labelled.extend(file.chain or [file.corpus_name or file.document])
 
     problems = check(labelled=labelled)
     for problem in problems:

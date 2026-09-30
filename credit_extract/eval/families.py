@@ -400,8 +400,10 @@ def check_registers(labels_dir: Path | None = None) -> list[str]:
                 f"{spot.family}, which is not in the register"
             )
 
-    labels = labels_dir or (HERE / "labels")
-    if labels.exists():
+    directories = (
+        [labels_dir] if labels_dir else [HERE / "labels", HERE / "labels_out_of_sample"]
+    )
+    for labels in (d for d in directories if d.exists()):
         for file in load_assertions(labels, register):
             for assertion in file.assertions:
                 try:

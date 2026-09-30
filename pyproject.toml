@@ -45,6 +45,7 @@ credit_extract = [
     # report reads the blind-spot register.
     "eval/*.yaml",
     "eval/labels/*.yaml",
+    "eval/labels_out_of_sample/*.yaml",
     # Checked-in model readings. --backend recorded resolves these by document
     # name and refuses rather than falling back, so a wheel without them turns
     # the model tier into an error instead of a quiet downgrade to the rules.
