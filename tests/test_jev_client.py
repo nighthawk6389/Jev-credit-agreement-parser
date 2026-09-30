@@ -236,16 +236,19 @@ def test_a_malformed_request_is_not_retried_and_says_what_was_wrong():
     assert len(endpoint.requests) == 1
 
 
-def test_overload_and_rate_limits_are_retried():
+def test_overload_rate_limits_and_edge_errors_are_retried():
+    """529 is the vendor's overload; 520 is its Cloudflare edge, and one
+    arrived mid-run before it was on the list."""
     endpoint = Endpoint(
         httpx.Response(529, headers={"retry-after-ms": "0"}),
         httpx.Response(429, headers={"retry-after": "0"}),
+        httpx.Response(520, text="<!DOCTYPE html>520: Web server is returning an unknown error"),
         ok(),
     )
     result = endpoint.client().ask(STATE, QUESTIONS)
 
     assert result["probe"].probability == 0.95
-    assert len(endpoint.requests) == 3
+    assert len(endpoint.requests) == 4
 
 
 def test_an_unreachable_host_reports_that_nothing_answered():

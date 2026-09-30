@@ -61,11 +61,13 @@ DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 #: :func:`~credit_extract.validate.calibrate.load_thresholds` refuse thresholds
 #: fitted against a different version.
 DEFAULT_MODEL = "jev-1.13.0"
-#: Statuses worth retrying. 529 is the vendor's "overloaded"; the rest are the
-#: usual transient ones. A 401 or a 422 is not transient and is raised at once:
-#: retrying a rejected key three times only made an auth failure look like a
-#: network failure.
-RETRYABLE_STATUSES = frozenset({408, 429, 500, 502, 503, 504, 529})
+#: Statuses worth retrying: the vendor SDK's own default, 408, 429 and every
+#: 5xx. That covers 529, the vendor's "overloaded", and the 52x family its
+#: Cloudflare edge answers with when the origin hiccups -- a 520 took out a
+#: request mid-experiment when this list named only the textbook five. A 401
+#: or a 422 is not transient and is raised at once: retrying a rejected key
+#: three times only made an auth failure look like a network failure.
+RETRYABLE_STATUSES = frozenset({408, 429, *range(500, 600)})
 
 
 def estimate_tokens(text: str) -> int:
