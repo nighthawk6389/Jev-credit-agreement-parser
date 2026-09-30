@@ -71,9 +71,15 @@ def test_blank_chunks_do_not_count_as_a_search():
 
 def test_absence_is_confirmable_once_something_was_actually_asked():
     """The counterweight: the guard must not refuse a real search. Without
-    this, the fix would buy safety by never confirming an absence at all."""
+    this, the fix would buy safety by never confirming an absence at all.
+
+    The chunk is about something else entirely. It used to deny the term in
+    the term's own words, and C asks presence of "a most favoured nation
+    provision": the stand-in counts words, so a sentence naming a provision
+    to say it is missing reads, to it, as that provision."""
     field = _run([_chunk(
-        "This agreement contains no most favoured nation provision of any kind."
+        "The Borrower shall deliver its audited annual financial statements "
+        "within 120 days after the end of each fiscal year."
     )])
 
     assert field.status == "absent_from_document"
