@@ -1,7 +1,12 @@
 """Jev System One client.
 
 Jev takes a ``state`` plus named typed questions and returns typed decisions
-with calibrated confidence. It does not generate text.
+with calibrated confidence. It does not generate text. It is TypeSafe AI's
+model, served at ``api.typesafe.ai`` -- the vendor's documentation is at
+https://docs.typesafe.ai/api and its SDK hard-codes the same base URL. There is
+no ``api.jev.ai``: that name has never resolved and has never had a certificate
+issued for it, and ``jev.ai`` itself is a parked domain, so a key sent to a
+host under it would go to whoever buys the name.
 
 The constraints shape the design more than the API does:
 
@@ -48,7 +53,19 @@ CONTEXT_TOKENS_TOTAL = 64_000
 STATE_PLUS_QUESTION_TOKENS = 32_000
 #: USD per million input tokens. Output is free.
 PRICE_PER_MTOK = 0.042
-DEFAULT_ENDPOINT = "https://api.jev.ai/v1/systemone"
+DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
+#: A versioned model id, never the ``jev-latest`` alias. An alias moves when a
+#: release ships, so the answers behind it change with nothing changed here,
+#: and a threshold fitted against one version means nothing on the next. The
+#: live backend is *named* after this id, which is what makes
+#: :func:`~credit_extract.validate.calibrate.load_thresholds` refuse thresholds
+#: fitted against a different version.
+DEFAULT_MODEL = "jev-1.13.0"
+#: Statuses worth retrying. 529 is the vendor's "overloaded"; the rest are the
+#: usual transient ones. A 401 or a 422 is not transient and is raised at once:
+#: retrying a rejected key three times only made an auth failure look like a
+#: network failure.
+RETRYABLE_STATUSES = frozenset({408, 429, 500, 502, 503, 504, 529})
 
 
 def estimate_tokens(text: str) -> int:
@@ -234,17 +251,61 @@ def split_batches(state: str, questions: list[Question]) -> list[list[Question]]
 # ---------------------------------------------------------------------------
 
 
-class JevClient:
-    """The real System One endpoint."""
+class JevRequestError(RuntimeError):
+    """The endpoint refused a request, or kept failing until retries ran out.
 
-    name = "jev"
+    ``status`` is the last HTTP status seen, ``None`` when the request never
+    got an answer at all -- which is what a DNS failure or a proxy refusal
+    looks like, and is worth being able to tell apart from a rejected key.
+    """
+
+    def __init__(self, message: str, status: int | None = None, body: str = ""):
+        super().__init__(message)
+        self.status = status
+        self.body = body
+
+
+def wire_question(question: Question) -> dict[str, Any]:
+    """One question as System One's request schema spells it.
+
+    The name is not in here: questions travel as a map keyed by name, and the
+    answers come back under the same keys. ``polarity`` and ``concept`` are not
+    in here either -- they are hints for the offline scorer, and the statement
+    is sent exactly as the validator wrote it, so an absence claim is asked as
+    the absence claim it is.
+    """
+    if isinstance(question, Noul):
+        return {"type": "noul", "instructions": question.statement}
+    if isinstance(question, ChoiceQ):
+        return {
+            "type": "choice",
+            "instructions": question.question,
+            "criteria": dict(question.criteria),
+        }
+    return {
+        "type": "score",
+        "instructions": question.question,
+        "criteria": list(question.rubric),
+    }
+
+
+class JevClient:
+    """The real System One endpoint.
+
+    The backend is named after the model it pins, so thresholds fitted through
+    it are tagged ``jev-1.13.0`` rather than a bare ``jev`` that would go on
+    matching after the model behind it changed.
+    """
 
     def __init__(
         self,
         api_key: str | None = None,
-        endpoint: str = DEFAULT_ENDPOINT,
+        endpoint: str | None = None,
+        model: str | None = None,
         timeout: float = 60.0,
-        max_retries: int = 3,
+        max_retries: int = 5,
+        backoff_seconds: float = 1.0,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.api_key = api_key or os.environ.get("JEV_API_KEY")
         if not self.api_key:
@@ -252,64 +313,143 @@ class JevClient:
                 "JEV_API_KEY is not set; construct OfflineJev() to run without "
                 "network access"
             )
-        self.endpoint = endpoint
+        self.endpoint = endpoint or os.environ.get("JEV_ENDPOINT") or DEFAULT_ENDPOINT
+        self.model = model or os.environ.get("JEV_MODEL") or DEFAULT_MODEL
+        self.name = self.model
         self.timeout = timeout
         self.max_retries = max_retries
-        self._client = httpx.Client(timeout=timeout)
+        self.backoff_seconds = backoff_seconds
+        self._client = httpx.Client(timeout=timeout, transport=transport)
 
     def ask(self, state: str, questions: list[Question]) -> JevResult:
         input_tokens = check_context(state, questions)
         payload = {
             "state": state,
-            # `polarity` and `concept` are local hints for offline scoring,
-            # not part of the System One request schema, so they stay off
-            # the wire.
-            "questions": [
-                q.model_dump(exclude={"polarity", "concept"}) for q in questions
-            ],
+            "model": self.model,
+            "questions": {q.name: wire_question(q) for q in questions},
         }
         last_error: Exception | None = None
-        for attempt in range(self.max_retries):
+        status: int | None = None
+        for attempt in range(self.max_retries + 1):
+            delay = self.backoff_seconds * 2 ** attempt
             try:
                 response = self._client.post(
                     self.endpoint,
                     json=payload,
                     headers={"Authorization": f"Bearer {self.api_key}"},
                 )
-                response.raise_for_status()
-                return self._parse(response.json(), input_tokens, len(questions))
-            except (httpx.HTTPError, ValueError) as exc:
+            except httpx.TransportError as exc:
                 last_error = exc
-                if attempt == self.max_retries - 1:
-                    break
-                time.sleep(2 ** attempt)
-        raise RuntimeError(f"Jev request failed after {self.max_retries} attempts") \
-            from last_error
+            else:
+                status = response.status_code
+                if status in RETRYABLE_STATUSES:
+                    last_error = JevRequestError(
+                        f"HTTP {status}", status, response.text[:500]
+                    )
+                    delay = _retry_after(response) or delay
+                elif status >= 400:
+                    raise JevRequestError(
+                        f"Jev refused the request with HTTP {status}: "
+                        f"{response.text[:500]}",
+                        status, response.text[:2000],
+                    )
+                else:
+                    try:
+                        return self._parse(response.json(), questions, input_tokens)
+                    except (ValueError, KeyError, TypeError) as exc:
+                        last_error = exc
+            if attempt < self.max_retries:
+                time.sleep(min(delay, 60.0))
+        raise JevRequestError(
+            f"Jev request failed after {self.max_retries + 1} attempts "
+            f"(last status {status}): {last_error}",
+            status,
+        ) from last_error
 
-    def _parse(self, body: dict, input_tokens: int, asked: int) -> JevResult:
+    def _parse(
+        self, body: dict, questions: list[Question], input_tokens: int
+    ) -> JevResult:
+        """Read the ``answers`` map back into one Decision per question.
+
+        Every question asked must be answered. A missing answer is not a "no":
+        validator C starts each field at 1.0 -- absent -- and lowers it chunk by
+        chunk, so an answer silently dropped here would be read as the most
+        confident possible claim that the field is not in the document.
+        """
+        answers = body.get("answers")
+        if not isinstance(answers, dict):
+            raise ValueError("response carries no answers map")
         decisions: dict[str, Decision] = {}
-        for item in body.get("decisions", []):
-            decisions[item["name"]] = Decision(
-                name=item["name"],
-                kind=item.get("type", "noul"),
-                probability=item.get("probability"),
-                choice=item.get("choice"),
-                distribution=item.get("distribution", {}) or {},
-                score=item.get("score"),
-                label=item.get("label"),
-                backend=self.name,
-            )
-        billed = body.get("usage", {}).get("input_tokens", input_tokens)
+        for question in questions:
+            answer = answers.get(question.name)
+            if not isinstance(answer, dict):
+                raise ValueError(f"no answer for question {question.name!r}")
+            decisions[question.name] = self._decision(question, answer)
+        billed = (body.get("usage") or {}).get("input_tokens")
+        billed = int(billed) if billed is not None else input_tokens
         return JevResult(
             decisions=decisions,
             input_tokens=billed,
             cost_usd=billed * PRICE_PER_MTOK / 1_000_000,
             backend=self.name,
-            questions_asked=asked,
+            questions_asked=len(questions),
+        )
+
+    def _decision(self, question: Question, answer: dict) -> Decision:
+        kind = answer.get("type")
+        if isinstance(question, Noul):
+            if kind != "noul":
+                raise ValueError(f"{question.name!r}: asked a noul, got {kind!r}")
+            probability = float(answer["noul"])
+            if not 0.0 <= probability <= 1.0:
+                raise ValueError(f"{question.name!r}: noul {probability} out of range")
+            return Decision(
+                name=question.name, kind="noul", probability=probability,
+                backend=self.name,
+            )
+        if isinstance(question, ChoiceQ):
+            if kind != "choice":
+                raise ValueError(f"{question.name!r}: asked a choice, got {kind!r}")
+            return Decision(
+                name=question.name, kind="choice", choice=str(answer["choice"]),
+                distribution={
+                    str(k): float(v) for k, v in answer["probabilities"].items()
+                },
+                backend=self.name,
+            )
+        if kind != "score":
+            raise ValueError(f"{question.name!r}: asked a score, got {kind!r}")
+        # Levels come back 0-indexed and ``score`` is an expectation that can
+        # land between them. The validators read a level -- validator F indexes
+        # the rubric with it -- so the answer is the most probable level, lowest
+        # on a tie as the offline scorer does, and never a rounded expectation:
+        # the vendor warns that score levels are weak at interpolation.
+        levels = {int(k): float(v) for k, v in answer["probabilities"].items()}
+        top = max(sorted(levels), key=lambda level: levels[level])
+        if not 0 <= top < len(question.rubric):
+            raise ValueError(f"{question.name!r}: level {top} is not in the rubric")
+        return Decision(
+            name=question.name, kind="score", score=top + 1,
+            label=question.rubric[top],
+            distribution={str(k + 1): p for k, p in sorted(levels.items())},
+            backend=self.name,
         )
 
     def close(self) -> None:  # pragma: no cover - lifecycle helper
         self._client.close()
+
+
+def _retry_after(response: httpx.Response) -> float | None:
+    """Seconds the server asked us to wait, if it said."""
+    for header, scale in (("retry-after-ms", 1000.0), ("retry-after", 1.0)):
+        value = response.headers.get(header)
+        if value is None:
+            continue
+        try:
+            return max(0.0, float(value) / scale)
+        except ValueError:
+            continue
+    return None
 
 
 # ---------------------------------------------------------------------------

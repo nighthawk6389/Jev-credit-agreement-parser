@@ -7,7 +7,7 @@ import pytest
 from credit_extract.validate.jev import (
     CONTEXT_TOKENS_TOTAL, PRICE_PER_MTOK, STATE_PLUS_QUESTION_TOKENS, ChoiceQ,
     JevContextExceeded, JevSession, Noul, OfflineJev, ScoreQ, check_context,
-    split_batches,
+    split_batches, wire_question,
 )
 
 CLAUSE = (
@@ -176,12 +176,18 @@ def test_a_score_with_no_discriminating_evidence_returns_the_middle():
 
 
 def test_polarity_and_concept_stay_off_the_wire():
-    """They are offline-scoring hints, not part of the System One schema."""
+    """They are offline-scoring hints, not part of the System One schema.
+
+    The claim itself is sent exactly as written, so an absence claim is asked
+    as the absence claim it is.
+    """
     question = Noul(
-        name="q", statement="x", polarity="absence", concept="threshold"
+        name="q", statement="This text contains no MFN sunset.",
+        polarity="absence", concept="threshold",
     )
-    payload = question.model_dump(exclude={"polarity", "concept"})
-    assert set(payload) == {"name", "statement", "kind"}
+    assert wire_question(question) == {
+        "type": "noul", "instructions": "This text contains no MFN sunset.",
+    }
 
 
 # ---------------------------------------------------------------------------
