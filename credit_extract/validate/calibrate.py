@@ -201,8 +201,13 @@ def wilson_lower_bound(successes: int, n: int, z: float = 1.96) -> float:
     precision -- two more failures would have taken it under. Selecting a
     threshold on the point estimate picks whichever one happened to get lucky,
     and the lucky threshold is usually the one that accepts everything.
+
+    With no successes the bound is exactly zero, and it is returned as such:
+    computed, ``centre - margin`` cancels only to within rounding, and for one
+    sample size in twelve the residue is positive. A residue of 2e-17 is enough
+    to make the one threshold that has it look strongest.
     """
-    if n == 0:
+    if n == 0 or successes == 0:
         return 0.0
     p = successes / n
     denominator = 1 + z * z / n
@@ -225,6 +230,13 @@ def fit_threshold(
     this sample size -- which is the usual case for a 99% target on a few
     hundred samples -- it returns the threshold with the strongest bound and
     ``certified=False``, so the shortfall is reported rather than hidden.
+
+    A tie for the strongest bound goes to the higher threshold. Ties are all
+    but impossible except at a bound of zero, which is every candidate when no
+    sample in the class is correct -- and there the lowest threshold accepts
+    every wrong claim while the highest accepts none. Live Jev produced exactly
+    that class on its first fit: validator E, twelve claims, all wrong, and a
+    fitted threshold that let all twelve through.
     """
     if not samples:
         return 1.0, False
@@ -239,7 +251,7 @@ def fit_threshold(
         if bound + 1e-9 >= target_precision:
             if best is None or coverage > best[1]:
                 best = (threshold, coverage)
-        if fallback is None or bound > fallback[1]:
+        if fallback is None or bound >= fallback[1]:
             fallback = (threshold, bound)
     if best is not None:
         return best[0], True

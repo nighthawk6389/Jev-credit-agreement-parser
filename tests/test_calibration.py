@@ -58,6 +58,37 @@ def test_thresholds_are_keyed_by_validator_and_class(thresholds):
         assert field_class
 
 
+@pytest.mark.parametrize("n", [5, 11, 12, 22, 27])
+def test_a_class_with_no_correct_sample_accepts_nothing(n):
+    """Every candidate's bound is zero when nothing in a class is correct, and
+    the tie used to go to the lowest threshold -- the one that accepts every
+    wrong claim. The first live fit did exactly that for validator E, with
+    twelve claims; eleven is a sample size whose bound came out at 2e-17."""
+    samples = [
+        Sample(field="f", field_class="covenant_levels",
+               probability=round(0.80 + 0.19 * i / n, 4), correct=False,
+               validator="E_external_dependency")
+        for i in range(n)
+    ]
+    threshold, certified = fit_threshold(samples, 0.98)
+    assert not certified
+    assert all(s.probability < threshold for s in samples)
+
+
+def test_no_successes_bound_at_exactly_zero():
+    assert all(wilson_lower_bound(0, n) == 0.0 for n in range(2001))
+
+
+def test_the_tie_break_leaves_an_ordinary_fit_alone():
+    samples = [
+        Sample(field="f", field_class="dates", probability=p, correct=ok)
+        for p, ok in [(0.2, False), (0.4, False), *[(0.9, True)] * 400]
+    ]
+    threshold, certified = fit_threshold(samples, 0.99)
+    assert certified
+    assert threshold == 0.9
+
+
 def test_a_threshold_fitted_on_one_backend_is_refused_by_another(tmp_path):
     path = tmp_path / "thresholds.json"
     Thresholds(version="1", backend="offline", per_class={"dates": 0.9}).save(path)
