@@ -383,6 +383,14 @@ def _spec(
     )
 
 
+#: A presence question asks about the thing, never about one agreement's name
+#: for it. Validator C reads "no chunk addresses X" as "X is absent", and a
+#: literal reader asked about "the Initial Term Loans" finds none in a note
+#: purchase agreement, or in an MFN clause protecting revolving commitments,
+#: and the field is reported absent beside the very provision it asks about.
+#: Three fields failed exactly that way on the live gate (Evernorth, JRD
+#: Unico, HealthStream); the rest whose description names a defined term that
+#: agreements spell differently are asked the same way, "however named".
 FIELD_REGISTRY: dict[str, FieldSpec] = {
     spec.name: spec
     for spec in [
@@ -410,15 +418,24 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         # -- dates -----------------------------------------------------------
         _spec("closing_date", "the Closing Date", "date", "dates", 5,
               "fpml:effectiveDate", "fpml",
-              anchors=["Closing Date"]),
+              anchors=["Closing Date"],
+              presence="This agreement contains a provision stating the date "
+                       "on which it became effective or the loans were first "
+                       "made, however that date is named."),
         _spec("initial_term_loan.maturity_date",
               "the maturity date of the Initial Term Loans", "date", "dates", 5,
               "fpml:maturityDate", "fpml",
-              anchors=["Initial Term Loan Maturity Date"]),
+              anchors=["Initial Term Loan Maturity Date"],
+              presence="This agreement contains a provision stating when the "
+                       "term loans funded at closing mature, however those "
+                       "loans are named."),
         _spec("revolver.maturity_date",
               "the maturity date of the Revolving Credit Facility", "date",
               "dates", 5, "fpml:maturityDate", "fpml",
-              anchors=["Revolving Credit Maturity Date"]),
+              anchors=["Revolving Credit Maturity Date"],
+              presence="This agreement contains a provision stating when the "
+                       "revolving commitments terminate or the revolving "
+                       "loans mature, however that date is named."),
         # -- economic terms --------------------------------------------------
         # Absence is asked of the debt, not of a defined term. Asked about
         # "the Initial Term Loans", a literal reader found none in Evernorth's
@@ -437,14 +454,23 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         _spec("delayed_draw.commitment",
               "the aggregate Delayed Draw Term Loan Commitments", "money",
               "economic_terms", 4, "fpml:totalCommitmentAmount", "fpml",
-              anchors=["Delayed Draw Term Loan Commitment"]),
+              anchors=["Delayed Draw Term Loan Commitment"],
+              presence="This agreement contains a provision stating "
+                       "commitments to make term loans after the closing "
+                       "date, however those commitments are named."),
         _spec("revolver.commitment",
               "the aggregate Revolving Credit Commitments", "money",
               "economic_terms", 5, "fpml:totalCommitmentAmount", "fpml",
-              anchors=["Revolving Credit Commitment"]),
+              anchors=["Revolving Credit Commitment"],
+              presence="This agreement contains a provision stating the "
+                       "total amount of the lenders' revolving commitments, "
+                       "however they are named."),
         _spec("lc_sublimit", "the Letter of Credit Sublimit", "money",
               "economic_terms", 3, "fpml:letterOfCreditFacility", "fpml",
-              sections=["2.05"]),
+              sections=["2.05"],
+              presence="This agreement contains a provision capping the "
+                       "total amount of letters of credit that may be "
+                       "issued, however the cap is named."),
         # The field name says LIBO and the corpus does not. It is kept because
         # renaming a registry key breaks every label that targets it, and the
         # name is cosmetic where the anchors are not: "LIBO Rate" resolved as
@@ -576,7 +602,11 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         _spec("mfn_threshold_pct",
               "the MFN yield differential that triggers repricing of the "
               "Initial Term Loans", "percent", "economic_terms", 5, None, None,
-              verified_term=False, anchors=["All-In Yield"], sections=["2.14"]),
+              verified_term=False, anchors=["All-In Yield"], sections=["2.14"],
+              presence="This agreement contains a most favoured nation "
+                       "provision, which increases the pricing of existing "
+                       "loans or commitments when new incremental debt is "
+                       "priced above them by more than a set margin."),
         # Kind is text, not date: a sunset is written as a period running from
         # closing ("twelve months after the Closing Date"), not as a calendar
         # date. Typing it as a date would force the extractor to compute one,
@@ -591,7 +621,10 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         _spec("consolidated_ebitda.addback_cap_pct",
               "the percentage cap on cost-savings add-backs to Consolidated "
               "EBITDA", "percent", "covenant_levels", 5, None, None,
-              verified_term=False, anchors=["Consolidated EBITDA"]),
+              verified_term=False, anchors=["Consolidated EBITDA"],
+              presence="This agreement contains a cap on the cost savings or "
+                       "synergies that may be added back in calculating "
+                       "EBITDA, however EBITDA is named."),
         _spec("consolidated_ebitda.addback_cap_clause_a_xvi",
               "the cap applicable to the run-rate synergies add-back in clause "
               "(a)(xvi) of Consolidated EBITDA", "percent", "covenant_levels", 5,

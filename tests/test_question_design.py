@@ -184,6 +184,33 @@ def test_absence_is_asked_of_the_thing_not_of_its_defined_name_or_number(
     assert not_about not in statement
 
 
+@pytest.mark.parametrize("name, defined_term", [
+    # HealthStream's MFN protects incremental *revolving* commitments. Asked
+    # about repricing "of the Initial Term Loans", the clause scored 0.20 and
+    # the threshold was reported absent beside it.
+    ("mfn_threshold_pct", "Initial Term Loans"),
+    ("initial_term_loan.maturity_date", "Initial Term Loans"),
+    ("revolver.commitment", "Revolving Credit Commitments"),
+    ("revolver.maturity_date", "Revolving Credit Facility"),
+    ("delayed_draw.commitment", "Delayed Draw Term Loan Commitments"),
+    ("lc_sublimit", "Letter of Credit Sublimit"),
+    ("closing_date", "Closing Date"),
+    ("consolidated_ebitda.addback_cap_pct", "Consolidated EBITDA"),
+])
+def test_a_presence_question_does_not_use_one_agreements_name_for_the_thing(
+    name, defined_term
+):
+    assert defined_term not in FIELD_REGISTRY[name].presence_statement
+
+
+@pytest.mark.parametrize("name", sorted(FIELD_REGISTRY))
+def test_no_presence_question_asks_about_the_initial_term_loans_by_name(name):
+    """Two of the second live gate's silent errors, and one of the third's,
+    were this phrase read literally in a document that calls its debt
+    something else."""
+    assert "Initial Term Loans" not in FIELD_REGISTRY[name].presence_statement
+
+
 def test_a_bdc_asset_coverage_floor_is_not_the_covenant_c_asks_about():
     """Assets over debt at least 1.50 is the 1940 Act limit and caps nothing
     against earnings. Seven labels call such facilities covenant-free, and
