@@ -1,0 +1,162 @@
+# Tier 2 assertions: VCSL Funding 1 LLC / Deutsche Bank AG, New York Branch
+# (Facility Agent), Loan Financing and Servicing Agreement dated as of June 26,
+# 2024, filed 2024-07-01 by Vista Credit Strategic Lending Corp. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. An original agreement, not an amendment. An SPV
+# warehouse on the same Deutsche Bank template as the Stellus facility in this
+# batch: the BDC is Equityholder and Servicer and State Street is Collateral Agent
+# and Custodian. Unlike Stellus, the Closing Date is stated, the Term SOFR floor is
+# 0.50%, and the maturity is a three-hop chain from the Closing Date. The Fee
+# Letter (Undrawn Fee Rate) is not filed.
+
+document: bdc_vista_credit_2024
+corpus_name: BDC_vista-credit-strategic-lending-corp_2024-07-01_0001628280-24-030662_db-vistabdcxlfsa_60508078x5
+source: real
+tier: 2
+
+assertions:
+
+  - id: vista_borrower_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "VCSL FUNDING 1 LLC"
+    note: >
+      'among VCSL FUNDING 1 LLC, a Delaware limited liability company, as the
+      BORROWER (in such capacity, the " Borrower ")'
+
+      The borrower is the SPV, not the filer. Vista Credit Strategic Lending Corp.
+      (a Maryland corporation) is the Equityholder and Servicer.
+
+  - id: vista_facility_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "DEUTSCHE BANK AG, NEW YORK BRANCH"
+    note: >
+      'and DEUTSCHE BANK AG, NEW YORK BRANCH, as Facility Agent (in such capacity,
+      together with its successors and permitted assigns in such capacity, the "
+      Facility Agent ")'
+
+      No party is called Administrative Agent. State Street Bank and Trust Company
+      is Collateral Agent and Collateral Custodian, and each Lender Group has its
+      own "Agent". Neither is the agent for the lenders as a whole.
+
+  - id: vista_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY AND CONSTRUED AND INTERPRETED IN ACCORDANCE WITH THE
+      LAW OF THE STATE OF NEW YORK'
+
+      Section 17.8, in capitals.
+
+  - id: vista_facility_amount
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$200,000,000"
+    note: >
+      '" Facility Amount " means (a) prior to the end of the Revolving Period,
+      $200,000,000, unless this amount is permanently reduced pursuant to Section
+      2.5 or increased pursuant to Section 2.8'
+
+      The accordion is larger than the facility. Section 2.8 lets the Borrower
+      'increase the Commitment of the existing Lender Groups (pro rata) by an
+      amount up to an additional $300,000,000'. That is headroom, not the
+      committed amount. After the Revolving Period the Facility Amount becomes the
+      Advances outstanding.
+
+  - id: vista_facility_termination_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-06-26
+    note: >
+      '" Facility Termination Date " means the earliest to occur of (i) the date
+      that is two (2) years from the end of the Revolving Period'
+
+      Three hops, and it lands. The Revolving Period runs 'starting on the Closing
+      Date and ending on the earliest to occur of (i) the date that is three (3)
+      years after the Closing Date', and '" Closing Date " means June 26, 2024'.
+      That gives June 26, 2027 for the end of the Revolving Period and June 26, 2029
+      for the maturity. The other limbs of both definitions are events. Advances
+      are repaid 'in full on the Facility Termination Date'. The document confirms
+      the arithmetic in Section 2.6, which excepts 'any Non-Extending Lender which
+      has been or is expected to be repaid in full by June 26, 2029'. The
+      Revolving Period can be extended twelve months only with every Lender's
+      approval, so the unconditional value stands.
+
+  - id: vista_top_margin_is_post_revolving_period
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.90%"
+    note: >
+      '" Applicable Margin " means (i) during the Revolving Period, 2.40% per annum
+      and (ii) after the Revolving Period, 2.90% per annum'
+
+      Two time-based tiers, and the higher is 2.90%. The same definition adds 2.00%
+      while an Event of Default continues and a further 3.00% after an uncured
+      Equity Cure Notice. Both are penalty increments, not tiers, so 4.90% and
+      5.90% are not the margin. The margin sits over the Cost of Funds Rate, which
+      for a Committed Lender is the Base Rate, which is Term SOFR.
+
+  - id: vista_term_sofr_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.50%"
+    note: >
+      'the greater of (i) 0.50% and (ii) the Term SOFR Reference Rate for a tenor of
+      three (3) months'
+
+      A non-zero floor on Term SOFR itself. It is a floor on the benchmark and not
+      on every lender's cost of funds: a Conduit Lender is paid the lower of its
+      'Commercial Paper Rate for such day and (ii) Term SOFR', and the commercial
+      paper rate has no floor.
+
+  - id: vista_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      '" Minimum Equity Test " means a test that will be satisfied on any date of
+      determination if the Effective Equity is not less than the Required Equity'
+
+      Required Equity is the larger of the four biggest obligor positions and
+      $40,000,000 ($25,000,000 during ramp-up). The borrower must also keep a
+      positive Tangible Net Worth ('Section 10.7 Tangible Net Worth . The Borrower
+      shall maintain at all times a positive Tangible Net Worth'), and the
+      Equityholder's asset coverage may not fall 'to be less than the greater of
+      (x) 150% and (y) the ratio required for a business development company under
+      the 1940 Act'. None of these goes in this field, because each is an equity
+      floor or an assets-over-debt floor and none caps debt against earnings. The
+      document does define an "Interest Coverage Ratio", but only '" Interest
+      Coverage Ratio " means with respect to any Collateral Obligation for any
+      period of time', an obligor metric used for eligibility, not a covenant on
+      the borrower.
+
+  - id: vista_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-06-26
+    note: >
+      '" Closing Date " means June 26, 2024'
+
+      A bare date that matches the agreement's date. It is also the anchor of the
+      maturity chain above.

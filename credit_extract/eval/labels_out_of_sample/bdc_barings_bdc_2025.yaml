@@ -1,0 +1,161 @@
+# Tier 2 assertions: Barings BDC, Inc. / ING Capital LLC, Amended and Restated
+# Senior Secured Credit Agreement as amended by Amendment No. 1 dated November
+# 13, 2025, filed 2025-11-17 by Barings BDC, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. Amendment No. 1 with the conformed Amended and
+# Restated Senior Secured Credit Agreement (dated November 5, 2024) attached as
+# Annex A; every label is read from that conformed text. A corporate BDC
+# revolver with a borrowing base: Dollar and Multicurrency revolving tranches,
+# plus a new EUR 85,000,000 2025 Term Loan tranche added by the amendment,
+# which also moves the Revolver Termination Date to November 13, 2029 and the
+# Maturity Date to November 13, 2030. Three dates compete for the closing:
+# the Original Effective Date (2019), the Restatement Effective Date (2024)
+# and the Amendment No. 1 Effective Date (2025). revolver.commitment is not
+# labelled: the revolving tranches are stated only separately and only as of
+# the 2024 Restatement Effective Date, and no aggregate is stated anywhere.
+
+document: bdc_barings_bdc_2025
+corpus_name: BDC_barings-bdc-inc_2025-11-17_0001379785-25-000055_exhibit101amendmentno1toam
+source: real
+tier: 2
+
+assertions:
+
+  - id: barings_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "BARINGS BDC, INC."
+    note: >
+      'among BARINGS BDC, INC., a Maryland corporation'
+
+      The conformed preamble, which defines the Borrower. The comma and the
+      period of INC. are both part of the name.
+
+  - id: barings_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "ING CAPITAL LLC"
+    note: >
+      'the LENDERS party hereto, and ING CAPITAL LLC, as Administrative Agent'
+
+      The conformed preamble; the definition uses the short form ('means ING,
+      in its capacity as administrative agent for the Lenders hereunder'). ING
+      Capital LLC is also the Issuing Bank. JPMorgan Chase Bank, N.A. is
+      Syndication Agent and Bank of Montreal and Fifth Third are Documentation
+      Agents, titles that are not the agent for the lenders.
+
+  - id: barings_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and the other Loan Documents shall be construed in
+      accordance with and governed by the law of the State of New York.'
+
+      Section 9.09(a) of the conformed agreement; Amendment No. 1 (Section
+      3.5) is also governed by New York law.
+
+  - id: barings_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-11-13
+    note: >
+      'Maturity Date " means November 13 , 2030'
+
+      The Maturity Date as extended by Amendment No. 1 ('extend the Maturity
+      Date (as defined in the Existing Credit Agreement) to November 13,
+      2030'). The Revolver Termination Date, November 13, 2029, is only the end
+      of the Availability Period: after it the revolving commitments shrink to
+      the outstanding exposure and 'Revolving Loans outstanding on the Revolver
+      Termination Date shall be due and payable on the Maturity Date'. So
+      2029-11-13 is the near miss for this field.
+
+  - id: barings_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.875%"
+    note: >
+      'with respect to any ABR Loan, 0.875%, and (b) with respect to any Term
+      Benchmark Loan and RFR Loan, 1.875%'
+
+      A single flat margin with no grid, applying to Term Benchmark Loans
+      (Adjusted Term SOFR for Dollars) whether revolving or term; 0.875% is the
+      ABR margin.
+
+  - id: barings_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if Adjusted Term CORRA or Adjusted Term SOFR as so determined shall ever
+      be less than the Floor, then Adjusted Term CORRA or Adjusted Term SOFR,
+      as applicable, shall be deemed to be the Floor'
+
+      '" Floor " means zero.' The Floor is defined in words as zero, and it is applied to the
+      benchmark (Adjusted Term SOFR), not to the all-in rate. The foreign
+      currency screen rates carry their own less-than-zero-means-zero
+      provisos, all to the same effect.
+
+  - id: barings_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.375%"
+    note: >
+      'a commitment fee, which shall accrue at a rate equal to 0.375% per annum
+      on the daily unused portion of the Revolving Commitment'
+
+      Section 2.10(a). One flat rate with no utilization step, accruing until
+      the Revolver Termination Date.
+
+  - id: barings_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'the Borrower will not permit the Consolidated Asset Coverage Ratio to be
+      less than 150%'
+
+      Section 6.07 (Certain Financial Covenants) has exactly two limbs: this
+      150% Consolidated Asset Coverage Ratio floor and a minimum Stockholders
+      Equity of $800,000,000 plus 25% of later equity proceeds. Neither is a
+      leverage cap, because the ratio is total assets over senior securities
+      (the Investment Company Act asset coverage test) and the other is a net
+      worth floor; there is no debt-to-EBITDA, interest coverage or
+      fixed-charge coverage covenant. The debt to EBITDA ratios in the text
+      (above 4.50 to 1.00, above 6.00 to 1.00) set borrowing base advance
+      rates for portfolio loans, not a covenant on the Borrower.
+
+  - id: barings_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-11-05
+    note: >
+      'the date on which the conditions specified in Section 4.01 are satisfied
+      (or waived in accordance with Section 9.02 ), which date is November 5,
+      2024'
+
+      The Restatement Effective Date, which is the effectiveness date of this
+      amended and restated agreement (dated as of November 5, 2024); the
+      agreement defines no Closing Date and no plain Effective Date. The
+      Original Effective Date (February 21, 2019) belongs to the predecessor
+      Senior Secured Revolving Credit Agreement, and the Amendment No. 1
+      Effective Date (November 13, 2025) is an amendment date.

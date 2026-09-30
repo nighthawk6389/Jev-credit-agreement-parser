@@ -1,0 +1,171 @@
+# Tier 2 assertions: MidCap Financial Investment Corporation / JPMorgan Chase
+# Bank, N.A., Third Amended and Restated Senior Secured Revolving Credit
+# Agreement dated as of October 1, 2025, filed 2025-10-02 by MidCap Financial
+# Investment Corp as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A complete amended and restated agreement,
+# not an amendment: the corporate revolver of a BDC formerly named Apollo
+# Investment Corporation, with a Dollar tranche and a Multicurrency tranche, a
+# term-loan class with no commitments, swinglines and letters of credit.
+# Pricing steps on the ratio of the gross borrowing base to debt rather than
+# on a rating or leverage, and the only financial covenants are an equity
+# floor and the 1940 Act asset coverage floor. The Restatement Effective Date
+# is event-defined, so closing_date is not asserted.
+
+document: bdc_midcap_financial_2025
+corpus_name: BDC_midcap-financial-investment-corp_2025-10-02_0001193125-25-228375_d66561dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: midcap_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "MIDCAP FINANCIAL INVESTMENT CORPORATION"
+    note: >
+      'Midcap Financial Investment Corporation (f/k/a Apollo Investment
+      Corporation), a Maryland corporation (the " Borrower ")'
+
+      The recital that defines the Borrower; the preamble names the same
+      party in capitals. The former name, Apollo Investment Corporation, is
+      the trap. The recital writes Midcap with a lower-case c where the filer
+      writes MidCap; case does not matter for this field.
+
+  - id: midcap_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'between MIDCAP FINANCIAL INVESTMENT CORPORATION, the LENDERS party
+      hereto, and JPMORGAN CHASE BANK, N.A., as Administrative Agent'
+
+      Also defined short: '" JPMCB " means JPMorgan Chase Bank, N.A.'. Bank of
+      Montreal and Truist Bank are syndication agents, and the joint lead
+      arrangers include BMO Capital Markets Corp. and Truist Securities, Inc.;
+      none of them is the Administrative Agent.
+
+  - id: midcap_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by the
+      law of the State of New York'
+
+      Section 9.09(a).
+
+  - id: midcap_revolving_commitments
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,410,000,000"
+    note: >
+      'The aggregate amount of the Lenders' Multicurrency Commitments as of the
+      Restatement Effective Date is $1,410,000,000'
+
+      Two revolving tranches, so per the labelling guide this is the larger
+      one, not the sum. The other: 'The initial aggregate amount of the
+      Lenders' Dollar Commitments as of the Restatement Effective Date is
+      $200,000,000'. Here, unusually, the sum is stated too, in the recital
+      and on the cover ('in an initial aggregate principal or face amount not
+      exceeding $1,610,000,000'), so the guide's reason for not summing -- a
+      sum appears nowhere in the agreement -- does not hold. The rule is
+      applied anyway, because it names exactly this case ("a USD and a
+      multicurrency tranche") and exists so that two labellers agree; Sixth
+      Street is labelled the same way. $1,610,000,000 is the near miss. Term
+      Commitments are $0. Not the accordion: 'the total Commitments of all of
+      the Lenders hereunder shall not exceed $2,415,000,000'.
+  - id: midcap_maturity_is_a_bare_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-10-01
+    note: >
+      '" Maturity Date " means October 1, 2030'
+
+      A bare date with no earliest-of. The near miss is one year earlier:
+      '" Commitment Termination Date " means October 1, 2029', which ends the
+      Availability Period for new borrowings; loans outstanding then are
+      repaid on the Maturity Date.
+
+  - id: midcap_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.775%"
+    note: >
+      'is less than 1.60 times the Combined Debt Amount (as of the most
+      recently delivered Borrowing Base Certificate), (i) with respect to any
+      ABR Loan, 0.775% per annum, and (ii) in the case of any Term Benchmark
+      Loan or RFR Loan, 1.775% per annum'
+
+      A two-level grid keyed to the Gross Borrowing Base as a multiple of the
+      Combined Debt Amount: 1.650% for Term Benchmark and RFR Loans at or
+      above 1.60 times, 1.775% below it, and the higher level also applies
+      while a Borrowing Base Certificate is late. Top level 1.775%. Three
+      decimal places: 1.78% by rounding, or the ABR margin 0.775%, are the
+      near misses.
+
+  - id: midcap_floor_is_zero_on_the_adjusted_rate
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      'provided that if the Adjusted Term SOFR Rate as so determined would be
+      less than zero, such rate shall be deemed to be equal to zero for the
+      purposes of this Agreement'
+
+      For Dollars the zero floor applies to the adjusted rate, which is 'an
+      interest rate per annum equal to (a) the Term SOFR Rate for such
+      Interest Period, plus (b) 0.10%' -- Term SOFR plus a 0.10% adjustment,
+      floored at zero, not Term SOFR alone and not the all-in rate. The other
+      currencies use the defined Floor, which is 0% (a definition too short to
+      quote on its own here). Both routes give zero, so the deal-level floor
+      is 0%.
+
+  - id: midcap_commitment_fee_is_flat
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.325%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to
+      0.325% on the daily unused amount of the Dollar Commitment and the
+      Multicurrency Commitment'
+
+      Flat, with no utilization or ratio step, accruing to the Commitment
+      Termination Date. The 0.25% letter of credit fronting fee in the same
+      section is the near miss.
+
+  - id: midcap_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Asset Coverage Ratio to be less than
+      1.50 to 1 at any time'
+
+      Section 6.07(b). The only other financial covenant, Section 6.07(a), is
+      a shareholders equity floor of $1,000,000,000 plus 25% of later equity
+      proceeds. Neither is a leverage cap, because the asset coverage ratio is
+      total assets over senior securities -- the 1940 Act floor, which points
+      the opposite way from debt over EBITDA -- and the other is a floor on
+      equity. The 1.60 times borrowing-base-to-debt ratio in the Applicable
+      Margin moves pricing and is not a covenant, and EBITDA is defined only
+      for the issuers of Portfolio Investments.

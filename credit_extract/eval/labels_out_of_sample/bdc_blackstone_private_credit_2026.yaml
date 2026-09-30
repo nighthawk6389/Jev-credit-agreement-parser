@@ -1,0 +1,131 @@
+# Tier 2 assertions: Blackstone Private Credit Fund / Citibank, N.A., Amended
+# and Restated Senior Secured Credit Agreement as amended through Amendment No. 5
+# dated August 10, 2026, filed 2026-08-12 by Blackstone Private Credit Fund as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. Amendment No. 5 with the conformed agreement
+# (dated May 6, 2022, as amended by Amendments No. 1 to 5) attached as Exhibit
+# A; every label is read from that conformed text. A very large corporate BDC
+# revolver with a borrowing base ($6,275,000,000 facility including term loans)
+# split into maturity classes: 2028, 2029 and 2031 revolving commitments and
+# term loans, each with its own Maturity Date, and pricing that differs by class
+# as well as by borrowing base tier. Four fields are left out on purpose. The
+# margin and the commitment fee differ by class (Term Benchmark tops out at
+# 1.875% and the fee is 0.375% for the 2028 Loans; 1.775% and 0.325% for the
+# 2029 and 2031 Loans), so the highest-rate reading and the largest-tranche
+# reading disagree. No aggregate revolving commitment is stated, only per-class
+# amounts, and the $6,275,000,000 includes term loans. Effective Date is
+# defined only by reference to the Restatement Agreement, not as a date.
+# Schedules I to III are omitted from the filing.
+
+document: bdc_blackstone_private_credit_2026
+corpus_name: BDC_blackstone-private-credit-fund_2026-08-12_0001803498-26-000048_bcred-06302026xex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: bcred_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "BLACKSTONE PRIVATE CREDIT FUND"
+    note: >
+      'among BLACKSTONE PRIVATE CREDIT FUND, the LENDERS party hereto, and
+      CITIBANK, N.A., as Administrative Agent'
+
+      The conformed preamble; the definition confirms it ('means Blackstone
+      Private Credit Fund, a Delaware statutory trust'). A statutory trust, so
+      there is no corporate suffix to find.
+
+  - id: bcred_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "CITIBANK, N.A."
+    note: >
+      'means Citibank, N.A., in its capacity as administrative agent for the
+      Lenders hereunder'
+
+      The Administrative Agent definition, matching the conformed preamble and
+      the Amendment No. 5 preamble (CITIBANK, N.A., as administrative agent).
+      Fourteen institutions, Citibank among them, appear on the cover as Joint
+      Bookrunners and Joint Lead Arrangers; the agency role is Citibank alone.
+
+  - id: bcred_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and any claim, controversy, dispute, or cause of action
+      (whether in contract, tort, or otherwise and whether at law or in equity)
+      based upon, arising out of, or relating to this Agreement and the
+      transactions contemplated hereby shall be construed in accordance with
+      and governed by the law of the State of New York.'
+
+      Section 9.09(a) of the conformed agreement. Amendment No. 5 applies
+      Sections 9.09 and 9.10 to itself by reference.
+
+  - id: bcred_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-10
+    note: >
+      'with respect to the 2031 Revolving Commitments and the 2031 Term Loans,
+      the earliest to occur of (i) August 10, 2031'
+
+      The Maturity Date is defined per class: June 9, 2028 for the 2028 class,
+      August 12, 2029 for the 2029 class and August 10, 2031 for the 2031
+      class, each the earlier of that date and repayment in full, which is an
+      event with no date. The 2031 class is both the latest and by far the
+      largest ('2031 Revolving Multicurrency Commitments as of the Fifth
+      Amendment Effective Date is $4,657,500,000', plus $982,500,000 of 2031
+      Revolving Dollar Commitments, against $90,000,000 each for the 2028 and
+      2029 Multicurrency classes and $0 for their Dollar classes), so the
+      final-maturity reading and the largest-tranche rule give the same date.
+      Amendment No. 5 is what moved this class from August 8, 2030 to August
+      10, 2031. Not the 2031 Revolving Commitment Termination Date (August 10,
+      2030), which only ends the Availability Period.
+
+  - id: bcred_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'As of the Fifth Amendment Effective Date, the Floor shall be 0.00% per
+      annum'
+
+      The Floor is applied to the benchmark itself: 'if the Term SOFR Rate
+      determined as provided above (including pursuant to the proviso under
+      clause (a) or clause (b) above) shall ever be less than the Floor, then
+      the Term SOFR Rate shall be deemed to be the Floor'. The Adjusted Term
+      SOFR Rate carries its own less-than-zero proviso to the same effect.
+
+  - id: bcred_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Asset Coverage Ratio to be less than
+      1.50 to 1 at any time.'
+
+      Section 6.07 (Certain Financial Covenants) has exactly two limbs: this
+      Asset Coverage Ratio floor and a minimum Shareholders Equity of
+      $27,800,000,000 plus 25% of equity proceeds after June 30, 2026 (the
+      limb Amendment No. 5 updated). Neither is a leverage cap, because the
+      ratio is total assets over Senior Securities (the Investment Company Act
+      asset coverage test) and the other is a net worth floor; there is no
+      debt-to-EBITDA, interest coverage or fixed-charge coverage covenant. The
+      5.25:1.00 first lien debt to EBITDA ratio in the text classifies
+      portfolio loans for the borrowing base, not the Borrower.

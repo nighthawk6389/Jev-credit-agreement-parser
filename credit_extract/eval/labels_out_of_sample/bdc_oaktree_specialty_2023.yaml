@@ -1,0 +1,157 @@
+# Tier 2 assertions: Oaktree Specialty Lending Corporation / ING Capital LLC,
+# Amendment No. 6 to Amended and Restated Senior Secured Revolving Credit
+# Agreement (with the conformed credit agreement attached), filed 2023-06-26 by
+# Oaktree Specialty Lending Corp as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. An eight-page amendment dated June 23, 2023
+# that increases the commitments and extends the maturity, followed by Annex A,
+# the A&R agreement of February 25, 2019 conformed through Amendment No. 6; the
+# labels read Annex A. A corporate, BDC-level syndicated revolver: the BDC is
+# itself the Borrower, with subsidiary guarantors and a borrowing base. Annex B
+# (the schedules, including Schedule 1.01(b), which lists the Commitments and
+# says which Lenders are Extending and Non-Extending) is only "[Attached]".
+# Maturity is deliberately not asserted: the Extended Maturity Date is "the
+# five (5) year anniversary of the Amendment No. 6 Effective Date", a date set
+# by satisfaction of conditions and never stated, and the only calendar
+# maturity in the text is the Non-Extending Lenders' May 4, 2026. The
+# amendment recital dates Amendment No. 5 March 5, 2023; the conformed cover
+# says March 7, 2023.
+
+document: bdc_oaktree_specialty_2023
+corpus_name: BDC_oaktree-specialty-lending-corp_2023-06-26_0001193125-23-175197_d507268dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: ocsl_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "OAKTREE SPECIALTY LENDING CORPORATION"
+    note: >
+      'among OAKTREE SPECIALTY LENDING CORPORATION, a Delaware corporation (the
+      " Borrower ")'
+
+      The conformed preamble. The legal name ends in Corporation; the EDGAR
+      filer name abbreviates it to Corp, which is not how the agreement
+      writes it.
+
+  - id: ocsl_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "ING CAPITAL LLC"
+    note: >
+      'the DEPARTING LENDERS party hereto and ING CAPITAL LLC, as
+      Administrative Agent'
+
+      The definition itself uses the short name, '" Administrative Agent "
+      means ING, in its capacity as administrative agent for the Lenders
+      hereunder', and ING is also Collateral Agent and Issuing Bank. JPMorgan
+      Chase Bank, N.A. and Bank of America, N.A. appear on the cover only as
+      Syndication Agents.
+
+  - id: ocsl_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and each of the other Loan Documents (unless otherwise
+      set forth therein) shall be construed in accordance with and governed by
+      the law of the State of New York'
+
+      Section 9.09(a) of the conformed agreement; Section 3.5 of the amendment
+      makes the same choice.
+
+  - id: ocsl_revolving_commitments
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,217,500,000"
+    note: >
+      'Commitments as of the Amendment No. 6 Effective Date is $ 1,217,500,000'
+
+      The last sentence of the Commitment definition, which states the
+      aggregate even though the per-Lender Schedule 1.01(b) was not filed. The
+      near miss is the accordion ceiling in Section 2.07: 'the total
+      Commitments of all of the Lenders hereunder shall not exceed the greater
+      of (x) $1,250,000,000 and (y) 100% of the Obligors' followed by Net
+      Worth, which is a cap on increases and not a commitment.
+
+  - id: ocsl_sofr_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.00%"
+    note: >
+      '" Applicable Margin " means, (a) with respect to any ABR Loan, 1.00% per
+      annum; and (b) with respect to any SOFR Loan, 2.00% per annum.'
+
+      A flat margin with no grid, so the top level is the only level. Adjusted
+      Term SOFR already carries a SOFR Adjustment of 0.11448% or 0.26161% by
+      tenor, which is a credit spread adjustment inside the benchmark, not
+      margin.
+
+  - id: ocsl_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means the greater of (a) 0% and (b) the benchmark rate floor,
+      if any, provided in this Agreement initially'
+
+      applied through 'if Adjusted Term SOFR as so determined shall ever be
+      less than the Floor, then Adjusted Term SOFR shall be deemed to be the
+      Floor'. No other benchmark floor is provided, so limb (b) adds nothing
+      and the floor is zero. It floors Adjusted Term SOFR, meaning Term SOFR
+      plus the SOFR Adjustment, rather than bare Term SOFR.
+
+  - id: ocsl_commitment_fee_top_rate
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "1.00%"
+    note: >
+      '(y) 1.00% per annum on the daily unused amount of the Commitment of such
+      Lender as of the close of business on such day if the daily unused
+      amount as of the close of business on such day is equal to or greater
+      than sixty-five percent (65%)'
+
+      The fee steps with utilization; the lower tier is '(x) 0.375% per annum
+      on the daily unused amount of the Commitment of such Lender as of the
+      close of business on such day if the daily unused amount as of the close
+      of business on such day is less than sixty-five percent (65%)'. The
+      highest rate is 1.00%, charged when the facility is less than 35% drawn.
+
+  - id: ocsl_interest_coverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "2.25 to 1.00"
+    note: >
+      'the Borrower will not permit the Consolidated Interest Coverage Ratio to
+      be less than 2.25 to 1.00 as of the last day of any fiscal quarter of the
+      Borrower thereafter'
+
+      Section 6.07(c). The ratio is Consolidated EBIT to Consolidated Interest
+      Expense, an earnings-based coverage covenant, so this is the level. The
+      near miss sits two clauses above it in the same section: 'the Borrower
+      will not permit the Asset Coverage Ratio to be less than the greater of
+      (i) 1.50 to 1.00 and (ii) the statutory test applicable to the Borrower'
+      is the Investment Company Act asset coverage floor and is not this
+      covenant. Section 6.07 also has a minimum Stockholders Equity of
+      $600,000,000 plus 50% of equity proceeds, a Liquidity Test and an
+      Obligors Net Worth floor of $550,000,000, none of which is an earnings
+      test.

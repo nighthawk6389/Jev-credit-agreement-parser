@@ -1,0 +1,185 @@
+# Tier 2 assertions: AB Private Credit Investors Corporation / The Bank of Nova
+# Scotia, Senior Secured Credit Agreement as amended by the Second Amendment
+# dated August 17, 2026, filed 2026-08-18 by AB Private Credit Investors Corp
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A short Second Amendment with the conformed
+# Senior Secured Credit Agreement (dated November 7, 2025) attached as Exhibit A
+# in blackline form; every label is read from that conformed text. A corporate
+# BDC revolver with a borrowing base, all $150,000,000 of it in the
+# Multicurrency tranche (Dollar and term tranches at $0), on a 364-day tenor
+# with extension options. The amendment recital dates the original agreement
+# November 5, 2025, where the conformed agreement says November 7, 2025
+# throughout; the schedules of commitments are omitted from the filing.
+
+document: bdc_ab_private_credit_2026
+corpus_name: BDC_ab-private-credit-investors-corp_2026-08-18_0001193125-26-355208_d156916dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: abpci_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "AB PRIVATE CREDIT INVESTORS CORPORATION"
+    note: >
+      'among AB PRIVATE CREDIT INVESTORS CORPORATION, a Maryland corporation'
+
+      The preamble of the conformed agreement, which defines the Borrower. The
+      EDGAR filer name abbreviates Corporation to Corp; the agreement spells it
+      out.
+
+  - id: abpci_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "THE BANK OF NOVA SCOTIA"
+    note: >
+      'the LENDERS and ISSUING BANKS from time to time party hereto and THE
+      BANK OF NOVA SCOTIA, as Administrative Agent'
+
+      The conformed preamble. The definition itself uses the short name
+      ('means Scotiabank, in its capacity as administrative agent for the
+      Lenders hereunder') and Scotiabank is defined as The Bank of Nova Scotia,
+      so the legal name is the preamble one. The same bank is Collateral Agent
+      and Lead Arranger.
+
+  - id: abpci_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and, unless otherwise specified therein, each other Loan
+      Document shall be construed in accordance with and governed by the law
+      of the State of New York.'
+
+      Section 9.09(a) of the conformed agreement. The Second Amendment itself
+      is also governed by New York law.
+
+  - id: abpci_revolver_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$150,000,000"
+    note: >
+      'Multicurrency Commitments as of the Second Amendment Effective Date is
+      $ 150,000,000'
+
+      Revolving Commitments are the Dollar Commitments plus the Multicurrency
+      Commitments. The Dollar tranche is stated at $0 as of the Effective Date,
+      the Initial Term Commitments at $0, and the Second Amendment adds Natixis
+      only as a Revolving and/or Multicurrency Lender, so the whole facility is
+      the $150,000,000 Multicurrency tranche; the conformed cover page shows
+      the same $150,000,000. The accordion in Section 2.08(e) caps total
+      Revolving Commitments and Term Loans at $200,000,000, which is the
+      increase ceiling, not the commitment. Schedule 1.01(b) is marked
+      Intentionally Omitted.
+
+  - id: abpci_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2026-11-06
+    note: >
+      'means November 6, 2026; subject to any extension of such date in
+      accordance with Section 2.22'
+
+      The Final Maturity Date: a 364-day tenor from the November 7, 2025
+      Effective Date. Section 2.22 adds lender-discretionary one-year Voluntary
+      Extension Options and one borrower-elected Committed Extension Option (one
+      year, on notice and a 0.25% extension fee). Both are conditional, so the
+      unconditional date is labelled. The Termination Date is the earliest of
+      the Final Maturity Date and the commitment-termination events.
+
+  - id: abpci_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.050%"
+    note: >
+      'less than 1.60 times the Combined Debt Amount, (i) with respect to any
+      ABR Loan, 1.050% per annum; (ii) with respect to any Term Benchmark Loan,
+      2.050% per annum'
+
+      Two tiers keyed to the Gross Borrowing Base over the Combined Debt
+      Amount: 1.950% for Term Benchmark and RFR Loans at or above 1.60 times,
+      and 2.050% below it (the higher tier also applies while a Borrowing Base
+      Certificate is late). The top level over Term SOFR is 2.050%.
+
+  - id: abpci_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if the Adjusted Term Benchmark Rate shall be less than zero, such rate
+      shall be deemed to be zero for the purposes of this Agreement'
+
+      A zero floor on the benchmark itself; for Dollar borrowings the Term
+      Benchmark Rate is Term SOFR. The defined Floor, which applies to any
+      Benchmark Replacement, is the same number: 'means zero percent (0.00%)'.
+
+  - id: abpci_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.375%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to 0.375%
+      on the daily unused amount of the Dollar Commitment and Multicurrency
+      Commitment'
+
+      Section 2.11(a). One flat rate with no utilization or ratio step. The
+      0.25% figures nearby are the fronting fee and the extension fee, not
+      this.
+
+  - id: abpci_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Consolidated Asset Coverage Ratio at
+      the last day of the fiscal quarter to be less than 150%.'
+
+      Section 6.07 (Certain Financial Covenants) has exactly two limbs: this
+      150% Consolidated Asset Coverage Ratio floor and a minimum Shareholders
+      Equity of $390,000,000 plus 50% of net equity proceeds. Neither is a
+      leverage cap, because the ratio is total assets over senior securities
+      (the Investment Company Act asset coverage test) and the other is a net
+      worth floor; the agreement sets no debt-to-EBITDA, interest coverage or
+      fixed-charge coverage covenant. The EBITDA ratios in the text (3.25:1.00,
+      5.25 to 1.00) are eligibility tests on portfolio loans, not covenants on
+      the Borrower.
+
+  - id: abpci_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-11-07
+    note: >
+      'the date on which the conditions specified in Section 4.01 are satisfied
+      (or waived in accordance with Section 9.02 ), which date is November 7,
+      2025'
+
+      The conformed definition of Effective Date, the agreement's own
+      effectiveness; Closing Date is used in Section 2.22 but never defined.
+      The amendment recital dates the original agreement November 5, 2025,
+      which conflicts with the conformed cover, preamble, Effective Date and
+      Fee Letter (all November 7, 2025); the conformed definition is labelled.
+      The Second Amendment Effective Date, August 17, 2026, is an amendment
+      date, not the closing.

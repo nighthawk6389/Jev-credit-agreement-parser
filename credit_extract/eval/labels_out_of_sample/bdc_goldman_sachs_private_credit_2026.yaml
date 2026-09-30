@@ -1,0 +1,140 @@
+# Tier 2 assertions: GS Private Credit SPV Public I LLC / BNP Paribas, Fourth
+# Amendment to the Revolving Credit and Security Agreement dated as of April 17,
+# 2026, filed 2026-04-23 by Goldman Sachs Private Credit Corp. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A three-page amendment followed by the
+# Revolving Credit and Security Agreement of September 28, 2023, "Conformed
+# through Fourth Amendment"; labels are read from that conformed text. An SPV
+# financing facility, not a corporate revolver: the BDC's special purpose
+# subsidiary borrows from BNP Paribas against a pool of collateral loans, with
+# a borrowing base, a CLO-style priority of payments and State Street as
+# collateral agent. The BDC itself is only equityholder and investment advisor.
+#
+# Not asserted: the margin and the unused fee, both of which the agreement
+# defines only by pointing at the unfiled Lender Fee Letter; and
+# financial_covenant.level. The SPV has an "Interest Coverage Ratio Test"
+# (collateral interest proceeds over interest and fees due on the Advances, at
+# least 150%, an Event of Default if it fails for three Business Days). Read
+# literally that is a minimum interest coverage ratio, but it is a
+# collateral-pool test of the kind the Owl Rock CLO XXVI label treats as
+# outside this field, so two careful readers would split on it.
+
+document: bdc_goldman_sachs_private_credit_2026
+corpus_name: BDC_goldman-sachs-private-credit-corp_2026-04-23_0001193125-26-171147_d269763dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: gspc_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "GS PRIVATE CREDIT SPV PUBLIC I LLC"
+    note: >
+      'among GS PRIVATE CREDIT SPV PUBLIC I LLC , a Delaware limited liability
+      company, as borrower (the " Borrower ")'
+
+      The preamble of the conformed agreement (the amendment names the same
+      entity). The filer, Goldman Sachs Private Credit Corp., is the near miss:
+      it is party only 'as the equityholder' and 'as the investment advisor',
+      and a pipeline that reports the filer has reported the parent, not the
+      Borrower.
+
+  - id: gspc_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BNP PARIBAS"
+    note: >
+      'BNP PARIBAS (" BNP "), as administrative agent for the Secured Parties
+      (as hereinafter defined) (in such capacity, the " Administrative Agent ")'
+
+      BNP Paribas is also the only lender signing the amendment. State Street
+      Bank and Trust Company is collateral agent, not administrative agent.
+
+  - id: gspc_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'AND THE TRANSACTIONS CONTEMPLATED HEREBY AND THEREBY SHALL BE GOVERNED BY
+      AND CONSTRUED IN ACCORDANCE WITH THE LAW OF THE STATE OF NEW YORK'
+
+      Section 13.07 of the conformed agreement, in capitals; the amendment has
+      its own identical choice in Section 5.1.
+
+  - id: gspc_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,500,000,000"
+    note: >
+      '(v) from the Fourth Amendment Effective Date, $1,500,000,000'
+
+      The last limb of a Maximum Facility Amount that records every size the
+      facility has had: $200,000,000 from the Closing Date, then $400,000,000,
+      $900,000,000 and $1,100,000,000 after the first three amendments, and
+      $1,500,000,000 now, with '"Fourth Amendment Effective Date" means April
+      17, 2026'. The Facility Amount is this figure until the Facility
+      Termination Date; the per-lender Individual Lender Maximum Funding
+      Amounts are in a Schedule 1 that is not in the text. The accordion cap
+      in Section 2.19 happens to be the same number, 'the Maximum Facility
+      Amount following such Facility Increase will not exceed $ 1,500,000,000',
+      so the answer does not depend on telling the two apart.
+
+  - id: gspc_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-04-17
+    note: >
+      '" Final Maturity Date " means the earlier to occur of (i) the Business
+      Day 12 months after the last day of the Reinvestment Period and (ii) the
+      date on which the Final Maturity Date is declared pursuant to Section
+      6.01'
+
+      The Reinvestment Period, as amended, is 'the period from and including
+      the Fourth Amendment Effective Date to and including the earlier of (a)
+      April 17, 2028 and (b) the date of the termination of the Individual
+      Lender Maximum Funding Amounts', so its last day is April 17, 2028 and
+      twelve months later is April 17, 2029, a Tuesday and a Business Day.
+      Limb (ii) is an acceleration event with no date. April 17, 2028 is the
+      near miss: it is the end of the reinvestment period, not maturity, and
+      earlier limbs of the same definition carry the superseded dates.
+
+  - id: gspc_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if Term SOFR determined as provided above shall ever be less than the
+      Floor, then Term SOFR shall be deemed to be the Floor'
+
+      With '" Floor " means zero percentage per annum', written in words with
+      no numeral at all. The Interest Rate is Term SOFR (or the Base Rate,
+      itself floored at zero) plus an Applicable Margin that the agreement
+      leaves to the Lender Fee Letter, so the floor is the only pricing term
+      the filing settles.
+
+  - id: gspc_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-09-28
+    note: >
+      '" Closing Date " means September 28, 2023.'
+
+      The date of the agreement itself. The executed document in this filing
+      is the amendment, dated as of April 17, 2026 (' the " Fourth Amendment
+      Date "'), which is the near miss.

@@ -1,0 +1,181 @@
+# Tier 2 assertions: Fortress Private Lending Fund / The Bank of Nova Scotia,
+# First Amendment to Senior Secured Revolving Credit Agreement dated as of
+# September 17, 2026, filed 2026-09-22 by Fortress Private Lending Fund as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A short amendment followed by Exhibit A, a
+# blackline of the whole Senior Secured Revolving Credit Agreement of August 5,
+# 2025 as amended (headed "September 4, 2026 Draft"); labels are read from that
+# conformed text. A corporate multicurrency revolver of the fund itself with a
+# borrowing base. Two commitment classes, Dollar and Multicurrency, but the
+# Dollar class is $0 after the amendment. Schedule 1.01(b) is not in the text.
+
+document: bdc_fortress_private_lending_2026
+corpus_name: BDC_fortress-private-lending-fund_2026-09-22_0001193125-26-398118_ck0002012139-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: fplf_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "FORTRESS PRIVATE LENDING FUND"
+    note: >
+      'among FORTRESS PRIVATE LENDING FUND, a Delaware statutory trust (the "
+      Borrower ")'
+
+      The preamble of the conformed agreement in Exhibit A; the amendment
+      itself names the same entity. A statutory trust, so there is no Inc. or
+      LLC suffix to find.
+
+  - id: fplf_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "THE BANK OF NOVA SCOTIA"
+    note: >
+      'and THE BANK OF NOVA SCOTIA, as Administrative Agent (as defined below)'
+
+      Resolved one hop further in the definitions, where the agent is named by
+      a short form: '" Administrative Agent " means Scotiabank, in its capacity
+      as administrative agent for the Lenders hereunder' and '" Scotiabank "
+      means The Bank of Nova Scotia'. "Scotiabank" is a defined nickname, not
+      the legal name.
+
+  - id: fplf_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and, unless otherwise specified therein, each other Loan
+      Document shall be construed in accordance with and governed by the law of
+      the State of New York'
+
+      Section 9.09(a) of the conformed agreement. The amendment has its own
+      New York governing-law clause (Section 5.5), and the borrower is a
+      Delaware statutory trust, which is not the governing law.
+
+  - id: fplf_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$500,000,000"
+    note: >
+      'Multicurrency Commitments as of the First Amendment Effective Date is $
+      500,000,000'
+
+      '" Commitments " means, collectively, the Dollar Commitments and the
+      Multicurrency Commitments', and the other class is empty: 'Dollar
+      Commitments as of the First Amendment Effective Date is $ 0'. So the
+      Multicurrency class is both the largest tranche and the whole of the
+      commitments, and no sum is needed. Not the accordion cap, under which
+      'the total Commitments of all of the Lenders hereunder shall not exceed
+      $ 1,000,000,000'.
+
+  - id: fplf_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-17
+    note: >
+      '" Final Maturity Date " means September 17 , 2031'
+
+      The agreement has no term called "Maturity Date"; Loans are repaid 'on
+      the Final Maturity Date' under Section 2.09(a), and the defined
+      Termination Date is 'the earliest to occur of (i) the Final Maturity
+      Date' and two termination events. The near miss is the end of
+      availability one year earlier, '" Commitment Termination Date " means
+      September 17 , 2030'. The spaces before the commas are where the
+      blackline inserted the new dates.
+
+  - id: fplf_applicable_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.950%"
+    note: >
+      'if the Gross Borrowing Base (as of the most recently delivered Borrowing
+      Base Certificate) is less than 1.60 times the Combined Debt Amount, (i)
+      with respect to any ABR Loan, 0.950 % per annum; (ii) with respect to any
+      Term Benchmark Loan, 1.950 % per annum'
+
+      A two-level grid keyed to borrowing base coverage: 1.825% for Term
+      Benchmark (Term SOFR for Dollars) and RFR loans when the Gross Borrowing
+      Base is at least 1.60 times the Combined Debt Amount, 1.950% below that.
+      The higher level also applies while a Borrowing Base Certificate is
+      late. The 1.60 is a coverage multiple, not a rate.
+
+  - id: fplf_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if the Adjusted Term Benchmark Rate shall be less than
+      zero, such rate shall be deemed to be zero for the purposes of this
+      Agreement'
+
+      The Adjusted Term Benchmark Rate is Term SOFR for Dollar borrowings,
+      so this is a zero floor on the benchmark. Benchmark replacements are
+      floored at the defined Floor, '" Floor " means zero percent (0.00%)',
+      and Daily Simple RFR (SONIA) at 0.00% as well: one rate throughout.
+
+  - id: fplf_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.325%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to 0.325%
+      on the average daily unused amount of the Dollar Commitment and
+      Multicurrency Commitment'
+
+      Section 2.11(a). One rate for both classes, with no utilization or
+      leverage step.
+
+  - id: fplf_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Asset Coverage Ratio at the last day of
+      any fiscal quarter of the Borrower to be less than 150%'
+
+      Section 6.07 has two covenants, this Asset Coverage Ratio floor and a
+      minimum shareholders equity of $710,000,000 plus a share of later equity
+      proceeds. Neither is a leverage or coverage covenant, because asset
+      coverage is assets over debt and the other is a net worth floor; the
+      agreement caps nothing by earnings and sets no interest or fixed-charge
+      coverage. EBITDA appears only as a test on portfolio loans, e.g. 'a ratio
+      of first lien debt to EBITDA that exceeds 5.25:1.00', which is the
+      earnings of the portfolio company, not of the borrower.
+
+  - id: fplf_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-08-05
+    note: >
+      '" Effective Date " means the date on which the conditions specified in
+      Section 4.01 are satisfied (or waived in accordance with Section 9.02 ),
+      which date is August 5, 2025'
+
+      Event-defined, then pinned to an explicit date: the date the credit
+      agreement itself became effective. The near miss is the date of the
+      amendment, '"First Amendment Effective Date" means September 17, 2026',
+      which the amendment also calls its own "Effective Date" in Section 4.

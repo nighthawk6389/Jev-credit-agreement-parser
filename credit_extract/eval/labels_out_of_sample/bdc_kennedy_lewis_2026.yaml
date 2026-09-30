@@ -1,0 +1,187 @@
+# Tier 2 assertions: KLCC SPV GS1 LLC / GS ASL LLC, Third Amendment to First
+# Amended and Restated Credit Agreement dated as of September 28, 2026, filed
+# 2026-09-29 by Kennedy Lewis Capital Co as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A short amendment followed by Exhibit A, the
+# First Amended and Restated Credit Agreement of October 11, 2024 "Conformed
+# through the Third Amendment dated September 28, 2026"; labels are read from
+# that conformed text. An SPV financing facility: the BDC's special purpose
+# subsidiary borrows from Goldman Sachs Bank USA and seven insurance-company
+# lenders against a pool of collateral obligations, and the BDC is investment
+# manager, equity holder and limited guarantor. Only Schedule C is redacted;
+# the Appendix A commitment table is in the text. Several terms are written
+# as before/after the Third Amendment Date, so the superseded values are
+# still in the text next to the operative ones.
+#
+# Not asserted: financial_covenant.level. The agreement puts no leverage or
+# coverage covenant on the Borrower. Its only "Financial Covenants" Event of
+# Default is a failure of the Limited Guarantor to satisfy Section 3.4 of the
+# Limited Guaranty, a separate agreement that is not in the filing, so what
+# that covenant measures cannot be read from this text. The Interest Coverage
+# Ratio and Total Net Leverage Ratio defined here test portfolio obligors.
+
+document: bdc_kennedy_lewis_2026
+corpus_name: BDC_kennedy-lewis-capital-co_2026-09-29_0001911321-26-000036_ck0001911321-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: klcc_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "KLCC SPV GS1 LLC"
+    note: >
+      'KLCC SPV GS1 LLC, a Delaware limited liability company(the " Borrower ")'
+
+      The preamble of the conformed agreement; the amendment names the same
+      entity. The filer, Kennedy Lewis Capital Company, is the near miss: it
+      signs 'as the investment manager', as equity holder and as limited
+      guarantor, never as Borrower.
+
+  - id: klcc_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "GS ASL LLC"
+    note: >
+      'GS ASL LLC, in its capacity as Administrative Agent (in such capacity,
+      the " Administrative Agent ")'
+
+      Not Goldman Sachs Bank USA, which is syndication agent, calculation
+      agent and the largest lender, and which was the agent under the
+      original agreement: the recitals say the parties to that agreement
+      included 'the Syndication Agent, Goldman Sachs as Administrative Agent,
+      the Collateral Administrator'. The agent changed at the restatement.
+
+  - id: klcc_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND SHALL BE CONSTRUED AND ENFORCED IN ACCORDANCE
+      WITH, THE LAWS OF THE STATE OF NEW YORK WITHOUT REGARD TO CONFLICT OF
+      LAWS PRINCIPLES'
+
+      Section 11.14 (Applicable Law) of the conformed agreement; the amendment
+      makes the same choice for itself.
+
+  - id: klcc_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$550,000,000"
+    note: >
+      '" Maximum Facility Amount " means, at any date, (a) $ 550,000,000 plus
+      (b) the aggregate amount of New Commitments that have become effective
+      after the Third Amendment Date'
+
+      No New Commitments exist yet, and Appendix A states the same total:
+      'Totals: | U.S.$ 550,000,000 | 100%' across eight lenders, of which
+      Goldman Sachs Bank USA holds $286,300,000. The near miss in the same row
+      is the outstanding Loan Amount of Existing Loans, $497,500,000.80, which
+      is usage, not commitment. New Commitments under Section 2.1(e) are an
+      uncapped accordion subject to lender consent.
+
+  - id: klcc_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-28
+    note: >
+      '" Maturity Date " means the earlier of (a) the Scheduled Maturity Date
+      and (b) the date on which all Loans shall become due and payable in full
+      hereunder, whether by acceleration or otherwise' and '" Scheduled
+      Maturity Date " means September 28 , 2031'.
+
+      Loans are due then: 'On the Maturity Date the Borrower shall repay the
+      aggregate principal amount of the Loans that are then outstanding'. Two
+      near misses. The reinvestment period ends two years earlier, '" Reinvestment
+      Period " means the period from the Initial Credit Date to and including
+      the earlier of (x) September 28 , 2029'. And a separate '" Scheduled
+      Legal Maturity Date " means September 28 , 2037' sets the last Payment
+      Date and the point at which non-payment becomes an Event of Default
+      ('any principal of any Loan at the Legal Maturity Date'); it is a
+      backstop, not the date the loans fall due. The Scheduled Maturity Date
+      may be extended only by agreement at the sole discretion of the parties,
+      which is a conditional variant, not the date.
+
+  - id: klcc_applicable_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.25%"
+    note: >
+      '"Spread (Post-Amendment) " means, on any date of determination 2.25 %
+      per annum'
+
+      Selected by date: '"Spread " means, on any date of determination (i)
+      prior to the Third Amendment Date, the Spread (Pre-Amendment), and (ii)
+      on or after the Third Amendment Date, the Spread (Post-Amendment)', and
+      Loans bear 'the Benchmark applicable to such Loan for such Interest
+      Period from time to time plus the Spread', the Benchmark being Term
+      SOFR. The superseded grid is still printed beside it and is the trap:
+      2.50% or, 'with respect to which the BSL Percentage is less than 15 % on
+      such day , 2.60 % per annum'. 2.60% is the highest number in the
+      definition but has not applied since September 28, 2026.
+
+  - id: klcc_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.50%"
+    note: >
+      'provided that, notwithstanding the foregoing, Term SOFR shall at no time
+      be less than 0.50% per annum'
+
+      A 50 basis point floor at the end of the Term SOFR definition. Loans are
+      in USD only, so Term SOFR is the only benchmark. The near miss is the
+      zero floor that applies only after a benchmark transition, 'If the
+      Benchmark Replacement as determined pursuant to the definition hereof
+      would be less than 0.0%'.
+
+  - id: klcc_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.75%"
+    note: >
+      'The Borrower agrees to pay to Lenders non-utilization fees (the "
+      Non-Utilization Fees ") on the Daily Non-Utilization Fee Calculation
+      Amount as in effect from time to time at a rate per annum equal to (i)
+      prior to the Third Amendment Date, 1.00% and (ii) on and after the Third
+      Amendment Date, 0.75 %'
+
+      A time step: 1.00% is the superseded rate, 0.75% the operative one. It
+      is the only unused-fee rate. Usage below the Minimum Utilization Amount
+      is charged as interest rather than as a fee, since interest accrues on
+      the '" Interest Reference Amount " means on any date the greater of (i)
+      the Loan Amount and (ii) the Minimum Utilization Amount'.
+
+  - id: klcc_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-04-20
+    note: >
+      '" Closing Date " means April 20, 2023.'
+
+      The conformed agreement defines Closing Date as a bare date, the date of
+      the original credit agreement. Three other dates sit near it: the
+      restatement, 'effective as of the First Amendment Date' where '" First
+      Amendment Date " means October 11, 2024.'; the first loans, '" Initial
+      Credit Date " means May 1, 2023 or such other date'; and the executed
+      document in this filing, '" Third Amendment Date " means September 28,
+      2026.'

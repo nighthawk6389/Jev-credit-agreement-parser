@@ -1,0 +1,176 @@
+# Tier 2 assertions: Capital Southwest Corporation / ING Capital LLC, Fourth
+# Amended and Restated Senior Secured Revolving Credit Agreement dated as of
+# September 2, 2026, filed 2026-09-02 by Capital Southwest Corp as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A complete fourth amended and restated
+# agreement (not an amendment with a conformed copy), replacing the Third A&R
+# of August 2, 2023. A corporate revolver: the BDC itself borrows against a
+# borrowing base, with subsidiary guarantors. Lenders are split into Extending
+# and Non-Extending classes with different maturities, but every continuing
+# lender signs as an Extending Lender and the rest sign as Departing Lenders.
+
+document: bdc_capital_southwest_2026
+corpus_name: BDC_capital-southwest-corp_2026-09-02_0000017313-26-000136_a4arcreditagreementcswc_in
+source: real
+tier: 2
+
+assertions:
+
+  - id: cswc_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "CAPITAL SOUTHWEST CORPORATION"
+    note: >
+      'among CAPITAL SOUTHWEST CORPORATION, a Texas corporation (the " Borrower ")'
+
+      The preamble defines the Borrower. The filer is indexed on EDGAR as
+      "Capital Southwest Corp"; the legal name in the agreement is Corporation.
+
+  - id: cswc_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "ING CAPITAL LLC"
+    note: >
+      'the LENDERS party hereto and ING CAPITAL LLC, as Administrative Agent, bookrunner and a joint lead arranger'
+
+      ING Capital LLC is the Administrative Agent (and, per its signature
+      page, also Collateral Agent). Texas Capital Bank is only documentation
+      agent.
+
+  - id: cswc_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and the other Loan Documents shall be construed in
+      accordance with and governed by the law of the State of New York'
+
+      Section 9.09(a). The borrower is a Texas corporation, which is not the
+      governing law.
+
+  - id: cswc_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$595,000,000"
+    note: >
+      'Commitments as of the Restatement Effective Date is $595,000,000'
+
+      Stated in the definition of "Commitment". The near miss is the accordion
+      cap in Section 2.07(f), 'the total Commitments of all of the Lenders
+      hereunder shall not exceed $1,000,000,000', which is the most the
+      commitments may be increased to, not the commitments in effect.
+
+  - id: cswc_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-02
+    note: >
+      '" Extended Maturity Date " means, with respect to each Extending Lender,
+      the date that is the one (1) year anniversary of the Extended Revolver
+      Termination Date' and '" Extended Revolver Termination Date " means, with
+      respect to each Extending Lender, the date that is the four (4) year
+      anniversary of the Restatement Effective Date' and '" Restatement
+      Effective Date " means September 2, 2026'.
+
+      Maturity Date resolves through three definitions: four years after
+      September 2, 2026 is the revolver termination date (September 2, 2030,
+      which is the end of availability, not maturity), and one year after
+      that is September 2, 2031. The other limb, '" Non-Extended Maturity Date
+      " means, with respect to each Non-Extending Lender, August 2, 2028',
+      applies to no one on signing: every continuing lender signs as an
+      Extending Lender, e.g. 'ING CAPITAL LLC, as Administrative Agent, a Joint
+      Lead Arranger, Collateral Agent, Bookrunner, an Extending Lender', and
+      the others sign as Departing Lenders.
+
+  - id: cswc_applicable_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.00%"
+    note: >
+      '" Applicable Margin " means (a) with respect to any ABR Loan, 1.00% per
+      annum, and (b) with respect to any SOFR Loan, 2.00% per annum'
+
+      A single rate, not a grid, so the top level is the only level. Term
+      SOFR loans bear 'Term SOFR for the related Interest Period for such
+      Borrowing plus the Applicable Margin'. The 1.00% is the ABR margin and
+      the near miss.
+
+  - id: cswc_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'If Term SOFR as so determined shall ever be less than the Floor, then
+      Term SOFR shall be deemed to be the Floor'
+
+      The Floor is defined in four words, '" Floor " means 0%.', and applied
+      to Term SOFR, Daily Compounded SOFR and any Benchmark Replacement alike.
+
+  - id: cswc_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.75%"
+    note: >
+      'a commitment fee, which shall accrue at a rate equal to (x) 0.75% per
+      annum on the daily unused amount of the Commitment of such Lender'
+
+      Section 2.10(a). The rate steps with utilization: 0.75% on the whole
+      unused amount while usage is at or below 35%; above 35%, 0.75% on any
+      shortfall below the Minimum Utilization Amount (50% of commitments) and
+      '0.50% per annum on the remaining daily unused amount of the Commitment
+      of such Lender'. The highest rate is 0.75%.
+
+  - id: cswc_interest_coverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "2.00 to 1.00"
+    note: >
+      'The Borrower will not permit the Consolidated Interest Coverage Ratio to
+      be less than 2.00 to 1.00 as of the last day of any fiscal quarter of the
+      Borrower'
+
+      Section 6.07(d). The ratio is earnings over interest, 'Consolidated EBIT
+      for the four fiscal quarter period then ending, taken as a single
+      accounting period, to (b) Consolidated Adjusted Interest Expense', so it
+      is a minimum interest coverage covenant and counts. The other Section
+      6.07 tests are not: the Consolidated Asset Coverage Ratio floor (150%),
+      a minimum equity test, a minimum net worth test, a liquidity test, and
+      a Senior Coverage Ratio that is also 2.00 to 1.00 but is collateral
+      value over debt, an asset test.
+
+  - id: cswc_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-09-02
+    note: >
+      '" Restatement Effective Date " means September 2, 2026.'
+
+      The effectiveness date of this agreement itself: Section 4.01 conditions
+      'The effectiveness of this Agreement on the Restatement Effective Date',
+      and it is also when loans are first made under it, since under Section
+      2.02(e) the Borrower will 'simultaneously borrow new Loans hereunder in
+      an amount equal to such prepayment' of the existing loans on that date.
+      The near miss is the date of the first facility, '" Original Effective
+      Date " means August 30, 2016', which this fourth restatement still
+      carries.

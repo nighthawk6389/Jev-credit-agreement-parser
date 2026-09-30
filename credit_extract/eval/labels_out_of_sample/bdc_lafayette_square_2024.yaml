@@ -1,0 +1,177 @@
+# Tier 2 assertions: Lafayette Square USA, Inc. / ING Capital LLC, Amendment
+# No. 1 (September 20, 2024) to the Senior Secured Revolving Credit Agreement
+# dated as of June 18, 2024, with the amended agreement attached as Annex I,
+# filed 2024-09-24 by Lafayette Square USA, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. An amendment whose Annex I is the full
+# agreement marked as a blackline; the struck text is excised in the
+# normalized text, so the Annex reads as the conformed agreement. A corporate
+# BDC revolver with a hybrid borrowing base (a subscription, capital-call
+# component and a portfolio leverage component) and a sustainability-linked
+# overlay on the margin and the unused fee. The amendment joins two new
+# lenders and replaces the commitment schedule, which is not in the filing, so
+# the post-amendment facility size is not stated and revolver.commitment is
+# not asserted. The Effective Date is event-defined, so closing_date is not
+# asserted either.
+
+document: bdc_lafayette_square_2024
+corpus_name: BDC_lafayette-square-usa-inc_2024-09-24_0001104659-24-102446_tm2424598d1_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: lafayette_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "LAFAYETTE SQUARE USA, INC."
+    note: >
+      'among LAFAYETTE SQUARE USA, INC. , a Delaware corporation (the "
+      Borrower ")'
+
+      The preamble of the conformed agreement in Annex I; the amendment names
+      the same party. The normalized text puts a space before the comma after
+      INC., which is layout, not part of the name. The Subsidiary Guarantors
+      (the LS BDC Holdings entities) sign too and are not the Borrower.
+
+  - id: lafayette_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "ING CAPITAL LLC"
+    note: >
+      'ING CAPITAL LLC , as Administrative Agent, Lead Arranger, Bookrunner and
+      Sustainability Structuring Agent'
+
+      One institution in four roles, and the definitions close the loop:
+      '" ING " means ING Capital LLC'. The two New Lenders joined by the
+      amendment (First-Citizens Bank & Trust Company and EverBank, N.A.) are
+      lenders only.
+
+  - id: lafayette_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by the
+      law of the State of New York'
+
+      Section 9.09(a) of the conformed agreement; the amendment itself is also
+      governed by New York law under its Section 2.8.
+
+  - id: lafayette_maturity_is_the_stated_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-06-18
+    note: >
+      '" Maturity Date " means the earliest of: (a) the Stated Maturity Date;
+      (b) the occurrence of a Liquidity Event' and then
+      '" Stated Maturity Date " means June 18, 2029, unless extended with the
+      consent of the Administrative Agent and each Lender in its sole and
+      absolute discretion'.
+
+      Limbs (b) to (e) are events -- a Liquidity Event as defined in the
+      Subscription Agreements, acceleration, termination of the Commitments,
+      the closing of a replacement facility with the Administrative Agent --
+      so the earliest-of resolves to the one dated limb. The extension needs
+      every Lender and is conditional. Not the end of the revolving period:
+      '" Commitment Termination Date " means, the date that is the earlier to
+      occur of (a) the four year anniversary of the Effective Date', and the
+      Effective Date is event-defined, so that date does not even resolve from
+      the text. The Liquidity Event Deadline (June 21, 2032) is a fund-life
+      date, not a maturity.
+
+  - id: lafayette_margin_is_one_rate_in_two_legs
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.70%"
+    note: >
+      '" Blended Term Margin " means the sum of: (a) the product of (i) the
+      Subscription Percentage and (ii) 2.70% and (b) the product of (i) the
+      Portfolio Leverage Percentage and (ii) 2.70%'
+
+      The weights sum to one ('" Portfolio Leverage Percentage " means 100%
+      minus the Subscription Percentage') and both legs carry 2.70%, so a grid
+      that looks like two tiers has one rate whatever the borrowing base mix.
+      The Applicable Margin definition repeats the level for a late Borrowing
+      Base Certificate: 'the Blended ABR Margin will be 1.70%, and the Blended
+      Term Margin will be 2.70%'.
+
+      The only movement is the sustainability overlay, at most 0.05% either
+      way per year (positive 0.05% if a certificate is missed), and it is zero
+      until the first certificate: 'the Sustainability Rate Adjustment shall
+      be 0.00% per annum and there shall be no Sustainability Rate Adjustment
+      to the Applicable Margin'. Labelled at the stated 2.70%, not 2.75%,
+      because the overlay is a KPI adjustment applied on top of the grid
+      rather than a level in it.
+
+  - id: lafayette_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means the greater of (a) 0.00%, and (b) the benchmark rate
+      floor, if any, provided in this Agreement'
+
+      No other benchmark floor is provided, so limb (b) adds nothing and the
+      floor is zero. It floors the benchmark, not the all-in rate: 'if
+      Adjusted Term SOFR as so determined shall ever be less than the Floor,
+      then Adjusted Term SOFR shall be deemed to be the Floor'. The separate
+      minimum of 0.0% on the Applicable Margin is a floor on the spread and is
+      the near miss.
+
+  - id: lafayette_unused_fee_steps_with_utilization
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.75%"
+    note: >
+      '0.75% per annum on the unutilized portion of the aggregate Commitments
+      as of the close of business on such day (after giving effect to
+      Borrowings, prepayments and Commitment reductions on such day) below the
+      34% Minimum Utilization Amount'
+
+      The unused commitment fee is banded by utilization: 0.30% on unused
+      commitments above the 67% Minimum Utilization Amount, 0.50% between 34%
+      and 67%, and 0.75% below 34%; at or above 67% utilization the whole
+      unused amount pays the bottom rate ('is greater than or equal to the 67%
+      Minimum Utilization Amount, 0.30% per annum'). The highest band is
+      0.75%. A sustainability overlay of at most 0.01% applies from the first
+      certificate and is zero until then.
+
+  - id: lafayette_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Consolidated Asset Coverage Ratio to
+      be less than 1.50x at any time'
+
+      Section 6.07(c), beside a minimum stockholders equity test (65% of the
+      Effective Date amount plus 65% of later equity proceeds) and an obligors
+      net worth test (the greater of 65% of the Effective Date amount and
+      $100,000,000). None caps debt against earnings, because the asset
+      coverage ratio is assets over senior securities, a floor that points the
+      opposite way from debt over EBITDA, and the other two are equity floors.
+
+      The one leverage number in the agreement is a borrowing base
+      concentration test on the portfolio: the Weighted Average Leverage Ratio
+      of the Eligible Portfolio Investments 'shall not exceed 4.25x (provided
+      that LTV Transactions may be excluded from such calculation)'. It is the
+      debt-to-EBITDA of the Portfolio Companies and trims the borrowing base;
+      it is not a covenant on the Borrower.

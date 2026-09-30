@@ -1,0 +1,161 @@
+# Tier 2 assertions: PGIM Private Credit Fund / Sumitomo Mitsui Banking
+# Corporation, Senior Secured Revolving Credit Agreement dated as of October 30,
+# 2023, filed 2023-11-01 by PGIM Private Credit Fund as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. An original agreement, not an amendment, so
+# there is no chain to fold. A corporate, BDC-level senior secured
+# multicurrency revolver with a borrowing base: the BDC (a Delaware statutory
+# trust) is the Borrower, SMBC is agent, and Natixis, State Street and BNY
+# Mellon sign as the other Lenders. The cover says $150,000,000. The schedules,
+# including Schedule I (Commitments), are not in the filing, but the
+# definitions state the aggregates. The Effective Date is set by satisfaction
+# of the Section 4.01 conditions, so no closing date is asserted. SMBC is not
+# the same bank as the Sumitomo Mitsui Trust Bank that agents Overland
+# Advantage in this batch.
+
+document: bdc_pgim_private_credit_2023
+corpus_name: BDC_pgim-private-credit-fund_2023-11-01_0001104659-23-113429_tm2326215d1_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: pgim_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "PGIM PRIVATE CREDIT FUND"
+    note: >
+      'among PGIM PRIVATE CREDIT FUND, a Delaware statutory trust, as borrower
+      (the " Borrower ")'
+
+      The preamble. A statutory trust with no corporate suffix, so a reader
+      expecting Inc., LLC or Corp. has nothing to anchor on.
+
+  - id: pgim_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "SUMITOMO MITSUI BANKING CORPORATION"
+    note: >
+      'and SUMITOMO MITSUI Banking corporation, as administrative agent (the "
+      Administrative Agent ")'
+
+      Mixed case in the preamble; the signature block writes it 'SUMITOMO
+      MITSUI BANKING CORPORATION, as Administrative Agent'. SMBC is also
+      Syndication Agent, Lead Arranger and Documentation Agent. State Street
+      Bank and Trust Company is a Joint Book Runner and Lender, not an agent.
+
+  - id: pgim_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by the
+      law of the State of New York.'
+
+      Section 9.09(a).
+
+  - id: pgim_revolving_commitments
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$150,000,000"
+    note: >
+      'Multicurrency Commitments as of the Effective Date is $150,000,000'
+
+      Revolving Commitments are 'collectively, the Dollar Commitments and the
+      Multicurrency Commitments', and the other class is empty: 'Dollar
+      Commitments as of the Effective Date is $0'. The Multicurrency class is
+      the largest, and at $150,000,000 it is also the whole facility, matching
+      the cover. The near miss is the accordion ceiling in Section 2.08(e),
+      'the aggregate amount of all Commitments, including Commitment Increases
+      effected pursuant to this Section 2.08(e) , shall not exceed
+      $350,000,000'.
+
+  - id: pgim_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2028-10-30
+    note: >
+      '" Maturity Date " means October 30, 2028.'
+
+      A bare date. The near miss is one year earlier: '" Commitment
+      Termination Date " means October 30, 2027.', which ends the Availability
+      Period and the commitment fee but not the loans.
+
+  - id: pgim_top_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.250%"
+    note: >
+      '(b) if the ratio of the Gross Borrowing Base to Combined Debt Amount is
+      less than 1.6:1.0, then (i) with respect to any ABR Loan, 1.250% per
+      annum, and (ii) with respect to any Term Benchmark Loan or any RFR Loan,
+      2.250% per annum'
+
+      A two-level grid keyed to borrowing base coverage, not to leverage or
+      rating. The lower level, at coverage of 1.6:1.0 or more, is 2.125% for
+      Term Benchmark and RFR Loans. The top level is 2.250%, and it applies
+      to Term SOFR as to every other benchmark.
+
+  - id: pgim_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means zero percent (0.00%).'
+
+      The defined Floor is used only for a Benchmark Replacement; the live
+      floor is in Term SOFR itself, 'shall ever be less than zero (0.00%),
+      then Term SOFR shall be deemed to be zero (0.00%)'. Both are zero. Term
+      SOFR here is already 'the sum of (i) 0.10% and (ii) the Term SOFR
+      Reference Rate', so the floor sits on the adjusted rate and not on the
+      screen rate.
+
+  - id: pgim_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.375%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to 0.375%
+      on the daily unused amount of the Dollar Commitment and the
+      Multicurrency Commitment'
+
+      Section 2.11(a). One flat rate with no utilization step, accruing until
+      the Commitment Termination Date. The 0.25% in Section 2.11(b) is the
+      Letter of Credit fronting fee, not a commitment fee.
+
+  - id: pgim_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      '(b) Asset Coverage Ratio . The Borrower will not permit the Asset
+      Coverage Ratio to be less than 1.50 to 1 at any time.'
+
+      Section 6.07 has exactly two financial covenants, this one and a
+      minimum Shareholders Equity, 'Equity at the last day of any fiscal
+      quarter to be less than (i) $80,809,557.34' plus 35% of later equity
+      proceeds. Neither is a leverage covenant because the Asset Coverage
+      Ratio is total assets over senior securities, a floor on asset
+      coverage, and the equity test is a net worth floor; nothing measures
+      debt or interest against earnings. EBITDA is defined only for portfolio
+      companies, where it sorts Bank Loans for the borrowing base (for
+      example first lien debt to EBITDA 'that does not exceed 3.25:1.00').

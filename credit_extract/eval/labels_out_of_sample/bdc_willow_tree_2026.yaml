@@ -1,0 +1,162 @@
+# Tier 2 assertions: WT Capital Fund - SPV1, LLC (co-borrower WT Capital
+# Fund-SPV1 Sub Gold LLC) / Ally Bank, Second Amendment and Joinder to Amended
+# and Restated Loan, Security and Collateral Management Agreement, filed
+# 2026-03-24 by Willow Tree Capital Corp as Exhibit 10.13.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. The Second Amendment (December 23, 2025) joins
+# a second SPV borrower and upsizes the facility. Exhibit A is the A&R agreement
+# of November 8, 2024 as a "Conformed Version through the Second Amendment"
+# marked copy. It is an SPV financing facility: Willow Tree Capital Corporation
+# is Collateral Manager and Transferor, and State Street is Custodian. The
+# filing is page images with a text layer, and its blackline was NOT excised.
+# Struck and inserted text are fused, struck first ("BorrowerBorrowers",
+# "$500,000,000575,000,000"), so every value below was checked for fusion.
+# Pricing (Applicable Spread, Non-Usage Fee) is in an unfiled Pricing Side Letter.
+
+document: bdc_willow_tree_2026
+corpus_name: BDC_willow-tree-capital-corp_2026-03-24_0001944831-26-000004_wtcapitalfundsecondamend
+source: real
+tier: 2
+
+assertions:
+
+  - id: wt_borrower_name_first_named
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "WT CAPITAL FUND - SPV1, LLC"
+    note: >
+      '(2) WT CAPITAL FUND - SPV1, LLC, a Delaware limited liability company,
+      successor by merger to WT Capital Fund (Offshore) - SPV1, LLC'
+
+      There are two co-borrowers since this amendment. This is the first-named
+      one, the sole borrower before the joinder, and the parent of the other. The
+      second, joined by this amendment as its wholly-owned subsidiary, is 'WT
+      CAPITAL FUND-SPV1 SUB GOLD LLC, a Delaware limited liability company (the
+      "California Borrower") as the borrowers'. It is liable jointly and
+      severally but is not the lead borrower. Mind the punctuation: the lead
+      borrower is "FUND - SPV1, LLC" with spaces and a comma, and the subsidiary
+      is "FUND-SPV1 SUB GOLD LLC". The filer, Willow Tree Capital Corporation, is
+      the Collateral Manager, not a borrower.
+
+  - id: wt_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "ALLY BANK"
+    note: >
+      '(4) ALLY BANK (together with its successors and permitted assigns, "Ally
+      Bank"), as the administrative agent hereunder'
+
+      Ally Bank is also Swingline Lender, Arranger and a Lender. State Street Bank
+      and Trust Company is Collateral Custodian and Collateral Administrator, which
+      is not the agent role.
+
+  - id: wt_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED AND INTERPRETED IN ACCORDANCE WITH, THE
+      LAW OF THE STATE OF NEW YORK'
+
+      Section 12.7 of the conformed agreement, in capitals.
+
+  - id: wt_facility_amount_is_the_inserted_figure
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$575,000,000"
+    note: >
+      'an amount equal to the lesser of (a) $500,000,000575,000,000 and (b) the
+      aggregate principal amount of the Commitments'
+
+      This is the Facility Amount definition, and the numeral is two numbers
+      fused by the unexcised blackline: the struck $500,000,000 and the inserted
+      $575,000,000. Annex B settles which is new. It reads 'Ally Bank Total:
+      $500,000,000490,000,000 $500,000,000575,000,000' next to 'Silicon Valley
+      Bank, a division of First-Citizens Bank & Trust Company Commitment
+      $85,000,000'. Ally Bank goes from $500,000,000 to $490,000,000 and First-
+      Citizens joins at $85,000,000, which sums to $575,000,000. The aggregate
+      Commitments and the cap therefore coincide. The cover shows the same fused
+      $500,000,000575,000,000. A reader that parses the first numeral reports
+      the pre-amendment size.
+
+  - id: wt_termination_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-11-08
+    note: >
+      '"Termination Date": The earlier of (a) the date that is two (2) years after
+      the Revolving Period End Date'
+
+      The chain runs Termination Date, Revolving Period End Date (the earlier of
+      the Scheduled Revolving Period End Date and a declaration), then
+      '"Scheduled Revolving Period End Date": November 8, 2027'. Two years later
+      is November 8, 2029. None of the three definitions is fused. 'the Advances
+      Outstanding shall be repaid in full on the Termination Date' (Section
+      2.3(b)), or on a later date only if every Lender agrees, so the
+      unconditional value stands. November 8, 2027 is the end of the Revolving
+      Period, not the maturity.
+
+  - id: wt_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.0%"
+    note: >
+      '"Floor": A rate of interest equal to 0.0%'
+
+      Applied to the benchmark: '"Term SOFR": The greater of (a) the Floor and (b)
+      the forward-looking term rate based on SOFR'. The spread over it is the
+      "Applicable Spread", defined only as 'The meaning specified in the Pricing
+      Side Letter', which is why the margin is not labelled.
+
+  - id: wt_minimum_interest_coverage
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "1.50 to 1.00"
+    note: >
+      '(n) Minimum Interest Coverage Ratio. As of the end of any Accrual Period,
+      beginning with the Accrual Period ending March 31, 2025'
+
+      The borrowers may not permit the 'Total Interest Coverage Ratio to be less
+      than 1.50 to 1.00 unless', within three Business Days, they prepay or
+      deliver an Equity Cure Notice. This is a real coverage covenant on the
+      borrowers' own earnings. The ratio is trailing four Accrual Periods of
+      Borrower Interest Collections, less senior collateral manager fees, over
+      Borrower Interest Expense. The number is not fused. The near miss is the
+      same number on somebody else's earnings. A Credit Quality Deterioration
+      Event occurs when an Obligor Interest Coverage Ratio 'declines to eighty
+      percent (80.00%) of the applicable Original Obligor Interest Coverage
+      Ratio, and (b) is less than 1.50 to 1.00'. That is a portfolio-company test
+      that sets collateral value, as are the forty "Leverage Ratio" hits, all of
+      them Obligor Net Senior or Net Total Leverage Ratios.
+
+  - id: wt_effective_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2024-11-08
+    note: >
+      '"Effective Date": November 8, 2024'
+
+      The amended and restated agreement's own effectiveness, stated as a bare
+      date. "Closing Date" does not occur. The versioning traps are the other
+      dates: 'dated as of February 9, 2024 (the "Onshore Effective Date")' and
+      the Offshore Effective Date of December 21, 2023 belong to the two
+      agreements it restated, the First Amendment Effective Date is February 21,
+      2025, and '"Second Amendment Effective Date": December 23, 2025' is this
+      amendment.

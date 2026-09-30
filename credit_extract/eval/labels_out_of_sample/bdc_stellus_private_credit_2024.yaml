@@ -1,0 +1,150 @@
+# Tier 2 assertions: Stellus Private Credit BDC SPV LLC / Deutsche Bank AG, New
+# York Branch (Facility Agent), Loan Financing and Servicing Agreement dated as of
+# August 1, 2024, filed 2024-08-06 by Stellus Private Credit BDC as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. An original agreement, not an amendment. An SPV
+# warehouse: the borrower is the BDC's special purpose subsidiary, the BDC is
+# Equityholder and Servicer, Citibank is Collateral Agent and Custodian and Alter
+# Domus is Collateral Administrator. Interest is an Applicable Margin over a Cost
+# of Funds Rate (Term SOFR for committed lenders, commercial paper for conduit
+# lenders). Annex B (per-lender commitments) and the Fee Letter are not filed.
+
+document: bdc_stellus_private_credit_2024
+corpus_name: BDC_stellus-private-credit-bdc_2024-08-06_0001104659-24-086159_tm2420896d1_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: stellus_borrower_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "STELLUS PRIVATE CREDIT BDC SPV LLC"
+    note: >
+      'among STELLUS PRIVATE CREDIT BDC SPV LLC, a Delaware limited liability
+      company (the " Borrower "), STELLUS PRIVATE CREDIT BDC, a Delaware statutory
+      trust, as the equityholder'
+
+      The borrower is the SPV. The filer, Stellus Private Credit BDC, is the
+      Equityholder and Servicer. Its name is the SPV name minus "SPV LLC", which is
+      the near miss.
+
+  - id: stellus_facility_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "DEUTSCHE BANK AG, NEW YORK BRANCH"
+    note: >
+      'DEUTSCHE BANK AG, NEW YORK BRANCH, as Facility Agent (in such capacity,
+      together with its successors and permitted assigns in such capacity, the "
+      Facility Agent ")'
+
+      No party is called Administrative Agent. The Facility Agent is the agent for
+      the lenders as a whole. The other agent roles are different jobs: each
+      Lender Group has its own "Agent", Citibank is Collateral Agent and
+      Collateral Custodian, and Alter Domus (US) LLC is Collateral Administrator.
+
+  - id: stellus_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY AND CONSTRUED AND INTERPRETED IN ACCORDANCE WITH THE
+      LAW OF THE STATE OF NEW YORK'
+
+      Section 17.8, in capitals.
+
+  - id: stellus_facility_amount
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$50,000,000"
+    note: >
+      '" Facility Amount " means (a) prior to the end of the Revolving Period,
+      $50,000,000, unless this amount is permanently reduced pursuant to Section
+      2.5 or increased pursuant to Section 2.8'
+
+      Per-lender Commitments are on Annex B, which is not filed, so the Facility
+      Amount is the only stated size. It moves with the aggregate Commitments.
+      The same figure appears again as the accordion, which is a different
+      number: Section 2.8 lets the Borrower 'increase the aggregate Commitment of
+      the existing Lender Groups (pro rata) by up to an aggregate additional
+      $50,000,000'. That is headroom, not the committed amount.
+
+  - id: stellus_facility_termination_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-08-01
+    note: >
+      '" Facility Termination Date " means the earliest of (i) the date that is
+      three years after the last day of the Revolving Period'
+
+      Limbs (ii) and (iii) are events: the end of the Equityholder's term of
+      existence and an early termination. The Revolving Period is '" Revolving
+      Period " means the period of time starting on the Effective Date and ending
+      on the earliest to occur of (i) August 1, 2027', so the chain lands on
+      August 1, 2027 plus three years. Advances are repaid 'in full on the Facility
+      Termination Date' (Section 2.4). August 1, 2027 is the end of the Revolving
+      Period, not the maturity. It can be extended under Section 2.6 only with
+      every Agent's consent, so the unconditional value stands.
+
+  - id: stellus_top_margin_is_post_revolving_period
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.85%"
+    note: >
+      '(x) prior to the end of the Revolving Period, 2.50% per annum and (y) from
+      and after the end of the Revolving Period, 2.85% per annum'
+
+      Two tiers keyed to time: 2.50% during the Revolving Period, stepping up to
+      2.85% in the amortization period. The highest tier is 2.85%. The same
+      definition continues '(ii) on and after the occurrence of any Event of
+      Default, (x) prior to the end of the Revolving Period, 4.50% per annum'
+      (4.85% after it). That is default pricing, not a tier of the grid. The
+      benchmark it is added to is the Cost of Funds Rate, which for a Committed
+      Lender is the Base Rate, which is Term SOFR.
+
+  - id: stellus_term_sofr_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.0%"
+    note: >
+      'the greater of (i) 0.0% and (ii) the Term SOFR Reference Rate for a tenor of
+      three (3) months'
+
+      From the "Term SOFR" definition. The floor is on the benchmark, not on the
+      all-in rate, and it is written with one decimal place.
+
+  - id: stellus_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'Section 10.7 Tangible Net Worth . The Borrower shall maintain at all times a
+      positive Tangible Net Worth'
+
+      The borrower's own tests are this and a Minimum Equity Test, satisfied 'if
+      the Effective Equity is not less than the greater of (i) the Principal
+      Balance of the four largest Eligible Obligors and (ii) $20,000,000'
+      ($15,000,000 during ramp-up). The Equityholder must keep asset coverage from
+      falling 'to be less than the greater of (x) 150% and (y) the asset coverage
+      ratio with which it is required to comply under the 1940 Act'. None goes
+      in this field, because each is an equity floor or an assets-over-debt floor
+      and none caps debt against earnings. The EBITDA and "Leverage Multiple" in
+      the text are measured on the obligors of the Collateral Obligations and set
+      eligibility and advance rates. They say nothing about the borrower.

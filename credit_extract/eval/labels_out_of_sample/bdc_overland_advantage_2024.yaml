@@ -1,0 +1,178 @@
+# Tier 2 assertions: Overland Advantage / Sumitomo Mitsui Trust Bank, Limited,
+# New York Branch, First Amendment to Revolving Credit Agreement (with the
+# conformed credit agreement attached), filed 2024-12-12 by Overland Advantage
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A four-page First Amendment dated December 9,
+# 2024, then Annex A, the Revolving Credit Agreement dated July 10, 2024 as
+# "Conformed Credit Agreement through the First Amendment"; the labels read
+# Annex A. It is a subscription line: the BDC (a Delaware statutory trust)
+# borrows against the uncalled capital commitments of its investors, guaranteed
+# by its Cayman feeder fund, with SuMi TRUST and NatWest Markets Plc as the
+# lenders. The amendment is a temporary Facility Increase: the Maximum
+# Commitment is $200,000,000 until March 31, 2025 and $100,000,000 after.
+# Schedule 1.01 (per-Lender commitments) is not in the filing and Annex B is
+# "[Intentionally omitted]". The conformed body is headed "REVOLTING CREDIT
+# AGREEMENT", a typo for Revolving.
+
+document: bdc_overland_advantage_2024
+corpus_name: BDC_overland-advantage_2024-12-12_0000950170-24-135849_ck0001965934-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ova_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "OVERLAND ADVANTAGE"
+    note: >
+      'is dated as of July 10, 2024, by and among OVERLAND ADVANTAGE , a
+      Delaware statutory trust'
+
+      It is defined as the Initial Borrower, 'and those certain By-Laws, dated
+      December 13, 2023 (the " Initial Borrower ")', and Borrower is a
+      collective term: '" Borrower " means the Initial Borrower or any
+      Additional Borrower'. No Additional Borrower is named. The near miss is
+      the Guarantor, OVERLAND ADVANTAGE FEEDER FUND, L.P., whose name begins
+      with the same two words.
+
+  - id: ova_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "SUMITOMO MITSUI TRUST BANK, LIMITED, NEW YORK BRANCH"
+    note: >
+      'SUMITOMO MITSUI TRUST BANK, LIMITED, NEW YORK BRANCH , a Japanese banking
+      corporation (in its individual capacity, " SuMi TRUST "), as
+      administrative agent'
+
+      The conformed preamble. The branch is part of the name as written, and
+      the defined short name SuMi TRUST is not the legal name. The cover also
+      makes it Arranger and a Lender; NatWest Markets Plc is the other Lender.
+
+  - id: ova_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'the substantive laws of the State of New York applicable to agreements
+      made and to be performed entirely within such State'
+
+      Section 13.10 pairs New York law with 'the applicable federal laws of
+      the United States of America' and leaves lien perfection to other
+      jurisdictions where they govern, but the chosen state law is New York.
+      Section 4.8 of the amendment also chooses New York.
+
+  - id: ova_maximum_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$200,000,000"
+    note: >
+      '" Maximum Commitment " means (a) an amount equal to $ 200,000,000, on any
+      date of determination on and after the First Amendment Effective Date and
+      until (and excluding) the Scheduled Reduction Date and (b) thereafter, an
+      amount equal to $ 100,000,000'
+
+      with '" Scheduled Reduction Date " means March 31, 2025.' The amendment
+      calls itself the increase: 'this Amendment constitutes a Facility
+      Increase for the purposes of Section 2.18 of the Credit Agreement'. So
+      the commitment in effect under the agreement as amended, from the First
+      Amendment Effective Date of December 9, 2024, is $200,000,000, and it
+      steps back down to $100,000,000 on March 31, 2025. Two other amounts
+      are near misses: the Available Commitment is the lesser of this and the
+      Borrowing Base, and Section 2.18 lets the Maximum Commitment grow 'to an
+      amount not exceeding $500,000,000', which is the accordion ceiling.
+
+  - id: ova_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2026-07-10
+    note: >
+      '" Stated Maturity Date " means July 10, 2026, subject to the Borrowers'
+      followed by extension under Section 2.19, which is limb (a) of '" Maturity
+      Date " means the earliest of: (a) the Stated Maturity Date'. The other
+      limbs are acceleration, insolvency, termination and two dates defined
+      only in the fund Governing Agreements, 'the date that is thirty (30)
+      days prior to the end of the Commitment Period' and the Commitment
+      Reduction Date, neither stated here. The extension option is
+      conditional, 'for two (2) additional terms, in each case, not longer
+      than three hundred sixty-four (364) days', so the unconditional date
+      is July 10, 2026. The Availability Period ends ten days earlier.
+
+  - id: ova_term_sofr_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.65%"
+    note: >
+      '" Applicable Margin " means (a) with respect to Term SOFR Loans, two
+      hundred and sixty-five basis points (2.65%) per annum'
+
+      Flat, no grid: Alternate Base Rate Loans carry 1.65%. The rate is
+      written in words and numerals, and the words are the ones a basis
+      point reader has to convert.
+
+  - id: ova_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if the Term SOFR Rate shall be less than zero (0), such rate shall be
+      deemed to be zero (0) for all purposes of this Credit Agreement'
+
+      A zero floor stated as a deeming rule, repeated in the Term SOFR
+      definition ('is ever less than zero (0), then Term SOFR will be deemed
+      to be zero (0)'). There is no defined term Floor in this agreement.
+
+  - id: ova_unused_fee_top_rate
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.50%"
+    note: >
+      '(ii) fifty basis points (0.50%) per annum on the average daily amount of
+      the unused Commitment is greater than fifty percent (50%) of the
+      Available Commitment'
+
+      Section 2.11 steps by time and by usage: 'from the Closing Date to the
+      first anniversary of the Closing Date, twenty-five basis points (0.25%)
+      per annum', and after the first anniversary 0.25% when the unused
+      amount is at most half the Available Commitment and 0.50% when it is
+      more. The highest rate is 0.50%.
+
+  - id: ova_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'No Loan Party shall incur any Indebtedness in violation of the leverage
+      restrictions set forth in the Governing Agreements, including, for the
+      avoidance of doubt, the BDC Asset Coverage Ratio.'
+
+      Section 10.11 is the only leverage language, and it is not a leverage
+      covenant because it sets no level of its own: it imports the fund
+      documents and the Investment Company Act asset coverage test, '" BDC
+      Asset Coverage Ratio " means the "asset coverage" ratio for the
+      Borrower', which is assets over debt. The credit test of this
+      subscription line is the Borrowing Base, advance rates against the
+      Unfunded Commitments of investors (for example 'sixty-five percent (65%)
+      of the aggregate Unfunded Commitments of the Designated Investors'),
+      and the Events of Default contain no debt to earnings or coverage
+      ratio.

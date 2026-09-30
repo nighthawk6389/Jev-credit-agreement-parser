@@ -1,0 +1,158 @@
+# Tier 2 assertions: SLIC Financing SPV LLC / JPMorgan Chase Bank, National
+# Association, Amendment No. 6 to Amended and Restated Loan and Security
+# Agreement (with the conformed agreement attached), filed 2024-11-12 by North
+# Haven Private Income Fund LLC as Exhibit 10.7.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A six-page amendment dated July 15, 2024,
+# followed by Exhibit A, the A&R Loan and Security Agreement dated June 3, 2021
+# "incorporating Amendment Nos. 1-6"; the labels read the conformed copy. It is
+# an SPV asset-based financing facility, not a corporate revolver: the borrower
+# is a special-purpose subsidiary defined as the "Company" (never "Borrower"),
+# North Haven is only Parent and Servicer, and JPMorgan is sole lender and
+# administrative agent. The economics live in Schedule 1 (the Transaction
+# Schedule); Annex A, which defines the Commitment Fee, Upfront Fee and
+# Minimum Funding Amount, is "[Redacted]" in the filing. The amendment's own
+# recital dates the A&R agreement November 24, 2021; the conformed copy says
+# June 3, 2021.
+
+document: bdc_north_haven_2024
+corpus_name: BDC_north-haven-private-income-fund-llc_2024-11-12_0001851322-24-000148_a107jpmamendment
+source: real
+tier: 2
+
+assertions:
+
+  - id: nh_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "SLIC FINANCING SPV LLC"
+    note: >
+      'among SLIC FINANCING SPV LLC, as borrower (the " Company ")'
+
+      The conformed preamble names the SPV as borrower but defines it as the
+      Company, so the defined term Borrower never exists. The filer, North
+      Haven Private Income Fund LLC, is the Parent and Servicer and is not the
+      borrower.
+
+  - id: nh_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION"
+    note: >
+      'JPMORGAN CHASE BANK, NATIONAL ASSOCIATION, as administrative agent for
+      the Lenders hereunder (in such capacity, the " Administrative Agent ")'
+
+      JPMorgan is also the only Lender on the Transaction Schedule. U.S. Bank
+      Trust Company, National Association is Collateral Agent and Collateral
+      Administrator, which is the near miss for this field.
+
+  - id: nh_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement will be governed by and construed in accordance with the
+      law of the State of New York.'
+
+      Section 10.07(a) of the conformed agreement; the amendment itself
+      (Section 6.01) also chooses New York law.
+
+  - id: nh_financing_commitment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,200,000,000"
+    note: >
+      'On and after the Sixth Amendment Effective Date and prior to a Financing
+      Commitment Increase Date: U.S. $ 1,200,000,000'
+
+      Item 1 of the Transaction Schedule (the Financing Limit); item 2 gives
+      JPMorgan, the sole Lender, a Financing Commitment of the same
+      U.S. $1,200,000,000. The line is revolving during the Reinvestment
+      Period, advances being made 'in an aggregate amount outstanding not
+      exceeding the amount of such Lender' followed by Financing Commitment.
+      Anything above $1.2bn requires an Administrative Agent approval under
+      Section 2.06, so it is not a committed amount.
+
+  - id: nh_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-07-13
+    note: >
+      '" Maturity Date " means the date that is the earliest of (1) the
+      Scheduled Termination Date set forth on the Transaction Schedule'
+
+      and item 3 of the Transaction Schedule: 'With respect to the Financing
+      Commitment, July 13 , 2029'. The other limbs of Maturity Date are
+      acceleration, repayment and termination, and post-Market Value Event
+      liquidation, none dated. Two hops: Maturity Date to Scheduled
+      Termination Date to the schedule. The near misses are the Reinvestment
+      Period end, 'ending on, but excluding, the earliest of (i) July 15 ,
+      2027' and the Non-Call Period end of July 15, 2026.
+
+  - id: nh_term_sofr_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.25%"
+    note: >
+      'Applicable Margin for Advances denominated | With respect to interest
+      based on the Term SOFR'
+
+      continuing after a page break 'Rate, 2.25% per annum , subject to
+      increase in accordance with Section 3.01(b))'. A single flat margin with
+      no grid. The increase in Section 3.01(b) is only the default rate, the
+      Adjusted Applicable Margin, 'the stated Applicable Margin for Advances
+      set forth on the Transaction Schedule with respect to the applicable
+      currency plus 2% per annum'. CAD, EUR and AUD advances are also 2.25%;
+      GBP advances over Daily Simple RFR carry 2.3693%, which is a different
+      benchmark and not the Term SOFR margin.
+
+  - id: nh_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if the Term SOFR Rate would otherwise be less than zero,
+      the Term SOFR Rate shall be deemed zero for purposes of this Agreement'
+
+      A zero floor stated as a deeming rule. The Floor definition confirms it:
+      'the initial Floor for each Term SOFR Rate, EURIBOR Rate, Daily Simple
+      RFR and Term CORRA shall be zero'.
+
+  - id: nh_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      '" Borrowing Base Test " means a test that will be satisfied on any date
+      of determination if Net Advances are less than or equal to the Asset
+      Borrowing Base'
+
+      where the Asset Borrowing Base is 'the product of (i) the Asset Advance
+      Rate and (ii) the Net Asset Value as of such date' (60%, or 62% when the
+      Single Name Diversification Test is met). This is not a leverage
+      covenant because it caps advances against the market value of the loan
+      portfolio, not against earnings; a breach is a Borrowing Base Default
+      under Article VII (m), alongside a Market Value Event. The only other
+      ratio language is a representation that the Parent complies 'with
+      applicable asset coverage and other leverage limits as may be applicable
+      to the Parent under the Investment Company Act of 1940', a statutory
+      asset coverage floor, and a Net Leverage Ratio defined for portfolio
+      obligors in the eligibility criteria. No debt to EBITDA, interest
+      coverage or fixed charge coverage test binds the Company.

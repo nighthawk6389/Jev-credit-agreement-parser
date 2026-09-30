@@ -1,0 +1,168 @@
+# Tier 2 assertions: New Mountain Finance Corporation / Sumitomo Mitsui Banking
+# Corporation, Second Amended and Restated Senior Secured Revolving Credit
+# Agreement dated as of September 30, 2024, filed 2024-10-30 by New Mountain
+# Finance Corp as Exhibit 10.2.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. A complete amended and restated corporate BDC
+# revolver (Dollar and Multicurrency tranches) with a split maturity:
+# Extending Lenders ($527,100,000) lend to September 29, 2028 and are repaid
+# September 28, 2029 at 1.90% over Term SOFR; Non-Extending Lenders
+# ($111,400,000) stop lending June 4, 2025 and are repaid June 4, 2026 at
+# 2.10%. SMBC succeeded Goldman Sachs Bank USA as agent. The filing is a
+# page-image document whose text layer runs definitions together without
+# paragraph breaks. The Restatement Effective Date is event-defined, so
+# closing_date is not asserted. The margin is not asserted either: the
+# Applicable Margin is a table keyed to lender class (Extending 1.90%,
+# Non-Extending 2.10% over Term SOFR), not a grid, and the guide gives a
+# per-tranche term that differs no deal-level value; 2.10% is the highest
+# rate but prices only the smaller class, which runs off by June 2026.
+
+document: bdc_new_mountain_2024
+corpus_name: BDC_new-mountain-finance-corp_2024-10-30_0001496099-24-000040_smbc-newmountainxamended
+source: real
+tier: 2
+
+assertions:
+
+  - id: nmfc_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "NEW MOUNTAIN FINANCE CORPORATION"
+    note: >
+      'is entered into by and among NEW MOUNTAIN FINANCE CORPORATION, a
+      Delaware corporation (the "Borrower")'
+
+      The preamble. The External Manager, New Mountain Finance Advisers BDC,
+      L.L.C., is the near miss.
+
+  - id: nmfc_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "SUMITOMO MITSUI BANKING CORPORATION"
+    note: >
+      'and SUMITOMO MITSUI BANKING CORPORATION, as Administrative Agent'
+
+      The definition records the handover: '"Administrative Agent" means
+      Sumitomo Mitsui Banking Corporation, as successor to Goldman Sachs Bank
+      USA in its capacity as administrative agent for the Lenders hereunder'.
+      Goldman Sachs Bank USA is the previous agent and still a lender in the
+      commitment schedule, so it is the wrong answer that the text supplies.
+
+  - id: nmfc_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be construed in accordance with and governed by the law of the
+      State of New York'
+
+      Section 9.09(a), covering this Agreement and, unless they say otherwise,
+      the other Loan Documents.
+
+  - id: nmfc_commitments_at_restatement
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$503,500,000"
+    note: >
+      'The aggregate amount of the Lenders' Multicurrency Commitments as of the
+      Restatement Effective Date is $503,500,000'
+
+      Two revolving tranches, so per the labelling guide this is the larger
+      one, not the sum. The other: 'The aggregate amount of the Lenders'
+      Dollar Commitments as of the Restatement Effective Date is
+      $135,000,000'. The sum is stated too, in the recital and on the cover
+      ('extend credit to the Borrower in an initial face amount not exceeding
+      $638,500,000 at any one time outstanding'), so the guide's reason for
+      not summing does not hold here; the rule is applied anyway, because it
+      names exactly this case ("a USD and a multicurrency tranche") and exists
+      so that two labellers agree. $638,500,000 is the near miss.
+
+      Schedule 1.01(b) cuts the same commitments the other way, by maturity
+      class: 'Total - Extending Lenders $75,000,000.00 $452,100,000.00
+      $527,100,000.00' and 'Total - Non-Extending Lenders $60,000,000.00
+      $51,400,000.00 $111,400,000.00'. Not the accordion: 'the total
+      Commitments of all of the Lenders hereunder shall not exceed
+      $790,000,000'.
+  - id: nmfc_maturity_is_the_extended_final_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-09-28
+    note: >
+      '"Extended Final Maturity Date" means, with respect to each Extending
+      Lender, September 28, 2029'
+
+      Final Maturity Date is defined per lender class: the Extended Final
+      Maturity Date for Extending Lenders and, for Non-Extending Lenders,
+      '"Non-Extended Final Maturity Date" means, with respect to each
+      Non-Extending Lender, June 4, 2026'. The facility runs to the extended
+      date, which is also the date the Termination Date keys to: '"Termination
+      Date" means the earliest to occur of (i) the Extended Final Maturity
+      Date'. The Extending Lenders hold $527,100,000 of the $638,500,000, so
+      the largest-tranche rule gives the same answer. Not the end of the
+      availability period: '"Extended Commitment Termination Date" means, with
+      respect to each Extending Lender, September 29, 2028'.
+
+  - id: nmfc_floor_is_zero_on_the_adjusted_rate
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0%"
+    note: >
+      '"Floor" means zero percent (0%)'
+
+      Applied to the adjusted benchmark: '"Adjusted Term SOFR" means, for
+      purposes of any calculation, the rate per annum equal to (a) Term SOFR
+      for such calculation plus (b) the Term SOFR Adjustment; provided that if
+      Adjusted Term SOFR as so determined shall ever be less than the Floor,
+      then Adjusted Term SOFR shall be deemed to be the Floor'. The Term SOFR
+      Adjustment is 0.10%, so the zero floor sits on Term SOFR plus 0.10%,
+      not on Term SOFR alone and not on the all-in rate.
+
+  - id: nmfc_commitment_fee_is_flat
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.375%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to
+      0.375% on the average daily unused amount of the Dollar Commitment and
+      Multicurrency Commitment'
+
+      Flat, with no utilization step, accruing to the Commitment Termination
+      Date of each lender, so Non-Extending Lenders stop earning it in June
+      2025. The 0.25% letter of credit fronting fee in the same section
+      is the near miss.
+
+  - id: nmfc_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Asset Coverage Ratio (i) immediately
+      after any Borrowing hereunder, or (ii) on the last day of any fiscal
+      quarter of the Borrower, to be less than 1.50 to 1' and 'The Borrower
+      will not permit the Borrower Asset Coverage Ratio on the last day of any
+      fiscal quarter of the Borrower, to be less than 2.00 to 1'
+
+      Section 6.07(b) and (c), beside a minimum shareholders equity of
+      $893,176,923.60 plus 25% of later equity proceeds in 6.07(a). None of
+      the three is a leverage cap, because both coverage ratios put assets
+      over debt -- the second is Total Assets over Total Secured Debt -- and
+      the third is a floor on equity; nothing divides debt by earnings or
+      tests interest or fixed-charge coverage. The agreement also defines a
+      Debt to Equity Ratio and a Secured Debt Ratio but never uses either.

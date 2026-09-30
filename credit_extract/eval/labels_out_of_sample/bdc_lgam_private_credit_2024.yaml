@@ -1,0 +1,157 @@
+# Tier 2 assertions: LGAM Financing SPV LLC / Citibank, N.A., Credit and
+# Security Agreement dated as of December 4, 2023, conformed through Amendment
+# No. 2 dated December 6, 2024, filed 2024-12-12 by LGAM Private Credit LLC as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. An SPV financing facility, not a corporate
+# revolver: the borrower is a bankruptcy-remote subsidiary, the filer is its
+# equityholder and collateral manager, and the lenders rely on a borrowing
+# base, concentration limits and collateral quality tests rather than on
+# financial ratios. The filing is a conformed copy with the Amendment No. 2
+# blackline flattened into it -- the raw title runs struck and inserted text
+# together ("Amendment No. 1 2 dated July 2 December 6") -- while the
+# normalized text keeps only the inserted side ("Amendment No. 2 dated
+# December 6, 2024"). Every value below is the amended (inserted) value. The
+# margin and the undrawn fee live in fee letters that were not filed, and the
+# Term SOFR floor is defined circularly, so none of the three is asserted.
+
+document: bdc_lgam_private_credit_2024
+corpus_name: BDC_lgam-private-credit-llc_2024-12-12_0001983514-24-000106_lgam-creditandsecurityagre
+source: real
+tier: 2
+
+assertions:
+
+  - id: lgam_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "LGAM FINANCING SPV LLC"
+    note: >
+      'LGAM FINANCING SPV LLC, a Delaware limited liability company, as
+      borrower (the " Borrower ")'
+
+      The preamble makes the SPV the Borrower. The filer is a party only as
+      'LGAM PRIVATE CREDIT LLC, a Delaware limited liability company, in its
+      capacity as equityholder' (and as collateral manager), so the company
+      name on the filing is the wrong answer for this field.
+
+  - id: lgam_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "CITIBANK, N.A."
+    note: >
+      'CITIBANK, N.A. (" Citibank "), as administrative agent for the Secured
+      Parties'
+
+      Citibank is the Administrative Agent and also signs as a Lender. U.S.
+      Bank Trust Company, National Association is Collateral Agent and
+      Collateral Administrator, and U.S. Bank National Association is Document
+      Custodian; neither is the agent this field asks for.
+
+  - id: lgam_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY AND CONSTRUED IN ACCORDANCE WITH THE LAW OF THE
+      STATE OF NEW YORK'
+
+      Section 12.07, covering this Agreement and, unless they say otherwise,
+      the other Facility Documents.
+
+  - id: lgam_facility_amount
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$250,000,000"
+    note: >
+      '" Facility Amount " means during the Reinvestment Period, $ 250,000,000'
+      as reduced under Section 2.06 or increased under Section 2.22.
+
+      The aggregate size of the facility as amended by Amendment No. 2 and the
+      only stated total: the per-lender Commitments sit on a Schedule 1 that
+      is not in the filing. Not the accordion, under which the Borrower may
+      ask to 'increase the Commitment of the existing Lender Groups (pro rata)
+      by an amount not to exceed $750,000,000'. After the Commitment
+      Termination Date the Facility Amount collapses to the Advances
+      Outstanding. The figure is written with a space after the dollar sign.
+
+  - id: lgam_final_maturity_resolves_through_four_definitions
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-12-07
+    note: >
+      No maturity date is written anywhere in the text; it exists only by
+      resolving four defined terms, and the one dated link is the amendment.
+      Final Maturity Date is the earliest of (i) a voluntary termination,
+      (ii) 'the day that is two (2) years after the Commitment Termination
+      Date' and (iii) an acceleration notice. Then
+      '" Commitment Termination Date " means the Business Day immediately
+      following the last day of the Reinvestment Period'. The Reinvestment
+      Period runs to the earliest of three limbs, the only dated one being
+      'the date that is three (3) years after the Second Amendment Effective
+      Date (unless extended with the consent of the Administrative Agent, the
+      Borrower and each Lender)', and finally
+      '"Second Amendment Effective Date" means December 6, 2024'.
+
+      Arithmetic: the Reinvestment Period ends Monday 6 December 2027; the
+      Commitment Termination Date is the next Business Day, Tuesday 7
+      December 2027; two years later is Friday 7 December 2029, a Business
+      Day, so the next-Business-Day proviso does not move it. Limbs (i) and
+      (iii), and the other two Reinvestment Period limbs (the Final Maturity
+      Date events and the equityholder falling below $42,500,000 of Tangible
+      Net Worth), are events with no date. The extension needs every Lender,
+      so it is conditional and the unconditional date stands.
+
+      Near misses: 2027-12-06 is the end of the reinvestment period, not the
+      maturity; 2029-12-06 is what a reader gets by adding two years to the
+      reinvestment end and skipping the Business Day hop. The anchor is the
+      Second Amendment Effective Date (the inserted text), not the Closing
+      Date.
+
+  - id: lgam_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'a Borrowing Base Deficiency shall occur and be continuing for two (2)
+      Business Days' is the Event of Default the lenders rely on, together
+      with a Minimum Equity Amount deducted inside the Borrowing Base and a
+      reinvestment stop on 'any date on which the Equityholder has a Tangible
+      Net Worth of less than $42,500,000'. None of these is a leverage or
+      coverage covenant, because each measures collateral value or the net
+      worth of the parent against the advances rather than debt against
+      earnings, and the Borrower is an SPV holding loans with no EBITDA of its
+      own to test.
+
+      The ratios in the text belong to the obligors of the Collateral Assets:
+      'the Cash Interest Coverage Ratio of the related Obligor for any
+      Relevant Test Period' is one limb of an Asset Value Adjustment Event, a
+      test that can revalue a loan, not a covenant on the Borrower.
+
+  - id: lgam_closing_date_is_stated
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-12-04
+    note: >
+      '" Closing Date " means December 4, 2023.'
+
+      A bare date, matching the cover (dated as of December 4, 2023). The
+      conformed copy carries two later dates -- the Second Amendment
+      Effective Date, December 6, 2024, and the filing date, December 12,
+      2024 -- and neither is the Closing Date; the amendment date anchors the
+      Reinvestment Period, not the closing.

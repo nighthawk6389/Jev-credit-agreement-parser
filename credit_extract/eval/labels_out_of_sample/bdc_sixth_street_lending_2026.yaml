@@ -1,0 +1,169 @@
+# Tier 2 assertions: Sixth Street Lending Partners / Truist Bank, Fifth Amendment
+# to Senior Secured Revolving Credit Agreement with the conformed agreement,
+# filed 2026-05-06 by Sixth Street Lending Partners as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the split was frozen and labelled
+# before the pipeline ran on it. The Fifth Amendment (May 1, 2026) is five pages;
+# Exhibit A is the Senior Secured Revolving Credit Agreement of January 19, 2023
+# conformed through all five amendments, and every assertion below reads that
+# conformed text. A corporate BDC revolver (the borrower is a Delaware statutory
+# trust) with a borrowing base, two revolving classes (Dollar and Multicurrency)
+# and two funded term loans. The amended schedules (Exhibit B) are not in the text.
+
+document: bdc_sixth_street_lending_2026
+corpus_name: BDC_sixth-street-lending-partners_2026-05-06_0001193125-26-208894_ck0001925309-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: sslp_borrower_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "SIXTH STREET LENDING PARTNERS"
+    note: >
+      'among SIXTH STREET LENDING PARTNERS, a Delaware statutory trust (the " Borrower "),
+      the LENDERS and ISSUING BANKS party hereto, and TRUIST BANK, as Administrative Agent'
+
+      The conformed agreement's preamble. The name has no "LLC" or "Inc." because
+      the borrower is a statutory trust; the amendment's own preamble defines the
+      Borrower identically.
+
+  - id: sslp_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "TRUIST BANK"
+    note: >
+      'the LENDERS and ISSUING BANKS party hereto, and TRUIST BANK, as Administrative Agent'
+
+      Conformed preamble. JPMorgan Chase Bank, N.A. appears on the cover as Joint
+      Lead Arranger and Syndication Agent, which is not the agent role.
+
+  - id: sslp_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'Governing Law . This Agreement shall be construed in accordance with and
+      governed by the law of the State of New York'
+
+      Section 9 of the conformed agreement; the amendment itself says the same in
+      its Section 5.6.
+
+  - id: sslp_revolver_commitment_largest_class
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$2,195,000,000"
+    note: >
+      'Multicurrency Commitments as of the Fifth Amendment Effective Date is $2,195,000,000'
+
+      Two revolving classes, so per the labelling guide this is the larger one, not
+      a sum. The other class: 'Dollar Commitments as of the Fifth Amendment
+      Effective Date is $280,000,000'. Neither the revolving total ($2,475,000,000)
+      nor any other sum is stated. The cover's $2,675,000,000 is the whole facility:
+      the two revolving classes plus 'The aggregate outstanding principal amount of
+      the Initial Term Loans as of the Fifth Amendment Effective Date is
+      $100,000,000' and a further $100,000,000 of Incremental Term Loans. Term
+      Loans are not revolving commitments.
+
+  - id: sslp_final_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-05-01
+    note: >
+      '"Fifth Amendment Effective Date" means May 1, 2026. " Final Maturity Date " means May 1 , 2031'
+
+      Loans are repaid 'the outstanding principal amount of the Syndicated Loans of
+      such Class on the Final Maturity Date'. The near miss is '" Commitment
+      Termination Date " means May 1 , 2030', which ends the Availability Period
+      and starts a one-year amortization period; it is not the maturity.
+
+  - id: sslp_top_term_benchmark_margin
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.775%"
+    note: >
+      'is less than 1.60 times the Combined Debt Amount (i) with respect to any ABR
+      Loan, 0.775% per annum; (ii) with respect to any Term Benchmark Loan, 1.775%
+      per annum'
+
+      A three-tier grid keyed to Borrowing Base coverage of the Combined Debt
+      Amount: 1.525% at 2.00x or more, 1.65% from 1.60x to 2.00x, 1.775% below
+      1.60x. The highest tier is 1.775%. Term SOFR loans are Term Benchmark Loans.
+      The definition does not vary by Class.
+
+  - id: sslp_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means a rate of interest equal to zero percent (0.00%)'
+
+      That defined Floor is applied only to a Benchmark Replacement. Term SOFR
+      itself is floored in the "Term Benchmark Rate" definition, whose limb (a) is
+      Term SOFR for Dollar borrowings and which ends 'provided, in each case, if
+      such rate for any Currency is less than zero, such rate shall be deemed to be
+      zero for purposes of this Agreement'. Daily Simple SOFR is the greater of
+      SOFR and 0.00%. Zero everywhere.
+
+  - id: sslp_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.325%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to 0.325% on
+      the average daily unused amount of the Dollar Commitment and Multicurrency
+      Commitment'
+
+      A flat rate on both revolving classes, with no utilization step.
+
+  - id: sslp_has_no_leverage_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit the Consolidated Asset Coverage Ratio at the
+      last day of any fiscal quarter of the Borrower to be less than 1.50 to 1 at
+      any time'
+
+      Section 6.07 has three tests: a minimum Shareholders' Equity of
+      $2,710,817,200 plus 25% of later equity proceeds, a Borrower Asset Coverage
+      Ratio floor of 2.00 to 1, and this Consolidated Asset Coverage Ratio floor
+      of 1.50 to 1. None goes in this field, because an asset coverage ratio is
+      assets over debt (the 1940 Act test, as a floor) and equity is a net-worth
+      floor; neither caps debt against earnings. "EBITDA", "Interest Coverage" and
+      "Fixed Charge" do not occur in the document.
+
+  - id: sslp_effective_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-01-19
+    note: >
+      '" Effective Date " means the date on which the conditions specified in
+      Section 4.01 are satisfied (or waived in accordance with Section 9.02 ),
+      which date is January 19, 2023'
+
+      Event-defined but pinned to an explicit date, and it is the original
+      agreement's effectiveness. The amendment dates (May 1, 2026 for the Fifth
+      Amendment Effective Date) are the versioning trap. "Closing Date" does not
+      occur.

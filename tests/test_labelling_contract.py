@@ -348,7 +348,7 @@ def test_every_label_names_a_document_the_split_knows():
     from credit_extract.eval.split import load_split
 
     split = load_split()
-    known = set(split.assignment) | set(split.contaminated)
+    known = set(split.assignment) | set(split.contaminated) | set(split.out_of_sample)
     assert known, "the frozen split should list the harvested documents"
 
     unknown: list[tuple[str, str]] = []
