@@ -14,18 +14,19 @@ the live model answers is a measurement, and it lives in the docs.
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from typing import Any, Callable
 
 import pytest
 
 from credit_extract.ingest.segment import Chunk
-from credit_extract.models.core import ExtractedField, Span
+from credit_extract.models.core import ConflictRecord, ExtractedField, Span
 from credit_extract.models.fpml_model import FIELD_REGISTRY
 from credit_extract.validate import validators as V
 from credit_extract.validate.calibrate import Thresholds
 from credit_extract.validate.jev import (
-    Decision, JevResult, JevSession, Noul, OfflineJev,
+    ChoiceQ, Decision, JevResult, JevSession, Noul, OfflineJev,
 )
 
 MARGIN = "applicable_margin.eurodollar_top_level_pct"
@@ -320,3 +321,161 @@ def test_the_stand_in_reads_the_statement_as_an_absence_claim():
 
     assert V.validator_e_external_dependency(ctx) == []
     assert field.status == "confirmed"
+
+
+# ---------------------------------------------------------------------------
+# conflict_choice: which candidate *is* the field, with none on offer
+# ---------------------------------------------------------------------------
+
+
+def _candidate(value: Any, support: int, start: int) -> dict[str, Any]:
+    text = str(value)
+    return {
+        "value": text, "support": support, "segmentations": ["structural"],
+        "confidence": 0.9,
+        "span": Span(start=start, end=start + len(text), text=text).model_dump(),
+    }
+
+
+def _conflict(
+    name: str, current: Any, candidates: list[dict[str, Any]],
+    choice: dict[str, float], field_class: str,
+) -> tuple[ExtractedField, ConflictRecord, ScriptedJev, V.ValidationContext]:
+    field = ExtractedField.single(
+        value=current, status="conflicted", field_class=field_class,
+        spans=[Span(**candidates[0]["span"])],
+        pass_support=candidates[0]["support"],
+    )
+    record = ConflictRecord(field=name, candidates=candidates)
+    scorer = ScriptedJev(choices={"pick": choice})
+    ctx = _context(scorer, {name: field})
+    ctx.conflicts = [record]
+    return field, record, scorer, ctx
+
+
+NAMES = [
+    _candidate("Loan Documents", 3, 400),
+    _candidate("JPMorgan Chase Bank, N.A.", 2, 100),
+]
+
+
+def test_the_question_asks_which_value_is_the_field_and_offers_none():
+    """Every candidate was extracted from its own citation, so every candidate
+    is supported by it. "Which does its cited text support?" therefore could
+    not tell them apart. And without a way out, the question had to pick
+    one."""
+    _, _, scorer, ctx = _conflict(
+        AGENT, "Loan Documents", NAMES,
+        {"JPMorgan Chase Bank, N.A.": 0.95, "Loan Documents": 0.03,
+         V.NONE_OF_THESE: 0.02},
+        "parties",
+    )
+    V.resolve_conflicts(ctx)
+
+    (question,) = scorer.questions
+    description = FIELD_REGISTRY[AGENT].description
+    assert isinstance(question, ChoiceQ)
+    assert question.question == (
+        f"Which of these values is {description}, according to the text?"
+    )
+    assert question.criteria["Loan Documents"] == (
+        f"the text states that {description} is Loan Documents"
+    )
+    assert V.NONE_OF_THESE in question.criteria
+
+
+def test_the_chosen_candidate_becomes_the_value():
+    """The field used to be confirmed without taking the chosen value. It was
+    confirmed holding the very value the model had just rejected, and five
+    administrative agents reached a report as "Loan Documents" and
+    "Restricted Subsidiary" that way."""
+    field, record, _, ctx = _conflict(
+        AGENT, "Loan Documents", NAMES,
+        {"JPMorgan Chase Bank, N.A.": 0.95, "Loan Documents": 0.03,
+         V.NONE_OF_THESE: 0.02},
+        "parties",
+    )
+    V.resolve_conflicts(ctx)
+
+    assert field.status == "confirmed"
+    assert field.value == "JPMorgan Chase Bank, N.A."
+    assert field.spans == [Span(**NAMES[1]["span"])]
+    assert field.pass_support == 2
+    assert record.resolved and record.resolved_to == "JPMorgan Chase Bank, N.A."
+
+
+def test_choosing_the_value_already_held_confirms_it_unchanged():
+    field, _, _, ctx = _conflict(
+        AGENT, "JPMorgan Chase Bank, N.A.", list(reversed(NAMES)),
+        {"JPMorgan Chase Bank, N.A.": 0.95, "Loan Documents": 0.03,
+         V.NONE_OF_THESE: 0.02},
+        "parties",
+    )
+    V.resolve_conflicts(ctx)
+
+    assert field.status == "confirmed"
+    assert field.value == "JPMorgan Chase Bank, N.A."
+    assert field.spans == [Span(**NAMES[1]["span"])]
+
+
+def test_a_chosen_date_comes_back_as_a_date():
+    candidates = [_candidate(date(2024, 3, 15), 3, 100), _candidate(date(2024, 4, 1), 2, 900)]
+    field, _, _, ctx = _conflict(
+        "closing_date", date(2024, 3, 15), candidates,
+        {"2024-04-01": 0.9, "2024-03-15": 0.05, V.NONE_OF_THESE: 0.05},
+        "dates",
+    )
+    V.resolve_conflicts(ctx)
+
+    assert field.status == "confirmed"
+    assert field.value == date(2024, 4, 1)
+
+
+def test_none_of_these_leaves_the_conflict_open():
+    """A closing date that is an event rather than a date used to be given
+    whichever candidate read most like a date."""
+    candidates = [_candidate(date(2024, 3, 15), 3, 100), _candidate(date(2024, 4, 1), 2, 900)]
+    field, record, _, ctx = _conflict(
+        "closing_date", date(2024, 3, 15), candidates,
+        {V.NONE_OF_THESE: 0.9, "2024-03-15": 0.05, "2024-04-01": 0.05},
+        "dates",
+    )
+    unresolved = V.resolve_conflicts(ctx)
+
+    assert unresolved == [record]
+    assert not record.resolved
+    assert field.status == "conflicted"
+    assert field.value == date(2024, 3, 15)
+    assert field.notes.startswith("the candidates do not settle it")
+
+
+def test_a_numeric_candidate_that_cannot_be_restored_goes_to_review():
+    """A candidate carries its value as a string, without the unit. Rather
+    than guess the unit back, the field is sent to review. It is never
+    confirmed holding the value that was rejected."""
+    candidates = [_candidate(Decimal("2.75"), 3, 100), _candidate(Decimal("3.25"), 2, 900)]
+    field, _, _, ctx = _conflict(
+        MARGIN, Decimal("2.75"), candidates,
+        {"3.25": 0.9, "2.75": 0.05, V.NONE_OF_THESE: 0.05},
+        "economic_terms",
+    )
+    V.resolve_conflicts(ctx)
+
+    assert field.status == "needs_review"
+    assert field.value == Decimal("2.75")
+    assert "not applied" in field.notes
+
+
+@pytest.mark.parametrize("kind, text, expected", [
+    ("date", "2024-04-01", date(2024, 4, 1)),
+    ("int", "90", 90),
+    ("bool", "False", False),
+    ("text", "JPMorgan Chase Bank, N.A.", "JPMorgan Chase Bank, N.A."),
+    ("date", "20240401", None),          # parses, but is not what str() wrote
+    ("int", "090", None),
+    ("date", "the Closing Date", None),
+    ("money", "300000000", None),        # the unit is not in the string
+    ("percent", "3.25", None),
+])
+def test_only_values_whose_string_form_inverts_exactly_are_restored(kind, text, expected):
+    assert V._typed_like(kind, text) == expected

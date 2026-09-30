@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field as dc_field
+from datetime import date
 from decimal import Decimal
 from typing import Any, Iterable
 
@@ -38,6 +39,7 @@ from ..models.core import (
     ValidationEvent,
 )
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
+from ..models.quantities import quantity_for
 from .calibrate import Thresholds
 from .omission import (
     BY_DESIGN_STATEMENT, OMITTED_STATEMENT, classify, document_omits_schedules,
@@ -922,35 +924,69 @@ def validator_f_criticality(ctx: ValidationContext) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 
+#: The answer a conflict can always be given: that the candidates do not
+#: settle it. Without it the choice has to pick one, and a closing date that is
+#: an event rather than a date gets whichever candidate reads most like one.
+NONE_OF_THESE = "none of these"
+
+
+def _typed_like(kind: str, text: str) -> Any:
+    """The typed value a candidate's ``str()`` came from, or None.
+
+    Conflict candidates carry their values as strings. Only kinds whose string
+    form inverts exactly come back; a number does not, because its unit is not
+    in the string, and a candidate that cannot be restored is not applied.
+    """
+    try:
+        if kind == "date":
+            value: Any = date.fromisoformat(text)
+        elif kind == "int":
+            value = int(text)
+        elif kind == "bool":
+            value = {"True": True, "False": False}[text]
+        elif kind == "text":
+            value = text
+        else:
+            return None
+    except (KeyError, ValueError):
+        return None
+    return value if str(value) == text else None
+
+
 def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
-    """Put each unresolved conflict to Jev as a choice over the candidates."""
+    """Put each unresolved conflict to Jev as a choice over the candidates.
+
+    The question asks which candidate *is* the field, not which one its own
+    cited text supports -- every candidate was extracted from its citation, so
+    each one is supported by it, and the old question could not tell them
+    apart. And the answer that none of them is right is always on offer.
+    """
     resolved: list[ConflictRecord] = []
     for record in ctx.conflicts:
         field = ctx.fields.get(record.field)
         if field is None or field.status != "conflicted":
             continue
+        spec = ctx.specs.get(record.field)
+        description = spec.description if spec else record.field
         criteria: dict[str, str] = {}
         state_parts: list[str] = []
         for alternative in record.candidates:
             key = str(alternative["value"])
             span = alternative.get("span") or {}
             text = span.get("text", "")
-            criteria[key] = f"the text supports {key}"
+            criteria[key] = f"the text states that {description} is {key}"
             if text:
                 state_parts.append(f"[{key}] {text}")
         if len(criteria) < 2:
             continue
-        spec = ctx.specs.get(record.field)
+        criteria[NONE_OF_THESE] = (
+            f"none of these values is {description}, or the text does not "
+            "settle which one it is"
+        )
+        question = f"Which of these values is {description}, according to the text?"
         result = ctx.session.ask(
             "\n\n".join(state_parts),
-            [ChoiceQ(
-                name="pick",
-                question=(
-                    "Which value does the cited text support for "
-                    f"{spec.description if spec else record.field}?"
-                ),
-                criteria=criteria,
-            )],
+            [ChoiceQ(name="pick", question=question, criteria=criteria)],
             label="conflict_choice",
         )
         decision = result.get("pick")
@@ -960,7 +996,7 @@ def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
         threshold = ctx.threshold_for(record.field, "conflict_choice")
         field.record(ValidationEvent(
             validator="conflict_choice",
-            question="which candidate value the text supports",
+            question=question,
             jev_type="choice",
             result=decision.choice,
             probability=decision.confidence,
@@ -968,26 +1004,51 @@ def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
             passed=decision.confidence >= threshold,
             backend=decision.backend,
         ))
-        if decision.confidence >= threshold:
-            winner = next(
-                (a for a in record.candidates if str(a["value"]) == decision.choice),
-                None,
-            )
-            record.resolved = True
-            record.resolved_to = decision.choice
-            field.status = "needs_review" if winner is None else "confirmed"
-            field.validation_confidence = decision.confidence
-            field.validation_source = "conflict_choice"
+        if decision.confidence < threshold or decision.choice == NONE_OF_THESE:
             field.notes = (
-                f"conflict resolved to {decision.choice} at "
-                f"{decision.confidence:.2f}"
-            )
-        else:
-            field.notes = (
+                "the candidates do not settle it"
+                if decision.choice == NONE_OF_THESE else
                 "passes disagreed and the distribution is flat "
-                f"({decision.distribution}); unresolved"
-            )
+                f"({decision.distribution})"
+            ) + "; unresolved"
             resolved.append(record)
+            continue
+        winner = next(
+            (a for a in record.candidates if str(a["value"]) == decision.choice),
+            None,
+        )
+        record.resolved = True
+        record.resolved_to = decision.choice
+        field.validation_confidence = decision.confidence
+        field.validation_source = "conflict_choice"
+        if winner is None:
+            field.status = "needs_review"
+            field.notes = f"the choice named {decision.choice!r}, no candidate"
+            continue
+        if str(field.value) != decision.choice:
+            # The model chose a candidate other than the one reconciliation
+            # ranked first. Confirming the field without taking the chosen
+            # value confirmed the value the model had just rejected -- five
+            # administrative agents reached a report as "Loan Documents" and
+            # "Restricted Subsidiary" that way.
+            typed = _typed_like(spec.kind, decision.choice) if spec else None
+            if typed is None:
+                field.status = "needs_review"
+                field.notes = (
+                    f"the choice was {decision.choice} over {field.value}; not "
+                    "applied, because the candidate's value cannot be restored "
+                    "from its text"
+                )
+                continue
+            field.value = typed
+            if winner.get("span"):
+                field.spans = [Span(**winner["span"])]
+            field.quantity = quantity_for(typed, spec.kind)
+            field.primary.pass_support = int(winner.get("support") or 0)
+        field.status = "confirmed"
+        field.notes = (
+            f"conflict resolved to {decision.choice} at {decision.confidence:.2f}"
+        )
     return resolved
 
 
