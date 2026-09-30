@@ -17,6 +17,27 @@ contaminated:
 - fixture_meridian_2017
 - health_catalyst_2024
 - wf_third_amendment_2017
+out_of_sample:
+- BDC_ab-private-credit-investors-corp_2026-08-18_0001193125-26-355208_d156916dex101
+- BDC_amg-comvest-senior-lending-fund_2025-10-16_0001193125-25-241497_d47862dex101
+- BDC_barings-bdc-inc_2025-11-17_0001379785-25-000055_exhibit101amendmentno1toam
+- BDC_blackstone-private-credit-fund_2026-08-12_0001803498-26-000048_bcred-06302026xex101
+- BDC_capital-southwest-corp_2026-09-02_0000017313-26-000136_a4arcreditagreementcswc_in
+- BDC_fortress-private-lending-fund_2026-09-22_0001193125-26-398118_ck0002012139-ex10_1
+- BDC_goldman-sachs-private-credit-corp_2026-04-23_0001193125-26-171147_d269763dex101
+- BDC_kennedy-lewis-capital-co_2026-09-29_0001911321-26-000036_ck0001911321-ex10_1
+- BDC_lafayette-square-usa-inc_2024-09-24_0001104659-24-102446_tm2424598d1_ex10-1
+- BDC_lgam-private-credit-llc_2024-12-12_0001983514-24-000106_lgam-creditandsecurityagre
+- BDC_midcap-financial-investment-corp_2025-10-02_0001193125-25-228375_d66561dex101
+- BDC_new-mountain-finance-corp_2024-10-30_0001496099-24-000040_smbc-newmountainxamended
+- BDC_north-haven-private-income-fund-llc_2024-11-12_0001851322-24-000148_a107jpmamendment
+- BDC_oaktree-specialty-lending-corp_2023-06-26_0001193125-23-175197_d507268dex101
+- BDC_overland-advantage_2024-12-12_0000950170-24-135849_ck0001965934-ex10_1
+- BDC_pgim-private-credit-fund_2023-11-01_0001104659-23-113429_tm2326215d1_ex10-1
+- BDC_sixth-street-lending-partners_2026-05-06_0001193125-26-208894_ck0001925309-ex10_1
+- BDC_stellus-private-credit-bdc_2024-08-06_0001104659-24-086159_tm2420896d1_ex10-1
+- BDC_vista-credit-strategic-lending-corp_2024-07-01_0001628280-24-030662_db-vistabdcxlfsa_60508078x5
+- BDC_willow-tree-capital-corp_2026-03-24_0001944831-26-000004_wtcapitalfundsecondamend
 assignment:
   A_accelevation-holdings-corp_2026-09-02_0001628280-26-060083_exhibit101-sx1: fit
   A_accelevation-holdings-corp_2026-09-02_0001628280-26-060083_exhibit102-sx1: fit

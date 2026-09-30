@@ -204,7 +204,7 @@ class CoverageRun:
             sides.setdefault(side, []).append(outcome)
 
         lines = ["", "SPLIT (real assertions only)"]
-        for side in ("holdout", "fit", "contaminated", "unassigned"):
+        for side in ("holdout", "out_of_sample", "fit", "contaminated", "unassigned"):
             group = sides.get(side)
             if not group:
                 continue

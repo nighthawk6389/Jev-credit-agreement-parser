@@ -44,6 +44,29 @@ def test_a_document_cannot_be_quietly_moved_to_the_fit_side(tmp_path):
     assert "the derivation says holdout" in problems[0]
 
 
+def test_an_out_of_sample_document_is_its_own_side():
+    """Twenty BDC agreements harvested after the split was frozen, labelled
+    before the pipeline ran on them. They are not in the harvest the
+    derivation reads, so they are named instead, and they are scored on a row
+    of their own rather than counted as fit or holdout."""
+    split = split_mod.load_split()
+    assert len(split.out_of_sample) == 20
+    for document in split.out_of_sample:
+        assert split.side_of(document) == "out_of_sample"
+        assert document not in split.assignment
+        assert document not in split.contaminated
+
+
+def test_an_out_of_sample_document_cannot_also_be_contaminated(tmp_path):
+    raw = yaml.safe_load(split_mod.SPLIT_FILE.read_text())
+    tampered_raw = dict(raw, contaminated=raw["contaminated"] + raw["out_of_sample"][:1])
+    tampered = tmp_path / "split.yaml"
+    tampered.write_text(yaml.safe_dump(tampered_raw, sort_keys=False))
+
+    problems = split_mod.check(tampered)
+    assert any("out of sample but also on the contaminated list" in p for p in problems)
+
+
 def test_every_stratum_contributes_a_holdout_document():
     """A holdout that skips a deal type cannot measure that deal type."""
     split = split_mod.load_split()

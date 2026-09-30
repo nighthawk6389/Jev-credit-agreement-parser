@@ -23,6 +23,13 @@ Two exceptions are written down rather than hidden:
     be found. They are pinned to ``fit`` whatever the hash says, because a
     holdout containing them would measure nothing.
 
+``out_of_sample``
+    Documents harvested after the split was frozen, as a test set: their
+    labels are written before the pipeline has run on them, and nothing is
+    ever tuned on them. They are not in the harvest the derivation reads, so
+    they are named here instead, and they cannot also be fit or
+    contaminated. The family report scores them on a row of their own.
+
 strata with fewer than two documents
     A stratum cannot contribute a holdout document and still be measurable on
     the fit side. There are none today; the rule is stated so that adding a
@@ -125,6 +132,7 @@ class Split:
     def __init__(self, raw: dict) -> None:
         self.version: int = raw.get("version", 1)
         self.contaminated: set[str] = set(raw.get("contaminated", {}))
+        self.out_of_sample: set[str] = set(raw.get("out_of_sample", {}))
         self.assignment: dict[str, str] = dict(raw.get("assignment", {}))
 
     def side_of(self, document: str) -> str:
@@ -143,6 +151,8 @@ class Split:
         """
         if document in self.assignment:
             return self.assignment[document]
+        if document in self.out_of_sample:
+            return "out_of_sample"
         if document in self.contaminated:
             # Named as already used for tuning but not in the harvest -- the
             # synthetic fixture and the corpus/real filings. Fit by definition.
@@ -177,6 +187,7 @@ def freeze(path: Path = SPLIT_FILE, contaminated: set[str] | None = None) -> dic
         "version": 1,
         "holdout_in": HOLDOUT_IN,
         "contaminated": sorted(pinned),
+        "out_of_sample": sorted(existing.out_of_sample) if existing else [],
         "assignment": assignment,
     }
     path.write_text(
@@ -216,6 +227,13 @@ def check(path: Path = SPLIT_FILE, labelled: list[str] | None = None) -> list[st
         if split.assignment.get(document) == "holdout":
             problems.append(f"{document} is contaminated but sits in the holdout")
 
+    for document in split.out_of_sample:
+        if document in split.assignment or document in split.contaminated:
+            problems.append(
+                f"{document} is out of sample but also on the "
+                f"{'contaminated list' if document in split.contaminated else 'split'}"
+            )
+
     for document in labelled or []:
         if split.side_of(document) == "unassigned":
             problems.append(
@@ -244,7 +262,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.show:
         fit, held = split.documents("fit"), split.documents("holdout")
         print(f"{len(fit)} fit, {len(held)} holdout, "
-              f"{len(split.contaminated)} contaminated\n")
+              f"{len(split.contaminated)} contaminated, "
+              f"{len(split.out_of_sample)} out of sample\n")
         for code, label in STRATA.items():
             members = [d for d in split.assignment if stratum_of(d) == code]
             if not members:
@@ -269,7 +288,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(f"split holds: {len(split.documents('fit'))} fit, "
           f"{len(split.documents('holdout'))} holdout, "
-          f"{len(split.contaminated)} contaminated, {len(labelled)} labelled")
+          f"{len(split.contaminated)} contaminated, "
+          f"{len(split.out_of_sample)} out of sample, {len(labelled)} labelled")
     return 0
 
 
