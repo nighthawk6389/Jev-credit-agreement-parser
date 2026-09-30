@@ -352,7 +352,7 @@ def run_pipeline(
 
     # Archetype first: it decides which fields are even applicable, and asking
     # after extraction would mean validating fields this deal kind cannot have.
-    archetype = detect_archetype(doc, session)
+    archetype = detect_archetype(doc, session, graph=graph)
     profile = archetype.profile
     not_applicable = inapplicable_fields(profile, list(fields), doc.text)
     vetoes = suppression_vetoes(profile, doc.text)

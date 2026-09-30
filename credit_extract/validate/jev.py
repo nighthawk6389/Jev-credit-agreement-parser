@@ -520,6 +520,13 @@ CONCEPT_LEXICONS: dict[str, tuple[str, ...]] = {
         "shall become effective on", "effective as of", "on and after",
         "effective date\" means", "from and after",
     ),
+    # Archetype dispatch's check on an ABL verdict: is the borrowing base the
+    # borrower's own trade assets? A corporate ABL's collateral vocabulary; a
+    # fund facility builds its borrowing base from loans and investments.
+    "own_receivables_abl": (
+        "eligible accounts", "eligible inventory", "accounts receivable",
+        "inventory", "eligible receivables",
+    ),
 }
 
 

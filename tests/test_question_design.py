@@ -16,13 +16,16 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any, Callable
 
 import pytest
 
 from credit_extract.ingest.segment import Chunk
+from credit_extract.models.archetypes import PROFILES, ArchetypeDetection
 from credit_extract.models.core import ConflictRecord, ExtractedField, Span
 from credit_extract.models.fpml_model import FIELD_REGISTRY
+from credit_extract.validate import archetype as A
 from credit_extract.validate import validators as V
 from credit_extract.validate.calibrate import Thresholds
 from credit_extract.validate.jev import (
@@ -479,3 +482,154 @@ def test_a_numeric_candidate_that_cannot_be_restored_goes_to_review():
 ])
 def test_only_values_whose_string_form_inverts_exactly_are_restored(kind, text, expected):
     assert V._typed_like(kind, text) == expected
+
+
+# ---------------------------------------------------------------------------
+# Archetype dispatch: the model is asked only what vocabulary cannot settle
+# ---------------------------------------------------------------------------
+
+AGREEMENT = "Event of Default. Event of Default. " + "x" * 200
+
+
+def _dispatch(
+    monkeypatch, deterministic: ArchetypeDetection, scorer: ScriptedJev,
+    text: str = AGREEMENT, graph: Any = None,
+) -> ArchetypeDetection:
+    monkeypatch.setattr(A, "detect_deterministic", lambda _text: deterministic)
+    return A.detect_archetype(
+        SimpleNamespace(text=text), JevSession(scorer), graph=graph
+    )
+
+
+def _tie(*archetypes: str) -> ArchetypeDetection:
+    return ArchetypeDetection(
+        signals_found={a: ["signal"] for a in archetypes},
+        note="tied", tied=list(archetypes),
+    )
+
+
+def _distribution(pick: str, confidence: float) -> dict[str, float]:
+    options = [a for a in PROFILES if a != "unknown"] + [A.NEITHER]
+    rest = (1.0 - confidence) / (len(options) - 1)
+    return {o: confidence if o == pick else rest for o in options}
+
+
+def test_a_document_that_is_not_an_agreement_is_not_asked_what_it_establishes():
+    """"What kind of credit facility does this document establish?" assumes
+    the document establishes a facility, and every option is one. Asked of a
+    warrant, the live scorer answered venture_debt at 1.00. All 18 archetypes
+    the live gate got wrong were reached this way."""
+    scorer = ScriptedJev()
+    warrant = (
+        "WARRANT TO PURCHASE SHARES OF COMMON STOCK. The Holder may exercise "
+        "this Warrant in connection with the Company's term loan facility."
+    )
+    verdict = A.detect_archetype(SimpleNamespace(text=warrant), JevSession(scorer))
+
+    assert scorer.asked == []
+    assert verdict.archetype == "unknown"
+
+
+def test_a_document_with_too_little_signal_is_not_asked_either(monkeypatch):
+    scorer = ScriptedJev()
+    verdict = _dispatch(monkeypatch, ArchetypeDetection(note="thin"), scorer)
+
+    assert scorer.asked == []
+    assert verdict.archetype == "unknown"
+
+
+def test_a_tie_is_put_to_the_model_with_neither_on_offer(monkeypatch):
+    scorer = ScriptedJev(choices={"archetype": _distribution("nav_or_subscription", 0.99)})
+    verdict = _dispatch(
+        monkeypatch, _tie("abl_revolver", "nav_or_subscription"), scorer
+    )
+
+    (question,) = scorer.questions
+    assert set(question.criteria) == (set(PROFILES) - {"unknown"}) | {A.NEITHER}
+    assert verdict.archetype == "nav_or_subscription"
+    assert verdict.basis == "model"
+    assert verdict.tied == ["abl_revolver", "nav_or_subscription"]
+
+
+def test_neither_is_an_answer_and_it_rules_nothing_out(monkeypatch):
+    scorer = ScriptedJev(choices={"archetype": _distribution(A.NEITHER, 0.72)})
+    verdict = _dispatch(monkeypatch, _tie("abl_revolver", "second_lien"), scorer)
+
+    assert verdict.archetype == "unknown"
+    assert verdict.basis == "model"
+    assert "none of them" in verdict.note
+
+
+def test_a_weak_pick_on_a_tie_rules_nothing_out(monkeypatch):
+    scorer = ScriptedJev(choices={"archetype": _distribution("second_lien", 0.30)})
+    verdict = _dispatch(monkeypatch, _tie("abl_revolver", "second_lien"), scorer)
+
+    assert verdict.archetype == "unknown"
+    assert "below the 0.35 dispatch threshold" in verdict.note
+
+
+def test_a_decisive_verdict_other_than_abl_costs_nothing(monkeypatch):
+    scorer = ScriptedJev()
+    decided = ArchetypeDetection(
+        archetype="second_lien", confidence=0.85, basis="deterministic",
+    )
+    assert _dispatch(monkeypatch, decided, scorer) is decided
+    assert scorer.asked == []
+
+
+ABL = ArchetypeDetection(
+    archetype="abl_revolver", confidence=0.95, basis="deterministic",
+    signals_found={"abl_revolver": ["borrowing base", "eligible accounts"]},
+    note="decisive vocabulary: borrowing base, eligible accounts",
+)
+
+
+def test_an_abl_verdict_is_asked_whose_borrowing_base_it_is(monkeypatch):
+    """"Borrowing base" is also in fund facilities, servicing agreements and
+    investor rights agreements. Counting keywords cannot say whose facility
+    the words describe (#35)."""
+    scorer = ScriptedJev(nouls={"own_receivables": 0.85})
+    verdict = _dispatch(monkeypatch, ABL, scorer)
+
+    (question,) = scorer.questions
+    assert question.statement == A.OWN_RECEIVABLES_STATEMENT
+    assert verdict.archetype == "abl_revolver"
+    assert "own receivables and inventory at 0.85" in verdict.note
+
+
+def test_an_abl_verdict_the_model_does_not_support_is_withdrawn(monkeypatch):
+    """Withdrawing is safe in the direction that matters. ``unknown`` rules
+    nothing out, so a veto can cost coverage but cannot suppress a field."""
+    scorer = ScriptedJev(nouls={"own_receivables": 0.08})
+    verdict = _dispatch(monkeypatch, ABL, scorer)
+
+    assert verdict.archetype == "unknown"
+    assert verdict.basis == "model"
+    assert "not the borrower's own" in verdict.note
+
+
+class _Graph:
+    """A definition graph holding one Borrowing Base definition."""
+
+    def __init__(self, body: str) -> None:
+        self.node = SimpleNamespace(term="Borrowing Base", body=body)
+
+    def resolve(self, term: str) -> str | None:
+        return "Borrowing Base" if term == "Borrowing Base" else None
+
+    def get(self, term: str) -> Any:
+        return self.node
+
+
+def test_the_borrowing_base_definition_rides_along_capped(monkeypatch):
+    """A corporate ABL defines its Eligible Accounts and Eligible Inventory
+    well past the detection window. The definition is appended so that the
+    evidence is in the state."""
+    scorer = ScriptedJev(nouls={"own_receivables": 0.85})
+    body = "the sum of 85% of Eligible Accounts plus " + "y" * A.DEFINITION_CAP
+    _dispatch(monkeypatch, ABL, scorer, graph=_Graph(body))
+
+    ((state, _),) = scorer.asked
+    assert state.startswith(AGREEMENT)
+    assert "DEFINITION OF Borrowing Base\nthe sum of 85% of Eligible Accounts" in state
+    assert state.endswith(body[:A.DEFINITION_CAP])

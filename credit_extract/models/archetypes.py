@@ -515,6 +515,10 @@ class ArchetypeDetection(BaseModel):
     distribution: dict[str, float] = Field(default_factory=dict)
     signals_found: dict[str, list[str]] = Field(default_factory=dict)
     note: str = ""
+    #: The archetypes whose decisive vocabulary tied, when it did. The only
+    #: case the model is asked about: a document that is not an agreement, or
+    #: that says too little to classify, is ``unknown`` and not a question.
+    tied: list[str] = Field(default_factory=list)
 
     @property
     def confident(self) -> bool:
@@ -640,6 +644,7 @@ def detect_deterministic(text: str) -> ArchetypeDetection:
                 f"{ranked[0][0]} and {ranked[1][0]} both fire decisively at "
                 f"{len(best_hits)} signals"
             ),
+            tied=[a for a, hits in ranked if len(hits) == len(best_hits)],
         )
 
     residual = next(
