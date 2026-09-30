@@ -1,16 +1,16 @@
 {
-  "version": "7",
+  "version": "9",
   "backend": "jev-1.13.0",
   "fitted_on": "synthetic gold corpus, 24 documents",
   "n_documents": 24,
   "per_class": {
-    "A_span_support/baskets": 0.9,
-    "A_span_support/covenant_levels": 0.84,
-    "A_span_support/dates": 0.92,
+    "A_span_support/baskets": 0.88,
+    "A_span_support/covenant_levels": 0.85,
+    "A_span_support/dates": 0.88,
     "A_span_support/economic_terms": 0.77,
     "A_span_support/parties": 0.96,
     "C_negative_space/economic_terms": 0.8,
-    "conflict_choice/economic_terms": 0.96
+    "conflict_choice/economic_terms": 0.95
   },
   "default": 0.8,
   "targets": {
@@ -25,23 +25,23 @@
     "A_span_support/baskets": {
       "field_class": "baskets",
       "validator": "A_span_support",
-      "threshold": 0.9,
+      "threshold": 0.88,
       "target_precision": 0.95,
       "precision": 1.0,
-      "recall": 0.9688,
-      "coverage": 0.9688,
-      "precision_lower_bound": 0.8897,
+      "recall": 1.0,
+      "coverage": 1.0,
+      "precision_lower_bound": 0.8928,
       "certified": false,
       "silent_error_rate": 0.0,
       "n": 61,
-      "n_accepted": 31,
+      "n_accepted": 32,
       "n_holdout": 32,
       "n_incorrect": 0
     },
     "A_span_support/covenant_levels": {
       "field_class": "covenant_levels",
       "validator": "A_span_support",
-      "threshold": 0.84,
+      "threshold": 0.85,
       "target_precision": 0.98,
       "precision": 1.0,
       "recall": 1.0,
@@ -57,16 +57,16 @@
     "A_span_support/dates": {
       "field_class": "dates",
       "validator": "A_span_support",
-      "threshold": 0.92,
+      "threshold": 0.88,
       "target_precision": 0.99,
       "precision": 1.0,
-      "recall": 0.9167,
-      "coverage": 0.9167,
-      "precision_lower_bound": 0.8513,
+      "recall": 1.0,
+      "coverage": 1.0,
+      "precision_lower_bound": 0.862,
       "certified": false,
       "silent_error_rate": 0.0,
       "n": 48,
-      "n_accepted": 22,
+      "n_accepted": 24,
       "n_holdout": 24,
       "n_incorrect": 0
     },
@@ -76,13 +76,13 @@
       "threshold": 0.77,
       "target_precision": 0.99,
       "precision": 1.0,
-      "recall": 0.9271,
-      "coverage": 0.8812,
-      "precision_lower_bound": 0.9586,
+      "recall": 0.9375,
+      "coverage": 0.8911,
+      "precision_lower_bound": 0.9591,
       "certified": false,
       "silent_error_rate": 0.0,
       "n": 196,
-      "n_accepted": 89,
+      "n_accepted": 90,
       "n_holdout": 101,
       "n_incorrect": 8
     },
@@ -121,7 +121,7 @@
     "conflict_choice/economic_terms": {
       "field_class": "economic_terms",
       "validator": "conflict_choice",
-      "threshold": 0.96,
+      "threshold": 0.95,
       "target_precision": 0.99,
       "precision": 1.0,
       "recall": 1.0,
@@ -135,5 +135,5 @@
       "n_incorrect": 0
     }
   },
-  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings. Fitted to the rewritten questions of the second live pass. Under this set the full live gate on 2026-09-30, on the 611 assertions every run shares, asserted 364 propositions confidently and 3 were wrong (0.82%), against 53 of 424 under v6 and 0 of 294 for the offline stand-in. Most of its absent_from_document claims fall on fields no label covers and are not measured; see docs/jev_live_pass.md."
+  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings."
 }
