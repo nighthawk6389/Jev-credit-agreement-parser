@@ -228,6 +228,35 @@ def test_a_new_backend_gets_a_calibration_run_instead_of_a_crash():
 def test_the_fitted_thresholds_are_still_refused_for_another_backend():
     """The degradation above must not become a way to apply one scorer's
     calibration to another. ``load_thresholds`` still raises; only the pipeline's
-    handling of that refusal changed."""
-    with pytest.raises(BackendMismatch):
+    handling of that refusal changed.
+
+    Each scorer reads its own file, so another scorer does not find the offline
+    set at all -- and handed it explicitly, it still refuses it.
+    """
+    with pytest.raises(FileNotFoundError):
         load_thresholds(backend="some-other-scorer")
+    with pytest.raises(BackendMismatch):
+        load_thresholds(CONFIG_PATH, backend="some-other-scorer")
+
+
+def test_each_scorer_has_its_own_threshold_file(tmp_path, monkeypatch):
+    """Fitting live Jev used to overwrite the offline set, and every offline
+    run after it -- the CI gate included -- would refuse the file and fall back
+    to unfitted defaults."""
+    from credit_extract.validate import calibrate
+
+    monkeypatch.setattr(calibrate, "CONFIG_PATH", tmp_path / "thresholds.json")
+    assert calibrate.thresholds_path() == tmp_path / "thresholds.json"
+    assert calibrate.thresholds_path("offline") == tmp_path / "thresholds.json"
+    assert calibrate.thresholds_path("jev-1.13.0") == (
+        tmp_path / "thresholds.jev-1.13.0.json"
+    )
+
+    Thresholds(version="5", backend="offline").save(calibrate.thresholds_path())
+    Thresholds(version="6", backend="jev-1.13.0").save(
+        calibrate.thresholds_path("jev-1.13.0")
+    )
+    assert calibrate.load_thresholds(backend="offline").version == "5"
+    assert calibrate.load_thresholds(backend="jev-1.13.0").version == "6"
+    with pytest.raises(FileNotFoundError, match="--jev api"):
+        calibrate.load_thresholds(backend="jev-1.14.0")

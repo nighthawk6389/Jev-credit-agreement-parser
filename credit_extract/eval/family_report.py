@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from ..pipeline import run_document_set, run_pipeline
+from ..validate.jev import JevClient, OfflineJev
 from .assertions import (
     AssertionFile, AssertionOutcome, evaluate_assertion, evaluate_file,
     load_assertions,
@@ -49,6 +50,12 @@ class CoverageRun:
     mutants: int = 0
     cost_usd: float = 0.0
     notes: list[str] = dc_field(default_factory=list)
+    #: Every ``version@backend`` the runs were triaged under.
+    thresholds: set[str] = dc_field(default_factory=set)
+
+    def record(self, result: Any) -> None:
+        self.cost_usd += result.report.cost.total_usd
+        self.thresholds.add(result.report.thresholds_version or "unknown")
 
     # -- the headline, and the table it is never printed without -----------
 
@@ -104,6 +111,16 @@ class CoverageRun:
             f"{self.documents} document(s) and {self.mutants} mutant(s), "
             f"{len(self.outcomes)} assertions "
             f"({real} real / {synthetic} synthetic), ${self.cost_usd:.4f}",
+            f"thresholds: {', '.join(sorted(self.thresholds)) or 'none'}",
+        ]
+        if any(t.startswith("unfitted@") for t in self.thresholds):
+            lines += [
+                "  UNFITTED: no thresholds were fitted for this scorer, so every",
+                "  field was triaged at the conservative default. This is a",
+                "  calibration run. Its silent-error rate is not comparable to a",
+                "  fitted run's, on this scorer or any other.",
+            ]
+        lines += [
             "",
             report.render(),
             "",
@@ -320,7 +337,7 @@ def run_coverage(
             result = run_document_set([p for p in paths if p], **pipeline_kwargs)
             run.outcomes.extend(evaluate_file(file, result))
             run.documents += len(paths)
-            run.cost_usd += result.report.cost.total_usd
+            run.record(result)
             continue
 
         path = _resolve_document(file)
@@ -333,7 +350,7 @@ def run_coverage(
         result = run_pipeline(path, **pipeline_kwargs)
         run.outcomes.extend(evaluate_file(file, result))
         run.documents += 1
-        run.cost_usd += result.report.cost.total_usd
+        run.record(result)
 
         if not include_mutations:
             continue
@@ -362,7 +379,7 @@ def run_coverage(
                     evaluate_assertion(assertion, mutant_result, source="synthetic")
                 )
             run.mutants += 1
-            run.cost_usd += mutant_result.report.cost.total_usd
+            run.record(mutant_result)
     return run
 
 
@@ -373,9 +390,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-mutations", action="store_true")
     parser.add_argument("--gate", action="store_true",
                         help="exit non-zero when a family is over budget")
+    parser.add_argument("--jev", choices=("offline", "api"), default="offline",
+                        help="the scorer the validators ask: the offline "
+                             "stand-in, or live System One (needs JEV_API_KEY)")
     args = parser.parse_args(argv)
 
-    run = run_coverage(args.labels, include_mutations=not args.no_mutations)
+    jev_backend = JevClient() if args.jev == "api" else OfflineJev()
+    run = run_coverage(
+        args.labels, include_mutations=not args.no_mutations,
+        jev_backend=jev_backend,
+    )
     print(run.render())
 
     failures = run.gate_failures()

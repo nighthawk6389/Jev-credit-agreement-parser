@@ -6,6 +6,7 @@ precision. Writes ``config/thresholds.json``, which CI then asserts against.
 
     python -m credit_extract.eval.harness                 # evaluate
     python -m credit_extract.eval.harness --calibrate     # evaluate and refit
+    python -m credit_extract.eval.harness --calibrate --jev api   # against live Jev
 
 The headline number is not accuracy. It is the **silent error rate**: of the
 fields the pipeline marked ``confirmed``, what fraction were wrong. A field
@@ -36,8 +37,9 @@ from typing import Any
 from ..models.fpml_model import FIELD_REGISTRY
 from ..pipeline import ExtractionResult, run_pipeline
 from ..validate.calibrate import (
-    CONFIG_PATH, DEFAULT_PRECISION_TARGETS, Sample, Thresholds, fit, report,
+    DEFAULT_PRECISION_TARGETS, Sample, Thresholds, fit, report, thresholds_path,
 )
+from ..validate.jev import JevBackend, JevClient, OfflineJev
 from .gold.build_fixture import write_corpus
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -227,6 +229,7 @@ def evaluate(
     n: int = 24,
     regenerate: bool = True,
     thresholds: Thresholds | None = None,
+    jev_backend: JevBackend | None = None,
 ) -> EvalReport:
     """Run the pipeline over every labelled document in the corpus."""
     if regenerate or not corpus_dir.exists():
@@ -240,7 +243,9 @@ def evaluate(
         if not labels_path.exists():
             continue
         labels = json.loads(labels_path.read_text())
-        result = run_pipeline(html_path, thresholds=thresholds)
+        result = run_pipeline(
+            html_path, thresholds=thresholds, jev_backend=jev_backend
+        )
         evaluation.outcomes.extend(score_document(result, labels))
         evaluation.documents += 1
         evaluation.cost_usd += result.report.cost.total_usd
@@ -282,38 +287,63 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("-n", type=int, default=24,
                         help="corpus size when generating")
-    parser.add_argument("--out", type=Path, default=CONFIG_PATH)
+    parser.add_argument("--out", type=Path, default=None,
+                        help="where to write fitted thresholds (default: the "
+                             "chosen scorer's own file under config/)")
     parser.add_argument("--version", default="1")
+    parser.add_argument("--jev", choices=("offline", "api"), default="offline",
+                        help="the scorer the validators ask: the offline "
+                             "stand-in, or live System One (needs JEV_API_KEY)")
     args = parser.parse_args(argv)
 
-    evaluation = evaluate(args.corpus, args.n)
+    jev_backend = JevClient() if args.jev == "api" else OfflineJev()
+    # Whether the run below uses fitted thresholds or falls back to neutral
+    # ones -- decided before it runs, since fitting writes that file.
+    had_thresholds = thresholds_path(jev_backend.name).exists()
+
+    evaluation = evaluate(args.corpus, args.n, jev_backend=jev_backend)
     print_report(evaluation)
 
     if args.calibrate:
         # Refit from a neutral threshold state. Evaluating with the thresholds
         # already on disk and then fitting on the result makes each generation
         # a function of the last one, and the fit drifts away from the data.
-        evaluation = evaluate(
-            args.corpus, args.n, regenerate=False,
-            thresholds=Thresholds(version="unfitted", backend="offline"),
-        )
-        thresholds = fit(
-            evaluation.samples(),
-            targets=DEFAULT_PRECISION_TARGETS,
-            backend="offline",
-            version=args.version,
-            fitted_on=f"synthetic gold corpus, {evaluation.documents} documents",
-            n_documents=evaluation.documents,
-            notes=(
+        #
+        # Where this scorer has no thresholds yet, the run above already used
+        # the neutral state, so it is the fitting run. Repeating it would ask a
+        # paid scorer every question twice for identical samples.
+        if had_thresholds:
+            evaluation = evaluate(
+                args.corpus, args.n, regenerate=False,
+                thresholds=Thresholds(version="unfitted", backend=jev_backend.name),
+                jev_backend=jev_backend,
+            )
+        if jev_backend.name == "offline":
+            notes = (
                 "Fitted against the offline lexical Jev stand-in on synthetic "
                 "variants. Not transferable to the live System One backend or "
                 "to real filings; refit before relying on these numbers."
-            ),
+            )
+        else:
+            notes = (
+                f"Fitted against live System One ({jev_backend.name}) on "
+                "synthetic variants. Valid for that model version only, and "
+                "measured on generated documents rather than real filings."
+            )
+        thresholds = fit(
+            evaluation.samples(),
+            targets=DEFAULT_PRECISION_TARGETS,
+            backend=jev_backend.name,
+            version=args.version,
+            fitted_on=f"synthetic gold corpus, {evaluation.documents} documents",
+            n_documents=evaluation.documents,
+            notes=notes,
         )
-        thresholds.save(args.out)
+        out = args.out or thresholds_path(jev_backend.name)
+        thresholds.save(out)
         print()
         print(report(thresholds))
-        print(f"\nwrote {args.out}")
+        print(f"\nwrote {out}")
     return 0
 
 

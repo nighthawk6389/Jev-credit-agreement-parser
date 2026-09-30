@@ -131,14 +131,31 @@ class BackendMismatch(RuntimeError):
     """A threshold set fitted on one backend applied to another."""
 
 
+def thresholds_path(backend: str | None = None) -> Path:
+    """The threshold file for one scorer.
+
+    One file per backend, because a threshold is a fact about a scorer. The
+    offline set keeps the file CI has always read; a set fitted against live
+    Jev sits beside it under the model version it was fitted on. Sharing one
+    file meant fitting the live backend overwrote the offline set, and every
+    offline run after that -- the CI gate included -- refused it and fell back
+    to unfitted defaults.
+    """
+    if backend is None or backend == "offline":
+        return CONFIG_PATH
+    return CONFIG_PATH.with_name(f"thresholds.{backend}.json")
+
+
 def load_thresholds(
-    path: Path = CONFIG_PATH, backend: str | None = None
+    path: Path | None = None, backend: str | None = None
 ) -> Thresholds:
     """Load fitted thresholds, refusing a backend mismatch."""
+    path = path or thresholds_path(backend)
     if not path.exists():
+        flag = "" if backend in (None, "offline") else " --jev api"
         raise FileNotFoundError(
             f"{path} not found; run `python -m credit_extract.eval.harness "
-            "--calibrate` to fit thresholds"
+            f"--calibrate{flag}` to fit thresholds"
         )
     thresholds = Thresholds.model_validate_json(path.read_text())
     if backend is not None and thresholds.backend != backend:
