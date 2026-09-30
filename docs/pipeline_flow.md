@@ -296,6 +296,11 @@ administrative. Each is stored with the silent-error rate it achieved, tagged
 with the backend it was fitted against, and `load_thresholds` refuses to apply
 a threshold fitted on one scorer to a different one.
 
+The figures above are the offline stand-in's. Each scorer has its own file —
+`config/thresholds.json` for the stand-in, `config/thresholds.jev-1.13.0.json`
+for live Jev — and the live backend is named after the model version it pins,
+so a set fitted on one version is refused on the next.
+
 The headline metric is not accuracy. It is: **of the fields marked
 `confirmed`, what fraction were wrong?** A field routed to review was handled
 correctly even if its value was wrong.
@@ -432,8 +437,12 @@ Everything else is still filled from the deal-level field and marked
 `inherited`, so the remaining gap is visible in the output rather than papered
 over.
 
-**No live model pass has ever run.** `ANTHROPIC_API_KEY` is unset, so every
-model-tier number in this repository comes from three readings made by hand and
-checked in. `OfflineJev` — a deterministic lexical stand-in — answers every
-validator question. The ladder described above has never been exercised against
-a real model.
+**No live extraction pass has ever run.** `ANTHROPIC_API_KEY` is unset, so
+every model-tier number in this repository comes from three readings made by
+hand and checked in. The ladder described above has never been exercised
+against a real model.
+
+The validators have. One full gate ran against live Jev (`jev-1.13.0`) on
+2026-09-30, with thresholds fitted for it, and `docs/jev_live_pass.md` records
+what it found. CI still has no key, so every build is still answered by
+`OfflineJev`, the lexical stand-in.

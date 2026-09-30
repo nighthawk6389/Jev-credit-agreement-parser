@@ -254,6 +254,52 @@ why it does not help here. This is a credential-shaped gap, not a pattern one,
 and the numbers above are the argument against trying to close it with more
 keywords.
 
+### What live Jev says about it
+
+The credential arrived, and it is not the whole gap. The three silent errors
+the gate still reports — Athena Funding, Elmet's Investor Rights Agreement,
+Horizon's Sale and Servicing Agreement, each `abl_revolver` where the label
+says `unknown` — are all **deterministic** verdicts, at 0.85, 0.70 and 0.85.
+`detect_archetype` asks the model only when the vocabulary is split, and here
+it is not split, it is wrong. No scorer behind the model path can reach them.
+
+Asked directly, on the same 30,000-character window, live Jev (jev-1.13.0,
+one draw) separates them where the classifier's own question does not:
+
+| document | label | deterministic | archetype choice | *establishes* | *own ABL* |
+| --- | --- | --- | --- | --- | --- |
+| Athena Funding | unknown | abl 0.85 | abl 0.64 | 0.54 | **0.09** |
+| Elmet investor rights | unknown | abl 0.70 | abl 0.80 | **0.02** | **0.13** |
+| Horizon sale and servicing | unknown | abl 0.85 | abl 0.56 | **0.06** | **0.03** |
+| Winnebago ABL | abl | abl 0.70 | abl 1.00 | 0.93 | 0.93 |
+| Tailored Brands amendment 7 | abl | abl 0.70 | abl 1.00 | 0.15 | 0.82 |
+| Cooper-Standard amendment 6 | abl | unknown | abl 0.97 | 0.48 | 0.76 |
+| cik1901612 ex10-1 | abl | abl 0.85 | abl 0.72 | 0.74 | 0.04 |
+
+*Archetype choice* is the classifier's own `ChoiceQ`. It picks `abl_revolver`
+for all three, and adding `unknown` as an option does not change that
+(0.55, 0.57, 0.44). It is also confidently wrong on documents that lend
+nothing: Neovolta's registration rights agreement and a warrant both come back
+`venture_debt` at 1.00. A choice settles *which* option; it cannot say *none*.
+
+*Own ABL* is one noul — "an asset-based revolving credit facility whose
+availability is limited by a borrowing base of the borrower's own eligible
+accounts receivable and inventory". It puts all three at 0.13 or below and
+three of four real ABLs at 0.76 or above. As a veto on a deterministic ABL
+verdict it would clear all three silent errors, at the cost of cik1901612
+falling to `unknown` — lost coverage, not a wrong answer.
+
+*Establishes* — "a lender that is a party to this document agrees in it to lend
+money to a borrower that is also a party to this document" — scores every
+non-credit document in the set at 0.15 or below (warrants, proxies, press
+releases, stock transfers, financial statements) and original credit
+agreements at 0.74 to 0.97. Amendments score low, as they should on that
+wording, so it needs an amendment-aware twin before it can gate anything.
+
+So #35 is question-shaped as well as credential-shaped: the model can answer
+whose facility the words describe, but only if it is asked that, and only if
+the classifier asks it about the verdicts it is sure of.
+
 ## What happened the first time a model tier's output ran through the pipeline
 
 There is no `ANTHROPIC_API_KEY` in this environment, so the tier meant to do

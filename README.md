@@ -68,6 +68,14 @@ Against the live services:
 export ANTHROPIC_API_KEY=... JEV_API_KEY=...
 credit-extract extract agreement.htm --backend anthropic --jev api --out result.json
 
+# Jev is TypeSafe AI's System One, at https://api.typesafe.ai/v1/systemone.
+# The client pins jev-1.13.0 (JEV_MODEL overrides it) and the backend is named
+# after the pin, so each model version gets its own threshold file.
+python -m credit_extract.eval.harness --calibrate --jev api --version 6
+# ~105,000 requests at ~0.2 s: about six hours in one process, one in six.
+python -m credit_extract.eval.family_report --gate --jev api --workers 6 \
+    --outcomes live.jsonl
+
 # The same model tier through Vercel's AI Gateway, which speaks the Messages
 # API. One key, and the gateway's own model catalogue behind it.
 export AI_GATEWAY_API_KEY=...
@@ -489,13 +497,20 @@ classes have **no labelled failures**, which means every threshold clears the
 target trivially and the fitted value carries no information — the report
 prints that in full rather than showing a clean 1.000 and moving on.
 
-**No Jev API key.** `OfflineJev` is a deterministic lexical stand-in
-implementing the same typed interface, so the pipeline, its tests and its
-calibration all run offline. It is not a calibrated model, and the orphan
-sweep's concept lexicons are its weakest part — the first thing a real System
-One backend makes unnecessary. Thresholds are tagged with the backend they were
-fitted against and `load_thresholds` **refuses a backend mismatch** rather than
-silently applying an offline-fitted threshold to live Jev.
+**One live Jev pass, and no Jev in CI.** `OfflineJev` is a deterministic
+lexical stand-in implementing the same typed interface, so the pipeline, its
+tests and its calibration all run offline, and every CI build is still
+answered by it. It is not a calibrated model, and the orphan sweep's concept
+lexicons are its weakest part. Live System One (`jev-1.13.0`) has been run
+once, through calibration and the full gate, and the gate's answer is not
+yet good: 54 of 425 confident propositions wrong (12.71%), against 3 of 302
+for the stand-in on the same labels. The live scorer reads better where the
+two can be compared; what it exposed is four questions and a set of
+thresholds that had only ever met a scorer that could not be confident.
+`docs/jev_live_pass.md` records all of it. Thresholds are
+tagged with the backend they were fitted against, each scorer has its own
+file, and `load_thresholds` **refuses a backend mismatch** rather than
+silently applying one scorer's threshold to another.
 
 **No Anthropic API key**, so `AnthropicBackend` is written against the Messages
 API but unexercised. `OfflineRuleBackend` is the default: anchored patterns
@@ -555,7 +570,8 @@ credit_extract/
               traps.py            the four traps as checks
   pipeline.py                   orchestration
   cli.py                        extract | traps | chain
-config/thresholds.json          fitted, versioned, CI-asserted
+config/thresholds.json          fitted, versioned, CI-asserted (offline stand-in)
+config/thresholds.jev-1.13.0.json  fitted against live Jev, that version only
 corpus/real/                    four SEC filings, read in detail and labelled
 corpus/edgar/                   100 more, stratified, zipped, all labelled
 docs/orientation.md             start here: goals, labels vs recordings, families

@@ -212,11 +212,18 @@ Thirteen documents carry labels and three of those carry a recording as well,
 so a live pass has somewhere to land and something to be compared against the
 moment a key exists.
 
+The other key, Jev's, does exist now, and it moved only the validator tier. The
+first live pass is recorded in `docs/jev_live_pass.md`: where the endpoint
+really is, what the scorer is like, the thresholds fitted for it, and what the
+gate said. It does not touch this section's blocker — a validator judges what
+extraction produced, and extraction is still the rules.
+
 ## Where to go next
 
 | you want to | read |
 | --- | --- |
 | write a label | `docs/labelling_guide.md` |
 | know what the corpus showed | `docs/corpus_findings.md` |
+| know what live Jev showed | `docs/jev_live_pass.md` |
 | understand the tiers and the flow | `README.md` |
 | know what is untested and why | the blind-spot register in the family report |

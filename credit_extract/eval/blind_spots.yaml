@@ -247,12 +247,41 @@ untestable_in_this_environment:
   - id: JEV_API
     families: [F02_precedence, F03_external_reference, F04_absence,
                F06_structure]
-    reason: JEV_API_KEY is not configured, so OfflineJev serves every request.
+    status: partially_lifted
+    reason: >
+      CI has no JEV_API_KEY, so OfflineJev, a deterministic lexical stand-in,
+      answers every validator question in every build. One live pass has been
+      made from a session that had a key -- calibration and the full gate
+      against System One jev-1.13.0 on 2026-09-30, recorded in
+      docs/jev_live_pass.md -- and one pass is one draw of a scorer that is
+      not deterministic.
     consequence: >
-      OfflineJev is a deterministic lexical stand-in, not a calibrated model.
-      Validators B, C, D, E and G are exercised end to end but their
-      judgements are keyword matches. Archetype dispatch is the clearest
-      casualty and it is now measured: across the 62 corpus documents whose
+      What that pass measured, under thresholds fitted for the live scorer on
+      the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
+      against 3 of 302 for the stand-in on the same 612 assertions. The live
+      scorer reads better where the two can be compared -- 14 of the 19
+      governing-law answers the stand-in held in review now clear, none
+      wrongly -- and the new errors are not misreadings. They are four
+      questions and a set of thresholds that had only ever met a scorer that
+      could not be confident: archetype dispatch's model path, a choice with
+      no "none of these" at an unfitted 0.35 (18 wrong archetypes, and fields
+      suppressed behind them); validator C's absence claims, fitted on
+      synthetic documents to 0.27 for economic terms (20 values that are in
+      the document asserted empty, between them and the suppression);
+      validator A on a party's name, which confirms "a value of Administrative
+      Agent for the Administrative Agent" (5); and validator E, whose question
+      bundles dependence with externality and was 0 for 22 on the synthetic
+      corpus, now fitted off for the two classes it misfired on. Between live
+      passes, validators B, C, D, E and G run end to end in CI but their
+      judgements are keyword matches, which is why none of this was visible.
+
+      Archetype dispatch was listed here as the stand-in's clearest casualty.
+      For its confident errors it was not one: the three the offline gate
+      reports are deterministic verdicts that never reach the model, and the
+      classifier's own question would get them wrong too -- measured in
+      docs/corpus_findings.md, where one noul about whose receivables secure
+      the facility separates them. What follows is how they were found.
+      Across the 62 corpus documents whose
       stratum implies an archetype, the deterministic classifier gets 17
       right and 14 confidently wrong, and four alternative configurations
       trade those two against each other at roughly one for one without
@@ -335,9 +364,15 @@ untestable_in_this_environment:
       same question the suppression veto answers field by field, and the
       classifier does not ask it.
     remedy: >
-      set JEV_API_KEY and refit thresholds; they are tagged per backend. This
-      one will not yield to more keywords -- the measurement above is the
-      argument for not trying.
+      Fix the four questions before trusting another fit: give archetype
+      dispatch a way to say none, make A's statement for a name ask whether
+      the value names the party, reword E, and fit C's thresholds on real
+      filings rather than the synthetic corpus, which is all the harness fits
+      today. Then rerun `family_report --gate --jev api --workers 6
+      --outcomes FILE` and compare assertion by assertion. Lifting this fully
+      needs the key in CI as a secret, for a scheduled live gate. None of it
+      will yield to more keywords -- the measurement above is the argument
+      for not trying.
 
   - id: ANTHROPIC_API
     families: [F01_integrity, F09_definitional_depth, F11_layout]
