@@ -219,24 +219,33 @@ def _referenced_schedule_absent(html: str) -> MutationResult | None:
 # ---------------------------------------------------------------------------
 
 
+#: An MFN clause compares two prices: the incremental loan's yield *exceeds*
+#: the existing loans' by more than the threshold. "By more than 3.00% per
+#: annum" alone is not one. Tailored Brands' ABL amendment uses it to cap how
+#: far the separate term loan's rate may be *increased* by amendment, has no
+#: MFN provision anywhere, and was asserted to have an MFN threshold of 3.00.
+_MFN_THRESHOLD_RE = re.compile(
+    r"exceed[^.]{0,400}?(by more than (\d)\.(\d\d)% per annum)", re.IGNORECASE
+)
+
+
 def _bps_instead_of_percent(html: str) -> MutationResult | None:
-    match = re.search(r"by more than (\d)\.(\d\d)% per annum", html)
-    if match is None:
+    found = _MFN_THRESHOLD_RE.search(html)
+    if found is None:
         return None
-    basis_points = int(match.group(1)) * 100 + int(match.group(2))
-    mutated = html.replace(
-        match.group(0), f"by more than {basis_points} basis points per annum"
-    )
+    phrase, whole, frac = found.group(1), found.group(2), found.group(3)
+    basis_points = int(whole) * 100 + int(frac)
+    mutated = html.replace(phrase, f"by more than {basis_points} basis points per annum")
     return MutationResult(
         mutation_id="bps_instead_of_percent",
         html=mutated,
         assertions=[
             _assert("mut_bps_same_value", "F08_units", "bps_vs_percent",
                     "field_value", target="mfn_threshold_pct",
-                    expect=float(f"{match.group(1)}.{match.group(2)}"),
+                    expect=float(f"{whole}.{frac}"),
                     note="50 basis points and 0.50% are the same term"),
         ],
-        note=f"restated {match.group(0).strip()} as {basis_points} basis points",
+        note=f"restated {phrase.strip()} as {basis_points} basis points",
     )
 
 

@@ -281,3 +281,33 @@ def test_a_mutation_does_not_assert_the_fixture_about_a_real_agreement():
     fixture_shaped = real.replace("0.625%", "$376,250")
     ids = {result.mutation_id for result in apply_all(fixture_shaped)}
     assert "nested_html_tables" in ids
+
+
+def test_the_units_mutation_asserts_an_mfn_threshold_only_where_there_is_one():
+    """Found by the second live gate, as a confident "silent error" that was
+    the pipeline being right.
+
+    ``_bps_instead_of_percent`` restates "by more than 0.50% per annum" in
+    basis points and asserts the MFN threshold did not move. Its shape test
+    was the phrase alone. Tailored Brands' ABL amendment uses the phrase to
+    cap how far the separate term loan's rate may be *increased* by
+    amendment; it has no MFN provision, and live Jev said so confidently,
+    against an assertion of an MFN threshold of 3.00. An MFN clause compares
+    two prices: one yield *exceeds* another by more than the threshold.
+    """
+    from credit_extract.eval.mutations import apply_all
+
+    mfn = (
+        "<p>If the All-In Yield applicable to any Incremental Term Facility "
+        "exceeds the All-In Yield applicable to the Initial Term Loans by more "
+        "than 0.50% per annum, the Applicable Rate shall be increased.</p>"
+    )
+    cap = (
+        "<p>The Loan Parties will not amend the Term Credit Agreement so that "
+        "the interest rate is increased by more than 3.00% per annum.</p>"
+    )
+    by_id = {r.mutation_id: r for r in apply_all(mfn)}
+    assert by_id["bps_instead_of_percent"].assertions[0].expect == 0.5
+    assert "50 basis points" in by_id["bps_instead_of_percent"].html
+
+    assert "bps_instead_of_percent" not in {r.mutation_id for r in apply_all(cap)}
