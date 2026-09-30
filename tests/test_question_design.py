@@ -27,7 +27,9 @@ from credit_extract.models.core import ConflictRecord, ExtractedField, Span
 from credit_extract.models.fpml_model import FIELD_REGISTRY
 from credit_extract.validate import archetype as A
 from credit_extract.validate import validators as V
-from credit_extract.validate.calibrate import Thresholds
+from credit_extract.validate.calibrate import (
+    DEFAULT_THRESHOLD, Sample, Thresholds, fit,
+)
 from credit_extract.validate.jev import (
     ChoiceQ, Decision, JevResult, JevSession, Noul, OfflineJev,
 )
@@ -633,3 +635,34 @@ def test_the_borrowing_base_definition_rides_along_capped(monkeypatch):
     assert state.startswith(AGREEMENT)
     assert "DEFINITION OF Borrowing Base\nthe sum of 85% of Eligible Accounts" in state
     assert state.endswith(body[:A.DEFINITION_CAP])
+
+
+# ---------------------------------------------------------------------------
+# Fitting: no failures means no evidence for a lower threshold
+# ---------------------------------------------------------------------------
+
+
+def _samples(probabilities: list[float], correct: bool = True) -> list[Sample]:
+    return [
+        Sample(
+            field="f", field_class="economic_terms", probability=p,
+            correct=correct, document_id=f"d{i}", validator="C_negative_space",
+        )
+        for i, p in enumerate(probabilities)
+    ]
+
+
+def test_a_class_with_no_failures_is_not_fitted_below_the_default():
+    """With nothing wrong in the class, every threshold meets the target, so
+    the fit lands on the lowest score it saw. Fitted to eight synthetic
+    absences, validator C's economic terms came out at 0.27. At that
+    threshold, pricing grids were confirmed absent."""
+    fitted = fit(_samples([0.27, 0.35, 0.41, 0.52, 0.60, 0.66, 0.71, 0.75]))
+
+    assert fitted.per_class["C_negative_space/economic_terms"] == DEFAULT_THRESHOLD
+
+
+def test_the_floor_never_lowers_a_threshold_the_data_put_higher():
+    fitted = fit(_samples([0.91, 0.93, 0.95, 0.96, 0.97, 0.98, 0.99, 0.99]))
+
+    assert fitted.per_class["C_negative_space/economic_terms"] > DEFAULT_THRESHOLD

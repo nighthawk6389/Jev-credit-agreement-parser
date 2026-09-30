@@ -39,6 +39,10 @@ DEFAULT_PRECISION_TARGETS: dict[str, float] = {
 
 CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "thresholds.json"
 
+#: What a class with no fitted threshold is triaged at -- and the floor for a
+#: class whose data holds no failure, where the fit cannot say anything lower.
+DEFAULT_THRESHOLD = 0.80
+
 
 class Sample(BaseModel):
     """One labelled validation outcome.
@@ -104,7 +108,7 @@ class Thresholds(BaseModel):
     fitted_on: str = ""
     n_documents: int = 0
     per_class: dict[str, float] = Field(default_factory=dict)
-    default: float = 0.80
+    default: float = DEFAULT_THRESHOLD
     targets: dict[str, float] = Field(default_factory=dict)
     metrics: dict[str, ClassMetrics] = Field(default_factory=dict)
     notes: str = ""
@@ -309,6 +313,16 @@ def fit(
         validator, field_class = key.split("/", 1)
         target = targets.get(field_class, 0.95)
         threshold, certified = fit_threshold(group, target)
+        if all(s.correct for s in group) and threshold < DEFAULT_THRESHOLD:
+            # With no failure in the class every threshold hits the target, so
+            # the fit lands on the lowest score it saw -- a value the report
+            # already calls uninformative. It cannot say where errors begin,
+            # so it does not get to move the threshold below the default.
+            # Fitted to eight synthetic absences, validator C's economic
+            # terms came out at 0.27, and asserted pricing grids absent.
+            threshold = DEFAULT_THRESHOLD
+            accepted = [s for s in group if s.probability >= threshold]
+            certified = wilson_lower_bound(len(accepted), len(accepted)) + 1e-9 >= target
 
         # Everything reported is measured on data the threshold never saw.
         scored = holdout_by_key.get(key) or group
