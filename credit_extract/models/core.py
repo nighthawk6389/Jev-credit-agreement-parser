@@ -603,6 +603,9 @@ class CostLedger(BaseModel):
     jev_questions: int = 0
     jev_input_tokens: int = 0
     jev_cost_usd: float = 0.0
+    #: Answers served without asking: bought earlier in the same run, or
+    #: stored from an earlier one. Neither a request nor a cost.
+    jev_answers_reused: int = 0
     llm_calls: int = 0
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0

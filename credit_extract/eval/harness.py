@@ -39,7 +39,7 @@ from ..pipeline import ExtractionResult, run_pipeline
 from ..validate.calibrate import (
     DEFAULT_PRECISION_TARGETS, Sample, Thresholds, fit, report, thresholds_path,
 )
-from ..validate.jev import JevBackend, JevClient, OfflineJev
+from ..validate.jev import JevBackend, answer_cache_for, build_backend
 from .gold.build_fixture import write_corpus
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -294,9 +294,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jev", choices=("offline", "api"), default="offline",
                         help="the scorer the validators ask: the offline "
                              "stand-in, or live System One (needs JEV_API_KEY)")
+    parser.add_argument("--jev-cache", type=Path, default=None,
+                        help="keep live answers here and reuse them "
+                             "(default for --jev api: .cache/jev-answers.sqlite)")
+    parser.add_argument("--no-jev-cache", action="store_true",
+                        help="ask the scorer every question, for a fresh draw")
     args = parser.parse_args(argv)
 
-    jev_backend = JevClient() if args.jev == "api" else OfflineJev()
+    jev_backend = build_backend(
+        args.jev, answer_cache_for(args.jev, args.jev_cache, args.no_jev_cache)
+    )
     # Whether the run below uses fitted thresholds or falls back to neutral
     # ones -- decided before it runs, since fitting writes that file.
     had_thresholds = thresholds_path(jev_backend.name).exists()

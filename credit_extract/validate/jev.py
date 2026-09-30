@@ -34,11 +34,15 @@ to apply them to a different backend.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import os
 import re
+import sqlite3
 import time
-from typing import Any, Literal, Protocol
+from pathlib import Path
+from typing import Any, Iterable, Literal, Protocol
 
 import httpx
 from pydantic import BaseModel, Field
@@ -289,6 +293,28 @@ def wire_question(question: Question) -> dict[str, Any]:
         "instructions": question.question,
         "criteria": list(question.rubric),
     }
+
+
+def _digest(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def answer_key(model: str, state: str, question: Question) -> str:
+    """Everything an answer depends on: the model, the state, the question sent.
+
+    The question is keyed on its wire form and its name, in the order they
+    travel, and nothing else. Two questions that send the same bytes get the
+    same answer; two that differ by one character of state, one option or its
+    order, or one model version, never share one.
+    """
+    return _answer_key(model, _digest(state), question)
+
+
+def _answer_key(model: str, state_digest: str, question: Question) -> str:
+    return _digest(json.dumps(
+        [model, state_digest, question.name, wire_question(question)],
+        ensure_ascii=False, separators=(",", ":"),
+    ))
 
 
 class JevClient:
@@ -728,7 +754,13 @@ class OfflineJev:
 
 
 class JevSession:
-    """Wraps a backend with batching, budget enforcement and a cost ledger."""
+    """Wraps a backend with batching, budget enforcement and a cost ledger.
+
+    A session also remembers every answer it has bought, keyed by
+    :func:`answer_key`. The same question asked of the same state costs once
+    however many validators ask it, which is what lets validator C's
+    questions travel with validator B's requests over the same chunks.
+    """
 
     def __init__(
         self,
@@ -739,41 +771,90 @@ class JevSession:
         self.budget_usd = budget_usd
         self.ledger = CostLedger()
         self.requests: list[dict[str, Any]] = []
+        self._answers: dict[str, Decision] = {}
 
     @property
     def spent(self) -> float:
         return self.ledger.jev_cost_usd
 
     def ask(
-        self, state: str, questions: list[Question], label: str = ""
+        self,
+        state: str,
+        questions: list[Question],
+        label: str = "",
+        prefetch: Iterable[Question] = (),
     ) -> JevResult:
-        """Ask every question against one state, in as few requests as fit."""
+        """Ask every question against one state, in as few requests as fit.
+
+        ``prefetch`` holds questions a later validator will ask of this same
+        state. They ride on a request this call is making anyway and their
+        answers are kept for when that validator asks; they are never
+        returned here and never cause a request of their own. The saving is
+        the state, which is almost always the expensive part: sent once for
+        both validators, not once for each.
+
+        That relies on each question being answered on its own, which the
+        batching below has always relied on too -- it splits a validator's
+        questions wherever the context limit falls.
+        """
+        model = self.backend.name
+        merged = JevResult(backend=model)
         if not questions:
-            return JevResult(backend=self.backend.name)
-        merged = JevResult(backend=self.backend.name)
-        for batch in split_batches(state, questions):
-            if self.budget_usd is not None:
-                projected = estimate_tokens(state) * PRICE_PER_MTOK / 1_000_000
-                if self.spent + projected > self.budget_usd:
-                    raise JevBudgetExceeded(
-                        f"Jev spend ${self.spent:.4f} plus ${projected:.4f} "
-                        f"would exceed the ${self.budget_usd:.2f} budget"
-                    )
-            result = self.backend.ask(state, batch)
-            merged.decisions.update(result.decisions)
-            merged.input_tokens += result.input_tokens
-            merged.cost_usd += result.cost_usd
-            merged.questions_asked += result.questions_asked
-            self.ledger.jev_requests += 1
-            self.ledger.jev_questions += result.questions_asked
-            self.ledger.jev_input_tokens += result.input_tokens
-            self.ledger.jev_cost_usd += result.cost_usd
-            self.requests.append({
-                "label": label,
-                "questions": [q.name for q in batch],
-                "input_tokens": result.input_tokens,
-                "cost_usd": result.cost_usd,
-            })
+            return merged
+        digest = _digest(state)
+        keys = {q.name: _answer_key(model, digest, q) for q in questions}
+        todo = [q for q in questions if keys[q.name] not in self._answers]
+        self.ledger.jev_answers_reused += len(questions) - len(todo)
+        if todo:
+            taken = {q.name for q in todo}
+            riders: set[str] = set()
+            for question in prefetch:
+                if question.name in taken:
+                    continue
+                key = _answer_key(model, digest, question)
+                if key in self._answers:
+                    continue
+                keys.setdefault(question.name, key)
+                todo.append(question)
+                taken.add(question.name)
+                riders.add(question.name)
+            for batch in split_batches(state, todo):
+                if self.budget_usd is not None:
+                    projected = estimate_tokens(state) * PRICE_PER_MTOK / 1_000_000
+                    if self.spent + projected > self.budget_usd:
+                        raise JevBudgetExceeded(
+                            f"Jev spend ${self.spent:.4f} plus ${projected:.4f} "
+                            f"would exceed the ${self.budget_usd:.2f} budget"
+                        )
+                result = self.backend.ask(state, batch)
+                for question in batch:
+                    decision = result.decisions.get(question.name)
+                    if decision is not None:
+                        self._answers[_answer_key(model, digest, question)] = decision
+                merged.input_tokens += result.input_tokens
+                merged.cost_usd += result.cost_usd
+                merged.questions_asked += result.questions_asked
+                # A backend that answers from its own store asks fewer
+                # questions than it was given, and one that asks none has not
+                # made a request.
+                self.ledger.jev_answers_reused += len(batch) - result.questions_asked
+                if not result.questions_asked:
+                    continue
+                self.ledger.jev_requests += 1
+                self.ledger.jev_questions += result.questions_asked
+                self.ledger.jev_input_tokens += result.input_tokens
+                self.ledger.jev_cost_usd += result.cost_usd
+                self.requests.append({
+                    "label": label,
+                    "questions": [q.name for q in batch],
+                    "prefetched": sum(1 for q in batch if q.name in riders),
+                    "input_tokens": result.input_tokens,
+                    "cost_usd": result.cost_usd,
+                })
+        merged.decisions = {
+            q.name: self._answers[keys[q.name]]
+            for q in questions if keys[q.name] in self._answers
+        }
         return merged
 
     def summary(self) -> dict[str, Any]:
@@ -783,7 +864,125 @@ class JevSession:
             "questions": self.ledger.jev_questions,
             "input_tokens": self.ledger.jev_input_tokens,
             "cost_usd": round(self.ledger.jev_cost_usd, 6),
+            "answers_reused": self.ledger.jev_answers_reused,
             "questions_per_request": round(
                 self.ledger.jev_questions / self.ledger.jev_requests, 2
             ) if self.ledger.jev_requests else 0.0,
         }
+
+
+# ---------------------------------------------------------------------------
+# Answers kept between runs
+# ---------------------------------------------------------------------------
+
+
+class CachedJev:
+    """A scorer that does not buy the same answer twice.
+
+    Wraps another backend and keeps every answer it returns in a SQLite file,
+    keyed by :func:`answer_key`, so a question is sent only if the same
+    question of the same state has never been asked of the same model. A gate
+    run is where this pays: each mutant is its document with one defect
+    injected, so nearly every chunk of it has been asked about already; label
+    files share documents; and a run cut short costs nothing to resume.
+
+    What it gives up is a fresh draw. The live scorer is not deterministic,
+    and an answer read back is the draw that was stored. Measuring that
+    variance is a job for ``--no-jev-cache``.
+
+    The file is shared by worker processes. Each opens its own connection on
+    first use, since a connection does not survive a fork. A row is the key's
+    32 bytes and the answer's non-default fields, about 70 bytes: a full
+    gate's answers take under 200 MB.
+    """
+
+    def __init__(self, inner: JevBackend, path: Path | str) -> None:
+        self.inner = inner
+        self.name = inner.name
+        self.path = Path(path)
+        self.hits = 0
+        self.misses = 0
+        self._conn: sqlite3.Connection | None = None
+        self._pid: int | None = None
+
+    def _db(self) -> sqlite3.Connection:
+        if self._conn is None or self._pid != os.getpid():
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(self.path, timeout=60)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS answers "
+                "(key BLOB PRIMARY KEY, decision TEXT NOT NULL) WITHOUT ROWID"
+            )
+            conn.commit()
+            self._conn, self._pid = conn, os.getpid()
+        return self._conn
+
+    def ask(self, state: str, questions: list[Question]) -> JevResult:
+        digest = _digest(state)
+        keys = {
+            q.name: bytes.fromhex(_answer_key(self.name, digest, q))
+            for q in questions
+        }
+        db = self._db()
+        marks = ",".join("?" * len(keys))
+        stored = dict(db.execute(
+            f"SELECT key, decision FROM answers WHERE key IN ({marks})",
+            list(keys.values()),
+        ).fetchall())
+        decisions: dict[str, Decision] = {}
+        todo: list[Question] = []
+        for question in questions:
+            raw = stored.get(keys[question.name])
+            try:
+                decisions[question.name] = Decision.model_validate({
+                    **json.loads(raw), "name": question.name, "backend": self.name,
+                })
+            except (TypeError, ValueError):     # absent, or written by an older client
+                todo.append(question)
+        self.hits += len(questions) - len(todo)
+        self.misses += len(todo)
+        result = JevResult(backend=self.name)
+        if todo:
+            fresh = self.inner.ask(state, todo)
+            with db:
+                db.executemany(
+                    "INSERT OR REPLACE INTO answers (key, decision) VALUES (?, ?)",
+                    [
+                        (keys[q.name], fresh.decisions[q.name].model_dump_json(
+                            exclude={"name", "backend"}, exclude_defaults=True,
+                        ))
+                        for q in todo if q.name in fresh.decisions
+                    ],
+                )
+            decisions.update(fresh.decisions)
+            result.input_tokens = fresh.input_tokens
+            result.cost_usd = fresh.cost_usd
+            result.questions_asked = fresh.questions_asked
+        result.decisions = decisions
+        return result
+
+
+#: Where the eval tools keep answers bought from the live scorer. Untracked.
+ANSWER_CACHE = Path(__file__).resolve().parents[2] / ".cache" / "jev-answers.sqlite"
+
+
+def answer_cache_for(
+    kind: str, path: Path | None = None, disabled: bool = False
+) -> Path | None:
+    """The cache a tool should use: the one named, or none if disabled.
+
+    By default the live scorer's answers are kept and the stand-in's are not:
+    the stand-in is free, and its answers are recomputed faster than read.
+    """
+    if disabled:
+        return None
+    if path is not None:
+        return path
+    return ANSWER_CACHE if kind == "api" else None
+
+
+def build_backend(kind: str, cache: Path | str | None = None) -> JevBackend:
+    """The scorer a tool was told to use: ``api`` or ``offline``, cached or not."""
+    backend: JevBackend = JevClient() if kind == "api" else OfflineJev()
+    return CachedJev(backend, cache) if cache is not None else backend

@@ -108,7 +108,7 @@ def test_calibrating_a_new_scorer_fits_it_once_and_spares_the_offline_set(
     from credit_extract.eval import harness
 
     scorer = RecordingScorer()
-    monkeypatch.setattr(harness, "JevClient", lambda: scorer)
+    monkeypatch.setattr(harness, "build_backend", lambda kind, cache=None: scorer)
     runs: list[str] = []
     real_run_pipeline = harness.run_pipeline
 

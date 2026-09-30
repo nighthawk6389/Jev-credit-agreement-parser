@@ -410,7 +410,10 @@ def run_pipeline(
     # away on their own rather than needing a second switch.
     if arm.runs("A"):
         V.validator_a_span_support(ctx)
-    orphans = V.validator_b_orphan_sweep(ctx) if arm.runs("B") else []
+    orphans = (
+        V.validator_b_orphan_sweep(ctx, prefetch_absence=arm.runs("C"))
+        if arm.runs("B") else []
+    )
     if reread is None:
         reread = _default_reread(doc, extraction_backend, fields, graph)
     rescued = V.rescue_orphans(ctx, orphans, reread, graph) if orphans else []

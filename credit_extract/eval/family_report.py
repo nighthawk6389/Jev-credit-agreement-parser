@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from ..pipeline import run_document_set, run_pipeline
-from ..validate.jev import JevClient, OfflineJev
+from ..validate.jev import answer_cache_for, build_backend
 from .assertions import (
     AssertionFile, AssertionOutcome, evaluate_assertion, evaluate_file,
     load_assertion_file, load_assertions,
@@ -420,18 +420,20 @@ def _coverage_of(
     return run
 
 
-def _coverage_of_one_file(task: tuple[str, bool, str]) -> CoverageRun:
+def _coverage_of_one_file(
+    task: tuple[str, bool, str, str | None]
+) -> CoverageRun:
     """One label file, in a worker process, asking a scorer built there.
 
     A failure comes back rather than raising: the file is named, and the gate
     fails on it. A run that loses a file partway -- to a spent credit balance,
     say -- keeps what it measured and still cannot pass as complete.
     """
-    path, include_mutations, jev = task
+    path, include_mutations, jev, cache = task
     register = load_families()
     try:
         file = load_assertion_file(Path(path), register)
-        backend = JevClient() if jev == "api" else OfflineJev()
+        backend = build_backend(jev, cache)
         return _coverage_of(
             [file], register, include_mutations, jev_backend=backend
         )
@@ -442,7 +444,8 @@ def _coverage_of_one_file(task: tuple[str, bool, str]) -> CoverageRun:
 
 
 def run_coverage_parallel(
-    labels_dir: Path, include_mutations: bool, jev: str, workers: int
+    labels_dir: Path, include_mutations: bool, jev: str, workers: int,
+    cache: Path | None = None,
 ) -> CoverageRun:
     """``run_coverage`` over several processes, one label file per task.
 
@@ -455,7 +458,7 @@ def run_coverage_parallel(
     """
     ensure_corpus_unpacked()      # once, here, rather than raced by workers
     tasks = [
-        (str(path), include_mutations, jev)
+        (str(path), include_mutations, jev, str(cache) if cache else None)
         for path in sorted(labels_dir.glob("*.yaml"))
     ]
     merged = CoverageRun()
@@ -478,17 +481,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--workers", type=int, default=1,
                         help="run label files in this many processes; a live "
                              "gate is bound by request latency, not CPU")
+    parser.add_argument("--jev-cache", type=Path, default=None,
+                        help="keep live answers here and reuse them "
+                             "(default for --jev api: .cache/jev-answers.sqlite)")
+    parser.add_argument("--no-jev-cache", action="store_true",
+                        help="ask the scorer every question, for a fresh draw")
     parser.add_argument("--outcomes", type=Path,
                         help="also write every assertion outcome as JSON lines, "
                              "for comparing two runs assertion by assertion")
     args = parser.parse_args(argv)
 
+    cache = answer_cache_for(args.jev, args.jev_cache, args.no_jev_cache)
     if args.workers > 1:
         run = run_coverage_parallel(
-            args.labels, not args.no_mutations, args.jev, args.workers
+            args.labels, not args.no_mutations, args.jev, args.workers, cache,
         )
     else:
-        jev_backend = JevClient() if args.jev == "api" else OfflineJev()
+        jev_backend = build_backend(args.jev, cache)
         run = run_coverage(
             args.labels, include_mutations=not args.no_mutations,
             jev_backend=jev_backend,

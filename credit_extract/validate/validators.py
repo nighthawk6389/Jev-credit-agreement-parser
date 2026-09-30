@@ -202,12 +202,24 @@ def validator_a_span_support(ctx: ValidationContext) -> int:
 # ---------------------------------------------------------------------------
 
 
-def validator_b_orphan_sweep(ctx: ValidationContext) -> list[OrphanChunk]:
+def validator_b_orphan_sweep(
+    ctx: ValidationContext, prefetch_absence: bool = False
+) -> list[OrphanChunk]:
     """Ask every chunk what it says that the extraction does not know about.
 
     Build this first and measure it: it is the only mechanism here that can
     find a field nobody thought to look for.
+
+    With ``prefetch_absence``, each request also carries the questions
+    validator C will ask of the same chunk. C sweeps these same chunks later,
+    and sent separately, every chunk went twice; C's requests were nearly
+    half of all a gate made. C then finds its answers already bought. A
+    field filled by the re-read in between costs an unneeded question, not
+    a request, and one C needs that was not carried is asked by C as before.
     """
+    ahead = (
+        _presence_questions(ctx, _awaiting_absence(ctx)) if prefetch_absence else []
+    )
     orphans: list[OrphanChunk] = []
     for chunk in ctx.chunks:
         if len(chunk.text.strip()) < ORPHAN_MIN_CHARS:
@@ -216,7 +228,9 @@ def validator_b_orphan_sweep(ctx: ValidationContext) -> list[OrphanChunk]:
             Noul(name=key, statement=statement, concept=key)
             for key, statement in ORPHAN_SIGNALS.items()
         ]
-        result = ctx.session.ask(chunk.text, questions, label="B_orphan_sweep")
+        result = ctx.session.ask(
+            chunk.text, questions, label="B_orphan_sweep", prefetch=ahead
+        )
         signals = {
             key: round(result[key].confidence, 4)
             for key in ORPHAN_SIGNALS
@@ -312,6 +326,34 @@ def _amends_an_agreement_it_does_not_carry(doc: Any) -> bool:
     return len(_DEFINES_RE.findall(text)) < _CARRIES_ITS_TERMS
 
 
+def _awaiting_absence(ctx: ValidationContext) -> list[str]:
+    """The fields validator C asks about: empty, unresolved, not external."""
+    return [
+        name for name, field in ctx.fields.items()
+        if field.value is None
+        and field.status in ("needs_review", "conflicted")
+        and not field.external_document
+    ]
+
+
+def _presence_questions(ctx: ValidationContext, names: list[str]) -> list[Question]:
+    """C's question for each field, exactly as C sends it.
+
+    Validator B carries these on its own requests, so they must be the
+    same bytes C would send: an answer is reused only for the identical
+    question.
+    """
+    return [
+        Noul(
+            name=name,
+            statement=ctx.specs[name].presence_statement.replace(
+                "This agreement", "This text"
+            ),
+        )
+        for name in names
+    ]
+
+
 def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
     """Affirmatively confirm absence, chunk by chunk, combined in Python.
 
@@ -320,14 +362,10 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
     conjunction is taken here: a field is absent only if no chunk carries it.
     Aggregation is arithmetic, which is exactly what stays out of the model.
     """
-    pending = [
-        name for name, field in ctx.fields.items()
-        if field.value is None
-        and field.status in ("needs_review", "conflicted")
-        and not field.external_document
-    ]
+    pending = _awaiting_absence(ctx)
     if not pending:
         return {}
+    questions = _presence_questions(ctx, pending)
 
     # Presence is asked; absence is computed. Each chunk is asked whether it
     # contains a provision addressing the field, and absence is one minus the
@@ -350,15 +388,6 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         if not chunk.text.strip():
             continue
         asked += 1
-        questions: list[Question] = [
-            Noul(
-                name=name,
-                statement=ctx.specs[name].presence_statement.replace(
-                    "This agreement", "This text"
-                ),
-            )
-            for name in pending
-        ]
         result = ctx.session.ask(chunk.text, questions, label="C_negative_space")
         for name in pending:
             decision = result.get(name)
