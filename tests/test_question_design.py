@@ -166,6 +166,33 @@ def test_no_field_asks_absence_as_a_negation(name):
     assert " no provision" not in statement
 
 
+@pytest.mark.parametrize("name, asks_about, not_about", [
+    # JRD Unico's financials name an "EBITDA ratio, fixed charge ratio and
+    # incurrence of debt ratio" and state no level. Asked about "the maximum
+    # leverage level", a literal reader said there was none.
+    ("financial_covenant.level",
+     "whether or not it states the required level", "maximum leverage level"),
+    # Evernorth sells $30,000,000 of notes. Asked about "the Initial Term
+    # Loans", a literal reader found none and reported no principal.
+    ("initial_term_loan.commitment", "term loans or notes", "Initial Term Loans"),
+])
+def test_absence_is_asked_of_the_thing_not_of_its_defined_name_or_number(
+    name, asks_about, not_about
+):
+    statement = FIELD_REGISTRY[name].presence_statement
+    assert asks_about in statement
+    assert not_about not in statement
+
+
+def test_a_bdc_asset_coverage_floor_is_not_the_covenant_c_asks_about():
+    """Assets over debt at least 1.50 is the 1940 Act limit and caps nothing
+    against earnings. Seven labels call such facilities covenant-free, and
+    the question has to leave them that way."""
+    statement = FIELD_REGISTRY["financial_covenant.level"].presence_statement
+    assert "relative to its earnings" in statement
+    assert "asset" not in statement.lower()
+
+
 def test_absence_is_one_minus_the_strongest_presence_in_any_chunk():
     """One chunk carrying the term outweighs every chunk that does not. The
     chunk that carries it is also where a reviewer should start."""

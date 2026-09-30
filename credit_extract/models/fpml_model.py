@@ -420,11 +420,20 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "dates", 5, "fpml:maturityDate", "fpml",
               anchors=["Revolving Credit Maturity Date"]),
         # -- economic terms --------------------------------------------------
+        # Absence is asked of the debt, not of a defined term. Asked about
+        # "the Initial Term Loans", a literal reader found none in Evernorth's
+        # note purchase agreement and it was reported to have no principal,
+        # beside "$30,000,000 aggregate principal amount ... of its 4.00%
+        # Convertible Senior PIK Notes". A revolving commitment is not funded
+        # at closing, so a revolver-only deal still reads as absent.
         _spec("initial_term_loan.commitment",
               "the aggregate principal amount of the Initial Term Loans",
               "money", "economic_terms", 5, "fpml:totalCommitmentAmount", "fpml",
               anchors=["Initial Term Loan Commitment"],
-              sections=["2.01"]),
+              sections=["2.01"],
+              presence="This agreement contains a provision stating the "
+                       "principal amount of the term loans or notes funded "
+                       "at closing."),
         _spec("delayed_draw.commitment",
               "the aggregate Delayed Draw Term Loan Commitments", "money",
               "economic_terms", 4, "fpml:totalCommitmentAmount", "fpml",
@@ -521,11 +530,23 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               anchors=["Total Leverage Ratio"], sections=["6.12"]),
         # The covenant is one field that changes over time, stored as variants.
         # The opening and final levels below remain for the scalar view.
+        # Absence is asked of the covenant, not of its level. JRD Unico's
+        # financials name an "EBITDA ratio, fixed charge ratio and incurrence
+        # of debt ratio" and state no level; asked about "the maximum leverage
+        # level", a literal reader said there was none, and the covenants
+        # were reported absent. A BDC's asset coverage floor is assets over
+        # debt and caps nothing against earnings, so it still reads as absent,
+        # as its labels require.
         _spec("financial_covenant.level",
               "the maximum leverage level under the financial covenant, as it "
               "stands at a given date", "ratio", "covenant_levels", 5,
               None, None, verified_term=False,
-              anchors=["Total Leverage Ratio"], sections=["6.12"]),
+              anchors=["Total Leverage Ratio"], sections=["6.12"],
+              presence="This agreement contains a financial covenant that "
+                       "limits the borrower's debt relative to its earnings, "
+                       "or requires a minimum coverage of its interest or "
+                       "fixed charges, whether or not it states the required "
+                       "level."),
         _spec("financial_covenant.final_level",
               "the final stepped-down maximum leverage level", "ratio",
               "covenant_levels", 5, None, None, verified_term=False,

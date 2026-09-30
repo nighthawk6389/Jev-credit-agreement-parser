@@ -63,8 +63,20 @@ assertions:
     member: operative_version_ambiguous
     kind: field_status
     target: closing_date
-    expect: conflicted
+    expect: confirmed
     note: >
+      REPLACED, 2026-09-30, on the condition this note set in advance and on
+      the project owner's instruction. Under live Jev (jev-1.13.0, thresholds
+      v7) the pipeline resolves the closing date to 2018-06-25 -- the defined
+      term, which the sibling assertion checks -- and confirms it: the
+      conflict question now asks which candidate *is* the Closing Date, with
+      "none of these" on offer, and picks the definition. That is the case
+      named below as the replacement condition, met in full, so the status is
+      now expected to be 'confirmed'. The value is the sibling's to check;
+      this one checks that the pipeline commits to it. The stand-in still
+      leaves it 'conflicted', which is a question and not an error. What
+      follows is the assertion's history, kept as it was written.
+
       The honest outcome while the extractor cannot tell these dates apart.
       A field with eleven candidates at equal weight must not be confirmed
       at any of them: a confident wrong closing date is a silent error, and
