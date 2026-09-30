@@ -20,6 +20,7 @@ unannounced, and that is the only failure that hurts.
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 import sys
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
@@ -29,7 +30,7 @@ from ..pipeline import run_document_set, run_pipeline
 from ..validate.jev import JevClient, OfflineJev
 from .assertions import (
     AssertionFile, AssertionOutcome, evaluate_assertion, evaluate_file,
-    load_assertions,
+    load_assertion_file, load_assertions,
 )
 from .families import (
     CoverageReport, FamilyCoverage, empty_coverage, load_blind_spots,
@@ -52,10 +53,23 @@ class CoverageRun:
     notes: list[str] = dc_field(default_factory=list)
     #: Every ``version@backend`` the runs were triaged under.
     thresholds: set[str] = dc_field(default_factory=set)
+    #: Label files that raised instead of running, each with its error. A
+    #: file that did not run is not a file that passed, so each fails the gate.
+    did_not_run: list[str] = dc_field(default_factory=list)
 
     def record(self, result: Any) -> None:
         self.cost_usd += result.report.cost.total_usd
         self.thresholds.add(result.report.thresholds_version or "unknown")
+
+    def absorb(self, other: "CoverageRun") -> None:
+        """Fold in a run over other label files, after this one's."""
+        self.outcomes.extend(other.outcomes)
+        self.documents += other.documents
+        self.mutants += other.mutants
+        self.cost_usd += other.cost_usd
+        self.notes.extend(other.notes)
+        self.thresholds |= other.thresholds
+        self.did_not_run.extend(other.did_not_run)
 
     # -- the headline, and the table it is never printed without -----------
 
@@ -155,6 +169,13 @@ class CoverageRun:
                 "as directional.",
             ]
         lines += self._split_lines()
+        if self.did_not_run:
+            lines += [
+                "",
+                f"DID NOT RUN: {len(self.did_not_run)} label file(s). Their "
+                "assertions are in none of the numbers above.",
+            ]
+            lines += [f"  {entry}" for entry in self.did_not_run]
         for note in self.notes:
             lines.append(f"\n  note: {note}")
         return "\n".join(lines)
@@ -216,6 +237,11 @@ class CoverageRun:
             failures.append(
                 "the blind-spot register is empty or missing; a report without "
                 "it overstates what has been tested"
+            )
+        if self.did_not_run:
+            failures.append(
+                f"{len(self.did_not_run)} label file(s) did not run; the report "
+                "covers only the rest"
             )
         return failures
 
@@ -317,10 +343,21 @@ def run_coverage(
     **pipeline_kwargs: Any,
 ) -> CoverageRun:
     """Run every labelled assertion, plus every applicable mutation."""
-    run = CoverageRun()
     register = load_families()
+    return _coverage_of(
+        load_assertions(labels_dir, register), register, include_mutations,
+        **pipeline_kwargs,
+    )
 
-    for file in load_assertions(labels_dir, register):
+
+def _coverage_of(
+    files: list[AssertionFile],
+    register: Any,
+    include_mutations: bool,
+    **pipeline_kwargs: Any,
+) -> CoverageRun:
+    run = CoverageRun()
+    for file in files:
         if file.is_chain:
             # A chain is extracted from the operative text -- the base with
             # every amendment folded in -- which is the only thing its
@@ -383,6 +420,51 @@ def run_coverage(
     return run
 
 
+def _coverage_of_one_file(task: tuple[str, bool, str]) -> CoverageRun:
+    """One label file, in a worker process, asking a scorer built there.
+
+    A failure comes back rather than raising: the file is named, and the gate
+    fails on it. A run that loses a file partway -- to a spent credit balance,
+    say -- keeps what it measured and still cannot pass as complete.
+    """
+    path, include_mutations, jev = task
+    register = load_families()
+    try:
+        file = load_assertion_file(Path(path), register)
+        backend = JevClient() if jev == "api" else OfflineJev()
+        return _coverage_of(
+            [file], register, include_mutations, jev_backend=backend
+        )
+    except Exception as exc:  # noqa: BLE001 - named in the report, fails the gate
+        run = CoverageRun()
+        run.did_not_run.append(f"{Path(path).stem}: {type(exc).__name__}: {exc}")
+        return run
+
+
+def run_coverage_parallel(
+    labels_dir: Path, include_mutations: bool, jev: str, workers: int
+) -> CoverageRun:
+    """``run_coverage`` over several processes, one label file per task.
+
+    Label files are independent -- each resolves its own documents and writes
+    mutants under its own document's name -- and imap hands results back in
+    the order they were submitted, so the merged run is the sequential one:
+    offline, the report is identical line for line. What it buys back is
+    request latency. A live gate is over 100,000 requests at about 0.2 s
+    each: six hours in one process, a little over one in six.
+    """
+    ensure_corpus_unpacked()      # once, here, rather than raced by workers
+    tasks = [
+        (str(path), include_mutations, jev)
+        for path in sorted(labels_dir.glob("*.yaml"))
+    ]
+    merged = CoverageRun()
+    with multiprocessing.get_context("spawn").Pool(workers) as pool:
+        for run in pool.imap(_coverage_of_one_file, tasks):
+            merged.absorb(run)
+    return merged
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -393,13 +475,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jev", choices=("offline", "api"), default="offline",
                         help="the scorer the validators ask: the offline "
                              "stand-in, or live System One (needs JEV_API_KEY)")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="run label files in this many processes; a live "
+                             "gate is bound by request latency, not CPU")
+    parser.add_argument("--outcomes", type=Path,
+                        help="also write every assertion outcome as JSON lines, "
+                             "for comparing two runs assertion by assertion")
     args = parser.parse_args(argv)
 
-    jev_backend = JevClient() if args.jev == "api" else OfflineJev()
-    run = run_coverage(
-        args.labels, include_mutations=not args.no_mutations,
-        jev_backend=jev_backend,
-    )
+    if args.workers > 1:
+        run = run_coverage_parallel(
+            args.labels, not args.no_mutations, args.jev, args.workers
+        )
+    else:
+        jev_backend = JevClient() if args.jev == "api" else OfflineJev()
+        run = run_coverage(
+            args.labels, include_mutations=not args.no_mutations,
+            jev_backend=jev_backend,
+        )
+    if args.outcomes:
+        args.outcomes.write_text(
+            "".join(outcome.model_dump_json() + "\n" for outcome in run.outcomes)
+        )
     print(run.render())
 
     failures = run.gate_failures()

@@ -59,6 +59,49 @@ def test_the_family_report_asks_the_scorer_it_is_given(tmp_path, config):
     assert "UNFITTED" not in offline.render()
 
 
+def test_the_gate_run_in_parallel_is_the_gate_run_in_sequence(tmp_path):
+    """Label files are independent, so spreading them over processes may
+    change how long the gate takes and nothing else."""
+    from credit_extract.eval.family_report import (
+        LABELS_DIR, run_coverage, run_coverage_parallel,
+    )
+
+    labels = tmp_path / "labels"
+    labels.mkdir()
+    for name in ("ares_cp_funding_amendment_2025", "fixture_meridian_2017"):
+        shutil.copy(LABELS_DIR / f"{name}.yaml", labels)
+
+    parallel = run_coverage_parallel(labels, False, "offline", workers=2)
+    sequential = run_coverage(labels, include_mutations=False)
+
+    assert [o.model_dump() for o in parallel.outcomes] == [
+        o.model_dump() for o in sequential.outcomes
+    ]
+    assert parallel.render() == sequential.render()
+
+
+def test_a_label_file_that_does_not_run_fails_the_gate(tmp_path):
+    """A spent credit balance took out a third of the first live gate. The
+    files that did run are still a measurement; the run is not a pass."""
+    from credit_extract.eval.family_report import (
+        LABELS_DIR, run_coverage_parallel,
+    )
+
+    labels = tmp_path / "labels"
+    labels.mkdir()
+    shutil.copy(LABELS_DIR / "ares_cp_funding_amendment_2025.yaml", labels)
+    (labels / "zz_broken.yaml").write_text(
+        "document: zz_broken\nassertions:\n  - id: x\n    family: F99_nowhere\n"
+    )
+
+    run = run_coverage_parallel(labels, False, "offline", workers=2)
+
+    assert run.outcomes, "the file that ran is still measured"
+    assert len(run.did_not_run) == 1 and run.did_not_run[0].startswith("zz_broken:")
+    assert any("did not run" in failure for failure in run.gate_failures())
+    assert "DID NOT RUN: 1 label file(s)" in run.render()
+
+
 def test_calibrating_a_new_scorer_fits_it_once_and_spares_the_offline_set(
     tmp_path, config, monkeypatch
 ):
