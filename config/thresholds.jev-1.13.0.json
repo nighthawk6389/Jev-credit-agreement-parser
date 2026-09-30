@@ -135,5 +135,5 @@
       "n_incorrect": 0
     }
   },
-  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings. Fitted to the rewritten questions of the second live pass. Under this set the live gate on 2026-09-30 reached 81 of 104 label files before the account's credits ran out; on those it asserted 284 propositions confidently and 2 were wrong (0.70%), against 42 of 335 under v6 and 0 of 235 for the offline stand-in on the same files. Most of its absent_from_document claims fall on fields no label covers and are not measured; see docs/jev_live_pass.md."
+  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings. Fitted to the rewritten questions of the second live pass. Under this set the full live gate on 2026-09-30, on the 611 assertions every run shares, asserted 364 propositions confidently and 3 were wrong (0.82%), against 53 of 424 under v6 and 0 of 294 for the offline stand-in. Most of its absent_from_document claims fall on fields no label covers and are not measured; see docs/jev_live_pass.md."
 }

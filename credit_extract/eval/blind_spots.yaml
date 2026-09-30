@@ -253,20 +253,21 @@ untestable_in_this_environment:
       answers every validator question in every build. Two live passes have
       been made from a session that had a key, both against System One
       jev-1.13.0 on 2026-09-30 and recorded in docs/jev_live_pass.md. The
-      first ran on the original questions. The second ran on rewritten ones
-      and stopped at 81 of 104 label files when the account's credits ran
-      out. Each is one draw of a scorer that is not deterministic.
+      first ran on the original questions, the second on rewritten ones.
+      Each is one draw of a scorer that is not deterministic.
     consequence: >
-      The second pass rewrote the questions the first exposed, refitted (v7),
-      and on the 81 label files it completed asserted 284 propositions
-      confidently with 2 wrong (0.70%). On the same files the first pass had
-      335 with 42 wrong and the stand-in 235 with 0. The two left are literal
-      readings. One is EPRT's closing date, whose value is right and whose
-      held-out label is a tripwire set to fire when it is confirmed. The
-      other is Evernorth's note principal, asked about as "the Initial Term
-      Loans". What neither pass measures is the bulk of live Jev's
-      absent_from_document claims -- 1,139 across those documents, against
-      286 for the stand-in -- because most fall on fields no label covers.
+      The second pass rewrote the questions the first exposed and refitted
+      (v7). On the 611 assertions every run shares, it asserted 364
+      propositions confidently with 3 wrong (0.82%); the first pass had 424
+      with 53 wrong and the stand-in 294 with 0. The three left are literal
+      readings. EPRT's closing date has the right value, and its held-out
+      label is a tripwire set to fire when it is confirmed. Evernorth's note
+      principal is asked about as "the Initial Term Loans". Sysco's footnote
+      names a company's covenants without their levels, which validator C can
+      only call absent. What neither pass measures is the bulk of live Jev's
+      absent_from_document claims -- 1,358 across the original documents,
+      against 330 for the stand-in -- because most fall on fields no label
+      covers.
 
       What the first pass measured, under thresholds fitted for the live
       scorer on the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
@@ -379,13 +380,15 @@ untestable_in_this_environment:
       classifier now asks it of its abl_revolver verdicts, which is where
       every such error so far has been.
     remedy: >
-      The four questions are fixed and measured. What remains: run the 23
-      label files the second pass did not reach; decide the GBDC and EPRT
-      labels it exposed; label a sample of live Jev's absent_from_document
-      claims, which is where its unmeasured confident output lives; and fit
-      C's and A's parties thresholds on real filings rather than the
-      synthetic corpus, which is all the harness fits today. Lifting this
-      fully needs the key in CI as a secret, for a scheduled live gate. None
+      The four questions are fixed and measured. What remains: decide the
+      GBDC and EPRT labels the second pass exposed; let validator E speak for
+      a field a document names and points elsewhere without stating it;
+      label a sample of live Jev's absent_from_document claims, which is
+      where its unmeasured confident output lives; and fit C's and A's
+      parties thresholds on real filings rather than the synthetic corpus,
+      which is all the harness fits today. Lifting this fully needs the key
+      in CI as a secret, for a scheduled live gate, which the answer cache
+      now makes cheap: a rerun asks only the questions that changed. None
       of it will yield to more keywords -- the first pass is the argument
       for not trying.
 

@@ -72,7 +72,10 @@ credit-extract extract agreement.htm --backend anthropic --jev api --out result.
 # The client pins jev-1.13.0 (JEV_MODEL overrides it) and the backend is named
 # after the pin, so each model version gets its own threshold file.
 python -m credit_extract.eval.harness --calibrate --jev api --version 7
-# ~105,000 requests at ~0.2 s: about six hours in one process, one in six.
+# Live answers are kept in .cache/jev-answers.sqlite (untracked) and never
+# bought twice. A full gate is about 36,000 requests from an empty cache, and
+# a rerun asks only what changed. --no-jev-cache asks everything, for a
+# fresh draw of a scorer that is not deterministic.
 python -m credit_extract.eval.family_report --gate --jev api --workers 6 \
     --outcomes live.jsonl
 
@@ -505,11 +508,11 @@ lexicons are its weakest part. Live System One (`jev-1.13.0`) has been run
 twice through calibration and the gate. The first pass found 54 of 425
 confident propositions wrong (12.71%), and traced them to four questions a
 literal reader answered as written, not as meant. The second pass rewrote
-those questions and refitted. On the 81 of 104 label files it reached before
-the account's credits ran out, it found 2 wrong of 284 (0.70%); on the same
-files the first pass had 42 of 335, and the stand-in 0 of 235. What neither
-pass can score is most of live Jev's `absent_from_document` claims, which
-fall on fields no label covers. `docs/jev_live_pass.md` records all of it.
+those questions and refitted, and found 3 wrong of 364 (0.82%) on the 611
+assertions every run shares. On those, the first pass had 53 of 424 and the
+stand-in 0 of 294. What neither pass can score is most of live Jev's
+`absent_from_document` claims, which fall on fields no label covers.
+`docs/jev_live_pass.md` records all of it.
 Thresholds are
 tagged with the backend they were fitted against, each scorer has its own
 file, and `load_thresholds` **refuses a backend mismatch** rather than

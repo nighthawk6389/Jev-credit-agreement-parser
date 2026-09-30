@@ -405,37 +405,51 @@ to 0.84 because the 19 add-back caps E used to take are A's samples again
 As before, almost nothing is certified: 24 synthetic documents hold too few
 failures to constrain a 99% target.
 
-## The gate, on 81 of 104 label files
+## The gate
 
-The gate ran under v7 through the scratch runner the first pass used. It calls
-the same `run_coverage` as `family_report --gate --jev api`, spreads label
-files over six processes, and saves each file's outcomes as it completes. 81
-label files finished: 83 documents, 63 mutants, 474 assertions, 77,489
-requests, **$6.10**, 49 minutes. Then the account's credits ran out again.
-From the 77th file on, every request came back HTTP 402 (`billing_error`), and
-23 files did not run. They cost $2.18 under v6. The denial was reported, not
-retried. So everything below compares runs on the 81 files every run
-completed, and it is one draw of a non-deterministic scorer.
+It ran in two parts, like the first pass. The first 81 label files ran under
+v7 through the scratch runner, which calls the same `run_coverage` as
+`family_report --gate --jev api` and saves each file's outcomes as it
+completes: 83 documents, 63 mutants, 474 assertions, 77,489 requests,
+**$6.10**, 49 minutes. Then the account's credits ran out again. From the 77th
+file on, every request came back HTTP 402 (`billing_error`). The denial was
+reported, not retried. Once credit was added, the other 23 files ran under
+the same questions and thresholds, and with the request savings described
+below: 23 documents, 23 mutants, 138 assertions, 9,457 requests, **$1.01**, 7
+minutes. The same files had taken 28,630 requests and $2.18 under v6.
+Merged, the run reproduces the offline run's 106 documents, 86 mutants, 612
+assertions and notes exactly. In total it cost **$7.11**, and it is one draw of
+a non-deterministic scorer.
 
-| on the same 81 files | confident | wrong | silent-error rate | real only |
+One assertion is dropped from every run below. It is the units mutant on
+Tailored Brands' ABL amendment, which asserted an MFN threshold of 3.00 about
+a document with no MFN provision. The generator had matched a phrase that
+caps the separate term loan's rate. Live v7 said confidently there is no MFN
+threshold, and the gate scored that right answer as a silent error. The
+generator now requires an MFN comparison ("exceeds … by more than"), so the
+gate has 611 assertions. Each mutant is its own pipeline run, so dropping one
+moves nothing else.
+
+| 611 assertions | confident | wrong | silent-error rate | real only |
 | --- | --- | --- | --- | --- |
-| stand-in v5, old questions | 242 | 3 | 1.24% | 167 / 3 |
-| stand-in v5, new questions | 235 | 0 | 0.00% | 160 / 0 |
-| live v6, old questions | 335 | 42 | 12.54% | 258 / 41 |
-| **live v7, new questions** | **284** | **2** | **0.70%** | 209 / 2 |
+| stand-in v5, old questions | 302 | 3 | 0.99% | 206 / 3 |
+| stand-in v5, new questions | 294 | 0 | 0.00% | 198 / 0 |
+| live v6, old questions | 424 | 53 | 12.50% | 326 / 52 |
+| **live v7, new questions** | **364** | **3** | **0.82%** | 268 / 3 |
 
-**40 of v6's 42 silent errors are gone.** 21 now reach review with the right
-answer, 18 reach review with the wrong one, and one is now confidently right.
-That one is Janus Living's administrative agent, which v6 confirmed as "Loan
-Documents" and v7 confirms as BANK OF AMERICA, N.A., through the conflict fix.
-Ten of the 18 are margins in pricing grids the rules tier cannot read. v6
-settled them as empty under a confident status, either absent or
+**51 of v6's 53 silent errors are gone.** 23 now reach review with the right
+answer, 24 with the wrong one, and 4 are now confidently right. One of the 4
+is Janus Living's administrative agent, which v6 confirmed as "Loan
+Documents" and v7 confirms as BANK OF AMERICA, N.A., through the conflict
+fix. Half of the 24 are margins in pricing grids the rules tier cannot read.
+v6 settled them as empty under a confident status, either absent or
 inapplicable behind a wrong archetype. v7 leaves them in review, which is
-where a value extraction did not find belongs. Two event-defined closing dates,
-KKR's and New Fortress's, now stay conflicted, where v6 confirmed a date for
-each.
+where a value extraction did not find belongs. Vivid Seats' agent is still
+read as "Restricted Subsidiary", but the name question no longer confirms
+it. Two event-defined closing dates, KKR's and New Fortress's, now stay
+conflicted.
 
-**The two left are both literal readings, and neither is a simple fix.**
+**The three left are all literal readings.**
 
 * EPRT's closing date. The *value* is right: 2018-06-25, the defined term,
   and the sibling value assertion passes. The status is `confirmed` where the
@@ -447,54 +461,118 @@ each.
 * Evernorth's $30,000,000 original principal, asserted absent. C asks
   whether any chunk addresses "the aggregate principal amount of the Initial
   Term Loans", and a note purchase agreement has no Initial Term Loans. This
-  is the field's description read literally, the same failure as the margin's.
-  Evernorth is on the fit side, so rewording the description is allowed. It
-  is not done here because it would need another gate to measure.
+  is the field's description read literally, the same failure as the
+  margin's. Evernorth is on the fit side.
+* Sysco's filing on JRD Unico, new in v7. A footnote names three covenants
+  of the acquired company, "EBITDA ratio, fixed charge ratio and incurrence
+  of debt ratio", and states none of their levels. The label says
+  `external_reference`, because the levels live in JRD Unico's note
+  agreements. C asks whether the text addresses "the maximum leverage level
+  under the financial covenant", and the literal answer is no. The presence
+  form is confident enough to assert absence where the old negation hedged.
+  C cannot say "named here, stated elsewhere". E could, but E only reads
+  fields that carry a value.
 
-**What it cost: 13 right answers moved to review.** Four are the GBDC
-assertions behind its ABL label. Five are true absences the presence form
-does not clear at 0.80: Athena's collateral vocabulary, Constellation's and
-Evernorth's credit spread adjustments, Cooper Standard's excess cash flow
-sweep, and the fixture's MFN sunset. Four are correct administrative-agent names
-that v7 does not confirm. The likeliest reason is the 0.96 parties threshold
-fitted on synthetic names: in the question experiment, the labelled correct
-names scored 0.89–0.98. It is not measured here, because an outcome does not
-record A's score.
+**What it cost: 17 right answers moved to review.** Four are the GBDC
+assertions behind its disputed ABL label. Eight are true absences the
+presence form does not clear at 0.80: Athena's collateral vocabulary,
+Constellation's and Evernorth's credit spread adjustments, excess cash flow
+sweeps at Cooper Standard, Schneider and StepStone, Schneider's MFN, and the
+fixture's MFN sunset. Four are correct administrative-agent names that v7
+does not confirm. The likeliest reason is the 0.96 parties threshold fitted
+on synthetic names: in the question experiment, the labelled correct names
+scored 0.89–0.98. That is not measured here, because an outcome does not
+record A's score. The last is one of Star Mountain's absences.
 
-**Against the stand-in on the same questions,** live v7 turns 53 of the
-stand-in's review answers into confident right ones, 39 it had right and 14
-it had wrong. Governing law keeps the first pass's gain: 49 of 54 confident
-and right, the same as v6, against 37 for the stand-in.
+**Against the stand-in on the same questions,** live v7 turns 74 of the
+stand-in's review answers into confident right ones: 52 it had right and 22
+it had wrong. It sends 7 of the stand-in's confident right answers to review
+and adds the 3 silent errors above. Governing law keeps the first pass's
+gain: 64 of 69 confident and right, the same as v6, against the stand-in's
+50.
 
-Two families are over budget, F05 (EPRT) and F06 (Evernorth), one error
-each. Across the original documents of the 81 files the statuses moved like
-this:
+Across the original documents, mutants excluded, the statuses moved like this:
 
 | status | stand-in | live v6 | live v7 |
 | --- | --- | --- | --- |
-| `confirmed` | 235 | 288 | 259 |
-| `not_applicable_to_archetype` | 72 | 534 | **126** |
-| `absent_from_document` | 286 | 1,183 | **1,139** |
-| `conflicted` | 107 | 39 | 65 |
-| `needs_review` | 3,825 | 2,475 | 2,938 |
+| `confirmed` | 291 | 363 | 326 |
+| `not_applicable_to_archetype` | 119 | 694 | **182** |
+| `absent_from_document` | 330 | 1,414 | **1,358** |
+| `conflicted` | 142 | 50 | 83 |
+| `needs_review` | 4,928 | 3,283 | 3,863 |
 
 The archetype fix shows in the second row. The third row is **what this
 gate does not measure.** Live v7 asserts absence four times as often as
-the stand-in, nearly as often as v6. Of the labelled assertions, v7
-settles 14 as empty and 13 of those are right; Evernorth's is the other. But
-most of the 1,139 are fields no
-label covers, and `absent_from_document` is a confident status. It is now the
-largest body of confident output the gate cannot score.
+the stand-in, nearly as often as v6. Of the labelled assertions, v7 settles
+18 as empty and 16 of those are right; Evernorth's and Sysco's are the other
+two. But most of the 1,358 are fields no label covers, and
+`absent_from_document` is a confident status. It is now the largest body of
+confident output the gate cannot score.
+
+## Request volume
+
+Three live runs made over 200,000 requests, and most of them repeated one
+already made. Two mechanisms now stop that. Neither changes a question.
+
+**Validators B and C shared chunks but not requests.** Both sweep the same
+chunks: the union of the structural and sliding segmentations, which covers
+the document about 2.4 times. B asks each chunk its five orphan questions.
+C asked each chunk again, separately, whether it addresses each empty field,
+and C was 47% of all requests. B now carries C's questions on its own
+requests. A `JevSession` keeps every answer it buys, keyed on the model, the
+state and the question exactly as sent, so C finds its answers already
+bought and asks only what it lacks.
+
+**Nothing was kept between documents or runs.** A mutant is its document
+with one defect injected, so nearly all its chunks have been asked about
+already, and mutants were 48% of all requests. Label files share documents.
+Validator F's question about an empty field has the description as its whole
+state, so it is identical for every document. A run cut short by a 402 lost
+everything it had bought. `CachedJev` keeps answers in a SQLite file shared by
+the gate's workers, `.cache/jev-answers.sqlite`, which is untracked. The eval
+tools use it by default for the live scorer, and `--no-jev-cache` asks for a
+fresh draw.
+
+Measured on the offline gate, whose stand-in makes the same requests:
+
+| | requests | tokens |
+| --- | --- | --- |
+| before | 108,071 | 185.1M |
+| B and C share requests | 61,936 (−43%) | 125.3M (−32%) |
+| and the answer cache, starting empty | 35,929 (−67%) | 88.2M (−52%) |
+
+A rerun with the cache warm makes no requests at all. On five label files
+(18 pipeline runs) the cold run made 1,929 requests, the warm rerun 0, and
+the outcomes were byte-identical.
+
+Live, on the 23 files the second gate finished with: 28,630 requests under
+v6, 9,457 now (−67%), and $2.18 against $1.01.
+
+Neither mechanism may change an answer. On the offline gate all 612 outcomes
+and the status counts of all 190 pipeline runs are byte-identical with and
+without them. Live, they rest on a question being answered independently of
+the others in its request, which the batching has always assumed. That was
+tested on 8 chunks of Sanmina's agreement, with 15 questions each. Asked
+together with B's questions, the answers moved from the alone answers by a
+mean of 0.0101. Asked alone twice, they moved by the same 0.0101, which is
+the scorer's own noise.
+
+What the cache gives up is a fresh draw. For mutants that is a gain, not a
+loss: every chunk a mutation did not touch now gets the same answer as in the
+original, so a difference between the two is the mutation's and not the
+scorer's noise.
 
 ## What is next
 
-1. Run the 23 files that did not run, which needs roughly $2.30 of credit.
-   Then merge, as for the first pass.
-2. Decide the two labels this pass exposed and did not touch: GBDC's
+1. Decide the two labels this pass exposed and did not touch: GBDC's
    `abl_revolver` against Athena's `unknown`, and EPRT's tripwire.
-3. Label a sample of the unlabelled `absent_from_document` claims. That is
-   where live v7's unmeasured confident output lives.
-4. Reword `initial_term_loan.commitment` so a note's principal is addressed
+2. Let validator E speak for a field a document names and points elsewhere
+   without stating it, which is Sysco's case. Today E reads only fields that
+   carry a value.
+3. Reword `initial_term_loan.commitment` so a note's principal is addressed
    (fit side), and fit A's parties threshold on real names.
-5. Put the key in CI for a scheduled live gate. Until then, CI measures the
+4. Label a sample of the unlabelled `absent_from_document` claims. That is
+   where live v7's unmeasured confident output lives.
+5. Put the key in CI for a scheduled live gate. With the cache warm, one
+   costs only the questions that changed. Until then, CI measures the
    stand-in, which on these questions passes at 294 confident / 0 wrong.
