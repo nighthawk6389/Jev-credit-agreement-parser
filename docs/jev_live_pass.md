@@ -251,3 +251,156 @@ assertion by assertion.
 
 No assertion targets the three boolean fields, so whether "a value of True for
 …" costs A any accuracy is not measured.
+
+---
+
+# The second pass: the questions rewritten
+
+The first pass ended on four questions to fix. This is the pass that fixed
+them, then measured again, on the same day, model and labels. Nothing in it is
+a threshold change dressed up as a fix. Each change rewrites what a question
+says, and each was measured live on the requests the first gate actually
+sent, before the gate was run again.
+
+The vendor's guidance is the design rule throughout: a literal reader answers
+the words, so a question has to say exactly what it means. It should hold one
+judgment, assume no premise, and never ask a negation when it means an
+absence.
+
+## What changed, and what each change measured
+
+**Validator C asked the negation.** "This text contains no provision
+addressing the highest Eurodollar Applicable Margin in the pricing grid" was
+asked of every chunk. A literal reader agrees with that of any chunk that does
+not use those words, however plainly the chunk states a margin over Term
+SOFR. C now asks presence of each chunk ("this text contains a provision
+addressing …"), and absence is one minus the strongest presence anywhere. The
+margin is also described in the vocabulary agreements use now: "the highest
+margin over Term SOFR, Eurodollar or another benchmark in the pricing grid
+(the Applicable Rate or Applicable Margin)". Measured on the exact chunks C
+sent:
+
+| | old question | new question |
+| --- | --- | --- |
+| 15 margins the first gate asserted absent | absence 0.34–0.88 | 0.04–0.10 on 13; 0.30 and 0.59 on the other two |
+| 19 fields the labels say are absent, at 0.80 | 7 confirmed | 12 confirmed |
+
+The two exceptions are a BDC warehouse and Air T's note. The note borrows its
+margin from an agreement the filing does not contain, so its label is
+`external_reference` and review is the right outcome. So the new question
+clears false absences and confirms more of the true ones.
+
+**Validator A asked about a role, not a name.** The registry described the
+administrative agent as "the Administrative Agent", so A asked whether the
+text "supports a value of Loan Documents for the Administrative Agent". That
+is true of any text that names the role. Party fields are now asked as names:
+*In this text, "X" is the legal name of the institution acting as
+Administrative Agent.* The 17 labelled correct names score 0.89–0.98. Six
+phrases the rules tier lifted from beside a name score 0.02–0.31; the old
+form gave them 0.16–0.97. The six are "Loan Documents", "Administrative
+Agent", "The Other Borrowers Party Hereto" and three variants of "Certain
+Subsidiaries".
+
+**Validator E bundled two claims and a premise.** "The magnitude of this limit
+depends on the X, a document not contained in this agreement" never said
+which limit. It also assumed the document sits outside the agreement, which is
+false of a schedule. It now names the field and makes one claim: *The amount
+of {field} is set by the {document}, not stated in this text.* On 102
+labelled cases, all 23 true externals score 0.81–0.94. Of the 79
+non-externals, the old statement put 76 over 0.5; the new one scores them
+0.02–0.51. The statement is declared an absence claim. That is how the
+stand-in, which builds its score from the words the cited sentence contains,
+reads it the right way round.
+
+**Conflict resolution asked the wrong question and discarded its answer.**
+"Which value does the cited text support?" cannot separate candidates that
+were each extracted from their own citation. It now asks which value *is*
+the field, and "none of these" is always an option. On the 53 labelled
+conflicts from the first gate, the new question is right 51 times and the old
+one 41. The cost is coverage: across all 142 conflicts, it declines on 66,
+and those stay in review. The same audit found a bug no wording could fix. When
+the model chose a candidate other than reconciliation's first, the field was
+confirmed but kept the rejected value. Five administrative agents reached the
+first gate's report that way. The chosen value is now applied. A numeric
+overturn goes to review instead, because a candidate's string does not carry
+its unit.
+
+**Archetype dispatch asked every document what facility it establishes.**
+All 18 archetypes the first gate got wrong came from that one question, whose
+options were all facilities. It was asked of warrants, press releases and
+notes. The model is now asked only when two archetypes' decisive vocabularies
+tie, which is the case the design describes, and "neither" is always an
+option. A document that is not an agreement, or says too little to classify,
+is `unknown` without a request. The corpus has six ties. The three with an
+archetype label all come out right: AGL's subscription line is
+`nav_or_subscription` at 0.99, Cooper Standard is `abl_revolver` at 0.96, and
+Bain's fund facility is *neither* at 0.72. The first gate had called Bain's
+facility `nav_or_subscription`.
+
+**And #35, which the first pass measured but did not run.** A deterministic
+`abl_revolver` verdict is now checked with one noul: is the borrowing base the
+borrower's own eligible receivables and inventory? It is asked of the
+detection window plus the document's own Borrowing Base definition. Below 0.5
+the verdict is withdrawn, and `unknown` rules nothing out. On the 26
+documents the vocabulary calls an ABL:
+
+| | own-receivables noul |
+| --- | --- |
+| the three #35 silent errors | 0.03–0.13 |
+| fifteen fund, BDC, specialty-finance, securitisation and similar facilities | 0.03–0.32 |
+| the eight corporate ABLs | 0.65–0.97 |
+
+One of the fifteen is GBDC 4 Funding III, a BDC warehouse, and its label says
+`abl_revolver`. Blue Owl's Athena Funding is the same kind of facility, and
+its label says `unknown`, because an ABL verdict rules out the coverage tests a
+warehouse is measured by. The two labels disagree; see below.
+
+**One change is to the fit, not a question.** A class with no failures in it
+used to be fitted to the lowest score it saw. That is how v6 set C's
+economic-terms threshold to 0.27 on eight synthetic samples. Such a class now
+keeps the 0.80 default whenever the fit would land lower.
+
+The questions, the conflict fix, the dispatch and the fit are pinned
+by `tests/test_question_design.py`. Each of its tests fails when the change it
+pins is reverted.
+
+## Offline
+
+The stand-in answers the new questions too, and CI's gate is the offline one:
+
+| | confident | wrong | silent-error rate |
+| --- | --- | --- | --- |
+| stand-in v5, old questions | 302 | 3 | 0.99% |
+| **stand-in v5, new questions** | **294** | **0** | **0.00%** |
+
+That is the first time the offline gate has passed with the whole corpus in
+it. The three errors cleared are the #35 archetypes. It gives up five right
+answers, all to review: Tailored Brands' ABL, whose vocabulary the stand-in's
+lexicon misses (the live scorer keeps it at 0.89), and four GBDC assertions
+that depend on its ABL label.
+
+## Calibration
+
+`harness --calibrate --jev api -n 24 --version 7`: 24 synthetic documents,
+**$0.066**. Triaged at the unfitted 0.80 defaults, the calibration run
+confirmed 664 of 739 labelled fields with none wrong; the first pass's
+calibration runs confirmed 645–647. E fired on no field that was not already
+an external reference, against 22 wrong fires under the old statement, so v7
+has no E class and E runs at the default. C's economic-terms threshold is the
+0.80 floor where v6 had 0.27. A's covenant-levels threshold falls from 0.96
+to 0.84 because the 19 add-back caps E used to take are A's samples again
+(see "E's misfire also cost A its data" above). The rest are close to v6's:
+
+| class | v6 | v7 |
+| --- | --- | --- |
+| A / baskets | 0.88 | 0.90 |
+| A / covenant levels | 0.96 | 0.84 |
+| A / dates | 0.92 | 0.92 |
+| A / economic terms | 0.77 | 0.77 |
+| A / parties | 0.98 | 0.96 |
+| C / economic terms | 0.27 | **0.80** |
+| conflict choice / economic terms | 0.97 | 0.96 |
+| E / baskets, covenant levels | above 1.0 (off) | default 0.80 |
+
+As before, almost nothing is certified: 24 synthetic documents hold too few
+failures to constrain a 99% target.

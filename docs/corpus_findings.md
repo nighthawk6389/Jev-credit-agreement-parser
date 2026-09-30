@@ -300,6 +300,28 @@ So #35 is question-shaped as well as credential-shaped: the model can answer
 whose facility the words describe, but only if it is asked that, and only if
 the classifier asks it about the verdicts it is sure of.
 
+### Now it is asked
+
+As of the second live pass (`docs/jev_live_pass.md`), every deterministic
+`abl_revolver` verdict gets the *own ABL* noul. It is asked of the window plus
+the document's own Borrowing Base definition, and it withdraws the verdict
+below 0.5. On all 26 documents the vocabulary calls an ABL, the three above
+score 0.03–0.13, fifteen fund, BDC and similar facilities 0.03–0.32, and the
+eight corporate ABLs 0.65–0.97. The definition matters to the stand-in more
+than to the scorer. A corporate ABL defines Eligible Accounts and Eligible
+Inventory well past the window, and without the definition the stand-in's
+lexicon vetoed Winnebago's ABL.
+
+cik1901612 falls to `unknown`, as predicted above. That exposes a
+disagreement in the labels, not an error in the veto. GBDC 4 Funding III is a
+BDC warehouse lending against a pool of collateral loans, and its label says
+`abl_revolver`. Athena Funding is the same kind of facility, and its label
+says `unknown`, because an ABL verdict rules out the coverage and
+overcollateralisation tests a warehouse is measured by. The veto agrees with
+Athena's label. GBDC is in the split's contaminated set, so relabelling it
+would not touch the holdout, but a relabel is a judgment about what an
+archetype is for, and it is left to be made deliberately.
+
 ## What happened the first time a model tier's output ran through the pipeline
 
 There is no `ANTHROPIC_API_KEY` in this environment, so the tier meant to do

@@ -71,7 +71,7 @@ credit-extract extract agreement.htm --backend anthropic --jev api --out result.
 # Jev is TypeSafe AI's System One, at https://api.typesafe.ai/v1/systemone.
 # The client pins jev-1.13.0 (JEV_MODEL overrides it) and the backend is named
 # after the pin, so each model version gets its own threshold file.
-python -m credit_extract.eval.harness --calibrate --jev api --version 6
+python -m credit_extract.eval.harness --calibrate --jev api --version 7
 # ~105,000 requests at ~0.2 s: about six hours in one process, one in six.
 python -m credit_extract.eval.family_report --gate --jev api --workers 6 \
     --outcomes live.jsonl
