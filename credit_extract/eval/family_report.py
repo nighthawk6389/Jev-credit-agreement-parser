@@ -219,7 +219,14 @@ class CoverageRun:
                 f"  {side:14} {len(group):>3} assertions, {confident} confident, "
                 f"{wrong} wrong"
             )
-        if not sides.get("holdout"):
+        if sides.get("out_of_sample"):
+            lines += [
+                "  The out_of_sample row is documents harvested after the split",
+                "  was frozen, from manager families the corpus did not hold, and",
+                "  labelled before the pipeline first ran on them. It measures",
+                "  generalisation, and is never pooled with the holdout.",
+            ]
+        elif not sides.get("holdout"):
             lines += [
                 "  Nothing has been measured on a held-out document. Every real",
                 "  assertion above is on a filing that was read while the parser",

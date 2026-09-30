@@ -79,6 +79,28 @@ def test_an_out_of_sample_document_cannot_also_be_contaminated(tmp_path):
     assert any("out of sample but also on the contaminated list" in p for p in problems)
 
 
+def test_an_out_of_sample_run_is_not_reported_as_fit():
+    """The report used to follow the out-of-sample row with "every real
+    assertion above is on a filing that was read while the parser was
+    written", because it looked only for holdout outcomes. On a run of the
+    out-of-sample set that is exactly backwards."""
+    from credit_extract.eval.assertions import AssertionOutcome
+    from credit_extract.eval.family_report import CoverageRun
+
+    run = CoverageRun()
+    run.outcomes.append(AssertionOutcome(
+        assertion_id="a", document="d", family="F01_integrity",
+        member="undefined_term_used", kind="field_value", passed=True,
+        confident=True, source="real",
+        label_document=sorted(split_mod.load_split().out_of_sample)[0],
+    ))
+    text = "\n".join(run._split_lines())
+
+    assert "out_of_sample    1 assertions, 1 confident, 0 wrong" in text
+    assert "generalisation" in text
+    assert "describe fit" not in text
+
+
 def test_every_stratum_contributes_a_holdout_document():
     """A holdout that skips a deal type cannot measure that deal type."""
     split = split_mod.load_split()
