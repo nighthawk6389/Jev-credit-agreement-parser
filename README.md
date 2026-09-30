@@ -497,17 +497,20 @@ classes have **no labelled failures**, which means every threshold clears the
 target trivially and the fitted value carries no information — the report
 prints that in full rather than showing a clean 1.000 and moving on.
 
-**One live Jev pass, and no Jev in CI.** `OfflineJev` is a deterministic
+**Two live Jev passes, and no Jev in CI.** `OfflineJev` is a deterministic
 lexical stand-in implementing the same typed interface, so the pipeline, its
 tests and its calibration all run offline, and every CI build is still
 answered by it. It is not a calibrated model, and the orphan sweep's concept
 lexicons are its weakest part. Live System One (`jev-1.13.0`) has been run
-once, through calibration and the full gate, and the gate's answer is not
-yet good: 54 of 425 confident propositions wrong (12.71%), against 3 of 302
-for the stand-in on the same labels. The live scorer reads better where the
-two can be compared; what it exposed is four questions and a set of
-thresholds that had only ever met a scorer that could not be confident.
-`docs/jev_live_pass.md` records all of it. Thresholds are
+twice through calibration and the gate. The first pass found 54 of 425
+confident propositions wrong (12.71%), and traced them to four questions a
+literal reader answered as written, not as meant. The second pass rewrote
+those questions and refitted. On the 81 of 104 label files it reached before
+the account's credits ran out, it found 2 wrong of 284 (0.70%); on the same
+files the first pass had 42 of 335, and the stand-in 0 of 235. What neither
+pass can score is most of live Jev's `absent_from_document` claims, which
+fall on fields no label covers. `docs/jev_live_pass.md` records all of it.
+Thresholds are
 tagged with the backend they were fitted against, each scorer has its own
 file, and `load_thresholds` **refuses a backend mismatch** rather than
 silently applying one scorer's threshold to another.

@@ -287,8 +287,8 @@ sent:
 
 The two exceptions are a BDC warehouse and Air T's note. The note borrows its
 margin from an agreement the filing does not contain, so its label is
-`external_reference` and review is the right outcome. So the new question
-clears false absences and confirms more of the true ones.
+`external_reference`. Review is not that, but it is the safe side of it. So
+the new question clears false absences and confirms more of the true ones.
 
 **Validator A asked about a role, not a name.** The registry described the
 administrative agent as "the Administrative Agent", so A asked whether the
@@ -404,3 +404,97 @@ to 0.84 because the 19 add-back caps E used to take are A's samples again
 
 As before, almost nothing is certified: 24 synthetic documents hold too few
 failures to constrain a 99% target.
+
+## The gate, on 81 of 104 label files
+
+The gate ran under v7 through the scratch runner the first pass used. It calls
+the same `run_coverage` as `family_report --gate --jev api`, spreads label
+files over six processes, and saves each file's outcomes as it completes. 81
+label files finished: 83 documents, 63 mutants, 474 assertions, 77,489
+requests, **$6.10**, 49 minutes. Then the account's credits ran out again.
+From the 77th file on, every request came back HTTP 402 (`billing_error`), and
+23 files did not run. They cost $2.18 under v6. The denial was reported, not
+retried. So everything below compares runs on the 81 files every run
+completed, and it is one draw of a non-deterministic scorer.
+
+| on the same 81 files | confident | wrong | silent-error rate | real only |
+| --- | --- | --- | --- | --- |
+| stand-in v5, old questions | 242 | 3 | 1.24% | 167 / 3 |
+| stand-in v5, new questions | 235 | 0 | 0.00% | 160 / 0 |
+| live v6, old questions | 335 | 42 | 12.54% | 258 / 41 |
+| **live v7, new questions** | **284** | **2** | **0.70%** | 209 / 2 |
+
+**40 of v6's 42 silent errors are gone.** 21 now reach review with the right
+answer, 18 reach review with the wrong one, and one is now confidently right.
+That one is Janus Living's administrative agent, which v6 confirmed as "Loan
+Documents" and v7 confirms as BANK OF AMERICA, N.A., through the conflict fix.
+Ten of the 18 are margins in pricing grids the rules tier cannot read. v6
+settled them as empty under a confident status, either absent or
+inapplicable behind a wrong archetype. v7 leaves them in review, which is
+where a value extraction did not find belongs. Two event-defined closing dates,
+KKR's and New Fortress's, now stay conflicted, where v6 confirmed a date for
+each.
+
+**The two left are both literal readings, and neither is a simple fix.**
+
+* EPRT's closing date. The *value* is right: 2018-06-25, the defined term,
+  and the sibling value assertion passes. The status is `confirmed` where the
+  label says `conflicted`. The label is a tripwire written to fire exactly
+  here, and its note says it "should be replaced, not deleted" once the
+  pipeline resolves to 2018-06-25 and confirms it. EPRT is held out, so the
+  replacement is left for a deliberate decision, not made here after seeing
+  the result.
+* Evernorth's $30,000,000 original principal, asserted absent. C asks
+  whether any chunk addresses "the aggregate principal amount of the Initial
+  Term Loans", and a note purchase agreement has no Initial Term Loans. This
+  is the field's description read literally, the same failure as the margin's.
+  Evernorth is on the fit side, so rewording the description is allowed. It
+  is not done here because it would need another gate to measure.
+
+**What it cost: 13 right answers moved to review.** Four are the GBDC
+assertions behind its ABL label. Five are true absences the presence form
+does not clear at 0.80: Athena's collateral vocabulary, Constellation's and
+Evernorth's credit spread adjustments, Cooper Standard's excess cash flow
+sweep, and the fixture's MFN sunset. Four are correct administrative-agent names
+that v7 does not confirm. The likeliest reason is the 0.96 parties threshold
+fitted on synthetic names: in the question experiment, the labelled correct
+names scored 0.89–0.98. It is not measured here, because an outcome does not
+record A's score.
+
+**Against the stand-in on the same questions,** live v7 turns 53 of the
+stand-in's review answers into confident right ones, 39 it had right and 14
+it had wrong. Governing law keeps the first pass's gain: 49 of 54 confident
+and right, the same as v6, against 37 for the stand-in.
+
+Two families are over budget, F05 (EPRT) and F06 (Evernorth), one error
+each. Across the original documents of the 81 files the statuses moved like
+this:
+
+| status | stand-in | live v6 | live v7 |
+| --- | --- | --- | --- |
+| `confirmed` | 235 | 288 | 259 |
+| `not_applicable_to_archetype` | 72 | 534 | **126** |
+| `absent_from_document` | 286 | 1,183 | **1,139** |
+| `conflicted` | 107 | 39 | 65 |
+| `needs_review` | 3,825 | 2,475 | 2,938 |
+
+The archetype fix shows in the second row. The third row is **what this
+gate does not measure.** Live v7 asserts absence four times as often as
+the stand-in, nearly as often as v6. Of the labelled assertions, v7
+settles 14 as empty and 13 of those are right; Evernorth's is the other. But
+most of the 1,139 are fields no
+label covers, and `absent_from_document` is a confident status. It is now the
+largest body of confident output the gate cannot score.
+
+## What is next
+
+1. Run the 23 files that did not run, which needs roughly $2.30 of credit.
+   Then merge, as for the first pass.
+2. Decide the two labels this pass exposed and did not touch: GBDC's
+   `abl_revolver` against Athena's `unknown`, and EPRT's tripwire.
+3. Label a sample of the unlabelled `absent_from_document` claims. That is
+   where live v7's unmeasured confident output lives.
+4. Reword `initial_term_loan.commitment` so a note's principal is addressed
+   (fit side), and fit A's parties threshold on real names.
+5. Put the key in CI for a scheduled live gate. Until then, CI measures the
+   stand-in, which on these questions passes at 294 confident / 0 wrong.

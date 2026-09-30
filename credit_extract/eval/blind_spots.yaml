@@ -250,14 +250,26 @@ untestable_in_this_environment:
     status: partially_lifted
     reason: >
       CI has no JEV_API_KEY, so OfflineJev, a deterministic lexical stand-in,
-      answers every validator question in every build. One live pass has been
-      made from a session that had a key -- calibration and the full gate
-      against System One jev-1.13.0 on 2026-09-30, recorded in
-      docs/jev_live_pass.md -- and one pass is one draw of a scorer that is
-      not deterministic.
+      answers every validator question in every build. Two live passes have
+      been made from a session that had a key, both against System One
+      jev-1.13.0 on 2026-09-30 and recorded in docs/jev_live_pass.md. The
+      first ran on the original questions. The second ran on rewritten ones
+      and stopped at 81 of 104 label files when the account's credits ran
+      out. Each is one draw of a scorer that is not deterministic.
     consequence: >
-      What that pass measured, under thresholds fitted for the live scorer on
-      the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
+      The second pass rewrote the questions the first exposed, refitted (v7),
+      and on the 81 label files it completed asserted 284 propositions
+      confidently with 2 wrong (0.70%). On the same files the first pass had
+      335 with 42 wrong and the stand-in 235 with 0. The two left are literal
+      readings. One is EPRT's closing date, whose value is right and whose
+      held-out label is a tripwire set to fire when it is confirmed. The
+      other is Evernorth's note principal, asked about as "the Initial Term
+      Loans". What neither pass measures is the bulk of live Jev's
+      absent_from_document claims -- 1,139 across those documents, against
+      286 for the stand-in -- because most fall on fields no label covers.
+
+      What the first pass measured, under thresholds fitted for the live
+      scorer on the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
       against 3 of 302 for the stand-in on the same 612 assertions. The live
       scorer reads better where the two can be compared -- 14 of the 19
       governing-law answers the stand-in held in review now clear, none
@@ -277,10 +289,12 @@ untestable_in_this_environment:
 
       Archetype dispatch was listed here as the stand-in's clearest casualty.
       For its confident errors it was not one: the three the offline gate
-      reports are deterministic verdicts that never reach the model, and the
+      reported are deterministic verdicts that never reach the model, and the
       classifier's own question would get them wrong too -- measured in
       docs/corpus_findings.md, where one noul about whose receivables secure
-      the facility separates them. What follows is how they were found.
+      the facility separates them. That noul now runs on every deterministic
+      ABL verdict, and it clears all three, offline and live. What follows is
+      how they were found.
       Across the 62 corpus documents whose
       stratum implies an archetype, the deterministic classifier gets 17
       right and 14 confidently wrong, and four alternative configurations
@@ -361,17 +375,18 @@ untestable_in_this_environment:
       buying. What it establishes is that a document with no defaults at all
       is not an agreement, and that is worth keeping. What it cannot
       establish -- whose facility the credit vocabulary describes -- is the
-      same question the suppression veto answers field by field, and the
-      classifier does not ask it.
+      same question the suppression veto answers field by field. The
+      classifier now asks it of its abl_revolver verdicts, which is where
+      every such error so far has been.
     remedy: >
-      Fix the four questions before trusting another fit: give archetype
-      dispatch a way to say none, make A's statement for a name ask whether
-      the value names the party, reword E, and fit C's thresholds on real
-      filings rather than the synthetic corpus, which is all the harness fits
-      today. Then rerun `family_report --gate --jev api --workers 6
-      --outcomes FILE` and compare assertion by assertion. Lifting this fully
-      needs the key in CI as a secret, for a scheduled live gate. None of it
-      will yield to more keywords -- the measurement above is the argument
+      The four questions are fixed and measured. What remains: run the 23
+      label files the second pass did not reach; decide the GBDC and EPRT
+      labels it exposed; label a sample of live Jev's absent_from_document
+      claims, which is where its unmeasured confident output lives; and fit
+      C's and A's parties thresholds on real filings rather than the
+      synthetic corpus, which is all the harness fits today. Lifting this
+      fully needs the key in CI as a secret, for a scheduled live gate. None
+      of it will yield to more keywords -- the first pass is the argument
       for not trying.
 
   - id: ANTHROPIC_API
