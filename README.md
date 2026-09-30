@@ -71,13 +71,18 @@ credit-extract extract agreement.htm --backend anthropic --jev api --out result.
 # Jev is TypeSafe AI's System One, at https://api.typesafe.ai/v1/systemone.
 # The client pins jev-1.13.0 (JEV_MODEL overrides it) and the backend is named
 # after the pin, so each model version gets its own threshold file.
-python -m credit_extract.eval.harness --calibrate --jev api --version 7
+python -m credit_extract.eval.harness --calibrate --jev api --version 9
 # Live answers are kept in .cache/jev-answers.sqlite (untracked) and never
 # bought twice. A full gate is about 36,000 requests from an empty cache, and
-# a rerun asks only what changed. --no-jev-cache asks everything, for a
-# fresh draw of a scorer that is not deterministic.
+# a rerun asks only what changed -- though a changed question is asked again
+# of every chunk where its field is pending, about two thirds of a cold run.
+# --no-jev-cache asks everything, for a fresh draw of a scorer that is not
+# deterministic.
 python -m credit_extract.eval.family_report --gate --jev api --workers 6 \
     --outcomes live.jsonl
+# Twenty BDC agreements labelled blind, which CI never scores (about $0.70).
+python -m credit_extract.eval.family_report --out-of-sample --no-mutations \
+    --jev api --workers 6
 
 # The same model tier through Vercel's AI Gateway, which speaks the Messages
 # API. One key, and the gateway's own model catalogue behind it.
@@ -500,18 +505,23 @@ classes have **no labelled failures**, which means every threshold clears the
 target trivially and the fitted value carries no information — the report
 prints that in full rather than showing a clean 1.000 and moving on.
 
-**Two live Jev passes, and no Jev in CI.** `OfflineJev` is a deterministic
-lexical stand-in implementing the same typed interface, so the pipeline, its
-tests and its calibration all run offline, and every CI build is still
-answered by it. It is not a calibrated model, and the orphan sweep's concept
-lexicons are its weakest part. Live System One (`jev-1.13.0`) has been run
-twice through calibration and the gate. The first pass found 54 of 425
-confident propositions wrong (12.71%), and traced them to four questions a
-literal reader answered as written, not as meant. The second pass rewrote
-those questions and refitted, and found 3 wrong of 364 (0.82%) on the 611
-assertions every run shares. On those, the first pass had 53 of 424 and the
-stand-in 0 of 294. What neither pass can score is most of live Jev's
-`absent_from_document` claims, which fall on fields no label covers.
+**Three live Jev passes, an out-of-sample set, and no Jev in CI.**
+`OfflineJev` is a deterministic lexical stand-in implementing the same typed
+interface, so the pipeline, its tests and its calibration all run offline,
+and every CI build is still answered by it. It is not a calibrated model, and
+the orphan sweep's concept lexicons are its weakest part. Live System One
+(`jev-1.13.0`) has been run three times through calibration and the gate. The
+first pass found 54 of 425 confident propositions wrong (12.71%), and traced
+them to four questions a literal reader answered as written, not as meant.
+The second rewrote those questions and found 3 wrong of 364 (0.82%) on the
+611 assertions every run shares. The third asked every absence question about
+the thing itself, however the agreement names it, and found 0 wrong of 358;
+the stand-in has 0 of 293. Twenty BDC agreements from manager families the
+corpus did not hold were then labelled blind and run once, with nothing
+refitted: 0 wrong of 59 confident answers, live, on 168 assertions. The
+confident claims no label covers are most of live Jev's output there, as in
+the corpus. An audit of those 188 found 7 wrong, all guarantors reported
+absent, and one of them named in the document.
 `docs/jev_live_pass.md` records all of it.
 Thresholds are
 tagged with the backend they were fitted against, each scorer has its own
@@ -565,6 +575,7 @@ credit_extract/
               blind_spots.yaml    what has no testable examples, and why
               split.yaml          frozen fit/holdout assignment, derived not chosen
               labels/             Tier 2 assertions, one file per document
+              labels_out_of_sample/  the same for twenty BDC agreements, never in CI
               families.py         registers, coverage, consistency check
               assertions.py       assertion kinds and evaluation
               split.py            derives and re-checks the document split
@@ -579,6 +590,7 @@ credit_extract/
 config/thresholds.json          fitted, versioned, CI-asserted (offline stand-in)
 config/thresholds.jev-1.13.0.json  fitted against live Jev, that version only
 corpus/real/                    four SEC filings, read in detail and labelled
+corpus/real/bdc/                twenty BDC agreements, out of sample, labelled blind
 corpus/edgar/                   100 more, stratified, zipped, all labelled
 docs/orientation.md             start here: goals, labels vs recordings, families
 docs/corpus_findings.md         what those 100 say about the pipeline
@@ -596,8 +608,11 @@ scripts/                        vendor_standards.py, fetch_corpus.py, gen_fpml.p
 2. **Extraction recall on real filings.** Low single digits of thirty-eight
    fields, against roughly thirty on the synthetic fixtures. Every other number
    is bounded by this one.
-3. **Point at live Jev** and refit. The offline stand-in's concept lexicons are
-   a placeholder for the judgement the real model makes.
+3. **Run live Jev in CI.** It has been pointed at and refitted three times,
+   and run out of sample once (`docs/jev_live_pass.md`), but only from a
+   session with a key. Every CI build is still answered by the stand-in,
+   whose concept lexicons are a placeholder for the judgement the real model
+   makes.
 4. **Measure the orphan sweep** — what fraction of held-out labelled fields it
    rescues that the extractor missed. It is the highest-value mechanism here
    and it deserves its own number.

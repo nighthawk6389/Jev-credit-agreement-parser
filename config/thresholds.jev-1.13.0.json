@@ -135,5 +135,5 @@
       "n_incorrect": 0
     }
   },
-  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings."
+  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings. Fitted to the presence questions of the third live pass, which ask about each term however the agreement names it; v8, fitted after the first two of those ten changes, came out identical. Under this set the full live gate on 2026-09-30, on the 611 assertions every run shares, asserted 358 propositions confidently and none was wrong, against 3 of 364 under v7, 53 of 424 under v6 and 0 of 293 for the offline stand-in. Run once, unrefitted, on twenty BDC agreements labelled blind, it asserted 59 of 168 labelled propositions confidently and none was wrong. Most of its absent_from_document claims fall on fields no label covers and are not measured; see docs/jev_live_pass.md."
 }

@@ -562,17 +562,312 @@ loss: every chunk a mutation did not touch now gets the same answer as in the
 original, so a difference between the two is the mutation's and not the
 scorer's noise.
 
-## What is next
+# The third pass: the thing, however it is named
 
-1. Decide the two labels this pass exposed and did not touch: GBDC's
-   `abl_revolver` against Athena's `unknown`, and EPRT's tripwire.
-2. Let validator E speak for a field a document names and points elsewhere
-   without stating it, which is Sysco's case. Today E reads only fields that
-   carry a value.
-3. Reword `initial_term_loan.commitment` so a note's principal is addressed
-   (fit side), and fit A's parties threshold on real names.
-4. Label a sample of the unlabelled `absent_from_document` claims. That is
-   where live v7's unmeasured confident output lives.
-5. Put the key in CI for a scheduled live gate. With the cache warm, one
-   costs only the questions that changed. Until then, CI measures the
-   stand-in, which on these questions passes at 294 confident / 0 wrong.
+The second pass left three silent errors, all literal readings. This pass
+removed them and found a fourth of the same kind while doing it. Every fix
+rewrites a presence question, which is what validator C asks of each chunk
+before it may call a field absent. No field's description changed, and no
+other validator's question did either.
+
+## The three
+
+**Sysco's footnote** names three covenants of the company Sysco acquired and
+states none of their levels. C asked whether the text addresses "the maximum
+leverage level under the financial covenant", and the literal answer is no. It
+now asks whether the text contains a covenant capping debt against earnings,
+or requiring a minimum coverage of interest or fixed charges, "whether or not
+it states the required level". A BDC's asset coverage floor puts assets over
+debt, which is neither, so the BDC labels that call such facilities
+covenant-free still hold.
+
+**Evernorth's notes.** C asked about "the aggregate principal amount of the
+Initial Term Loans", and a note purchase agreement has none. It now asks about
+"the term loans or notes funded at closing". A revolving commitment is not
+funded at closing, so a revolver-only deal still reads as absent.
+
+**EPRT's closing date** needed a label change, not a code change. The
+held-out label was a tripwire, set to fire when the pipeline confirmed
+2018-06-25. Its note said to replace it, not delete it, when that happened.
+Both conditions were met, and the project owner asked for the remaining errors
+to be fixed. So it now expects `confirmed`, and the note keeps its history.
+That is a held-out label changed after seeing a result, and it is recorded
+here as one.
+
+## And a fourth
+
+The gate on those fixes (v8, below) cleared all three and found another.
+HealthStream's MFN protects incremental revolving commitments. C asked whether
+the text addresses the MFN differential "that triggers repricing of the
+Initial Term Loans". The clause scored 0.20, and on the units mutant the
+threshold was reported absent beside it. v7 had left that one in review. That
+made three fields read literally against one agreement's defined term, and the
+gate catches such a reading only where a label happens to sit.
+
+So every presence question whose description names such a term now asks
+about the thing itself, "however named". That covers the MFN threshold, the
+term loan's maturity, the revolving commitments and their maturity,
+delayed-draw commitments, the letter of credit sublimit, the closing date and
+the cost-savings add-back cap. With the two above, ten fields' presence
+questions changed in this pass. Changing one field's question costs one new
+request per chunk of every document where that field is pending. A
+document's changed questions travel together, so the eight cost what one
+would have. Offline the gate is unchanged: 293 confident and 0 wrong, with no
+assertion moving.
+
+## Calibration
+
+Thresholds belong to the questions that produced the scores, so the set was
+refitted twice: v8 after the first two question changes, v9 after the other
+eight. Both calibration runs read their unchanged answers from the cache, and
+v9's cost nothing. v8 and v9 came out identical, class for class. The
+calibration run confirmed 667 of 739 labelled fields with none wrong, where
+v7's confirmed 664.
+
+| class | v7 | v8 and v9 |
+| --- | --- | --- |
+| A / baskets | 0.90 | 0.88 |
+| A / covenant levels | 0.84 | 0.85 |
+| A / dates | 0.92 | 0.88 |
+| A / economic terms | 0.77 | 0.77 |
+| A / parties | 0.96 | 0.96 |
+| C / economic terms | 0.80 | 0.80 |
+| conflict choice / economic terms | 0.96 | 0.95 |
+
+## The gate
+
+Both gates ran whole, on the 611 assertions every run shares:
+
+| 611 assertions | confident | wrong | silent-error rate | real only |
+| --- | --- | --- | --- | --- |
+| stand-in v5, these questions | 293 | 0 | 0.00% | 197 / 0 |
+| live v6 | 424 | 53 | 12.50% | 326 / 52 |
+| live v7 | 364 | 3 | 0.82% | 268 / 3 |
+| live v8 | 360 | 1 | 0.28% | 263 / 0 |
+| **live v9** | **358** | **0** | **0.00%** | **262 / 0** |
+
+What they cost says something about the cache:
+
+| | requests | questions sent | tokens | cost |
+| --- | --- | --- | --- | --- |
+| live v7, before the cache | 86,946 | 2.47M | 169.2M | $7.11 |
+| live v8 | 35,674 | 1.41M | 82.5M | $3.47 |
+| live v9 | 35,049 | 0.23M | 56.3M | $2.37 |
+| stand-in, from an empty cache | 35,929 | 1.88M | 88.2M | |
+
+v8 ran nearly cold. The cache held only the 23 files v7 finished with, so
+v8's saving over v7 is the B and C sharing. v9 had all of v8's answers and
+sent only the rewritten questions, 84% fewer, but it made as many requests.
+A changed presence question is asked of every chunk where its field is
+pending, and the scorer is paid by the token, most of which are the chunk. A
+question change costs about two thirds of a cold run.
+
+**v9 is the first live gate with no silent error.** From v7 to v9:
+
+* All three errors are gone. EPRT's is now confidently right, through the
+  label change above. Evernorth's principal and Sysco's covenants now go to
+  review, empty. Neither value is extracted, so review is where they belong.
+* HealthStream's MFN mutant, wrong under v8, is in review.
+* HealthStream's administrative agent, TRUIST BANK, is newly confirmed.
+* Five right absences moved to review. Two are the covenant question's cost:
+  Blue Owl's indenture and Evernorth's notes have no leverage covenant, and
+  the broader question does not clear them at 0.80. One is the MFN
+  question's. Compass's only "most favored nation" leaves MFN pricing on a
+  future incremental facility to be agreed. Asked about an MFN provision
+  however named, the scorer is no longer sure there is none. Constellation's
+  two, an excess cash flow sweep and an MFN threshold, are questions no pass
+  changed. Constellation's answers predate the cache, so v8 asked them again,
+  and the new draws fell under the line.
+
+The statuses across the original documents, mutants excluded:
+
+| status | stand-in, v7 questions | stand-in, these | live v7 | live v9 |
+| --- | --- | --- | --- | --- |
+| `confirmed` | 291 | 291 | 326 | 325 |
+| `not_applicable_to_archetype` | 119 | 119 | 182 | 182 |
+| `absent_from_document` | 330 | 350 | 1,358 | **1,306** |
+| `conflicted` | 142 | 142 | 83 | 84 |
+| `needs_review` | 4,928 | 4,908 | 3,863 | 3,915 |
+
+The rewritten questions took a net 52 absences off live Jev's row, seven of
+them the labelled ones above. The stand-in, which counts words, moved the
+other way by 20, none of them labelled. Live Jev still asserts absence
+nearly four times as often as the stand-in, and most of those claims fall on
+fields no label covers, so they remain the largest body of confident output
+the gate cannot score.
+
+# Out of sample: twenty BDC agreements
+
+Everything above was measured on documents the parser, the questions and the
+thresholds were built against. The frozen holdout keeps part of the corpus
+out of the fit, but it was read while the parser was written, and every
+question rewritten in these passes was rewritten against the whole corpus.
+Twenty more agreements were harvested to measure what that is worth.
+
+## The set
+
+These are credit facilities filed on EDGAR by business development companies,
+from twenty manager families the corpus did not hold: AB Private Credit, AMG
+Comvest, Barings, Blackstone, Capital Southwest, Fortress, Goldman Sachs,
+Kennedy Lewis, LGAM, Lafayette Square, MidCap, New Mountain, North Haven,
+Oaktree, Overland, PGIM, Sixth Street, Stellus, Vista and Willow Tree.
+
+A BDC is identified by its Investment Company Act file number, not by
+vocabulary. Each filer's own EX-10 exhibits that mention a borrowing base,
+filed 2023–2026, were searched, and one whole agreement was kept per filer.
+Eleven are the BDC's own senior secured credit facility, revolving and in
+two cases with a term loan beside it. Eight are financing facilities of a
+special-purpose subsidiary, secured by the loans it holds.
+One is a subscription line. Most arrive as an amendment carrying the full
+conformed agreement, which is how BDCs file them.
+
+They are in `corpus/real/bdc`, on the split's `out_of_sample` list, and
+labelled in `credit_extract/eval/labels_out_of_sample`. CI's gate does not
+read that directory, because a set tuned until it passes is no longer out of
+sample. `family_report --out-of-sample` runs it on purpose.
+
+## Labelled blind
+
+The labels were written from each document's normalized text by readers who
+did not run the pipeline or read anything it produced. They were committed
+and pushed (3298bb2) before the pipeline first ran on any of these
+documents.
+
+There are 168 assertions over ten fields: the borrower, the agent, governing
+law, the revolving commitment and its maturity, the top margin, the floor, the
+commitment fee, the financial covenant and the closing date. Each quotes the
+text it came from. A derived value, such as a maturity reached through four
+definitions and a business-day step, gives its chain. A field the text does
+not settle was skipped rather than guessed.
+
+Of the eighteen financial covenants, fifteen are labelled absent. Those
+agreements test asset coverage, a borrowing base, equity or liquidity, not
+debt against earnings. Three have an interest coverage covenant, and its level is
+labelled. Two labels follow the labelling guide over the brief the readers
+were given. MidCap and New Mountain state the sum of their Dollar and
+Multicurrency tranches, and the guide names exactly that case: take the
+larger tranche, and do not sum. New Mountain's margin is left out. It is
+priced by lender class, and for a per-tranche term that differs the guide
+gives no deal-level value.
+
+## The result
+
+Thresholds v9, questions and code as they were, no refit:
+
+| 168 assertions | confident | wrong | right, in review | wrong or empty, in review |
+| --- | --- | --- | --- | --- |
+| stand-in v5 | 45 | 0 | 15 | 108 |
+| **live v9** | **59** | **0** | 6 | 103 |
+
+**No confident answer on a labelled assertion is wrong, offline or live.**
+Live turns 17 of the stand-in's review answers into confident right ones.
+Twelve of the 17 are agents, five of which the stand-in had read wrongly.
+It moves 3 right answers the other way. It cost **$0.69** for 6,072
+requests, five minutes across six workers. The stand-in, which makes the same requests,
+predicted $0.68.
+
+Coverage is lower than in sample. Live v9 settles 35% of these assertions,
+where on the corpus's real assertions it settles 51%. By field:
+
+| field | assertions | confident and right | in review |
+| --- | --- | --- | --- |
+| governing law | 20 | 19 | 1 |
+| administrative agent | 20 | 16 | 4 |
+| borrower | 20 | 11 | 9 |
+| floor | 18 | 8 | 10 |
+| closing date | 11 | 5 | 6 |
+| revolving maturity | 19 | 0 | 19 |
+| financial covenant | 18 | 0 | 18 |
+| revolving commitment | 16 | 0 | 16 |
+| top margin | 14 | 0 | 14 |
+| commitment fee | 12 | 0 | 12 |
+
+The parties and governing law carry over. The economic terms do not, and not
+because of Jev. The rules tier extracts no value at all for any of the 61
+commitments, maturities, margins and fees, so there is nothing for a
+validator to confirm. Why was not investigated, because investigating it on
+these documents would tune against them. It is not only depth: MidCap's
+maturity is a bare date in its own definition, and it was missed too. This
+is the extraction-recall problem the README ranks second, now measured on
+documents nobody tuned for.
+
+The covenant row is the safe side of a gap. The three agreements with an
+interest coverage covenant score lowest on absence, 0.03 each. They are
+escalated as a value the extractor missed, which is what they are. The
+fifteen without a leverage covenant score between 0.08 and 0.53, so C never
+reaches the 0.80 it needs to call one absent. None is called present
+either. The wrong values in review are five closing dates, each another date
+from the agreement's history than the one the label chose, and Willow Tree's
+borrower cut to "SPV1, LLC".
+
+## What the labels do not cover
+
+A labelled set cannot score a confident claim about a field it does not
+label, and live Jev made 188 of them here:
+
+* 9 confirmed values;
+* 169 absences;
+* 10 fields ruled out by an archetype.
+
+The stand-in made 26 absences and no archetype claims. These were checked
+against the text after the run, which makes this an audit, not a blind test.
+
+* **The 9 values are all right.** They are five collateral agents, two
+  syndication agents and two 0.10% SOFR adjustments, each where the text puts
+  it.
+* **One absence is wrong in substance.** Barings' amendment is signed by
+  "ENERGY HARDWARE HOLDINGS, INC., as Subsidiary Guarantor", and its preamble
+  defines that party. `guarantor.legal_name` was confirmed absent at 0.85
+  across 309 chunks.
+* **Six more are the wrong status.** AB Private Credit, Blackstone, Capital
+  Southwest, Fortress, PGIM and Sixth Street define a Subsidiary Guarantor as
+  "any Subsidiary that is a Guarantor under the Guarantee and Security
+  Agreement" and name none. C asks whether a chunk addresses "the legal name
+  of each Guarantor", and the literal answer is no. The names are in another
+  document, which the guide calls `external_reference`, and a label would
+  say so. This is Sysco's case again: C cannot say "named here, stated
+  elsewhere".
+* **The other 162 absences hold.** Most fields have none of their
+  vocabulary anywhere in the document. None of the twenty mentions a most
+  favoured nation clause, for instance. Where the vocabulary does appear, the
+  passages checked describe something else: PIK loans in the collateral,
+  portfolio companies' leverage and add-backs, an accordion with no leverage
+  test, or boilerplate.
+* **The ten archetype exclusions suppress nothing.** None of the ten fields
+  has a value in its document. The verdicts behind them are another matter.
+  Blackstone's and Oaktree's revolvers came out `abl_revolver` at 0.70. The
+  own-receivables question is meant to stop exactly that. It withdrew the
+  other 15 ABL verdicts here at 0.03–0.49, but scored these two 0.54 and
+  0.70. In sample, every fund facility had scored 0.32 or less. Fortress's
+  revolver and two SPV facilities were called `nav_or_subscription` on tied
+  vocabulary, and the one real subscription line, Overland's, was called
+  `unknown`. No label here covers an archetype, so none of this is scored.
+
+Counted strictly, as a label would count it, 7 of the 188 are wrong (3.7%);
+in substance, 1. Either way, all seven errors are one field and one kind:
+guarantors reported absent, a field no label in the corpus covers. The
+absence claims are the place to look next on any new set of documents.
+
+These findings are recorded, not fixed. A fix made against these twenty
+documents would make them one more fit set. The fixes belong on in-sample
+documents that show the same thing. Then this set is run once more, and after
+that a fresh one is harvested.
+
+# What is next
+
+1. Decide the labels the second pass exposed: GBDC's `abl_revolver` against
+   Athena's `unknown`. It now has out-of-sample company: two BDC revolvers
+   pass the own-receivables question, and the corpus has no BDC profile to
+   send them to.
+2. Let validator E, or a status C can reach, say "named here, stated
+   elsewhere". That was Sysco's case. Out of sample it is six guarantor
+   fields, and the same question also missed a named guarantor at Barings.
+   Guarantors need in-sample labels before either can be measured.
+3. Extraction on BDC facilities. The rules tier found no commitment,
+   maturity, margin or fee in twenty agreements.
+4. Fit A's parties threshold on real names, and label a sample of the
+   corpus's unlabelled `absent_from_document` claims, as the audit above did
+   for these twenty.
+5. Put the key in CI for a scheduled live gate. A question change costs
+   about two thirds of a cold run, so a gate after one is about $2–4. Until
+   then, CI measures the stand-in, which passes at 293 confident / 0 wrong.

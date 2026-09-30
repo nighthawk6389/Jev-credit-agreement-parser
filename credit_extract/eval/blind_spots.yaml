@@ -250,24 +250,28 @@ untestable_in_this_environment:
     status: partially_lifted
     reason: >
       CI has no JEV_API_KEY, so OfflineJev, a deterministic lexical stand-in,
-      answers every validator question in every build. Two live passes have
-      been made from a session that had a key, both against System One
-      jev-1.13.0 on 2026-09-30 and recorded in docs/jev_live_pass.md. The
-      first ran on the original questions, the second on rewritten ones.
-      Each is one draw of a scorer that is not deterministic.
+      answers every validator question in every build. Three live passes and
+      one out-of-sample run have been made from a session that had a key, all
+      against System One jev-1.13.0 on 2026-09-30 and recorded in
+      docs/jev_live_pass.md. The first ran on the original questions, the
+      second and third on rewritten ones. Each is one draw of a scorer that
+      is not deterministic.
     consequence: >
-      The second pass rewrote the questions the first exposed and refitted
-      (v7). On the 611 assertions every run shares, it asserted 364
-      propositions confidently with 3 wrong (0.82%); the first pass had 424
-      with 53 wrong and the stand-in 294 with 0. The three left are literal
-      readings. EPRT's closing date has the right value, and its held-out
-      label is a tripwire set to fire when it is confirmed. Evernorth's note
-      principal is asked about as "the Initial Term Loans". Sysco's footnote
-      names a company's covenants without their levels, which validator C can
-      only call absent. What neither pass measures is the bulk of live Jev's
-      absent_from_document claims -- 1,358 across the original documents,
-      against 330 for the stand-in -- because most fall on fields no label
-      covers.
+      The third pass (v9) asks every absence question about the thing itself,
+      however the agreement names it. On the 611 assertions every run shares
+      it asserted 358 propositions confidently and none was wrong; the second
+      pass (v7) had 3 wrong of 364, the first 53 of 424, and the stand-in has
+      0 of 293. Out of sample, on twenty BDC agreements from manager families
+      the corpus did not hold, labelled blind and run once with nothing
+      refitted, live v9 asserted 59 of 168 labelled propositions confidently
+      and none was wrong. What no pass measures is the bulk of live Jev's
+      absent_from_document claims -- 1,306 across the original documents,
+      against 350 for the stand-in -- because most fall on fields no label
+      covers. Audited by hand on the twenty BDC agreements, 7 of the 188
+      confident claims no label covered were wrong, all guarantors reported
+      absent: six named only in the Guarantee and Security Agreement, which
+      the labelling guide calls external_reference, and one, Barings', named
+      in the document itself.
 
       What the first pass measured, under thresholds fitted for the live
       scorer on the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
