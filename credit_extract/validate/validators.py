@@ -118,6 +118,21 @@ def _describe(field: ExtractedField, spec: FieldSpec) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _support_statement(field: ExtractedField, spec: FieldSpec) -> str:
+    """What validator A asks of the cited text about one extracted value.
+
+    A name is asked as a name. "The text supports a value of Administrative
+    Agent for the Administrative Agent" is true of any text that uses the
+    role, and a phrase lifted from beside the agent's name was confirmed as
+    its name on those terms. Asked whether the value *is* the institution's
+    legal name, a literal reader can say no.
+    """
+    value = _describe(field, spec)
+    if spec.name.endswith(".legal_name"):
+        return f'In this text, "{value}" is {spec.description}.'
+    return f"The text supports a value of {value} for {spec.description}."
+
+
 def validator_a_span_support(ctx: ValidationContext) -> int:
     """Does the cited text actually support the value?
 
@@ -146,13 +161,9 @@ def validator_a_span_support(ctx: ValidationContext) -> int:
         state = ctx.doc.slice(lo, hi)
         questions: list[Question] = []
         for name in names:
-            spec = ctx.specs[name]
             questions.append(Noul(
                 name=name,
-                statement=(
-                    f"The text supports a value of {_describe(ctx.fields[name], spec)} "
-                    f"for {spec.description}."
-                ),
+                statement=_support_statement(ctx.fields[name], ctx.specs[name]),
             ))
         result = ctx.session.ask(state, questions, label="A_span_support")
         for name in names:
@@ -316,15 +327,21 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
     if not pending:
         return {}
 
-    # Lowest absence probability across chunks = strongest evidence of presence.
+    # Presence is asked; absence is computed. Each chunk is asked whether it
+    # contains a provision addressing the field, and absence is one minus the
+    # strongest evidence of presence anywhere. The question used to be the
+    # negation -- "this text contains no provision addressing X" -- and a
+    # literal reader agrees with that of any chunk that does not name X in
+    # the question's own words, which is how a Term SOFR pricing grid came to
+    # have no "Eurodollar Applicable Margin" in it.
     #
-    # The initialiser is 1.0, which is the identity for a minimum and is also
-    # the most confident possible claim that the field is absent. That is only
-    # safe if the loop below actually runs: a field asked of no chunk keeps
-    # 1.0 and sails past the threshold, and ``absent_from_document`` is a
-    # CONFIDENT status counted in the silent-error budget. So the asked count
-    # is tracked and a field nobody asked about is not entitled to an answer.
-    min_absence: dict[str, float] = {name: 1.0 for name in pending}
+    # The initialiser is 0.0 presence -- absence 1.0, the most confident
+    # possible claim that the field is absent. That is only safe if the loop
+    # below actually runs: a field asked of no chunk keeps it and sails past
+    # the threshold, and ``absent_from_document`` is a CONFIDENT status counted
+    # in the silent-error budget. So the asked count is tracked and a field
+    # nobody asked about is not entitled to an answer.
+    max_presence: dict[str, float] = {name: 0.0 for name in pending}
     witness: dict[str, Span] = {}
     asked = 0
     for chunk in ctx.chunks:
@@ -334,10 +351,9 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         questions: list[Question] = [
             Noul(
                 name=name,
-                statement=ctx.specs[name].absence_statement.replace(
+                statement=ctx.specs[name].presence_statement.replace(
                     "This agreement", "This text"
                 ),
-                polarity="absence",
             )
             for name in pending
         ]
@@ -346,9 +362,12 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
             decision = result.get(name)
             if decision is None:
                 continue
-            if decision.confidence < min_absence[name]:
-                min_absence[name] = decision.confidence
+            if decision.confidence > max_presence[name]:
+                max_presence[name] = decision.confidence
                 witness[name] = chunk.span
+    min_absence = {
+        name: round(1.0 - presence, 4) for name, presence in max_presence.items()
+    }
 
     for name, probability in min_absence.items():
         field = ctx.fields[name]
@@ -357,13 +376,13 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         field.validation_source = "C_negative_space"
         field.record(ValidationEvent(
             validator="C_negative_space",
-            question=spec.absence_statement,
+            question=spec.presence_statement,
             jev_type="noul",
             probability=probability,
             threshold=threshold,
             passed=probability >= threshold,
             backend=ctx.session.backend.name,
-            notes="minimum absence probability across all chunks",
+            notes="absence: one minus the strongest presence in any chunk",
         ))
         # A field can be empty because the document says nothing, or because
         # the extractor read something this field's type cannot hold. Only the
@@ -760,14 +779,24 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
         if document is None:
             continue                         # tier 1 settled it, for free
         state = _with_definition(ctx, document, state)
+        # One claim, about this field, with nothing assumed. The old statement
+        # never said which limit "this limit" was, and asserted as its premise
+        # that the document sits outside the agreement -- false of a schedule,
+        # and a literal reader took the premise as given. It fired on the
+        # add-back cap the agreement states because the add-backs themselves
+        # come from the Sponsor Model.
         statement = (
-            f"The magnitude of this limit depends on the {document}, a document "
-            "not contained in this agreement."
+            f"The amount of {spec.description} is set by the {document}, not "
+            "stated in this text."
         )
         result = ctx.session.ask(
             state,
             [
-                Noul(name="external", statement=statement),
+                # An absence claim: the amount is not stated here. Declared,
+                # because the words cannot say so -- the statement is built
+                # from the field's own description, which is exactly the
+                # vocabulary the cited sentence contains.
+                Noul(name="external", statement=statement, polarity="absence"),
                 Noul(name="omitted", statement=OMITTED_STATEMENT),
                 Noul(name="by_design", statement=BY_DESIGN_STATEMENT),
             ],

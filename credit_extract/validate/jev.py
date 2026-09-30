@@ -546,7 +546,10 @@ _SCAFFOLDING = frozenset(
     "contains contain containing addressing address addresses document "
     "documents clause section states says stating field attached summary "
     "captured whether respect thereof therein herein hereto under within "
-    "following above below set forth given amount described".split()
+    "following above below set forth given amount described "
+    # A party field is asked as "the legal name of the institution acting as
+    # Administrative Agent". The role is evidence; the rest is the question.
+    "legal name institution acting".split()
 )
 
 

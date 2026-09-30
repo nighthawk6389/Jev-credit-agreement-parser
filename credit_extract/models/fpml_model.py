@@ -341,13 +341,17 @@ class FieldSpec(BaseModel):
     #: Sections the field usually lives in. A hint only -- never a filter, or
     #: the orphan sweep would have nothing left to find.
     section_hints: list[str] = Field(default_factory=list)
-    #: Affirmative statement for validator C when the extractor returns null.
-    negative_question: str = ""
+    #: What validator C asks of each chunk when the extractor returns null.
+    #: It is asked as presence -- "contains a provision addressing" -- and
+    #: absence is computed from the answers, never asked as a negation: a
+    #: literal reader told "this text contains no X" of a chunk that does not
+    #: name X in those words agrees with it, however plainly X is there.
+    presence_question: str = ""
 
     @property
-    def absence_statement(self) -> str:
-        return self.negative_question or (
-            f"This agreement contains no provision addressing {self.description}."
+    def presence_statement(self) -> str:
+        return self.presence_question or (
+            f"This agreement contains a provision addressing {self.description}."
         )
 
 
@@ -362,7 +366,7 @@ def _spec(
     verified_term: bool = True,
     anchors: list[str] | None = None,
     sections: list[str] | None = None,
-    negative: str = "",
+    presence: str = "",
 ) -> FieldSpec:
     return FieldSpec(
         name=name,
@@ -375,7 +379,7 @@ def _spec(
         verified_term=verified_term,
         definition_anchors=anchors or [],
         section_hints=sections or [],
-        negative_question=negative,
+        presence_question=presence,
     )
 
 
@@ -383,19 +387,25 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
     spec.name: spec
     for spec in [
         # -- parties ---------------------------------------------------------
-        _spec("borrower.legal_name", "the identity of the Borrower", "text",
+        _spec("borrower.legal_name", "the legal name of the Borrower", "text",
               "parties", 4, "fibo-fbc-dae-dbt:Borrower", "fibo"),
-        _spec("guarantor.legal_name", "the identity of each Guarantor", "text",
+        _spec("guarantor.legal_name", "the legal name of each Guarantor", "text",
               "parties", 3, "fibo-fbc-dae-gty:Guarantor", "fibo"),
-        _spec("holdings.legal_name", "the identity of Holdings", "text",
+        _spec("holdings.legal_name", "the legal name of Holdings", "text",
               "parties", 3, "fibo-fnd-agr-ctr:ContractParty", "fibo"),
-        _spec("administrative_agent.legal_name", "the Administrative Agent",
+        _spec("administrative_agent.legal_name",
+              "the legal name of the institution acting as Administrative Agent",
               "text", "parties", 4, None, "fibo", verified_term=False),
-        _spec("collateral_agent.legal_name", "the Collateral Agent", "text",
+        _spec("collateral_agent.legal_name",
+              "the legal name of the institution acting as Collateral Agent", "text",
               "parties", 2, None, "fibo", verified_term=False),
-        _spec("arranger.legal_name", "the Lead Arranger", "text", "parties", 2,
+        _spec("arranger.legal_name",
+              "the legal name of the institution acting as Lead Arranger", "text",
+              "parties", 2,
               None, "fibo", verified_term=False),
-        _spec("syndication_agent.legal_name", "the Syndication Agent", "text",
+        _spec("syndication_agent.legal_name",
+              "the legal name of the institution acting as Syndication Agent",
+              "text",
               "parties", 2, None, "fibo", verified_term=False),
         # -- dates -----------------------------------------------------------
         _spec("closing_date", "the Closing Date", "date", "dates", 5,
@@ -436,7 +446,9 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "economic_terms", 5, "fpml:floorRate", "fpml",
               anchors=["Floor", "SOFR Floor", "LIBO Rate"]),
         _spec("applicable_margin.eurodollar_top_level_pct",
-              "the highest Eurodollar Applicable Margin in the pricing grid",
+              "the highest margin over Term SOFR, Eurodollar or another "
+              "benchmark in the pricing grid (the Applicable Rate or "
+              "Applicable Margin)",
               "percent", "economic_terms", 5, "fpml:spread", "fpml",
               anchors=["Applicable Margin"],
               sections=["2.12"]),
@@ -552,7 +564,7 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               "any expiry or sunset of the MFN protection", "text",
               "economic_terms", 5, None, None, verified_term=False,
               sections=["2.14"],
-              negative="This agreement contains no provision under which the "
+              presence="This agreement contains a provision under which the "
                        "MFN (most favoured nation) pricing protection expires, "
                        "sunsets or ceases to apply after any period of time."),
         _spec("consolidated_ebitda.addback_cap_pct",
