@@ -505,12 +505,12 @@ classes have **no labelled failures**, which means every threshold clears the
 target trivially and the fitted value carries no information — the report
 prints that in full rather than showing a clean 1.000 and moving on.
 
-**Three live Jev passes, an out-of-sample set, and no Jev in CI.**
+**Four live Jev passes, an out-of-sample set, and no Jev in CI.**
 `OfflineJev` is a deterministic lexical stand-in implementing the same typed
 interface, so the pipeline, its tests and its calibration all run offline,
 and every CI build is still answered by it. It is not a calibrated model, and
 the orphan sweep's concept lexicons are its weakest part. Live System One
-(`jev-1.13.0`) has been run three times through calibration and the gate. The
+(`jev-1.13.0`) has been run four times through the gate. The
 first pass found 54 of 425 confident propositions wrong (12.71%), and traced
 them to four questions a literal reader answered as written, not as meant.
 The second rewrote those questions and found 3 wrong of 364 (0.82%) on the
@@ -521,7 +521,9 @@ corpus did not hold were then labelled blind and run once, with nothing
 refitted: 0 wrong of 59 confident answers, live, on 168 assertions. The
 confident claims no label covers are most of live Jev's output there, as in
 the corpus. An audit of those 188 found 7 wrong, all guarantors reported
-absent, and one of them named in the document.
+absent, and two of them named in the document. The fourth pass labelled
+guarantors on 86 in-sample agreements and fixed that: 23 right and 0 wrong
+live where there had been 16 and 2, and no wrong guarantor among the BDCs.
 `docs/jev_live_pass.md` records all of it.
 Thresholds are
 tagged with the backend they were fitted against, each scorer has its own

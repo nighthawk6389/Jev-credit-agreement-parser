@@ -209,6 +209,13 @@ untestable_from_public_filings:
     consequence: >
       A term defined only in the security agreement resolves to nothing, and
       the definition graph reports it as undefined rather than as external.
+      Guarantors are the one case handled: where the agreement defines,
+      names or grants a guaranty, validator C may no longer call them
+      absent, which it did on six BDC agreements whose Subsidiary Guarantor
+      is "any Subsidiary that is a Guarantor under the Guarantee and Security
+      Agreement". They go to review, not to external_reference: sending them
+      there was tried and was wrong on all seven in-sample agreements it fired
+      on, each of which names its guarantors somewhere a pattern cannot see.
 
 untestable_in_this_environment:
   - id: EDGAR_egress
@@ -269,9 +276,13 @@ untestable_in_this_environment:
       against 350 for the stand-in -- because most fall on fields no label
       covers. Audited by hand on the twenty BDC agreements, 7 of the 188
       confident claims no label covered were wrong, all guarantors reported
-      absent: six named only in the Guarantee and Security Agreement, which
-      the labelling guide calls external_reference, and one, Barings', named
-      in the document itself.
+      absent: five named only in the Guarantee and Security Agreement, which
+      the labelling guide calls external_reference, and two, Barings' and
+      Sixth Street's, named in the document itself. The fourth pass labelled
+      guarantors on 86 in-sample agreements, read them where they are named
+      and stopped C calling them absent where the text has them: in sample
+      23 right and 0 wrong where live v9 had 16 and 2, and on the BDC
+      agreements 7 right and 0 wrong where the audit found 5 and 7.
 
       What the first pass measured, under thresholds fitted for the live
       scorer on the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),

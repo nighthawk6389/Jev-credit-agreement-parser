@@ -815,15 +815,18 @@ against the text after the run, which makes this an audit, not a blind test.
 * **The 9 values are all right.** They are five collateral agents, two
   syndication agents and two 0.10% SOFR adjustments, each where the text puts
   it.
-* **One absence is wrong in substance.** Barings' amendment is signed by
+* **Two absences are wrong in substance.** Barings' amendment is signed by
   "ENERGY HARDWARE HOLDINGS, INC., as Subsidiary Guarantor", and its preamble
   defines that party. `guarantor.legal_name` was confirmed absent at 0.85
-  across 309 chunks.
-* **Six more are the wrong status.** AB Private Credit, Blackstone, Capital
-  Southwest, Fortress, PGIM and Sixth Street define a Subsidiary Guarantor as
-  "any Subsidiary that is a Guarantor under the Guarantee and Security
-  Agreement" and name none. C asks whether a chunk addresses "the legal name
-  of each Guarantor", and the literal answer is no. The names are in another
+  across 309 chunks. Sixth Street's preamble names its two: "SSLP LENDING,
+  LLC and SIXTH STREET LP HOLDING II, LLC (the " Subsidiary Guarantors")".
+  The first version of this audit filed Sixth Street with the next five. A
+  guarantor truth table written later from the text caught it.
+* **Five more are the wrong status.** AB Private Credit, Blackstone, Capital
+  Southwest, Fortress and PGIM define a Subsidiary Guarantor as "any
+  Subsidiary that is a Guarantor under the Guarantee and Security Agreement"
+  and name none. C asks whether a chunk addresses "the legal name of each
+  Guarantor", and the literal answer is no. The names are in another
   document, which the guide calls `external_reference`, and a label would
   say so. This is Sysco's case again: C cannot say "named here, stated
   elsewhere".
@@ -844,7 +847,7 @@ against the text after the run, which makes this an audit, not a blind test.
   `unknown`. No label here covers an archetype, so none of this is scored.
 
 Counted strictly, as a label would count it, 7 of the 188 are wrong (3.7%);
-in substance, 1. Either way, all seven errors are one field and one kind:
+in substance, 2. Either way, all seven errors are one field and one kind:
 guarantors reported absent, a field no label in the corpus covers. The
 absence claims are the place to look next on any new set of documents.
 
@@ -853,6 +856,148 @@ documents would make them one more fit set. The fixes belong on in-sample
 documents that show the same thing. Then this set is run once more, and after
 that a fresh one is harvested.
 
+# The fourth pass: guarantors
+
+The out-of-sample audit found one kind of confident error: guarantors
+reported absent. It also said a fix belonged on in-sample documents first.
+This pass is that fix, measured in sample, and then the twenty BDC agreements
+run once more.
+
+## Labels first
+
+No label covered `guarantor.legal_name`. Five readers labelled it on the 90
+in-sample agreements, from the text alone and without running the pipeline.
+They wrote 86 labels and skipped 4 the text does not settle:
+
+* 55 name the guarantors;
+* 4 point to another document, 3 to a guarantee or similar agreement and 1
+  to a schedule the filing left out;
+* 27 say there is none.
+
+A role several parties fill is labelled with a list of names, and any one of
+them is a right answer. The labelling guide has a new section on it, and
+`field_value` now accepts a list.
+
+A sixth reader wrote the same table for the twenty BDC agreements: 5 named,
+6 external, 9 absent. It stays out of the blind set, because it was written
+after the first run, and the rerun is scored against it.
+
+Against the in-sample labels, live v9 had 16 guarantors confidently right,
+all of them absences, and 68 in review. Two were wrong:
+
+* IDEX's Company guarantees its co-borrowers under "ARTICLE X. CONTINUING
+  GUARANTY";
+* Valvoline defines its Guarantors.
+
+Both were called absent.
+
+## Why
+
+There were two causes.
+
+* **Nothing read a guarantor.** Every other party had a rule; this one did
+  not. So the field was empty on every document, and validator C was asked
+  whether it was absent.
+* **C's question cannot see guarantors.** Asked whether a chunk addresses
+  "the legal name of each Guarantor", a literal reader says no to a
+  definition that names nobody. It says no to a signature block too, which
+  is not a provision.
+
+## What changed
+
+* **The rules tier reads a guarantor named in its role:** "X, as a
+  Guarantor", "as Subsidiary Guarantor", "as Parent Guarantors". The role
+  must be capitalized. In lower case the phrase describes someone else's
+  guarantors: Camping World's definition of its floor plan facility lists
+  "subsidiaries of Freedomroads, LLC, as guarantors".
+* **The rule rejects three kinds of non-name:**
+  * a placeholder such as "THE GUARANTORS PARTY HERETO";
+  * a name that opens on the previous name's suffix;
+  * a candidate that ends a longer candidate's name, which is a fragment
+    cut at a chunk boundary.
+
+  Several guarantors make several candidates, and conflict resolution
+  chooses between them.
+* **Validator C may not call the guarantor absent where the text
+  establishes guarantors.** That means any of:
+  * a guarantor named in its role;
+  * a signature block headed GUARANTORS;
+  * a defined guarantor role;
+  * a guarantor defined where it is introduced;
+  * a guaranty article.
+
+  None of it settles the field. It only keeps a false absence out.
+* **Tried and dropped: sending guarantors that a definition hands to a
+  guarantee agreement to `external_reference`.** That is right for five of
+  the BDC agreements. It was wrong on all seven in-sample agreements it fired
+  on, because each names its guarantors somewhere a pattern does not see:
+  * an uncaptioned signature block;
+  * a party the definitions themselves make a guarantor (Holdings, the
+    Parent, the Company);
+  * a borrower that signs "as KBR, a Borrower and a Guarantor".
+
+  A wrong `external_reference` is a silent error, so those fields go to
+  review instead.
+
+The only new questions are about guarantors, so the live gate read nearly
+every answer from the cache.
+
+## Results
+
+**In sample**, on the 86 guarantor labels. These figures measure fit: the
+rules were written while reading these texts, the held-out ones among them.
+
+| | confident and right | wrong | in review |
+| --- | --- | --- | --- |
+| live v9, before | 16 | 2 | 68 |
+| **live, after** | **23** | **0** | 63 |
+
+The 16 absences are the same 16 as before. The 7 additions are named
+guarantors, confirmed:
+
+* Accelevation's INSTOR BLOCKER, INC.;
+* BlackRock Monticello's trust, in both filings;
+* Hornbeck Offshore Operators;
+* Janus Living;
+* Lumber Liquidators Leasing;
+* Schneider National Carriers.
+
+None was confirmed until the field's description changed from "the legal
+name of each Guarantor" to "of a Guarantor". The registry holds one name, so
+asking whether one name is "the legal name of each Guarantor" gets a literal
+no wherever there are two, and validator A scored every real guarantor it
+was shown between 0.06 and 0.79. C's presence question keeps the old words.
+It no longer decides guarantors, and its answers stay bought.
+
+The whole live gate has 697 assertions, 381 confident and 0 wrong. The 611
+assertions every earlier run shares come out exactly as under v9, 358
+confident and 0 wrong. Each run cost under a cent. Offline, the stand-in
+that CI runs passes at 304 confident and 0 wrong: the same 293 as before
+and 11 guarantors.
+
+**Out of sample**, the twenty BDC agreements were run once more. Nothing in
+this pass was developed on them, but the guarantor truth table they are
+scored against was written after the first run. So this is an audit, not a
+second blind test.
+
+| | confident and right | wrong | in review |
+| --- | --- | --- | --- |
+| guarantors, before | 5 | 7 | 8 |
+| **guarantors, after** | **7** | **0** | 13 |
+
+* All seven wrong absences are gone. Barings' ENERGY HARDWARE HOLDINGS, INC.
+  is confirmed, and so is Lafayette Square's LS BDC HOLDINGS, LLC. Sixth
+  Street's two, defined in its preamble, are in review. So are the five
+  agreements whose definitions hand their guarantors to the Guarantee and
+  Security Agreement, which were called absent before.
+* Absences fell from 169 to 162, and the 162 are the ones the audit found
+  to hold.
+* The 168 blind labels come out as before: 59 confident, 0 wrong.
+* Two truth labels are judgment calls and both are in review:
+  * New Mountain, whose schedules leave no subsidiary able to be a
+    guarantor;
+  * Kennedy Lewis, whose only guaranty is a non-recourse carve-out.
+
 # What is next
 
 1. Decide the labels the second pass exposed: GBDC's `abl_revolver` against
@@ -860,14 +1005,15 @@ that a fresh one is harvested.
    pass the own-receivables question, and the corpus has no BDC profile to
    send them to.
 2. Let validator E, or a status C can reach, say "named here, stated
-   elsewhere". That was Sysco's case. Out of sample it is six guarantor
-   fields, and the same question also missed a named guarantor at Barings.
-   Guarantors need in-sample labels before either can be measured.
+   elsewhere". That was Sysco's case. For guarantors, the fourth pass found
+   that a definition pointing at a guarantee agreement is not enough, so a
+   real answer has to find who signs and who is scheduled.
 3. Extraction on BDC facilities. The rules tier found no commitment,
-   maturity, margin or fee in twenty agreements.
+   maturity, margin or fee in twenty agreements. `docs/bdc_extraction_plan.md`
+   is the plan.
 4. Fit A's parties threshold on real names, and label a sample of the
    corpus's unlabelled `absent_from_document` claims, as the audit above did
    for these twenty.
 5. Put the key in CI for a scheduled live gate. A question change costs
    about two thirds of a cold run, so a gate after one is about $2–4. Until
-   then, CI measures the stand-in, which passes at 293 confident / 0 wrong.
+   then, CI measures the stand-in, which passes at 304 confident / 0 wrong.
