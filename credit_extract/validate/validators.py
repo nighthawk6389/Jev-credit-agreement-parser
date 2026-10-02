@@ -32,6 +32,7 @@ from typing import Any, Iterable
 
 from pydantic import BaseModel
 
+from ..extract.passes import GUARANTOR_NAMED, GUARANTOR_PLACEHOLDER
 from ..ingest.normalize import NormalizedDocument
 from ..ingest.segment import Chunk
 from ..models.core import (
@@ -422,6 +423,7 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
         untypable = field.qualifiers.get("untypable_value")
         unsettled = field.qualifiers.get("unsettled_in_definition")
         per_tranche = field.qualifiers.get("priced_per_tranche")
+        guarantors = field.qualifiers.get("guarantors_established")
         if not asked:
             # Nothing was swept, so 1.0 is the initialiser showing through
             # rather than evidence. "Absent from a document nobody read" is
@@ -499,6 +501,23 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
                   "what is missing is which of these is the value, or what "
                   f"reduction over them is. Absence scored {probability:.2f} "
                   "and is the wrong question"
+            )
+        elif guarantors:
+            # The sixth, and the one the out-of-sample set found. The
+            # agreement defines, names or grants a guaranty -- validator E
+            # marked it -- so guarantors exist and their names went unread.
+            # Asked of each chunk whether it addresses "the legal name of each
+            # Guarantor", a literal reader says no to a definition that names
+            # nobody and to a signature block, which is not a provision:
+            # Barings' guarantor was confirmed absent at 0.85 with its
+            # signature in the document.
+            field.status = "needs_review"
+            field.validation_confidence = probability
+            field.notes = (
+                f"the agreement has guarantors ({guarantors[:160]}), so this "
+                "is not absence: their names were not extracted. Absence "
+                f"scored {probability:.2f} and is the wrong question -- "
+                "escalate"
             )
         elif probability >= threshold:
             field.status = "absent_from_document"
@@ -695,6 +714,76 @@ def fee_letter_governs_fees(doc: NormalizedDocument) -> str | None:
     return " ".join(text[match.start(): match.end() + 60].split())
 
 
+#: A guarantor role the agreement defines. In quotes, because that is how an
+#: agreement defines its terms -- and because the guarantor of a loan the
+#: borrower holds as collateral ("the Obligor ... or any guarantor thereof") is
+#: described in prose and never defined.
+_GUARANTOR_DEFINED_RE = re.compile(
+    r'"\s*((?:Subsidiary |Parent |Holdings |Company |U\.S\. |US )?Guarantors?)'
+    r'\s*"\s*(?:means|shall mean|has the meaning|shall have the meaning)'
+)
+#: A guarantor defined where it is introduced, as parties are: "Ares Capital
+#: CP Funding II, as the guarantor (the " Guarantor ")".
+_GUARANTOR_DEFINED_INLINE_RE = re.compile(
+    r'\(\s*(?:the|each,? a|collectively,? the)?\s*"\s*'
+    r'(?:Subsidiary |Parent |Holdings )?Guarantors?\s*"\s*\)'
+)
+#: An article of this agreement that is itself a guaranty: IDEX's "ARTICLE
+#: X. CONTINUING GUARANTY", under which the Company guarantees its
+#: co-borrowers and which defines no Guarantor at all.
+_GUARANTY_ARTICLE_RE = re.compile(
+    r"\barticle\s+(?:[ivxlc]+|\d+)\s*[.:\-]?\s*"
+    r"(?:the\s+|continuing\s+|company\s+|parent\s+|subsidiary\s+){0,2}"
+    r"guarant(?:y|ee)\b",
+    re.IGNORECASE,
+)
+#: A signature block headed for the guarantors, which names them without
+#: repeating the role beside each name: "GUARANTORS: ACME HOLDINGS LLC By:".
+_GUARANTOR_HEADING_RE = re.compile(
+    r"\b(?:SUBSIDIARY |PARENT )?GUARANTORS?\s*:\s*"
+    r"(?!By\b|Name\b|Title\b|\[)[A-Z][A-Za-z0-9&'.\-]+ [A-Z]"
+)
+_GUARANTOR_NAMED_RE = re.compile(GUARANTOR_NAMED)
+_GUARANTOR_PLACEHOLDER_RE = re.compile(GUARANTOR_PLACEHOLDER)
+
+
+def guarantors_established(doc: NormalizedDocument) -> str | None:
+    """A quotation showing this agreement has guarantors, or None.
+
+    Validator C asks of every chunk whether it addresses "the legal name of
+    each Guarantor", and a literal reader answers no to a definition that
+    names nobody -- '"Subsidiary Guarantor" means any Subsidiary that is a
+    Guarantor under the Guarantee and Security Agreement' -- and to a
+    signature block, which is not a provision. So C confirmed the field
+    absent on agreements that plainly have guarantors: out of sample, on six
+    BDC agreements that define them and on one that is signed by its
+    guarantor.
+
+    The evidence here is the text's own: a guarantor named in its role, a
+    signature block headed for guarantors, a defined guarantor role, or an
+    article that is a guaranty. None of it says *who* the guarantors are,
+    and an earlier version that sent definitions pointing at a guarantee
+    agreement to ``external_reference`` was wrong on all seven in-sample
+    agreements it fired on: each names its guarantors somewhere this cannot
+    see -- a signature block with no caption, a party the definitions make a
+    guarantor (Holdings, the Parent, the Company), a borrower signing "as
+    KBR, a Borrower and a Guarantor". So the evidence only stops C calling
+    the field absent; it settles nothing.
+    """
+    text = doc.text
+    for match in _GUARANTOR_NAMED_RE.finditer(text):
+        if not _GUARANTOR_PLACEHOLDER_RE.search(match.group(1)):
+            return " ".join(text[match.start(): match.end()].split())
+    for pattern in (_GUARANTOR_HEADING_RE, _GUARANTOR_DEFINED_RE,
+                    _GUARANTOR_DEFINED_INLINE_RE, _GUARANTY_ARTICLE_RE):
+        match = pattern.search(text)
+        if match is not None:
+            return " ".join(
+                text[max(0, match.start() - 40): match.end() + 120].split()
+            )
+    return None
+
+
 def _sentence_window(doc: NormalizedDocument, span: Span, cap: int = 900) -> str:
     """The sentence the span sits in, not a fixed character window.
 
@@ -768,6 +857,17 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
         if spec is None:
             continue
         if not field.spans:
+            if (
+                name == "guarantor.legal_name"
+                and field.value is None
+                and field.status not in ("external_reference", "confirmed")
+            ):
+                # Not an external reference, whatever the definitions say:
+                # see guarantors_established. Only a mark for validator C.
+                established = guarantors_established(ctx.doc)
+                if established:
+                    field.qualifiers["guarantors_established"] = established
+                continue
             if (
                 fee_letter_quote
                 and field.value is None

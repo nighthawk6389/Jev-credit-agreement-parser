@@ -850,6 +850,9 @@ class Rule:
     #: (probe regex, qualifier key, qualifier value) evaluated near the match.
     qualifier_probe: tuple[str, str, str] | None = None
     note: str | None = None
+    #: A value matching this is dropped: the pattern found the right slot and
+    #: something other than a value in it, such as a placeholder party.
+    reject: str | None = None
 
 
 _ENTITY = r"([A-Z][A-Za-z0-9 ,.&'\-]{3,80}?)"
@@ -991,6 +994,50 @@ _PARTY = (
     + r")"
 )
 
+#: A guarantor's role, the way a party list or a signature block gives it.
+#: Plural, because a list of guarantors closes on a single "as Guarantors".
+#: Capitalised, because that is how an agreement designates its own parties;
+#: in lower case the phrase describes someone else's. Camping World's
+#: definition of its floor plan facility reads "certain other direct and
+#: indirect subsidiaries of Freedomroads, LLC, as guarantors" -- the
+#: guarantors of another credit agreement, which a case-blind role read as
+#: this one's.
+_GUARANTOR_ROLE = (
+    r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:a |an |the )?"
+    r"(?:Subsidiary |Parent |Holdings |Company |U\.S\. |US )?Guarantors?\b"
+)
+
+#: A run may not open on a corporate suffix. A signature block that lists
+#: several guarantors over one "as Parent Guarantors" runs them together --
+#: "ACCELEVATION HOLDINGS BLOCKER, LLC INSTOR BLOCKER, INC." -- and the last
+#: name came back as 'LLC INSTOR BLOCKER, INC.', the previous one's suffix
+#: welded on. A fixed-width check at the start, so it costs nothing.
+_NOT_A_SUFFIX_FIRST = (
+    r"(?!(?:LLC|L\.L\.C\.|INC|Inc|CORP|Corp|LTD|Ltd|LIMITED|PLC|LP|L\.P\.)\b)"
+)
+
+#: A guarantor named in its role in this text. Shared with validator E, which
+#: may only send the guarantors to another document when none is named here.
+GUARANTOR_NAMED = _NOT_A_SUFFIX_FIRST + _PARTY + _GUARANTOR_ROLE
+
+#: Where guarantors' names would go, a cover page often has a placeholder
+#: instead: "THE GUARANTORS PARTY HERETO, as Guarantors" (Smart Sand),
+#: "CERTAIN SUBSIDIARIES OF SANMINA CORPORATION IDENTIFIED HEREIN, as the
+#: Guarantors" (Sanmina), "THE GUARANTORS NAMED HEREIN, as Guarantors"
+#: (Genasys). Each carries one of these words and no guarantor's name does,
+#: so a match that does is not a name.
+#:
+#: Checked on the match rather than inside the pattern. As a lookahead it
+#: scanned to the next comma from every position of every chunk, which made
+#: this one rule thirty-five times slower than the agent's; on a match it
+#: costs nothing, and finditer resumes after the placeholder rather than
+#: inside it, where every shorter run is a placeholder too.
+GUARANTOR_PLACEHOLDER = (
+    r"\b(?:GUARANTORS?|Guarantors?|PART(?:Y|IES)|Part(?:y|ies)"
+    r"|HERETO|[Hh]ereto|HEREIN|[Hh]erein|SUBSIDIARIES|Subsidiaries"
+    r"|CERTAIN|Certain)\b"
+)
+
 #: A percentage, however the drafter chose to write it. Requiring a literal
 #: "%" means every clause quoted in basis points reads as an absent field --
 #: and "50 basis points" is as common as "0.50%" in pricing and MFN clauses.
@@ -1029,6 +1076,15 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Lead |Sole |Joint )*(?:Lead )?Arranger", 0.85, 0),
     Rule("syndication_agent.legal_name",
          _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent", 0.90, 0),
+    # The one party nothing read. A guarantor is named the way the others are
+    # -- "FIDELITY DIRECT LENDING FUND I BLOCKER LLC, as Subsidiary Guarantor",
+    # "SCHNEIDER NATIONAL CARRIERS, INC., as Guarantors" -- and with no rule
+    # the field was empty on every document, so validator C was asked whether
+    # it was absent and said yes beside a signature block naming one. A deal
+    # with several guarantors yields several candidates and goes to conflict
+    # resolution: the registry holds one name, and any guarantor's is right.
+    Rule("guarantor.legal_name", GUARANTOR_NAMED, 0.85, 0,
+         reject=GUARANTOR_PLACEHOLDER),
     # -- governing law -------------------------------------------------------
     #
     # 69 labelled propositions, one per document, and until now not one of them
@@ -1251,7 +1307,11 @@ class OfflineRuleBackend:
 
     def __init__(self, rules: tuple[Rule, ...] = OFFLINE_RULES) -> None:
         self.rules = rules
-        self._compiled = [(r, re.compile(r.pattern, r.flags)) for r in rules]
+        self._compiled = [
+            (r, re.compile(r.pattern, r.flags),
+             re.compile(r.reject) if r.reject is not None else None)
+            for r in rules
+        ]
 
     def with_temperature(self, temperature: float) -> "OfflineRuleBackend":
         """Deterministic by construction: temperature has nothing to vary.
@@ -1274,7 +1334,7 @@ class OfflineRuleBackend:
         wanted = {spec.name for spec in specs}
         by_name = {spec.name: spec for spec in specs}
         out: list[Candidate] = []
-        for rule, compiled in self._compiled:
+        for rule, compiled, reject in self._compiled:
             if rule.field not in wanted:
                 continue
             for match in compiled.finditer(chunk.text):
@@ -1305,6 +1365,8 @@ class OfflineRuleBackend:
                     continue
                 spec = by_name[rule.field]
                 written = match.group(1)
+                if reject is not None and reject.search(written):
+                    continue
                 value = _coerce(spec.kind, written)
                 if value is None:
                     continue

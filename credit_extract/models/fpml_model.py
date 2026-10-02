@@ -397,8 +397,17 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         # -- parties ---------------------------------------------------------
         _spec("borrower.legal_name", "the legal name of the Borrower", "text",
               "parties", 4, "fibo-fbc-dae-dbt:Borrower", "fibo"),
-        _spec("guarantor.legal_name", "the legal name of each Guarantor", "text",
-              "parties", 3, "fibo-fbc-dae-gty:Guarantor", "fibo"),
+        # One name in a slot for a role several parties fill, so "a
+        # Guarantor": asked whether one name is "the legal name of each
+        # Guarantor", a literal reader says no wherever there are two, and
+        # validator A scored every real guarantor it was shown at 0.06-0.79.
+        # The presence question keeps its old words. Validator C is not what
+        # decides guarantors any more (see guarantors_established), and the
+        # same bytes keep every answer it has already bought.
+        _spec("guarantor.legal_name", "the legal name of a Guarantor", "text",
+              "parties", 3, "fibo-fbc-dae-gty:Guarantor", "fibo",
+              presence="This agreement contains a provision addressing the "
+                       "legal name of each Guarantor."),
         _spec("holdings.legal_name", "the legal name of Holdings", "text",
               "parties", 3, "fibo-fnd-agr-ctr:ContractParty", "fibo"),
         _spec("administrative_agent.legal_name",

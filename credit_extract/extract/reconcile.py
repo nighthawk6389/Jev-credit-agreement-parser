@@ -163,6 +163,26 @@ class Reconciliation:
         return dict(counts)
 
 
+#: Roles several parties fill. A deal's guarantors are several names, so a
+#: candidate that ends another is that name cut short where a chunk began --
+#: "URE, LLC" out of "THE MATTRESS VENTURE, LLC", "MONTICELLO DEBT REAL ESTATE
+#: INVESTMENT TRUST" out of "BLACKROCK MONTICELLO ..." -- and not a party.
+#: Left in, it is one more answer conflict resolution may choose.
+SEVERAL_PARTIES = frozenset({"guarantor.legal_name"})
+
+
+def _drop_fragments(valued: list[Candidate]) -> list[Candidate]:
+    """Candidates whose name is not the tail of a longer candidate's."""
+    names = {str(c.value).casefold() for c in valued}
+    return [
+        c for c in valued
+        if not any(
+            len(other) > len(str(c.value)) and other.endswith(str(c.value).casefold())
+            for other in names
+        )
+    ]
+
+
 def _extraction_confidence(group: ValueGroup, total_passes: int) -> float:
     """Confidence in the extraction, before any validation.
 
@@ -418,6 +438,8 @@ def reconcile(
             )
             continue
 
+        if name in SEVERAL_PARTIES:
+            valued = _drop_fragments(valued)
         grouped: dict[str, ValueGroup] = {}
         for candidate in valued:
             key = candidate.key()
