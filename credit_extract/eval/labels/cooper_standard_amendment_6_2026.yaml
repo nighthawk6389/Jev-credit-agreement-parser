@@ -183,3 +183,23 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: cooper_standard_amendment_6_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["CS INTERMEDIATE HOLDCO 1 LLC", "COOPER-STANDARD AUTOMOTIVE INC.", "COOPER-STANDARD INDUSTRIAL AND SPECIALTY GROUP, LLC", "COOPER-STANDARD AUTOMOTIVE CANADA LIMITED", "COOPER-STANDARD AUTOMOTIVE FLUID SYSTEMS MEXICO HOLDING LLC", "CSA SERVICES INC.", "NISCO HOLDING COMPANY", "COOPER-STANDARD FHS LLC", "COOPER-STANDARD CANADA HOLDINGS LLC", "COOPER-STANDARD LATIN AMERICA B.V."]
+    note: >
+      'CS INTERMEDIATE HOLDCO 1 LLC, as a U.S. Facility Guarantor and a
+      Canadian Facility Guarantor'
+
+      The Amendment No. 6 signature pages name every entity on the list in a
+      guarantor role, including both Borrowers ('COOPER-STANDARD AUTOMOTIVE
+      INC., as a U.S. Borrower, a U.S. Facility Guarantor and a Canadian
+      Facility Guarantor') and Cooper-Standard Latin America B.V. as
+      Specified Jurisdiction Guarantor. All of those roles are Guarantors
+      under '" Guarantors ": Canadian Facility Guarantors, U.S. Facility
+      Guarantors, the Specified Jurisdiction Guarantor'.

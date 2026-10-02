@@ -166,3 +166,26 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: sanmina_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["SCI TECHNOLOGY, INC.", "ZT GROUP INT'L, INC."]
+    note: >
+      'each of the Loan Parties consents to the amendments of the Credit
+      Agreement effected by this Amendment and confirms that (i) its
+      obligations as a Guarantor under the Credit Agreement are not
+      discharged'
+
+      Amendment No. 3 is made by 'SANMINA CORPORATION, a Delaware corporation
+      (the " Company "), the other Loan Parties party hereto', and the only
+      other Loan Parties that sign are SCI Technology, Inc. and ZT Group, whose
+      signature blocks state no role. Sanmina Corporation is left off: the
+      conformed cover lists it among the Guarantors, but it is the Borrower
+      and the operative definition is limited to Subsidiaries ('" Guarantors "
+      means, collectively, (a) each Subsidiary identified as a "Guarantor" on
+      the signature pages hereto').

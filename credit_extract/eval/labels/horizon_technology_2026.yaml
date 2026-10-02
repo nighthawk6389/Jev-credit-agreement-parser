@@ -94,3 +94,25 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: horizon_technology_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'the obligations of the Issuer under the Notes, this Agreement and any
+      other Transaction Document are limited recourse obligations of the Issuer
+      payable solely from the Collateral' -- and 'No recourse shall be had for
+      the payment of any amount owing by the Originator, the Issuer or the
+      Servicer' against any of their Affiliates.
+
+      There is no guarantor because the Issuer, Horizon Funding II, LLC, is a
+      securitization vehicle whose only credit support is its Collateral. Every
+      guarantor the text mentions belongs to a portfolio Loan ('" Obligor "
+      means, with respect to any Loan, any Person or Persons obligated to make
+      payments pursuant to or with respect to such Loan, including any
+      guarantor thereof'), not to the Notes.

@@ -91,3 +91,52 @@ assertions:
       Recorded so the pair is visible to whoever next works on document sets:
       the chain machinery models successive amendments to one agreement, and
       this is two agreements amended in parallel.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: comtech_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "COMTECH SATELLITE NETWORK TECHNOLOGIES, INC."
+      - "SOLACOM TECHNOLOGIES (US), INC."
+      - "NG-911, INC."
+      - "TELECOMMUNICATIONS SYSTEMS, INC."
+      - "COMTECH SYSTEMS, INC."
+      - "MICRODATA, LLC"
+      - "NEXTGEN COMMUNICATIONS, INC."
+      - "NEXTGEN COMMUNICATIONS, INC."
+      - "COMTECH NEXTGEN LLC"
+      - "COMTECH MOBILE DATACOM LLC"
+      - "COMTECH TACTICAL EUROPE LLC"
+      - "MICRODATA GIS, INC."
+      - "MAPLE ACQUISITION LLC"
+      - "OLIVE ACQUISITION LLC"
+      - "ANGELS ACQUISITION CORP."
+      - "COMTECH AEROASTRO, INC."
+      - "COMTECH ANTENNA SYSTEMS, INC."
+      - "COMTECH COMMUNICATIONS CORPORATION"
+      - "COMTECH COMSTREAM, INC."
+      - "COMTECH TOLT TECHNOLOGIES, INC."
+      - "TIERNAN RADYNE COMSTREAM, INC."
+      - "NETWORKS IN MOTION, INC."
+      - "SOLVERN INNOVATIONS, INC."
+      - "CSNTI PRODUCTS CO, LLC"
+      - "CMTL SERVICES CO, LLC"
+    note: >
+      'Each Guarantor hereby (i) acknowledges receipt of a copy of the
+      foregoing Amendment No. 5 to Credit Agreement'
+
+      The Consent and Reaffirmation is given by each Guarantor and closes with
+      'IN WITNESS WHEREOF, each of the undersigned has executed this Consent
+      and Reaffirmation', signed by 29 named subsidiaries; Section 6 confirms
+      that the Loan Parties other than the Borrowers act through it ('and with
+      respect to each Loan Party other than the Borrowers, by such Loan
+      Party'). There are more than 25, so this lists the first 25 in signature
+      order; the other four are COMTECH SATELLITE NETWORK TECHNOLOGIES CORP.,
+      COMTECH SOLACOM TECHNOLOGIES, INC., COMTECH UK HOLDINGS LIMITED and CGC
+      TECHNOLOGY LIMITED. NEXTGEN COMMUNICATIONS, INC. appears twice because a
+      Maryland and a Virginia corporation share that name; Comtech
+      Telecommunications Corp. signs only as Borrower.

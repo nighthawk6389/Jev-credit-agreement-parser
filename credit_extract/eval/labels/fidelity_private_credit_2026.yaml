@@ -87,3 +87,27 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: fidelity_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["FIDELITY DIRECT LENDING FUND I BLOCKER LLC", "FDLF CA SPE LLC"]
+    note: >
+      'FIDELITY DIRECT LENDING FUND I BLOCKER LLC , as Subsidiary Guarantor'
+
+      'FDLF CA SPE LLC , as Subsidiary Guarantor'
+
+      'FDLF CA SPE LLC | Delaware | Fidelity Private Credit Company LLC | Sole
+      Member / 100% | Subsidiary Guarantor'
+
+      Both sign the Second Amendment "as Subsidiary Guarantor" to reaffirm
+      their guarantee under the Guarantee and Security Agreement, and the
+      amended Schedule IV marks exactly these two subsidiaries as "Subsidiary
+      Guarantor" (the others are a Designated Subsidiary and Immaterial
+      Subsidiaries). Schedule IV and Annex 4 spell the first one "Fidelity
+      Direct Lending Fund 1 Blocker LLC"; the spelling in the signature block
+      is used here.

@@ -98,3 +98,37 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: limbach_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "LIMBACH HOLDINGS, INC."
+      - "LIMBACH HOLDINGS LLC"
+      - "LIMBACH COMPANY LLC"
+      - "HARPER LIMBACH LLC"
+      - "HARPER LIMBACH CONSTRUCTION LLC"
+      - "JAKE MARSHALL, LLC"
+      - "COATING SOLUTIONS, LLC"
+      - "INDUSTRIAL AIR, LLC"
+      - "LIMBACH FACILITY & PROJECT SOLUTIONS LLC"
+      - "KENT ISLAND MECHANICAL, LLC"
+      - "CONSOLIDATED MECHANICAL, LLC"
+      - "PIONEER POWER, LLC"
+      - "CYMCOR, LLC"
+      - "1901 LLC"
+    note: >
+      'means, collectively, (a) Parent, (b) Holdings, (c) each direct or
+      indirect Subsidiary of the Borrower (other than Excluded Subsidiaries)'
+
+      The signature page lists these fourteen entities under GUARANTORS,
+      beginning with Parent (LIMBACH HOLDINGS, INC.) and Holdings (LIMBACH
+      HOLDINGS LLC). Clause (d) of the definition also makes the Borrower,
+      LIMBACH FACILITY SERVICES LLC, a Guarantor, but only 'with respect to the
+      Obligations described in clauses (b), (d) and (e) of the definition of'
+      Obligations, which are hedge and bank-product obligations; it signs as
+      BORROWER and does not guarantee its own loans, so it is left off.

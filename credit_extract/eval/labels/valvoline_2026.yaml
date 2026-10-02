@@ -127,3 +127,38 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: valvoline_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "VALVOLINE US LLC"
+      - "VALVOLINE LLC"
+      - "VALVOLINE LICENSING AND INTELLECTUAL PROPERTY LLC"
+      - "VRS HOLDCO LLC"
+      - "VALVOLINE BRANDED FINANCE, INC."
+      - "VALVOLINE INSTANT OIL CHANGE FRANCHISING, INC."
+      - "VIOC FUNDING, INC."
+      - "OCH INTERNATIONAL, INC."
+      - "FUNDING CORP. I"
+      - "VALVOLINE US RETAIL SERVICES LLC"
+      - "VALVOLINE HD LLC"
+      - "OC INTERMEDIATECO, INC."
+      - "OC HOLDING, INC."
+      - "OIL CHANGER HOLDING CORPORATION"
+      - "OIL CHANGER, INC."
+    note: >
+      'among Valvoline Inc., a Kentucky corporation (the " Borrower "), the
+      other Loan Parties party hereto' -- and '" Loan Parties " means,
+      collectively, the Borrower and the Guarantors.'
+
+      The Guarantors definition points to Schedule 1(a) of the Perfection
+      Certificate, which is not here, but the fifteen companies that sign
+      Amendment No. 2 beneath the Borrower are the other Loan Parties party
+      hereto, and so the Guarantors, each reaffirming in Section 6 'its
+      Guarantee of the Obligations (if applicable)'. VALVOLINE INSTANT OIL
+      CHANGE FRANCHISING, INC. is broken across two lines on the signature page.

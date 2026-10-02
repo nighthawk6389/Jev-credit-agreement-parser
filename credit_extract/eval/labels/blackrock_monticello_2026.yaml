@@ -72,3 +72,29 @@ assertions:
       of those resolve in a trailing sentence. Written without the spaces the
       normaliser usually leaves around the quotation marks, which is a
       reminder that the anchor patterns cannot rely on them.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: blackrock_monticello_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "BLACKROCK MONTICELLO DEBT REAL ESTATE INVESTMENT TRUST"
+    note: >
+      'BLACKROCK MONTICELLO DEBT REAL ESTATE INVESTMENT TRUST, a Maryland
+      statutory trust, as the guarantor' -- and in Article XII, 'Guarantor does
+      hereby irrevocably and unconditionally guarantee the due and punctual
+      payment when due, and performance of the Guarantied Obligations', which
+      reach 'solely following the occurrence of a Full Recourse Event, all
+      Obligations of Borrower'.
+
+      The trust is the one party the agreement names as Guarantor, in the
+      preamble and in both signature blocks, and the text says its guaranty
+      covers the Obligations. BLK MAM Holding, LLC and BLKM Funding (TRS), LLC
+      are left out: each gives a 'Limited Recourse Guaranty and Pledge
+      Agreement, dated as of July 22, 2026, by and between BLKM Funding (TRS),
+      LLC' (or BLK Holding) and the Administrative Agent, which the definitions
+      file under Pledge Agreement, and nothing says either guarantees the
+      Obligations.

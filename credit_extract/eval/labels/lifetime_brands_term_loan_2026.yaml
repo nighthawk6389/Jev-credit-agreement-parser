@@ -106,3 +106,21 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: lifetime_brands_term_loan_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["PFALTZGRAFF FACTORY STORES, INC.", "THE CHEF'N CORPORATION"]
+    note: >
+      '" Loan Guarantor " means each Loan Party.'
+
+      The Loan Parties are the Company and the Material Domestic Subsidiaries
+      party hereto, and the signature pages list the two subsidiaries under
+      'OTHER LOAN PARTIES : PFALTZGRAFF FACTORY STORES, INC.', so they give the
+      Article X Loan Guaranty. Lifetime Brands, Inc. signs only as the
+      Company and sole Borrower and is left off, because a guarantor of the
+      obligations of the borrower cannot be the borrower itself.

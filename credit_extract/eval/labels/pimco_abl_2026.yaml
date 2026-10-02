@@ -91,3 +91,26 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: pimco_abl_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Limited Guaranty " means that certain guaranty agreement by the
+      Limited Guarantor for the benefit of the Administrative Agent on behalf
+      of the Secured Parties, dated as of the Closing Date.'
+
+      There is no guarantor of the Obligations because PALCO LVS 9 LP is a
+      special-purpose borrower whose credit support is the Collateral Loans
+      held through the Underlying Trust; the one guaranty, by PIMCO Asset-Based
+      Lending Company LLC - Series II, is a separate Limited Guaranty that the
+      text never says guarantees the Obligations and mentions only as a duty to
+      repurchase Loans 'by the Limited Guarantor or any of its Affiliates if
+      required pursuant to the terms of the Limited Guaranty'. The Related
+      Guarantors in the eligibility and FICO definitions guarantee Collateral
+      Loans, not this facility.

@@ -111,3 +111,25 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: kbr_amendment_13_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "KBR, INC."
+    note: >
+      'KBR, INC., a Delaware corporation, as KBR, a Borrower and a Guarantor'
+      -- the only guarantor signature reproduced; the rest are 'GUARANTOR
+      SIGNATURES ON FILE WITH KBR, INC.'
+
+      KBR, Inc. is a Guarantor in its own right: 'KBR shall be liable for all
+      Obligations of the Designated Borrowers' pursuant to the Guaranty, and
+      clause (c) of the Guarantors definition ends with the Borrower. The other
+      Guarantors are defined only as a class ('" Guarantors " means,
+      collectively, (a) each Material Domestic Subsidiary of the Borrower') and
+      none is named, because Schedule 5.13 and the conformed signature pages
+      are omitted, so the list holds the one guarantor this text names.

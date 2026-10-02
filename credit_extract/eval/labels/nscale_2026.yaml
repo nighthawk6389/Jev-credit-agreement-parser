@@ -71,3 +71,25 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: nscale_guarantor
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    kind: field_status
+    target: guarantor.legal_name
+    expect: external_reference
+    note: >
+      'means those Subsidiaries listed on Section 5.11 of the Borrower
+      Disclosure Letter and party hereto'
+
+      Guarantors exist (Section 8.01: 'The Guarantors jointly and severally
+      hereby irrevocably and unconditionally guaranty to the Administrative
+      Agent' the Obligations), but the list is in the Borrower Disclosure
+      Letter, a separate document; the conformed agreement ends '[Signature
+      pages intentionally omitted]' and the Amendment No. 2 signature page is
+      redacted, so no guarantor is named in this text. The Borrower is a
+      Guarantor only 'solely for the purpose of guaranteeing the obligations
+      of the other Guarantors under Secured Hedge Agreements, the Borrower',
+      not of its own Obligations.

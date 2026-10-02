@@ -88,6 +88,32 @@ least a rule two people can follow identically. The output structure is no
 longer the gap it was — `models/agreement.py` builds a tranche list and
 `models/assemble.py` fills it — but the registry a label targets is still flat.
 
+### A role several parties fill
+
+`guarantor.legal_name` is "the legal name of a Guarantor", and a deal can have
+twelve. The registry holds one name, so the label lists them all and the
+pipeline is right if it reports any one of them:
+
+```yaml
+kind: field_value
+target: guarantor.legal_name
+expect: ["ACME OPERATING SUBSIDIARY, LLC", "ACME FINANCE CORP."]
+```
+
+List each name exactly as the text writes it where it names that party in the
+role: the preamble, a party or signature block ("X, as a Guarantor"), or a
+joinder or schedule that is in the text. A placeholder is not a name: "THE
+GUARANTORS PARTY HERETO", "CERTAIN SUBSIDIARIES ... IDENTIFIED HEREIN".
+
+When the agreement has guarantors but names none of them, the names are
+somewhere else. The usual case is '"Subsidiary Guarantor" means any Subsidiary
+that is a Guarantor under the Guarantee and Security Agreement'. That is
+`external_reference`, family F09 `term_defined_in_other_loan_document`, with
+the pointer quoted. Absence is for an agreement with no guarantor at all, such
+as a special-purpose borrower whose only support is its collateral. A
+portfolio loan's guarantor ("the Obligor ... or any guarantor thereof") is not
+this facility's.
+
 ### A term the document prices per tranche
 
 Some agreements state one term twice, once per tranche, in a single definition:

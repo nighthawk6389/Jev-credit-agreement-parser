@@ -316,3 +316,25 @@ assertions:
       reported as an external reference. The register keeps this member as a
       blind spot for exactly that reason: the mechanism is exercised and its
       effect on a field is not.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: hc_guarantor
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: guarantor.legal_name
+    expect: external_reference
+    note: >
+      'The Subsidiaries of the Borrower that are Guarantors as of the Closing
+      Date are set forth on Schedule 1.1B.'
+
+      'Schedule 1.1B: Closing Date Subsidiary Guarantors'
+
+      Guarantors exist: "Guarantors" are the non-excluded Subsidiaries of the
+      Borrower, party with it to the Guarantee and Collateral Agreement, and
+      "Loan Parties" are the Borrower and the Guarantors. The closing-date
+      guarantors are listed only on Schedule 1.1B, which the schedule index
+      names but the filing does not include. No guarantor is a party to or
+      signs this agreement: the parties are Health Catalyst, Inc. (the
+      Borrower), the Lenders and the Administrative Agent.

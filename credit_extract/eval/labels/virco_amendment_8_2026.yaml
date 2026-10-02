@@ -69,3 +69,28 @@ assertions:
       is exactly where a pipeline looks competent by guessing, and where the
       only evidence that it is reading rather than guessing is the handful of
       documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: virco_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'Each Borrower, jointly and severally, hereby irrevocably and
+      unconditionally accepts, not merely as a surety but also as a co-debtor,
+      joint and several liability with the other Borrowers'
+
+      '" Guarantor " shall mean any Person who may hereafter guarantee, as
+      surety, payment or performance of the whole or any part of the
+      Obligations'
+
+      There is no guarantor because the obligors are the Borrowers alone:
+      VIRCO MFG. CORPORATION and VIRCO INC. are co-debtors jointly and
+      severally liable for all Obligations (Section 15.2), and the agreement
+      is among them, the Lenders and PNC as Agent. "Guarantor" covers only a
+      Person who "may hereafter" guarantee (for example a new Subsidiary under
+      Section 7.12). No guarantor is named, none signs, and only the Borrowers
+      reaffirm the loan documents in Amendment No. 8.

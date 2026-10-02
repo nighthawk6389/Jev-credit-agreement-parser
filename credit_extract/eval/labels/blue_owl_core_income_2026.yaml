@@ -109,3 +109,25 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: blue_owl_core_income_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'the obligations of the Borrower under this Agreement are limited recourse
+      obligations of the Borrower (and not any of its Affiliates or any other
+      party) payable solely from the Collateral'
+
+      No guarantor, because the Borrower, Core Income Funding VII LLC, is a
+      special-purpose warehouse vehicle whose only credit support is the
+      Collateral it pledges under Section 7.01; Blue Owl Credit Income Corp., as
+      Equityholder and Collateral Manager, gives no guaranty, and the Facility
+      Documents contain none. The guarantors the text does mention belong to
+      the portfolio ('means, in respect of any Collateral Asset, any Person
+      obligated to pay Collections in respect of such Collateral Asset,
+      including any applicable guarantors'), not to this facility.

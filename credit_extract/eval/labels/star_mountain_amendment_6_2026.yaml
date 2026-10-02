@@ -199,3 +199,26 @@ assertions:
       warehouse. Worth pinning because the surrounding documents cluster at
       0.00% and 1.00%, so a plausible-looking wrong answer here is one of
       those.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: star_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'The Borrower has no Subsidiaries.'
+
+      There is no guarantor because the Borrower, Star Mountain Lower
+      Middle-Market Capital Corp., is the only obligor and its only credit
+      support is the Section 2.12 pledge of its Collateral, made 'To secure
+      the prompt and complete payment in full when due, whether at stated
+      maturity, by lapse of time, acceleration or otherwise, of the
+      Obligations'. The Transaction Documents
+      ('means this Agreement, the Collection Account Agreement, the Fee
+      Letters, the Sale Agreement, each collateral assignment agreement')
+      include no guaranty, and every guarantor the text mentions belongs to a
+      portfolio loan: Obligor means 'each Person obligated to make payments
+      under a Loan Agreement, including any guarantor thereof'.

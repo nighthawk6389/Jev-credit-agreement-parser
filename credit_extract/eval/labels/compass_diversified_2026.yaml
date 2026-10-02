@@ -114,3 +114,23 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: compass_diversified_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Security Agreement " means the security and pledge agreement dated
+      as of the Closing Date executed in favor of the Administrative Agent,
+      for the benefit of the holders of the Obligations, by the Borrower.'
+
+      There is no guarantor because the Borrower is the only obligor: the
+      Loan Documents are 'this Agreement, each Note, each Issuer Document, the
+      Collateral Documents, the Fee Letter and any Auto Borrow Agreement',
+      with no guaranty, and neither the Trust nor any subsidiary signs. The
+      subsidiary guaranties the agreement describes support the intercompany
+      debt that Portfolio Companies owe the Borrower, not this facility.

@@ -222,3 +222,23 @@ assertions:
       paragraph that continues into jurisdiction and service of process -- not
       in the block capitals most agreements use, which is where a
       capitals-anchored reader looks.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: aspen_guarantor
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    kind: field_status
+    target: guarantor.legal_name
+    expect: external_reference
+    note: >
+      '"Guarantee Agreement" means the Guarantee Agreement among the
+      Designated Subsidiaries and the Lender, substantially in the form of
+      Exhibit H.'
+
+      The agreement requires guarantors (satisfying the Guarantee Requirement
+      is a closing condition, and '"Loan Parties" means the Borrower and each
+      Designated Subsidiary that is a party to the Guarantee Agreement.') but
+      names none of them. Only the Borrower and the Lender sign, Exhibit H
+      reads 'Exhibit H [Attached]1 1 NTD: To come.', and Schedule 3.11 lists
+      subsidiaries without marking any as a Loan Party.

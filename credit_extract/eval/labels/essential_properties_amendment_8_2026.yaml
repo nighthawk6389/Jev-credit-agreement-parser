@@ -410,3 +410,24 @@ assertions:
       agency businesses rather than lenders, which is the direct-lending and
       project-finance pattern and the one a reader expecting a bank name will
       misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: eprt_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["ESSENTIAL PROPERTIES REALTY TRUST, INC."]
+    note: >
+      'The Parent REIT (a) confirms its obligations under the Guarantee
+      Agreement'
+
+      Guarantors are 'the collective reference to the Parent REIT and the
+      Subsidiary Guarantors, if any', and the Parent REIT is Essential
+      Properties Realty Trust, Inc., named in the preamble and signing as the
+      Parent REIT. Section V provides that the Subsidiary Guarantors on Annex I
+      (the nineteen Released Subsidiary Guarantors) and any other Subsidiary
+      Guarantor 'are hereby released from their respective Guarantee
+      Obligations under the Loan Documents' as of the Eighth Amendment
+      Effective Date, so the operative list is the Parent REIT alone.

@@ -78,3 +78,19 @@ assertions:
       Amortization Amount" -- which is the kind of thing F01's integrity
       checks exist for and which no invariant in the register currently looks
       at.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: neovolta_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["NEOVOLTA POWER, LLC", "NEOVOLTA ENERGY I, LLC"]
+    note: >
+      '" Guarantor " means each Subsidiary of the Borrower that shall have
+      executed this Agreement or any amendment or joinder thereto.'
+
+      Two subsidiaries execute the agreement on its signature page under
+      'GUARANTORS : NEOVOLTA POWER, LLC' and NEOVOLTA ENERGY I, LLC, and
+      Section 18.1 has each Guarantor guarantee the Obligations.

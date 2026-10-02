@@ -51,3 +51,23 @@ assertions:
       document with a few dozen such mentions and a sixty-character window.
       Seven instances across CLOs, warehouses, a BDC and a servicing agreement
       is the evidence that the window was not fitted to one filing's habits.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: twin_brook_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'the obligations of the Issuer under the Secured Debt and this Indenture
+      and the Class A-LA-1L Credit Agreement are limited recourse obligations of
+      the Issuer, payable solely from the Assets'
+
+      No guarantor, because this is a CLO indenture, conformed through its
+      First Supplemental Indenture, whose only obligor is the Issuer, TWIN
+      BROOK CLO 2024-1 LLC, with its Secured Debt payable solely from the Assets
+      granted to the Trustee. The guarantors the text mentions are those of the
+      Collateral Obligations (the Obligor definition includes any guarantor
+      thereof), not of the Secured Debt.

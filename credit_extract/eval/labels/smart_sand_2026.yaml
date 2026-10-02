@@ -90,3 +90,23 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: smart_sand_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["SMART SAND HIXTON LLC", "SSI LOGISTICS LLC", "FAIRVIEW CRANBERRY COMPANY, LLC", "WILL LOGISTICS, LLC"]
+    note: >
+      'SMART SAND HIXTON LLC , SSI LOGISTICS LLC , each as a Subsidiary
+      Guarantor'
+
+      The Amendment No. 2 signature pages name four Subsidiary Guarantors
+      (the other two sign 'FAIRVIEW CRANBERRY COMPANY, LLC , WILL LOGISTICS,
+      LLC , each as a Subsidiary Guarantor'). Smart Sand, Inc. and the
+      subsidiaries that sign as a Borrower are jointly and severally liable
+      Borrowers and are left off; their only guarantor capacity is '(b) each
+      Borrower in its capacity as a guarantor of the Bank Product Obligations
+      of any Loan Party'.

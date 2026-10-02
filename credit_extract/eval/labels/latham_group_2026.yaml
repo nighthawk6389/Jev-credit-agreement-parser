@@ -263,3 +263,26 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: latham_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["Latham International Manufacturing Corp."]
+    note: >
+      '"Loan Guarantor" means (a) Holdings and (b) any Subsidiary Guarantor'
+
+      Holdings is 'Latham International Manufacturing Corp., a Delaware
+      corporation', named in the preamble and signing as Holdings, and the
+      Collateral and Guarantee Requirement provides 'in the case of Holdings,
+      the Administrative Agent shall have received (A) each applicable
+      Collateral Document and the Loan Guaranty, duly executed by Holdings'.
+      The Subsidiary
+      Guarantors are defined only generically and sign the Loan Guaranty
+      (Exhibit I), which is not in this text, so none of them is named here.
+      The Borrower is a Subsidiary Guarantor only for the Obligations of other
+      Borrowers, Restricted Subsidiaries and Holdings; as the sole Borrower it
+      guarantees none of the borrower obligations and is not listed.

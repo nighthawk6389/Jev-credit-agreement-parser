@@ -88,3 +88,34 @@ assertions:
       A tripwire on the sweep, not a target -- and now a CEILING, so it can
       say so. Observed 28. Fewer uncaptured chunks is always fine; more is
       the thing to investigate, and 30 is where that starts.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: ares_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Transaction Documents " means this Agreement, any Hedging Agreement,
+      any Joinder Supplement, the Purchase and Sale Agreements, the
+      Participation Agreement, the Collection Account Agreement, the Unfunded
+      Exposure Account Agreement, the Trustee and Collateral Custodian Fee
+      Letter, any Lender Fee Letter, the Pledge Agreement and each document,
+      instrument or agreement related to any of the foregoing'
+
+      '" Pledge " means the pledge of any Eligible Loan Asset or other
+      Portfolio Asset pursuant to Article II'
+
+      'Ares Capital CP Funding II, as the guarantor (the " Guarantor ")'
+
+      There is no guarantor because ARES CAPITAL CP FUNDING LLC is a
+      special-purpose borrower whose credit support is the pledge of its Loan
+      Assets (plus the equity pledge by the Equityholder under the Pledge
+      Agreement): the six parties to the restated agreement (Borrower,
+      Servicer/Transferor, Agent, Lenders, Trustee, Bank/Collateral Custodian)
+      include no guarantor, its Transaction Documents include no guaranty, and
+      no guarantor signs Amendment No. 18. The only "Guarantor" in the text
+      belonged to the 2004 Original Agreement, which the 2010 Restatement
+      Agreement, without that guarantor as a party, amended and restated.

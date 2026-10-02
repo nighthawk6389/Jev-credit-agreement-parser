@@ -236,3 +236,30 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: stz_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Loan Documents " means this Agreement, any Notes executed and
+      delivered pursuant to Section 2.09(f), the Fee Letter and any
+      amendments, waivers, supplements or other modifications to any of the
+      foregoing.'
+
+      'TERM LOAN CREDIT AGREEMENT (this " Agreement ") dated as of September
+      18, 2026 among CONSTELLATION BRANDS, INC., a Delaware corporation, the
+      LENDERS party hereto, and MANUFACTURERS AND TRADERS TRUST COMPANY, as
+      Administrative Agent.'
+
+      There is no guarantor because this is an unsecured investment-grade term
+      loan to Constellation Brands, Inc. alone: the parties are the Company,
+      the Lenders and the Agent, only they sign, and the Loan Documents are
+      this Agreement, Notes and the Fee Letter with no guaranty. The text has
+      no Guarantor, Subsidiary Guarantor or Guaranty term; "guarantor" appears
+      only inside the generic covenant definition of "Guarantee" of the
+      Indebtedness of any Person.

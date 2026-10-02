@@ -102,3 +102,31 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: hillman_solutions_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "THE HILLMAN COMPANIES, INC."
+      - "BIG TIME PRODUCTS, LLC"
+      - "SUNSUB C INC."
+    note: >
+      'means Holdings, the Borrower, any Subsidiary Guarantor and any
+      Discretionary Guarantor'
+
+      'each Loan Party agrees that the guarantees, security interests and Liens
+      that have been provided by the Loan Parties under the Loan Documents
+      remain in full force and effect'
+
+      Holdings, THE HILLMAN COMPANIES, INC., is a Guarantor by definition. BIG
+      TIME PRODUCTS, LLC. (trailing period dropped) and SUNSUB C INC. sign
+      Amendment No. 1 with no capacity label under the Article X reaffirmation
+      by each of the Loan Parties, and Loan Parties are Holdings, the Borrower
+      and each other Guarantor, so they are Subsidiary Guarantors. The
+      definition also sweeps in the Borrower, THE HILLMAN GROUP, INC., but as
+      the sole borrower it can only guarantee obligations of the other Loan
+      Parties, not its own, so it is left off.

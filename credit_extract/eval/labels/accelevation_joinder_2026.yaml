@@ -79,3 +79,25 @@ assertions:
       joinder carries the agreement's floor unchanged, which is the control on
       the pair: same text, same value, and an archetype that differed only
       because a preamble moved a phrase past the detection window.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: accelevation_joinder_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["ACCELEVATION INTERMEDIATE LLC", "ACCELEVATION BUYER LLC", "Accelevation Holding Company LLC", "Accelevation Holdings Blocker, LLC", "Accelevation Blocker, Inc.", "Instor Blocker, Inc."]
+    note: >
+      'Instor Blocker, Inc., a Delaware corporation (" Instor Blocker " and,
+      together with Holdings, Intermediate Holdings, Accelevation Holding,
+      Accelevation Holdings Blocker and Accelevation Blocker, the " Parent
+      Guarantors ")'
+
+      The preamble of the conformed Credit Agreement (Exhibit A) names these
+      six entities as the Parent Guarantors, and the Guarantors definition
+      makes Holdings a Guarantor in terms ('and (iii) Holdings; provided that
+      in no event shall any Excluded Subsidiary be required to be a
+      Guarantor'). Any other Guarantor is identified only as a party to the
+      Guarantee (Exhibit B), and neither that document nor the guarantor
+      reaffirmation the amendment calls for is in this text.

@@ -112,3 +112,28 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: nvent_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["nVent Electric plc"]
+    note: >
+      '" Guarantor " means the Parent.'
+
+      '" Parent " means nVent Electric plc, an Irish public limited company.'
+
+      'The Parent, by its execution of this Amendment, hereby consents to this
+      Amendment and confirms and ratifies that all of its obligations as a
+      Guarantor under the Amended Credit Agreement (including, without
+      limitation, Article X thereof) shall continue in full force and effect'
+
+      The defined Guarantor is the Parent alone, nVent Electric plc, which
+      guarantees the Obligations under Article X (Parent Guarantee) and signs
+      the amendment "as the Parent". The Primary Borrowers, nVent Finance S.a
+      r.l. (the Company) and Hoffman Schroff Holdings, Inc. (HSHI), only
+      cross-guarantee each other under Article XI; they are Borrowers, not the
+      defined Guarantor, so they are not listed.

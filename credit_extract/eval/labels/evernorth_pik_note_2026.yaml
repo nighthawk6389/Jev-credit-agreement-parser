@@ -160,3 +160,23 @@ assertions:
       a field holding one money figure cannot express that. It is not an
       accordion and not a delayed draw -- there is no second funding and no
       lender commitment to make one.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: evernorth_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'No Subsidiary or other Person has guaranteed, or is required under this
+      Agreement or the Notes to guarantee, the obligations of the Company
+      hereunder or thereunder.'
+
+      What Section 12.5 has instead is 'The Notes are unsecured obligations of
+      the Company.' There is no guarantor because the holder of these
+      convertible notes is given only a general unsecured claim against
+      Evernorth Holdings Inc. itself; the remaining guarantee language is the
+      generic Guaranty definition and cross-default and existing-debt
+      boilerplate about other debt.

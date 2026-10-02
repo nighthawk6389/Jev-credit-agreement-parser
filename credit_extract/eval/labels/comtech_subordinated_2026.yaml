@@ -95,3 +95,50 @@ assertions:
       of the time is exactly where a pipeline looks competent by guessing, and
       where the only evidence that it is reading rather than guessing is the
       handful of documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: comtech_subordinated_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "COMTECH SATELLITE NETWORK TECHNOLOGIES, INC."
+      - "SOLACOM TECHNOLOGIES (US), INC."
+      - "NG-911, INC."
+      - "TELECOMMUNICATIONS SYSTEMS, INC."
+      - "COMTECH SYSTEMS, INC."
+      - "MICRODATA, LLC"
+      - "NEXTGEN COMMUNICATIONS, INC."
+      - "NEXTGEN COMMUNICATIONS. INC."
+      - "COMTECH NEXTGEN LLC"
+      - "COMTECH MOBILE DATACOM LLC"
+      - "COMTECH TACTICAL EUROPE LLC"
+      - "MICRODATA GIS, INC."
+      - "MAPLE ACQUISITION LLC"
+      - "OLIVE ACQUISITION LLC"
+      - "ANGELS ACQUISITION CORP."
+      - "COMTECH AEROASTRO, INC."
+      - "COMTECH ANTENNA SYSTEMS, INC."
+      - "COMTECH COMMUNICATIONS CORPORATION"
+      - "COMTECH COMSTREAM, INC."
+      - "COMTECH TOLT TECHNOLOGIES, INC."
+      - "TIERNAN RADYNE COMSTREAM, INC."
+      - "NETWORKS IN MOTION, INC."
+      - "SOLVERN INNOVATIONS, INC."
+      - "CSNTI PRODUCTS CO, LLC"
+      - "CMTL SERVICES CO, LLC"
+    note: >
+      'the Guarantors identified on the signature pages hereof' -- and those
+      pages list 29 companies under GUARANTORS, between the Borrower and the
+      Agent, each of which also gives the Section 10 consent: 'Each Guarantor
+      hereby (i) acknowledges receipt of a copy of the Amendment'.
+
+      There are more than 25, so these are the first 25 in signature-page
+      order; the other four are COMTECH SATELLITE NETWORK TECHNOLOGIES CORP.,
+      COMTECH SOLACOM TECHNOLOGIES, INC., COMTECH UK HOLDINGS LIMITED and CGC
+      TECHNOLOGY LIMITED. NEXTGEN COMMUNICATIONS. INC. is the Virginia company,
+      written with a period on this signature page (Exhibit A writes it the
+      same as the Maryland company, NEXTGEN COMMUNICATIONS, INC.). The Borrower,
+      Comtech Telecommunications Corp., is not a Guarantor.

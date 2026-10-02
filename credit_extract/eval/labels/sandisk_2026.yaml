@@ -164,3 +164,35 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: sandisk_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["SANDISK TECHNOLOGIES, INC."]
+    note: >
+      'Each Loan Party hereby expressly acknowledges the terms of this
+      Amendment and reaffirms, as of the date hereof, (i) the covenants and
+      agreements contained in each Loan Document to which it is a party'
+
+      '(ii) its guarantee of the Obligations (including, without limitation,
+      the 2026 Revolving Credit Commitments) pursuant to the Collateral
+      Documents'
+
+      'shall at all times be guaranteed by each Borrower (other than with
+      respect to its own Obligations) and each Restricted Subsidiary (other
+      than an Excluded Subsidiary)'
+
+      SANDISK TECHNOLOGIES, INC. signs Amendment No. 1 beside the Lead
+      Borrower and is neither a Lender nor an Agent, so it is a Loan Party
+      ("the Borrowers and each Subsidiary Guarantor") reaffirming its
+      guarantee of the Obligations; under Section 4.3 it is a Guarantor of the
+      Lead Borrower either as a Subsidiary Guarantor or as a Borrower. Its
+      signature block states no capacity, which is the uncertain step.
+      SANDISK CORPORATION, the Lead Borrower, guarantees only other Loan
+      Parties and not its own Obligations, so it is not listed. Other
+      Subsidiary Guarantors would be parties to the Guaranty (Exhibit K, not
+      in this text).

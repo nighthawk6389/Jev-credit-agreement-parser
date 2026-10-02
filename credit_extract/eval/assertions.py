@@ -362,7 +362,14 @@ def evaluate_assertion(
         else:
             unit = getattr(getattr(field, "quantity", None), "unit", None)
             observed = getattr(unit, "value", unit)
-        passed = values_equal(assertion.expect, observed)
+        if kind == "field_value" and isinstance(assertion.expect, list):
+            # A role several parties fill. The registry holds one guarantor's
+            # name where a deal has twelve guarantors, so the label lists them
+            # and any one of them is a right answer; a name not on the list,
+            # or no name, is not.
+            passed = any(values_equal(name, observed) for name in assertion.expect)
+        else:
+            passed = values_equal(assertion.expect, observed)
 
     elif kind == "resolve":
         field = result.fields.get(assertion.target)

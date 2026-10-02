@@ -143,3 +143,27 @@ assertions:
       Cantor Fitzgerald Securities are agency businesses rather than lenders,
       which is the direct-lending and project-finance pattern and the one a
       reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: pennantpark_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'recourse against the Borrower is limited to the Collateral only and not
+      to the general assets of the Fund'
+
+      There is no guarantor because PennantPark Private Income Fund SPV LLC is
+      a special-purpose borrower whose only credit support is its pledged
+      Collateral. The Loan Parties are 'The Borrower, the Transferor, and the
+      Collateral Manager', acting as seller of loans and manager, not as
+      guarantors, and the Transaction Documents ('This Agreement, the Sale
+      Agreement, the Account Control Agreement, the Fee Letter, each Note, any
+      Joinder Supplement, any Transferee Letter, any Assignment and Assumption
+      and the Collateral Agent Fee Letter') contain no guaranty. Every other
+      guarantor in the text belongs to a portfolio loan: Obligor means 'any
+      Person or Persons obligated to make payments pursuant to or with respect
+      to such Loan, including any guarantor thereof'.

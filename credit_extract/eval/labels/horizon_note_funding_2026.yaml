@@ -66,3 +66,25 @@ assertions:
       elsewhere with an agent this document is deferring to; the role simply
       does not exist in this structure, which is a fact about the deal rather
       than about the filing.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: horizon_note_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'between the Issuer and U.S. Bank Trust Company, National Association, as
+      Trustee'
+
+      There is no guarantor because the obligor is a special-purpose
+      securitisation issuer, Horizon Funding II, LLC, whose Notes are issued
+      under an Indenture to which only the Issuer and the Trustee are party
+      and are repaid from the Loans it buys under the Sale and Servicing
+      Agreement (advances are capped by a Borrowing Base of those Loans). The
+      parent appears only as 'Horizon Technology Finance Corporation, as
+      Servicer, Originator and Seller' and as sole member of the Issuer, which
+      are servicing and origination roles, not a guarantee; the agreement has
+      no guarantor term and no guaranty of the Notes.

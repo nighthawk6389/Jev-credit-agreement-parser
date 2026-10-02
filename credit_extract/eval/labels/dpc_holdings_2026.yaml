@@ -81,3 +81,30 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: dpc_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["DPC HOLDINGS PLC"]
+    note: >
+      'the Company, subject to the Guarantee Limitations, hereby irrevocably
+      and unconditionally guarantees, as a primary obligor and not merely as a
+      surety, the payment when and as due of the Obligations of such
+      Borrowers'
+
+      'DPC HOLDINGS PLC, a public limited company incorporated in Jersey, as
+      the Company'
+
+      '" Subsidiary Guarantor " means each of the subsidiaries of the Company
+      from time to time party to the Guarantee Agreement as a guarantor
+      thereunder'
+
+      Article IX makes the Company, DPC HOLDINGS PLC (named in the preamble
+      and signing "as the Company"), a guarantor of the Borrowers' Obligations.
+      The Subsidiary Guarantors are only those party to the separate Guarantee
+      Agreement, and none is named in this text, so the list holds the Company
+      alone. Doncasters Limited and Doncasters Inc. are Borrowers.

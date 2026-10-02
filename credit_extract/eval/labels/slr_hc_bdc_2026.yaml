@@ -66,3 +66,31 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: slr_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'the Borrower hereby assigns and pledges to the Collateral Agent for the
+      benefit of the Secured Parties, and grants to the Collateral Agent for
+      the benefit of the Secured Parties, a security interest in and lien upon
+      the following'
+
+      '"Transaction Documents" means this Agreement, the Notes, the
+      Contribution Agreement, the Collateral Agent and Collateral Custodian Fee
+      Letter, each Fee Letter, the Account Control Agreement, the Citi
+      Custodial and Asset Administration Agreement, any Joinder Agreement and
+      the other documents to be executed and delivered in connection with this
+      Agreement'
+
+      There is no guarantor because SLR HC BDC SPV, LLC is a special-purpose
+      Borrower whose only credit support is its pledged Collateral (Section
+      12.1): SLR HC BDC LLC is a party only as Equityholder and Servicer, no
+      guaranty is among the Transaction Documents, and no guarantor signs. The
+      "guaranties" the text mentions support the Collateral Obligations owed
+      by Obligors or the Hedge Counterparties, not this facility.

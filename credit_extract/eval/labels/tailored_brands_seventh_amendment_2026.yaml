@@ -146,3 +146,24 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: tailored_brands_seventh_amendment_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["Tailored Brands, Inc.", "NEW TMW MIDCO LLC", "NEW TMW LLC"]
+    note: >
+      '" Loan Guarantor " means (a) each Person that guaranties all or a
+      portion of the Secured Obligations, including each Holdco Guarantor,
+      Parent and any Person that is a "Loan Guarantor" under the Loan
+      Guarantee'
+
+      These three sign the Seventh Amendment under the heading LOAN
+      GUARANTORS: the Holdco Guarantors Tailored Brands, Inc. and New TMW
+      Midco LLC, and the Parent, New TMW LLC. The U.S. Borrowers and the
+      Canadian Borrower sign only as Borrowers and are left off; the Article X
+      cross-guarantee makes them jointly and severally liable co-borrowers,
+      and no party block names them as guarantors.

@@ -77,3 +77,24 @@ assertions:
       A ceiling rather than an exact count: observed 9, and every one of
       these notes already claimed to be a tripwire while the harness could
       only compare for equality. Coverage improving must not break a label.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: wf_guarantor
+    family: F09_definitional_depth
+    member: term_defined_in_other_loan_document
+    kind: field_status
+    target: guarantor.legal_name
+    expect: external_reference
+    note: >
+      'the guarantees and the Liens and security interests as granted or
+      purported to be granted under or pursuant to the Credit Agreement and the
+      other Loan Documents securing payment of the Obligations are in all such
+      respects continuing in full force and effect'
+
+      The No Novation clause shows that guarantees of the Obligations exist
+      and sends the reader to the Credit Agreement and the other Loan
+      Documents, none of which is in this filing. The amendment itself names
+      only Borrowers (Upland Software, Inc., the US Borrowers and Upland CAD),
+      lenders and agents; it has no Guarantor term and no one signs as a
+      guarantor, so this text names none.

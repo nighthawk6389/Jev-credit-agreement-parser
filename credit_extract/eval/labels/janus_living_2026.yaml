@@ -102,3 +102,49 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: janus_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "JANUS LIVING, INC."
+      - "JANUS LIVING TRS, LLC"
+      - "JANUS LIVING TRS 2, LLC"
+      - "ALEWIFE PROPCO 1, LLC"
+      - "BRANDYWINE GP, LLC"
+      - "HCP S-H OPCO TRS, LLC"
+      - "JANUS FUND 1, LLC"
+      - "BOTHELL OPCO 1, LLC"
+      - "BOTHELL PROPCO 1, LLC"
+      - "BRANDYWINE HOLDCO A, LLC"
+      - "BRANDYWINE HOLDCO B, LLC"
+      - "EAST COBB OPCO 1, LLC"
+      - "EAST COBB PROPCO 1, LLC"
+      - "FDG-VINTAGE PARK II PROPERTY, LLC"
+      - "LEESBURG OPCO 1, LLC"
+      - "LEESBURG PROPCO 1, LLC"
+      - "LPC OPCO HOLDCO, LLC"
+      - "LPC PROPCO HOLDCO, LLC"
+      - "NONA LAKES OPCO 1, LLC"
+      - "NONA LAKES PROPCO 1, LLC"
+      - "QUADRANGLE HOLDCO A, LLC"
+      - "QUADRANGLE HOLDCO B, LLC"
+      - "SH OPCO HOLDCO, LLC"
+      - "SH PROPCO HOLDCO, LLC"
+      - "WEST COBB OPCO 1, LLC"
+    note: >
+      'JANUS LIVING, INC., as the Parent Guarantor'
+
+      Guarantor Party 'means each of the Parent Guarantor, any Parent
+      Subsidiary Guarantor and each Subsidiary Guarantor'; the Parent
+      Guarantor 'means Janus Living, Inc., a Maryland corporation' and is
+      named first, on the cover. The signature pages then name 205
+      subsidiaries as Subsidiary Guarantors (206 guarantors in all), so this
+      lists the first 25 in the order the text names them. The Company, Janus
+      Living OP, LLC, guarantees only 'any and all Obligations of each other
+      Borrower' under Article XIII, is not a Guarantor Party and signs as the
+      Company and a Borrower, so it is not listed.

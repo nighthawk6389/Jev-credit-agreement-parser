@@ -153,3 +153,45 @@ assertions:
       "JPMORGAN CHASE BANK, N.A. TORONTO BRANCH, as Canadian Administrative
       Agent" -- but there the roles are separately titled, so the field is not
       forced to choose. Here they are not.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: cumberland_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "EG FINCO LIMITED"
+      - "EG America, LLC"
+      - "EG Group Limited"
+      - "EG GLOBAL FINANCE PLC"
+      - "EG ASIAPAC LTD"
+      - "CUMBERLAND FARMS, INC."
+      - "CFI GC LLC"
+      - "CUMBERLAND FARMS OF MASSACHUSETTS, INC."
+      - "CUMBERLAND FARMS OF VERMONT, INC."
+      - "EG RETAIL (AMERICA), LLC"
+      - "MINI MART, INC."
+      - "MINIT MART LLC"
+      - "TH MINIT MARKETS LLC"
+      - "QUIK STOP MARKETS, INC."
+      - "EG SHARED SERVICES (AMERICA), LLC"
+      - "CUMBERLAND FARMS FINANCE LLC"
+      - "LUXBRIDGE INTERNATIONAL LIMITED"
+    note: >
+      'means, collectively, Holdings, each Borrower (other than with respect
+      to its own Obligations) and each Subsidiary of Holdings that executes and
+      delivers a guaranty or guaranty supplement'
+
+      Fourteen entities sign the First Amendment under the caption SUBSIDIARY
+      GUARANTORS (three signature pages). The Guarantors definition also makes
+      Holdings a Guarantor, and Holdings is the Parent, EG Group Limited, '(a)
+      at any time prior to completion of the Reorganization Transactions, the
+      Parent'; it makes each of the two Borrowers, EG Finco Limited and EG
+      America, LLC, a Guarantor of the other Borrower, so both are listed.
+      Topco (EG Midco 1 Limited) and EG Group Holdings Europe Limited sign
+      only as security providers, set apart from the Loan Parties in 'Each
+      Loan Party, Topco and EG Group Holdings Europe Limited expressly
+      acknowledges the terms of this Amendment and reaffirms', so they are
+      left out.

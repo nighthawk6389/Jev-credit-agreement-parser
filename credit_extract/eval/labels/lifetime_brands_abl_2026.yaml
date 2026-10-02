@@ -112,3 +112,29 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: lifetime_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["PFALTZGRAFF FACTORY STORES, INC.", "THE CHEF'N CORPORATION", "THOMAS PLANT (BIRMINGHAM) HOLDINGS LIMITED"]
+    note: >
+      'each Loan Guarantor party hereto (together with the Company and the
+      Borrowers, the " Loan Parties ")'
+
+      'OTHER LOAN PARTIES : PFALTZGRAFF FACTORY STORES, INC.'
+
+      '" Loan Guarantor " means each Loan Party.'
+
+      Amendment No. 3 is entered into by the Company, the other Borrowers and
+      "each Loan Guarantor party hereto"; the non-borrower Loan Parties sign it
+      under "OTHER LOAN PARTIES" (the three names listed above) and each
+      guarantees the Secured Obligations under Article X (the foreign one
+      subject to the Section 10.14 limits). The four Borrowers (Lifetime
+      Brands, Inc., Creative Tops Limited, Lifetime Brands Europe Limited,
+      Lifetime Brands Europe B.V.) are also "Loan Guarantors" through the
+      generic definition, but they sign only as Borrowers and are not named as
+      guarantors, so they are left off.

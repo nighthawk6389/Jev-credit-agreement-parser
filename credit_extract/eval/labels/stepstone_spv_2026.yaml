@@ -202,3 +202,27 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: stepstone_spv_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Limited Guaranty Agreement " means the Non-Recourse Carveout Guaranty
+      Agreement dated on or around the Closing Date among the Guarantor
+      Entities'
+
+      There is no guarantor of the Obligations because StepStone SPV Facility
+      VII LLC is a bankruptcy-remote SPV whose lenders look to its Collateral
+      and an equity pledge, and the support from its parents, the Guarantor
+      Entities (StepStone SPV Facility VII Intermediate Holdco LLC and StepStone
+      Private Credit Fund LLC), is a non-recourse carve-out guaranty in another
+      document that this text never says guarantees the Obligations. No
+      Co-Borrower or Permitted Additional Subsidiary guarantor is named, and
+      the guarantors in the eligibility criteria ('without the consent of the
+      borrower or the guarantor, if any, of such Loan Obligation') belong to
+      portfolio loans.

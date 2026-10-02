@@ -145,3 +145,29 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: bain_capital_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'Each Lender, each Equity Investor and the Agents acknowledges that the
+      Borrower is a special purpose entity' and 'there shall be no recourse for
+      the payment of any amount owing by the Borrower hereunder against any
+      other party hereto'
+
+      There is no guarantor because SLP 2 MM CLO WH 2, LLC is a special-purpose
+      CLO warehouse borrower whose only credit support is the Grant of its
+      Collateral Loans, accounts and related assets; the Loan Documents are
+      'this Agreement, the LLC Agreement, the Account Control Agreement, the
+      Purchase and Sale Agreement, the Participation Agreements, the Collateral
+      Management Agreement, the Loan Notes, the Interest Hedge Agreements, the
+      EU/UK Retention Letter and any Posting Agent Letter Agreement', with no
+      guaranty. Every guarantor the text mentions is a guarantor of a
+      Collateral Loan ('any Person who is obligated to repay such Collateral
+      Loan (including, if applicable, a guarantor thereof)'), not of these
+      Loans.

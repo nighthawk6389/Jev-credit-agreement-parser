@@ -77,3 +77,26 @@ assertions:
       of the time is exactly where a pipeline looks competent by guessing, and
       where the only evidence that it is reading rather than guessing is the
       handful of documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: knot_offshore_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "KNOT OFFSHORE PARTNERS LP"
+      - "KNOT SHUTTLE TANKERS AS"
+    note: >
+      'KNOT SHUTTLE TANKERS AS , Norwegian registration no. 998 942 829'
+
+      'guarantees to each Finance Party and each Hedging Bank punctual
+      performance by each Borrower of all that'
+
+      The parties clause names KNOT OFFSHORE PARTNERS LP as parent guarantor and
+      KNOT SHUTTLE TANKERS AS (KNOT ST) together as the Guarantors, both sign
+      the execution page as Parent Guarantor and Guarantor, and Clause 19 is
+      their guarantee of the obligations of each Borrower. The five KNOT
+      SHUTTLE TANKERS borrowers are jointly and severally liable Borrowers, not
+      Guarantors.

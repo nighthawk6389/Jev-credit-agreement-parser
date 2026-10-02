@@ -102,3 +102,27 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: compass_diversified_duplicate_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'means this Agreement, each Note, each Issuer Document, the Collateral
+      Documents, the Fee Letter and any Auto Borrow Agreement'
+
+      'shall not be Guaranteed by any Person or secured by any property other
+      than Collateral'
+
+      No guarantor, because the Borrower, Compass Group Diversified Holdings
+      LLC, is the only obligor: the Loan Documents contain no guaranty, the
+      Collateral Documents are executed by the Borrower alone over its own
+      property and the subsidiary equity it directly owns, the agreement has no
+      Guarantor term, and only the Borrower signs the Sixth Amendment as an
+      obligor. The guarantees the text does mention are given by subsidiaries
+      of the Portfolio Companies for Intercompany Debt owed to the Borrower,
+      which is collateral rather than a guarantee of the Obligations.

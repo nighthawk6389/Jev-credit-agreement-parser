@@ -160,3 +160,28 @@ assertions:
       agency businesses rather than lenders, which is the direct-lending and
       project-finance pattern and the one a reader expecting a bank name will
       misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: new_fortress_flng2_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "NFE FLNG 2 LLC"
+      - "NFE ALTAMIRA ONSHORE S. DE R.L. DE C.V."
+      - "MEXICO FLNG ONSHORE S. DE R.L. DE C.V."
+    note: >
+      'each Subsidiary of the Borrower that executes this Agreement as a
+      guarantor on the Closing Date'
+
+      'each of the Guarantors hereby, jointly and severally, fully and
+      unconditionally guarantees, as primary obligor and not merely as surety'
+
+      The Guarantors are the subsidiaries that sign this agreement, and the
+      three entities on the signature page after the Borrower, NFE FLNG 2 PARENT
+      LLC, are the only signatories that are not the Borrower, the agent or the
+      lender (New Fortress Energy Inc., as Lender), so they are the Closing Date
+      Guarantors under Section 10; the two Mexican entities are the Mexican
+      Guarantors for whom Section 10 appoints a process agent.

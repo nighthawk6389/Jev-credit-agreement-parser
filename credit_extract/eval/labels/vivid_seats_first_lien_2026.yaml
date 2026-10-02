@@ -126,3 +126,28 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: vivid_seats_first_lien_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "VDC-MGG HOLDINGS, LLC"
+    note: >
+      'means Holdings and the Subsidiary Loan Parties, in each case, to the
+      extent such entity provides a guaranty of the Secured Obligations'
+
+      'Holdings, the Borrower and each of the Restricted Subsidiaries (other
+      than any Excluded Subsidiary) either (x) a counterpart of the Guarantee
+      Agreement'
+
+      Holdings, VDC-MGG HOLDINGS, LLC, is a Loan Guarantor and must sign the
+      Guarantee Agreement as an Effective Date Loan Party; the Subsidiary Loan
+      Parties, if any, are listed on Schedule 1.01(a), which the filing does not
+      include, and no subsidiary signs this agreement. Wavedash Co., Ltd. and
+      Vivid Seats Asia Pacific Inc. are Third Party Guarantors under a Limited
+      Guarantee Agreement that the text never says guarantees the Obligations,
+      and the definition says neither is a Loan Guarantor, so they are left off.

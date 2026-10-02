@@ -79,3 +79,26 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: ll_flooring_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "LL FLOORING HOLDINGS, INC."
+      - "LUMBER LIQUIDATORS LEASING, LLC"
+      - "Lumber Liquidators Foreign Holdings, LLC"
+    note: >
+      'LL FLOORING HOLDINGS, INC., as Parent and as a Guarantor'
+
+      Three entities sign the Third Amendment under GUARANTORS: the Parent,
+      'LUMBER LIQUIDATORS LEASING, LLC, as a Guarantor' and 'Lumber
+      Liquidators Foreign Holdings, LLC , as a Guarantor'. LL Flooring, Inc.
+      and LL Flooring Services, LLC sign only as Borrowers, and the
+      Guarantor definition excludes any Borrower. The recitals record that the
+      Loan Parties 'dissolved Lumber Liquidators Production, LLC and Lumber
+      Liquidators Foreign Operations, LLC', and the Charitable Subsidiary is
+      excused from joining, so none of those is listed.

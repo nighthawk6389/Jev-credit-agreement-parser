@@ -80,3 +80,57 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: sysco_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "SYSCO CORPORATION"
+      - "SYSCO ALBANY, LLC"
+      - "SYSCO ASIAN FOODS, INC."
+      - "SYSCO ATLANTA, LLC"
+      - "SYSCO BALTIMORE, LLC"
+      - "SYSCO BARABOO, LLC"
+      - "SYSCO BOSTON, LLC"
+      - "SYSCO CENTRAL ALABAMA, LLC"
+      - "SYSCO CENTRAL CALIFORNIA, INC."
+      - "SYSCO CENTRAL FLORIDA, INC."
+      - "SYSCO CENTRAL ILLINOIS, INC."
+      - "SYSCO CENTRAL PENNSYLVANIA, LLC"
+      - "SYSCO CHARLOTTE, LLC"
+      - "SYSCO CHICAGO, INC."
+      - "SYSCO CINCINNATI, LLC"
+      - "SYSCO CLEVELAND, INC."
+      - "SYSCO COLUMBIA, LLC"
+      - "SYSCO CONNECTICUT, LLC"
+      - "SYSCO DETROIT, LLC"
+      - "SYSCO EASTERN MARYLAND, LLC"
+      - "SYSCO EASTERN WISCONSIN, LLC"
+      - "SYSCO GRAND RAPIDS, LLC"
+      - "SYSCO GULF COAST, LLC"
+      - "SYSCO HAMPTON ROADS, INC."
+      - "SYSCO HAWAII, INC."
+    note: >
+      '" Guarantors " means the Parent Borrower, in its capacity as a provider
+      of a Guarantee created under Article VIII, and the Subsidiary
+      Guarantors.'
+
+      'SUBSIDIARY GUARANTORS: | SYSCO ALBANY, LLC SYSCO ASIAN FOODS, INC. SYSCO
+      ATLANTA, LLC'
+
+      '(ii) the Parent Borrower hereby irrevocably and unconditionally,
+      guarantees, as a primary obligor and not merely as a surety, the payment
+      when and as due of the Obligations of the Subsidiary Borrowers'
+
+      There are 63 guarantors, more than 25, so this lists the first 25 in the
+      order the text names them. SYSCO CORPORATION, the Parent Borrower, comes
+      first: the definition and Article VIII make it a Guarantor of the
+      Subsidiary Borrowers. The 62 Subsidiary Guarantors that sign the First
+      Amendment follow, and the list stops at SYSCO HAWAII, INC., leaving out
+      the 38 from SYSCO INDIANAPOLIS, LLC to SYSCO WESTERN MINNESOTA, INC. The
+      Subsidiary Borrowers (Sysco Canada, Inc. and Sysco Global Holdings B.V.)
+      are not guarantors.

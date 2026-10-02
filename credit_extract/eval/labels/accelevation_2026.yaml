@@ -109,3 +109,32 @@ assertions:
       gives both. Twenty months before the filing, on the agreement its own
       joinder conforms -- and the joinder, filed beside it, carries the same
       date under an amendment dated September 5, 2025.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: accelevation_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["ACCELEVATION INTERMEDIATE LLC", "ACCELEVATION BUYER LLC", "Accelevation Holding Company LLC", "Accelevation Holdings Blocker, LLC", "Accelevation Blocker, Inc.", "Instor Blocker, Inc."]
+    note: >
+      'Instor Blocker, Inc., a Delaware corporation (" Instor Blocker " and,
+      together with Holdings, Intermediate Holdings, Accelevation Holding,
+      Accelevation Holdings Blocker and Accelevation Blocker, the " Parent
+      Guarantors ")'
+
+      'ACCELEVATION BLOCKER, INC. ACCELEVATION HOLDING COMPANY LLC ACCELEVATION
+      HOLDINGS BLOCKER, LLC INSTOR BLOCKER, INC., as Parent Guarantors'
+
+      'a certificate of each of the Parent Guarantors, the Borrower and the
+      other Guarantors'
+
+      The preamble names six Parent Guarantors: Holdings (ACCELEVATION
+      INTERMEDIATE LLC), Intermediate Holdings (ACCELEVATION BUYER LLC),
+      Accelevation Holding Company LLC, Accelevation Holdings Blocker, LLC,
+      Accelevation Blocker, Inc. and Instor Blocker, Inc.; four of them sign as
+      Parent Guarantors, and "Guarantors" expressly includes Holdings. Further
+      subsidiary guarantors are only those "party to the Guarantee" (Exhibit B),
+      which is not in this text, so they are not listed. The Borrower
+      (ACCELEVATION, LLC) and the Merger Sub are borrowers, not guarantors.

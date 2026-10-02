@@ -107,3 +107,34 @@ assertions:
       Amendment No. 4 states that it deletes stricken text and adds
       underlined text. 44 of the 100 agreements in the corpus carry deletion
       markup, against 6 that restate in prose.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: wu_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "AIR PARTNER AVIATION SERVICES LIMITED"
+      - "AIR PARTNER INTERNATIONAL GMBH"
+      - "AIR PARTNER GROUP LIMITED"
+      - "AIR PARTNER LIMITED"
+      - "AIR PARTNER LLC"
+      - "AVIANIS SYSTEMS LLC"
+      - "SAFESKYS LIMITED"
+      - "WHEELS UP BLOCKER SUB LLC"
+      - "WHEELS UP PARTNERS HOLDINGS LLC"
+      - "WHEELS UP PARTNERS LLC"
+      - "WHEELS UP PRIVATE JETS LLC"
+      - "WHEELS UP TOA HOLDINGS LLC"
+      - "WHEELS UP UK LIMITED"
+    note: >
+      'AIR PARTNER AVIATION SERVICES LIMITED, as a Guarantor' through 'WHEELS
+      UP UK LIMITED, as a Guarantor': thirteen subsidiaries sign Amendment No. 4
+      in that capacity.
+
+      '" Guarantors " shall mean, collectively, direct or indirect Subsidiary of
+      Borrower' -- so Wheels Up Experience Inc., which signs as a Borrower, is
+      not one of them. The folded text carries no later list of guarantors, so
+      the operative list is the one on the Amendment No. 4 signature pages.

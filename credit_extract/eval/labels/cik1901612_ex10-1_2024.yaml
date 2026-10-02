@@ -179,3 +179,30 @@ assertions:
       uncaptured chunks is the right direction, and the number moves with it
       rather than being frozen: a tripwire exists to make a change noticed and
       explained, not to forbid one.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: gbdc_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Loan Party " means, collectively and individually as the context
+      requires, the Borrower and each Securitization Subsidiary party hereto.'
+
+      'The Borrower hereby grants, pledges, transfers and collaterally assigns
+      to the Collateral Agent, for the benefit of the Secured Parties, as
+      collateral security for all Obligations, a continuing security interest
+      in, and a Lien upon'
+
+      There is no guarantor because GBDC 4 FUNDING III LLC is a special-purpose
+      Borrower whose credit support is its pledged Collateral Portfolio, and
+      it is the only Loan Party at signing. GOLUB CAPITAL BDC 4, INC. is a
+      party only as Equityholder and Servicer. The Section 1.02(l) undertaking
+      by which each Loan Party "absolutely and unconditionally guarantees" the
+      Obligations would reach other entities only through Securitization
+      Subsidiaries joined by a Securitization Subsidiary Joinder after the
+      Closing Date. None is named, and none signs. The "guarantors" in the
+      Obligor definition belong to the Collateral Loans, not this facility.

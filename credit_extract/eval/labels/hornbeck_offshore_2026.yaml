@@ -196,3 +196,27 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: hornbeck_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["HORNBECK OFFSHORE SERVICES, LLC", "HORNBECK OFFSHORE TRINIDAD & TOBAGO, LLC", "HORNBECK OFFSHORE OPERATORS, LLC"]
+    note: >
+      'HORNBECK OFFSHORE SERVICES, LLC HORNBECK OFFSHORE TRINIDAD & TOBAGO, LLC
+      HORNBECK OFFSHORE OPERATORS, LLC, as Guarantors'
+
+      'Each Loan Party hereby consents to this Amendment and reaffirms, as of
+      the date hereof (i) that all obligations of such Loan Party under the
+      Loan Documents to which it is a party shall continue to apply to the
+      Credit Agreement as amended hereby, (ii) its guarantee of the
+      Obligations'
+
+      The amendment is entered into by "the Guarantors party hereto", and the
+      three LLCs sign it "as Guarantors", reaffirming their guarantee of the
+      Obligations. "Guarantors" in the conformed agreement are the Restricted
+      Subsidiaries that executed the Guaranty; no other guarantor is named in
+      the text. The Borrower is Hornbeck Offshore Services, Inc.

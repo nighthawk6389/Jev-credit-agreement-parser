@@ -122,3 +122,30 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: kbr_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["KBR, INC."]
+    note: >
+      'KBR, INC., a Delaware corporation, as KBR, a Borrower and a Guarantor'
+
+      'GUARANTOR SIGNATURES ON FILE WITH KBR, INC.'
+
+      '" Guarantors " means, collectively, (a) each Material Domestic
+      Subsidiary of the Borrower, (b) any other Person that is from time to
+      time party to the Guaranty or any other agreement pursuant to which it
+      guarantees the Obligations or any portion thereof and (c) with respect
+      to'
+
+      KBR, Inc. is a Borrower but also signs as "a Guarantor", and clause (c)
+      of the definition makes the Borrower a Guarantor of other Loan Parties'
+      swap, cash management and bilateral L/C obligations. The other
+      guarantors are the Material Domestic Subsidiaries party to the Guaranty;
+      their signatures are only "on file", and none is named as a guarantor
+      anywhere in this text, so KBR, Inc. is the only name listed. Kellogg
+      Brown & Root Limited signs as a Borrower only.

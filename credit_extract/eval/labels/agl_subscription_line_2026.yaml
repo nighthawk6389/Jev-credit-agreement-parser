@@ -177,3 +177,29 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: agl_subscription_line_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'To secure performance by the Borrowers of the payment of the Obligations,
+      the Credit Parties, each to the extent of their respective interests
+      therein, shall grant to the Administrative Agent'
+
+      'all Loans and Letters of Credit provided to a Qualified Borrower hereunder
+      shall be guaranteed only by the applicable Fund in accordance with the
+      applicable Qualified Borrower Guaranty'
+
+      No guarantor, because this is a subscription line whose credit support is
+      a lien on the uncalled capital commitments of the Fund investors and on
+      the collateral accounts, granted by the Credit Parties themselves; the word
+      Guarantor never occurs. The only guaranty the agreement contemplates is
+      the Qualified Borrower Guaranty that a Fund (itself a Borrower) gives for a
+      Qualified Borrower, and no Qualified Borrower is party: Schedule I lists
+      AGL Private Credit Income Fund as the only Credit Party and only the
+      Initial Borrower signs as an obligor.

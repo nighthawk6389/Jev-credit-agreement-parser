@@ -84,3 +84,26 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: eagle_point_trinity_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'As collateral security for the prompt, complete and indefeasible payment
+      and performance in full when due, whether by lapse of time, acceleration
+      or otherwise, of the Obligations, the Borrower hereby assigns, pledges and
+      grants to the Administrative Agent'
+
+      No guarantor, because the Borrower, EPT SPV 16 SUB (US) LLC, is a
+      special-purpose vehicle whose only credit support is its Collateral, the
+      loans it buys from the Fund under the Sale and Contribution Agreement;
+      the Transaction Documents contain no guaranty and the Borrower covenants
+      not to guarantee the debt of anyone else. The guarantors the text
+      mentions are those of the Transferred Loans ('means, with respect to any
+      Loan, the Person or Persons obligated to make payments pursuant to such
+      Loan, including any guarantor thereof'), not of this facility.

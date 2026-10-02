@@ -117,3 +117,26 @@ assertions:
       agency businesses rather than lenders, which is the direct-lending and
       project-finance pattern and the one a reader expecting a bank name will
       misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: nscale_amendment_3_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "NSCALE SERVICES NORWAY AS"
+      - "NSCALE DRIFT III AS"
+      - "NSCALE services portugal, unipessoal, lda."
+    note: >
+      'NSCALE SERVICES NORWAY AS , as Subsidiary Guarantor' and 'NSCALE DRIFT
+      III AS , as Subsidiary Guarantor', with the Portuguese company signing the
+      same way; the amended Credit Agreement is among the Initial Borrower and
+      'the other Subsidiary Guarantors from time to time party thereto'.
+
+      The Credit Agreement itself is not in the filing, but these three
+      signature blocks name the guarantors in that role. NSCALE SERVICES UK LTD
+      signs only as Initial Borrower, and the Portuguese name is written as on
+      its signature block (the recitals call it Nscale Portugal, Unipessoal,
+      LDA).

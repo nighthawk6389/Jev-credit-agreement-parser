@@ -119,3 +119,23 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: idex_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["IDEX CORPORATION"]
+    note: >
+      '" Loan Parties " means, collectively, the Borrowers and, in its
+      capacity as guarantor of the Designated Borrower Obligations under
+      Article X hereof, the Company.'
+
+      Article X (Continuing Guaranty) begins '10.01 Guaranty . The Company
+      hereby absolutely and unconditionally guarantees' the Obligations of the
+      five Designated Borrowers, so IDEX Corporation is a Borrower that the
+      text also makes a guarantor. Nothing guarantees the borrowings of the
+      Company itself; this investment-grade agreement has no subsidiary
+      guaranty.

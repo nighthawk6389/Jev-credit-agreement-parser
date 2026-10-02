@@ -107,3 +107,23 @@ assertions:
       returns unknown at 0.24 here and no archetype profile has ruled the
       field out. If a securitization archetype is ever added, this assertion
       should be revisited rather than deleted.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: owlrock_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'the obligations of the Issuer under the Securities and this Indenture and
+      the Class A-L Credit Agreement from time to time and at any time are
+      limited recourse obligations of the Issuer payable solely from the Assets'
+
+      No guarantor, because this is a CLO indenture whose only obligor is the
+      Issuer, OWL ROCK CLO XXVI, LLC, and whose notes and Class A-L loans are
+      payable solely from the Assets granted to the Trustee; the Issuer may not
+      guarantee anything and no one guarantees its Debt. The guarantors the
+      text mentions are those of the Collateral Obligations (the Obligor
+      definition includes any guarantor thereof), not of the Debt.

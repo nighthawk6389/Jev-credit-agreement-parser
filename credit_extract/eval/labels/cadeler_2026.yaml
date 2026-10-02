@@ -113,3 +113,23 @@ assertions:
       something real to compare. Asserted as text because no single value is
       the answer. Every other stepdown here moves a level between two stated
       numbers on a stated date; this one moves it indefinitely.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: cadeler_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'Secured Obligations means all indebtedness and obligations at any time
+      of the Borrower to any Finance Party'
+
+      There is no guarantor because this is a single-obligor bridge facility:
+      the parties, Schedule 1 (The original parties) and the signature pages
+      are the Borrower, the lender, the agents and the arranger, and the only
+      credit support is the Borrower pledging its own shareholdings ('the
+      document constituting a first priority Security Interest by the
+      Borrower in favour of the Security Agent'). The agreement defines no
+      Guarantor or Obligor.

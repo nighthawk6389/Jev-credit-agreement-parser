@@ -108,3 +108,23 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: blue_owl_athena_funding_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'the obligations of the Borrower arising hereunder are limited recourse
+      obligations payable solely from the Collateral'
+
+      There is no guarantor because Athena Funding III LLC is a
+      special-purpose borrower whose only credit support is the Collateral it
+      pledges under Section 12.1; the text has no Guarantor term, guaranty or
+      guarantor party, and the Equityholder and Services Provider give no
+      guarantee of the Obligations. The guarantors it does mention support
+      the loan pool, not this facility: 'any guarantees or similar credit
+      enhancement for an Obligor'.

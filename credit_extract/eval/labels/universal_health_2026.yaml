@@ -98,3 +98,49 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: uhs_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "UHS OF DELAWARE, INC."
+      - "LANCASTER HOSPITAL CORPORATION"
+      - "MERION BUILDING MANAGEMENT, INC."
+      - "NORTHWEST TEXAS HEALTHCARE SYSTEM, INC."
+      - "UHS HOLDING COMPANY, INC."
+      - "UHS OF CORNERSTONE, INC."
+      - "UHS OF CORNERSTONE HOLDINGS, INC."
+      - "UHS OF D.C., INC."
+      - "UHS-CORONA, INC."
+      - "UNIVERSAL HEALTH SERVICES OF PALMDALE, INC."
+      - "VALLEY HOSPITAL MEDICAL CENTER, INC."
+      - "MCALLEN MEDICAL CENTER, INC."
+      - "SPARKS FAMILY HOSPITAL, INC."
+      - "UHS OF RIVER PARISHES, INC."
+      - "UHS OF TEXOMA, INC."
+      - "UNIVERSAL HEALTH SERVICES OF RANCHO SPRINGS, INC."
+      - "ABS LINCS SC, INC."
+      - "ALLIANCE HEALTH CENTER, INC."
+      - "ALTERNATIVE BEHAVIORAL SERVICES, INC."
+      - "ASCEND HEALTH CORPORATION"
+      - "BENCHMARK BEHAVIORAL HEALTH SYSTEM, INC."
+      - "BHC ALHAMBRA HOSPITAL, INC."
+      - "BHC BELMONT PINES HOSPITAL, INC."
+      - "BHC FAIRFAX HOSPITAL, INC."
+      - "BHC FOX RUN HOSPITAL, INC."
+    note: >
+      'Each of the Guarantors acknowledges that its consent to this Amendment
+      is not required, but each of the undersigned nevertheless does hereby
+      agree and consent to this Amendment'
+
+      Section 5 (Ratification by Guarantors) is executed by the subsidiaries
+      that sign the Twelfth Amendment after the Borrower and before the
+      lenders, on uncaptioned pages; Guarantors are 'the collective reference
+      to the Secured Guarantors and Unsecured Guarantors', parties to the
+      separate Subsidiary Guarantee Agreement. Well over 25 sign, so this
+      lists the first 25 in signature order. Universal Health Services, Inc.
+      is the Borrower and is not listed.

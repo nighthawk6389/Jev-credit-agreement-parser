@@ -170,3 +170,22 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: nvent_term_loan_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["nVent Electric plc", "nVent Finance S.à r.l."]
+    note: >
+      '" Guarantor " means nVent Finance S.à r.l., a Luxembourg private limited
+      liability company'
+
+      nVent Finance gives the Article XI Guarantor Guarantee of the
+      obligations of the Borrower, Hoffman Schroff Holdings, Inc., and the
+      Parent gives its own in Article X ('the Parent hereby irrevocably and
+      unconditionally guarantees, as a primary obligor and not merely as a
+      surety'). Both sign the agreement, one as the Guarantor and one as the
+      Parent, so the parent belongs on the list.

@@ -85,3 +85,23 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: genasys_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "Genasys Puerto Rico LLC"
+      - "Evertel Technologies LLC"
+      - "Zonehaven LLC"
+    note: >
+      '" Guarantors " means Genasys Puerto Rico LLC, Evertel Technologies LLC,
+      Zonehaven LLC and any Additional Guarantors'
+
+      The same three sign the Third Amendment under GUARANTORS (written there
+      as GENASYS PUERTO RICO, LLC and EVERTEL TECHNOLOGIES, LLC) and give the
+      Section 18 guaranty of the Guaranteed Obligations. No Additional
+      Guarantor is named anywhere in the text.

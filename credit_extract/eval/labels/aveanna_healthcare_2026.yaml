@@ -157,3 +157,30 @@ assertions:
       is exactly where a pipeline looks competent by guessing, and where the
       only evidence that it is reading rather than guessing is the handful of
       documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: aveanna_healthcare_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "AVEANNA HEALTHCARE INTERMEDIATE HOLDINGS LLC"
+    note: >
+      'shall mean ( i ) Holdings and ( ii ) on and after the Closing Date, each
+      Subsidiary of the Borrower that becomes a party to a Guarantee pursuant to
+      Section 9.11 or otherwise'
+
+      'AVEANNA HEALTHCARE INTERMEDIATE HOLDINGS LLC, a Delaware limited liability
+      company'
+
+      The Guarantors definition makes Holdings a Guarantor, and the Thirteenth
+      Amendment names Holdings as AVEANNA HEALTHCARE INTERMEDIATE HOLDINGS LLC
+      (the conformed 2017 agreement still calls it BCPE EAGLE INTERMEDIATE
+      HOLDINGS LLC, its former name). The subsidiary guarantors are only those
+      that become party to the First Lien Guarantee (Exhibit C, not included):
+      the amendment is signed by Holdings and the Borrower alone, and the
+      conformed signature pages are on file with the Administrative Agent, so
+      no subsidiary guarantor is named in this text and the list is Holdings
+      only.

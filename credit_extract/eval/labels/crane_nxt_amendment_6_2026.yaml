@@ -177,3 +177,33 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: crane_nxt_amendment_6_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "CRANE NXT, CO."
+      - "CRANE & CO., INC."
+      - "CRANE PAYMENT INNOVATIONS, INC."
+      - "CRANE SECURITY TECHNOLOGIES, INC."
+      - "CUMMINS-ALLISON CORP."
+      - "CUMMINS-ALLISON LIMITED"
+      - "MEI CONLUX HOLDINGS (US), INC."
+    note: >
+      'means, collectively, the Company and the Subsidiary Guarantors'
+
+      'affirms and confirms its guaranty obligations under the Guarantee
+      Agreement'
+
+      The Guarantors definition makes the Company, CRANE NXT, CO., a Guarantor;
+      it is also a Borrower, alongside the Borrowing Subsidiaries (the UK
+      Borrower, CA-MC Acquisition UK Limited), whose obligations it guarantees.
+      The six subsidiaries sign the Sixth Amendment with no capacity label as
+      the other LOAN PARTIES party hereto and reaffirm their guaranty
+      obligations in Section 6; none is a Borrower, and Loan Parties are the
+      Borrowers and the Guarantors, so each is a Subsidiary Guarantor named in
+      this text.

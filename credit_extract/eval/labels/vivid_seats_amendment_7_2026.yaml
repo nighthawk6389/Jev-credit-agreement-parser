@@ -63,3 +63,24 @@ assertions:
       let title vocabulary decide would read this document's own seniority as
       evidence of the opposite -- the same inversion that "junior lien"
       produced on Accelevation.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: vivid_seats_amendment_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["Hoya Intermediate, LLC", "VIVID SEATS LLC", "ACTCO LLC", "TICKET WEBSITE LLC", "ACTIVE TICKET COMPANY LP", "VIVID HOSPITALITY LLC", "WORLD TICKET SOURCE, LLC", "SKYBOX TICKET RESALE PLATFORM LLC", "TICKET FULFILLMENT SERVICES LP", "VIVID PICKS, LLC", "VIVID VDC, LLC", "INTERNATIONAL TICKETS LLC", "VIVID SEATS INTERNATIONAL LLC"]
+    note: >
+      'Each Loan Party hereto expressly acknowledges the terms of this
+      Amendment and reaffirms, as of the date hereof and on the Amendment No. 7
+      Effective Date, that its guarantee of the Obligations under the
+      Guarantee Agreement'
+
+      The parties are the Borrower, Holdings and 'the other Loan Parties
+      listed on the signature pages hereto', and the signature pages name
+      Holdings and twelve other Loan Parties, each of which reaffirms its guarantee.
+      The word Guarantor never appears and no signature block states a role;
+      Hoya Midco, LLC signs as the Borrower and is left off, because its own
+      obligations are the ones guaranteed.

@@ -201,3 +201,20 @@ assertions:
       is exactly where a pipeline looks competent by guessing, and where the
       only evidence that it is reading rather than guessing is the handful of
       documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: airt_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["Air T, Inc."]
+    note: >
+      'Air T, Inc., a Delaware corporation, as Loan Party Agent and Guarantor'
+
+      The preamble names Air T, Inc. 'in its separate capacities as "Loan
+      Party Agent" and "Guarantor"', it signs in both roles, and Section 4(f)
+      requires an acknowledgment 'duly executed by a Responsible Officer of
+      Air T in its capacity as Guarantor'. The nine subsidiaries are the
+      Borrowers, jointly and severally liable, and are not named as guarantors.

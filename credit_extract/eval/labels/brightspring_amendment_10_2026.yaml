@@ -174,3 +174,27 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: bs_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["Phoenix Intermediate Holdings Inc."]
+    note: >
+      '" Guarantors " shall mean (i) each Subsidiary of Holdings that is party
+      to the Guarantee on the Closing Date, (ii) each Subsidiary of Holdings
+      that becomes a party to the Guarantee after the Closing Date pursuant to
+      Section 9.11 or otherwise, and (iii) Holdings'
+
+      'among Phoenix Intermediate Holdings Inc. (" Holdings "), Phoenix
+      Guarantor Inc., a Wholly-Owned Subsidiary of Holdings (" Borrower ")'
+
+      The definition makes Holdings, Phoenix Intermediate Holdings Inc., a
+      Guarantor, and the preamble names it. The subsidiary guarantors are only
+      those "party to the Guarantee" (Exhibit B, not in this text), and neither
+      the amendment nor the conformed agreement is signed by any guarantor
+      other than Holdings, so no subsidiary is listed. Phoenix Guarantor Inc.
+      is the Borrower despite its name, and is not a guarantor.

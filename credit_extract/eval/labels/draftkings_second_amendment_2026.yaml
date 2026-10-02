@@ -122,3 +122,22 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: draftkings_second_amendment_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["DRAFTKINGS INC.", "DK CROWN HOLDINGS INC.", "GOLDEN NUGGET ONLINE GAMING HOLDINGS, LLC", "JACKPOCKET LLC", "DRAFTKINGS HOLDINGS INC.", "CROWN GAMING INC.", "GOLDEN NUGGET ONLINE GAMING, LLC", "LHGN HOLDCO, LLC", "Railbird Technologies LLC"]
+    note: >
+      '" Guarantors " shall mean each of the Subsidiary Loan Parties and,
+      except with respect to the Obligations in respect of which it is
+      primarily liable as a Borrower, each of Parent and the other Borrowers.'
+
+      Every name comes from the Second Amendment signature pages, where each
+      entity signs as a Guarantor. The four Borrowers are on the list
+      because they also sign as Guarantors (for example DraftKings Inc. as
+      Parent, a Borrower and a Guarantor) and the definition makes each of
+      them a Guarantor of the obligations of the others.

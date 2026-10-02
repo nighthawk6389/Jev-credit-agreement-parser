@@ -260,3 +260,44 @@ assertions:
       "JPMORGAN CHASE BANK, N.A. TORONTO BRANCH, as Canadian Administrative
       Agent" -- but there the roles are separately titled, so the field is not
       forced to choose. Here they are not.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: cumberland_farms_syndicated_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "EG FINCO LIMITED"
+      - "EG AMERICA, LLC"
+      - "EG Group Limited"
+      - "EG GLOBAL FINANCE PLC"
+      - "EG ASIAPAC LTD"
+      - "CUMBERLAND FARMS, INC."
+      - "CFI GC LLC"
+      - "CUMBERLAND FARMS OF MASSACHUSETTS, INC."
+      - "CUMBERLAND FARMS OF VERMONT, INC."
+      - "EG RETAIL (AMERICA), LLC"
+      - "MINI MART, INC."
+      - "MINIT MART LLC"
+      - "TH MINIT MARKETS LLC"
+      - "QUIK STOP MARKETS, INC."
+      - "EG SHARED SERVICES (AMERICA), LLC"
+      - "CUMBERLAND FARMS FINANCE LLC"
+      - "LUXBRIDGE INTERNATIONAL LIMITED"
+    note: >
+      '" Guarantors " means, collectively, Holdings, each Borrower (other than
+      with respect to its own Obligations) and each Subsidiary of Holdings that
+      executes and delivers a guaranty' and '" Holdings " means (a) at any time
+      prior to completion of the Reorganization Transactions, the Parent'.
+
+      The list is the two Borrowers (each a Guarantor of the other), EG Group
+      Limited as Parent and so Holdings (the signature page still names the
+      pre-reorganization Topco, EG MIDCO 1 LIMITED), and the fourteen companies
+      that sign the Second Amendment under SUBSIDIARY GUARANTORS. EG MIDCO 1
+      LIMITED and EG GROUP HOLDINGS EUROPE LIMITED sign under their own
+      headings and are set apart from the Loan Parties in 'Each Loan Party,
+      Topco and EG Group Holdings Europe Limited expressly acknowledges the
+      terms of this Amendment', so neither is a Guarantor; Schedule 1.01, which
+      lists Holdings and the Subsidiary Guarantors, is not in the filing.

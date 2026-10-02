@@ -86,3 +86,26 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: loandepot_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Obligated Party " means Borrower or any other Person who is or becomes
+      party to any agreement that obligates such Person to pay or perform, or
+      that guarantees or secures payment or performance of, the Obligations or
+      any part thereof.'
+
+      That catch-all is as near as the agreement comes to a guarantor, and it
+      names no one but the Borrower. There is no guarantor because this is a
+      Credit and Security Agreement in which LOANDEPOT.COM, LLC alone borrows
+      against its own pledged servicing rights: it defines no Guarantor or
+      guaranty, its conditions precedent call for none ('SCHEDULE 5.1(r)
+      ADDITIONAL CONDITIONS PRECEDENT' reads N/A), a new Subsidiary triggers
+      only a notice, and the amendment is signed by Signature Bank and the
+      Borrower alone.

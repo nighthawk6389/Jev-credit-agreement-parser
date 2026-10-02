@@ -68,3 +68,24 @@ assertions:
       is exactly where a pipeline looks competent by guessing, and where the
       only evidence that it is reading rather than guessing is the handful of
       documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: blue_owl_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'unsecured debentures, notes or other evidences of indebtedness'
+
+      There is no guarantor because the 6.250% Notes due 2029 are unsecured
+      obligations of the issuer alone: the supplemental indenture 'is between
+      Blue Owl Credit Income Corp., a Maryland corporation' and the Trustee,
+      its Section 1.01 sets every term of the Notes (they 'shall be designated
+      as Senior Securities under the Indenture') without any guarantee, and
+      the text has no guaranty and no guarantor term. The only guarantor in
+      the document is the medallion 'signature guarantor acceptable to the
+      Trustee' on the transfer forms, which guarantees a signature, not the
+      Notes.

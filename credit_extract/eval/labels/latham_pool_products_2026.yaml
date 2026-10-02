@@ -242,3 +242,25 @@ assertions:
       coverage label in this corpus now gives: fewer uncaptured chunks is
       always fine and more is the thing to investigate, and freezing the
       number teaches a reader that ground truth follows the code.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: latham_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "LATHAM INTERNATIONAL MANUFACTURING CORP."
+    note: >
+      '"Loan Guarantor" means (a) Holdings and (b) any Subsidiary Guarantor.'
+      -- Holdings being 'LATHAM INTERNATIONAL MANUFACTURING CORP. as Holdings',
+      which must deliver 'the Loan Guaranty, duly executed by Holdings'.
+
+      The Subsidiary Guarantors are defined only as a class and none is named;
+      the Exhibit I Loan Guaranty and the schedules are not in the filing. The
+      Borrower is left out because 'each Borrower that is a Restricted
+      Subsidiary shall only constitute a Subsidiary Guarantor in respect of the
+      Obligations of each other Borrower, each other Restricted Subsidiary and
+      Holdings', and with no other Borrower in the text it guarantees the
+      obligations of no borrower.

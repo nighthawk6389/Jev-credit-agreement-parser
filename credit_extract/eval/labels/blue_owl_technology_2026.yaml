@@ -77,3 +77,35 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: blue_owl_technology_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "OR TECH LENDING IC LLC"
+      - "ORTIC BC 1 LLC"
+      - "ORTIC BC 2 LLC"
+      - "ORTIC BC 3 LLC"
+      - "ORTIC BC 4 LLC"
+      - "OTIC BC 5 LLC"
+      - "OTIC BC 6 LLC"
+      - "OTIC BC 7 LLC"
+      - "OTIC BC 8 LLC"
+      - "OTIC BC 9 LLC"
+      - "OTIC BC 10 LLC"
+      - "OTIC BC 11 LLC"
+      - "OTIC BC 12 LLC"
+    note: >
+      'solely with respect to Section 5.9 herein, the SUBSIDIARY GUARANTORS
+      party hereto' -- and Section 5.9: 'Each Subsidiary Guarantor executing
+      this Amendment solely with respect to this Section 5.9 hereby confirms'
+      that its Guarantee under the Guarantee and Security Agreement continues.
+
+      The thirteen LLCs that sign under 'Agreed and acknowledged solely with
+      respect to Section 5.9' are therefore the Subsidiary Guarantors, named in
+      this text even though the definition itself sends the reader to the
+      Guarantee and Security Agreement. The Borrower signs only as Borrower.

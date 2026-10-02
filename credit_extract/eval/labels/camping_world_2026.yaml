@@ -130,3 +130,38 @@ assertions:
       Stated as "0.0%" with one decimal place where every other zero floor in
       the corpus writes "0.00%". The value is the same and the string is not,
       so a rule keyed to the literal misses it.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: camping_world_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "CWGS Group, LLC"
+      - "FRHP HOLDING 1, LLC"
+      - "FRHP HOLDING 2, LLC"
+      - "FRHP HOLDING 3, LLC"
+      - "FRHP HOLDING 4, LLC"
+      - "FRHP HOLDING 5, LLC"
+      - "FRHP HOLDING 6, LLC"
+      - "FRHP HOLDING 7, LLC"
+      - "FRHP HOLDING 8, LLC"
+    note: >
+      'Parent, in its capacity as guarantor of the Obligations pursuant to, and
+      subject to the terms and conditions of, the Parent Guaranty'
+
+      'the entities identified on Schedule 1 attached hereto and certain other
+      entities which from time to time become parties hereto as guarantors
+      pursuant to a Joinder Agreement'
+
+      Parent ('means CWGS Group, LLC, a Delaware limited liability company') is
+      a Guarantor by definition. Holdings is the eight FRHP HOLDING entities on
+      Schedule 1, which the preamble groups with entities that join as
+      guarantors; they are listed as Loan Parties in Schedule 4.01.1(e) and are
+      not Borrowers, and Loan Parties 'means, collectively, the Borrowers and
+      the Guarantors (including Persons that become and remain Borrowers or
+      Guarantors after the Closing Date)'. The Borrowers FRHP 1 through FRHP 8,
+      LLC are jointly and severally liable co-borrowers that the text never
+      names as Guarantors, so they are left off.

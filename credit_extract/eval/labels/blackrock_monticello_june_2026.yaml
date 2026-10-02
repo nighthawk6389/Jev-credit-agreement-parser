@@ -59,3 +59,29 @@ assertions:
       sponsor with near-identical defined-term sections are exactly what a
       document-set heuristic would try to chain, and the Closing Date is the
       field that says they cannot be chained.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: blackrock_june_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["BLACKROCK MONTICELLO DEBT REAL ESTATE INVESTMENT TRUST"]
+    note: >
+      'BLACKROCK MONTICELLO DEBT REAL ESTATE INVESTMENT TRUST, a Maryland
+      statutory trust, as the guarantor (together with its successors and
+      assigns in such capacity, the " Guarantor ")'
+
+      'Guarantor hereby unconditionally and irrevocably guarantees to
+      Administrative Agent for the benefit of the Lenders the prompt and
+      complete payment and performance by Borrower when due (whether at the
+      stated maturity, by acceleration or otherwise) of any and all
+      Obligations'
+
+      The preamble names the REIT as the Guarantor, it signs under
+      "GUARANTOR:", and Article XII is its guaranty of the Obligations of the Borrower
+      (BLKM VI, LLC). The guaranty is capped at 25% of outstanding principal
+      (the "Liability Cap") until a Full Recourse Event, but it is a guarantee
+      of the Obligations, so the REIT is a Guarantor. No other guarantor is
+      named.

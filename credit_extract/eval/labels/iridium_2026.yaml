@@ -191,3 +191,35 @@ assertions:
       agency businesses rather than lenders, which is the direct-lending and
       project-finance pattern and the one a reader expecting a bank name will
       misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: iridium_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "IRIDIUM HOLDINGS LLC"
+      - "IRIDIUM CARRIER HOLDINGS, LLC"
+      - "IRIDIUM CARRIER SERVICES LLC"
+      - "IRIDIUM CONSTELLATION LLC"
+      - "SATELLES, INC."
+      - "IRIDIUM GOVERNMENT SERVICES LLC"
+    note: >
+      'means Holdings, each Subsidiary Guarantor and any other Person that
+      guarantees the Obligations pursuant to Section 9.12(e)'
+
+      'is entered into by and among Holdings, Parent, the Borrower, the
+      Subsidiary Guarantors, the Administrative Agent, the Collateral Agent and
+      the Lenders on the signature pages hereto'
+
+      Holdings, IRIDIUM HOLDINGS LLC, is a Guarantor by definition, and the
+      Credit Party signature block of Consent and Amendment No. 4 lists Holdings,
+      the Borrower IRIDIUM SATELLITE LLC (which the definition excludes) and the
+      five other signatories here, which are therefore the guarantors (Satelles,
+      Inc. is also one of the entities Section 9.12(e) lets join the Guaranty).
+      Parent did not sign and is only permitted to guarantee, and RKLB USA
+      (Rocket Lab USA, Inc.) gives an unsecured Downstream Guaranty as a
+      condition to the Amendment No. 4 Effective Date under Section 9.12(f),
+      outside the Guarantor definition, so neither is listed.

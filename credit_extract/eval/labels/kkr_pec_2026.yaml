@@ -97,3 +97,25 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: kkr_pec_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      'all Obligations (and any other obligations) of Borrowers hereunder and
+      under the other Finance Documents shall be joint and several and, as
+      such, each Borrower shall be liable for all of such obligations of each
+      other Borrower'
+
+      There is no guarantor because the obligors are the Borrowers alone (the
+      K-PEC entities listed on Schedule 1.01(B)), jointly and severally
+      liable and secured by their own Security Agreement; the agreement has
+      no Guarantor term and no guaranty of the Obligations, and neither K-PEC
+      nor K-PEC Holdco is a party. The only guaranties it mentions are the
+      Permitted Unsecured Guaranties that Borrowers may give for Holding
+      Vehicle debt.

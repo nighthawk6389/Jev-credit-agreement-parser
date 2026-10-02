@@ -196,3 +196,25 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: schneider_national_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "SCHNEIDER NATIONAL, INC."
+      - "SCHNEIDER RESOURCES, INC."
+      - "SCHNEIDER FINANCE, INC."
+      - "SCHNEIDER NATIONAL CARRIERS, INC."
+    note: >
+      'SCHNEIDER NATIONAL, INC., SCHNEIDER RESOURCES, INC., SCHNEIDER FINANCE,
+      INC., and SCHNEIDER NATIONAL CARRIERS, INC., as Guarantors' -- on the
+      cover, and again in '" Guarantor " means each of the Parent, Schneider
+      Resources, Inc., Schneider Finance, Inc. and Schneider National Carriers,
+      Inc.'
+
+      The Parent is Schneider National, Inc. All four sign the agreement; the
+      Borrower, Schneider National Leasing, Inc., is not a Guarantor.

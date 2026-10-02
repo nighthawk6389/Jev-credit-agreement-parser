@@ -116,3 +116,22 @@ assertions:
       Cantor Fitzgerald Securities are agency businesses rather than lenders,
       which is the direct-lending and project-finance pattern and the one a
       reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: healthstream_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect: ["HEALTHCARE RESEARCH, LLC", "MISSIONCARE, LLC"]
+    note: >
+      '" Guarantor " shall mean each of the Subsidiary Loan Parties.'
+
+      The Second Amendment is made 'by and among HEALTHSTREAM, INC., a
+      Tennessee corporation (the " Borrower "), the Subsidiary Loan Parties
+      party hereto, the Lenders party hereto' and Truist Bank, and the only
+      other signatories are HEALTHCARE RESEARCH, LLC and MISSIONCARE, LLC, so
+      they are the Subsidiary Loan Parties party hereto and therefore the
+      Guarantors. Their signature blocks state no role of their own; the role
+      comes from the preamble and the definition.

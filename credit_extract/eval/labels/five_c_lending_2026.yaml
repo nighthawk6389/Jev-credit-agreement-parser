@@ -66,3 +66,26 @@ assertions:
       1.50 to 1.00 is also the Asset Coverage Ratio level in Fidelity and Blue
       Owl Technology, so the same figure now appears in three agreements
       governing two different ratios in two different directions.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: five_c_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '" Pledge Agreement ": The Pledge Agreement, dated as of the Effective
+      Date, made by the Transferor in favor of the Administrative Agent, for
+      the benefit of itself and the Lenders, pledging all of the equity
+      interests of the Borrower'
+
+      There is no guarantor because the Borrower is a special-purpose vehicle
+      whose credit support is its own Collateral (Section 8.1) and the pledge
+      of its equity by the Transferor, which is not a guarantee; the Loan
+      Parties are 'The Borrower, the Transferor and the Collateral Manager.'
+      and none of them guarantees the Obligations. Every guarantor the text
+      mentions guarantees a portfolio Loan ('" Obligor ": With respect to any
+      Loan, any Person or Persons obligated to make payments pursuant to or
+      with respect to such Loan, including any guarantor thereof').

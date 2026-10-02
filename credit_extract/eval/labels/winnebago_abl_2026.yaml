@@ -120,3 +120,32 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: winnebago_abl_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "WINNEBAGO INDUSTRIES, INC."
+      - "WINNEBAGO OF INDIANA, LLC"
+      - "GRAND DESIGN RV, LLC"
+      - "NEWMAR CORPORATION"
+      - "OCTAVIUS CORPORATION"
+      - "CHRIS CRAFT CORPORATION"
+      - "LITHIONICS BATTERY, LLC"
+      - "BARLETTA BOAT COMPANY, LLC"
+    note: >
+      '" Loan Guarantor " means each Loan Party.' -- the Loan Parties being the
+      Borrowers, the Material Domestic Subsidiaries and joinder parties -- and
+      in Article X, 'Each Loan Guarantor (other than those that have delivered
+      a separate Guaranty) hereby agrees that it is jointly and severally liable
+      for' and guarantees the Secured Obligations.
+
+      Four companies sign as Loan Guarantor, beginning 'OCTAVIUS CORPORATION,
+      as Loan Guarantor'. The four Borrowers are listed first because the
+      definition makes each of them a Loan Guarantor of the Secured Obligations,
+      those of the other Borrowers included; a reading that keeps co-borrowers
+      off the list would stop at the last four names.

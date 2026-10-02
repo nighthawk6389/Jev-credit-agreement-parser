@@ -131,3 +131,46 @@ assertions:
       Wilmington Trust and Cantor Fitzgerald Securities are agency businesses
       rather than lenders, which is the direct-lending and project-finance
       pattern and the one a reader expecting a bank name will misread.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: flowers_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "1-800-Flowers.com, Inc."
+      - "CONROY'S INC."
+      - "1-800-FLOWERS TEAM SERVICES, INC."
+      - "1-800-FLOWERS.COM FRANCHISE CO., INC."
+      - "BLOOMNET, INC."
+      - "CELEBRATIONS.COM, LLC"
+      - "DESIGNPAC CO., INC."
+      - "FLOWERAMA OF AMERICA, INC."
+      - "GREAT FOODS, LLC"
+      - "NAPCO MARKETING CORP."
+      - "FRESH GIFT CARDS, INC."
+      - "DESIGNPAC GIFTS LLC"
+      - "1-800-FLOWERS SERVICE SUPPORT CENTER, INC."
+      - "800-FLOWERS, INC."
+      - "CHERYL & CO."
+      - "THE POPCORN FACTORY, INC."
+      - "PERSONALIZATIONMALL.COM, LLC"
+      - "SHARI'S BERRIES.COM, LLC"
+      - "HARRY & DAVID HOLDINGS, INC."
+      - "HARRY AND DAVID, LLC"
+      - "BEAR CREEK ORCHARDS, INC."
+      - "HARRY & DAVID OPERATIONS, INC."
+    note: >
+      'means the Company and the Subsidiary Guarantors, in each case with
+      respect to its respective Guaranteed Obligations'
+
+      Subsidiary Guarantors are 'each Subsidiary of the Company that is listed
+      under the caption "Subsidiary Guarantors" on the signature pages hereof',
+      and 21 entities sign the Third Amendment under that caption (the eight
+      Subsidiary Borrowers among them, listed once). The Company is itself a
+      Guarantor by that definition and under Section 3.01(a) ('The Company
+      hereby guarantees to each Guaranteed Party the prompt payment in full
+      when due') guarantees the Subsidiary Borrower Obligations, so it is
+      listed first.

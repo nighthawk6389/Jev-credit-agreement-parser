@@ -85,3 +85,34 @@ assertions:
       Amendment No. 1 carries deletion markup. It never says "is hereby
       amended to delete the stricken text" -- the finding follows the markup,
       not the sentence.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: brc_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "TIGER US HOLDINGS INC."
+      - "TARGUS US NEWCO INC."
+      - "TARGUS SPAIN S.L."
+      - "TARGUS ASIA PACIFIC (SINGAPORE) PTE LTD"
+      - "TARGUS DEUTSCHLAND GMBH"
+      - "TARGUS AUSTRALIA PTY. LTD"
+    note: >
+      'TIGER US HOLDINGS INC. , TARGUS AUSTRALIA PTY. LTD, AND TARGUS US NEWCO
+      INC. (AS GUARANTORS)'
+
+      The conformed Revolving Credit, Receivables Purchase, Security and
+      Guaranty Agreement names Parent, Targus Australia and Holdings as the
+      Guarantors, and under Article XVII 'Each Guarantor unconditionally and
+      irrevocably, jointly and severally, guarantees to Agent and the other
+      Lenders' the Obligations. The First Amendment preamble also names Targus
+      Spain, Targus Singapore and Targus Germany among the Existing Guarantors,
+      and they sign under 'EXISTING GUARANTORS: TIGER US HOLDINGS INC.'; Targus
+      Australia joins and signs as GUARANTOR. The four Borrowers and the four
+      UK and Hong Kong Sellers are Credit Parties, not Guarantors, and the
+      B. Riley side gives only the Sponsor Pledge Agreement over the equity of
+      Parent. Amendment No. 5, the other chain member, is not in the folded
+      text.

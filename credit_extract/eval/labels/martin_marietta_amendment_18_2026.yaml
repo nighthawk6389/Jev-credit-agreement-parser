@@ -146,3 +146,29 @@ assertions:
       is exactly where a pipeline looks competent by guessing, and where the
       only evidence that it is reading rather than guessing is the handful of
       documents where the answer differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: mlm_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_status
+    target: guarantor.legal_name
+    expect: absent_from_document
+    note: >
+      '"Loan Parties" means Borrower and Servicer.'
+
+      '"Transaction Documents" means, collectively, this Agreement, the Notes
+      (if any), each Borrowing Notice, the Purchase Agreement, the Sale
+      Agreement, each Collection Account Agreement, the Fee Letter, and all
+      other instruments, documents and agreements required to be executed and
+      delivered pursuant hereto.'
+
+      There is no guarantor because this is a receivables securitisation:
+      Martin Marietta Funding LLC is a special-purpose Borrower whose credit
+      support is the security interest it grants over its Receivables,
+      Collections and Related Security (Article XI), and Martin Marietta
+      Materials, Inc. is a party only as Servicer. The Transaction Documents
+      contain no guaranty and no guarantor signs; the only "guaranties" in the
+      text are those supporting the purchased Receivables, which back the
+      collateral, not this facility.

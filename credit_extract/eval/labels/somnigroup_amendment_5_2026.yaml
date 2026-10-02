@@ -164,3 +164,49 @@ assertions:
       competent by guessing, and where the only evidence that it is reading
       rather than guessing is the handful of documents where the answer
       differs.
+
+  # -- guarantors: who guarantees the obligations, and where the text says so --
+
+  - id: somnigroup_amendment_5_guarantor
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: guarantor.legal_name
+    expect:
+      - "TEMPUR WORLD, LLC"
+      - "TEMPUR-PEDIC TECHNOLOGIES, LLC"
+      - "TEMPUR-PEDIC NORTH AMERICA, LLC"
+      - "TEMPUR PRODUCTION USA, LLC"
+      - "TEMPUR RETAIL STORES, LLC"
+      - "TEMPUR SEALY INTERNATIONAL DISTRIBUTION, LLC"
+      - "SEALY MATTRESS CORPORATION"
+      - "SEALY MATTRESS COMPANY"
+      - "THE OHIO MATTRESS COMPANY LICENSING AND COMPONENTS GROUP"
+      - "SEALY, INC."
+      - "SEALY ECOMMERCE, LLC"
+      - "SEALY MATTRESS COMPANY OF PUERTO RICO"
+      - "SEALY MATTRESS MANUFACTURING COMPANY, LLC"
+      - "SEALY TECHNOLOGY LLC"
+      - "COMFORT REVOLUTION, LLC"
+      - "TEMPUR SHERWOOD, LLC"
+      - "SHERWOOD SOUTHEAST, LLC"
+      - "SHERWOOD SOUTHWEST, LLC"
+      - "SHERWOOD MIDWEST, LLC"
+      - "SHERWOOD WEST, LLC"
+      - "TEMPUR HOLDING, LLC"
+      - "SHERWOOD NORTHEAST, LLC"
+      - "MATTRESS FIRM GROUP LLC"
+      - "MATTRESS FIRM, INC."
+      - "SLEEPY'S, LLC"
+    note: >
+      'each Subsidiary Guarantor hereby confirms and ratifies its continuing
+      unconditional obligations as a Subsidiary Guarantor under the Guarantee
+      and Collateral Agreement'
+
+      The Amendment No. 5 signature pages name 43 distinct entities as
+      Subsidiary Guarantors (three Mattress Firm entities sign twice). These
+      are the first 25 in the order the text names them; the other 18, from
+      THE SLEEP TRAIN, LLC through THE MATTRESS VENTURE, LLC, are omitted under
+      the 25-name cap. The Parent Borrower and the two Additional Borrowers sign
+      only as borrowers, and L&P becomes an Unsecured Guarantor only after the
+      L&P Acquisition and does not sign, so none of them is listed.
