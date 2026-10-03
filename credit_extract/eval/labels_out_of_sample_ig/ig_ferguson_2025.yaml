@@ -1,0 +1,181 @@
+# Tier 2 assertions: Ferguson Enterprises Inc. / JPMorgan Chase Bank, N.A.,
+# Revolving Credit Agreement dated as of April 2, 2025, filed 2025-04-03 by
+# Ferguson Enterprises Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original (not amended) five-year revolver in
+# Dollars and Canadian dollars for a single borrower, guaranteed initially by
+# Ferguson UK Holdings Limited, priced off a five-level ratings grid with a
+# commitment fee on unused commitments. The $1,500,000,000 size is printed only
+# on the cover (Schedule 2.01 is not in the filing). The grid definition says
+# its percentages are set forth in basis points but prints them as percentages,
+# and the preamble writes the agent without the comma before N.A.
+
+document: ig_ferguson_2025
+corpus_name: IG_ferguson-enterprises-inc-de_2025-04-03_0001552781-25-000129_e25140_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ferg_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "Ferguson Enterprises Inc."
+    note: >
+      'among Ferguson Enterprises Inc., a corporation organized under the laws
+      of Delaware (the " Borrower "), each Guarantor from time to time party
+      hereto'
+
+      The preamble, which defines the Borrower; the cover writes the same name
+      in capitals. Ferguson UK Holdings Limited is the initial Guarantor, not a
+      borrower.
+
+  - id: ferg_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMorgan Chase Bank, N.A."
+    note: >
+      'Administrative Agent " means JPMorgan Chase Bank, N.A. in its capacity
+      as administrative agent under any of the Loan Documents, or any successor
+      administrative agent'
+
+      The definition, the cover, the Article IX appointment and the signature
+      block all write JPMorgan Chase Bank, N.A. The preamble alone drops the
+      comma ('and JPMorgan Chase Bank N.A., as Administrative Agent, the
+      Swingline Lender and an Issuing Bank'), a drafting slip; the label
+      follows the name as defined. BofA Securities, Inc. and the other banks
+      on the cover are Joint Lead Arrangers.
+
+  - id: ferg_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'THIS AGREEMENT SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH,
+      THE LAW OF THE STATE OF NEW YORK; PROVIDED THAT THE ADMINISTRATIVE AGENT
+      AND EACH LENDER SHALL RETAIN ALL RIGHTS ARISING UNDER FEDERAL LAW'
+
+      Section 10.17(a). Delaware is where the Borrower is organized, not the
+      governing law.
+
+  - id: ferg_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,500,000,000"
+    note: >
+      '$1,500,000,000 REVOLVING CREDIT AGREEMENT dated as of April 2, 2025'
+
+      The cover. Aggregate Commitments is defined only as 'the Commitments of
+      all the Lenders' and the per-Lender amounts are on Schedule 2.01, which
+      is not in the filing, so the cover is the only printed total; one
+      revolving facility. Section 2.15 allows Incremental Commitments of up to
+      $500,000,000, which is the accordion and not the commitment.
+
+  - id: ferg_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-04-02
+    note: >
+      'Maturity Date " means April 2, 2030.'
+
+      'the Borrower may only request up to two one-year extensions of the
+      Existing Maturity Date'
+
+      The definition has no Business Day roll, and April 2, 2030 is a Tuesday.
+      The Section 2.14 extensions depend on each Lender agreeing in its sole
+      discretion and on more than 50% of Commitments extending, so they are
+      conditional and the stated date is labelled.
+
+  - id: ferg_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.375%"
+    note: >
+      '5 | Baa3/BBB-/BBB- or lower | 1.375% | 0.375% | 0.15%'
+
+      Pricing level 5 (the lowest ratings) in the column for Term Benchmark
+      Loans and Swingline Loans, which covers Term SOFR Rate loans; the margin
+      runs from 0.875% at level 1 to 1.375%. On the same row 0.375% is the Base
+      Rate margin and 0.15% the Commitment Fee Rate. The definition introduces
+      'the following percentages per annum (set forth in basis points), based
+      upon the Credit Ratings', but the cells carry percent signs, so the
+      value is 1.375 percent, not 1.375 basis points.
+
+  - id: ferg_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'For the avoidance of doubt, the initial Floor for each of Term SOFR Rate
+      and the Adjusted Term CORRA Rate shall be 0.00%.'
+
+      The Floor definition, applied by the Term SOFR Rate definition ('if the
+      Term SOFR Rate as so determined would be less than the Floor, such rate
+      shall be deemed to be equal to the Floor'). The 0.29547% and 0.32138%
+      figures in Adjusted Term CORRA Rate are credit spread adjustments, not
+      floors.
+
+  - id: ferg_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.15%"
+    note: >
+      'a commitment fee in Dollars, which shall accrue at a rate per annum
+      equal to the Applicable Rate under the caption "Commitment Fee Rate" on
+      the average daily unused amount of each Commitment of such Lender'
+
+      Section 2.09(a), a fee on unused commitments. The Commitment Fee Rate
+      runs from 0.07% at pricing level 1 to 0.15% at level 5, the top level.
+      The 0.125% in Section 2.09(b) is the letter of credit fronting fee, the
+      near miss.
+
+  - id: ferg_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      'the ratio of (a) Consolidated Net Funded Debt as of such day to (b)
+      Consolidated EBITDA for the period of four consecutive fiscal quarters of
+      the Borrower ending on such day to be greater than 3.50 to 1.00'
+
+      Section 7.02, the only financial covenant, tested from the quarter
+      ending April 30, 2025. On election after a Threshold Acquisition the cap
+      rises to 4.00 to 1.00 for four quarters, and at least one quarter back at
+      3.50 to 1.00 must pass before another election; the base level is
+      labelled.
+
+  - id: ferg_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-04-02
+    note: >
+      'Closing Date " means April 2, 2025.'
+
+      'Closing Date . The obligation of each Lender to make Loans and Letters
+      of Credit hereunder is subject to the satisfaction (or waiver) of the
+      following conditions'
+
+      An explicit date for the closing of this agreement itself (Section 4.01
+      is headed Closing Date), the same day the agreement is dated. The filing date,
+      April 3, 2025, is the near miss.

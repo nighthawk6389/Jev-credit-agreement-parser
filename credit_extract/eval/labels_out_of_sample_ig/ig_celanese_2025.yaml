@@ -1,0 +1,189 @@
+# Tier 2 assertions: Celanese US Holdings LLC / Bank of America, N.A., Credit
+# Agreement dated as of August 11, 2025, filed 2025-08-11 by Celanese Corp as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original multicurrency revolving credit agreement
+# (the term loan slot, Section 2.01(a), is Reserved), priced off S&P, Moody's
+# and Fitch with an unused commitment fee; the leverage covenant steps down
+# through a Covenant Relief Period. Schedule 2.01, which sizes the facility, is
+# not in the filing, so the commitment is labelled external_reference.
+
+document: ig_celanese_2025
+corpus_name: IG_celanese-corp_2025-08-11_0001104659-25-076253_tm2523061d1_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ce_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "Celanese US Holdings LLC"
+    note: >
+      'Celanese US Holdings LLC, a limited liability company incorporated under
+      the laws of Delaware (the "Company"), certain Subsidiaries of the Company
+      from time to time party hereto as borrowers'
+
+      The preamble makes the Borrowers the Designated Borrowers together with
+      the Company, and the cover names the Company first ('CELANESE US
+      HOLDINGS LLC and CERTAIN SUBSIDIARIES THEREOF, as Borrowers'). Celanese
+      Corporation, the filer, is Holdings and a guarantor, not a Borrower
+      ('Parent Guaranty" means the Guaranty made by Holdings in favor of the
+      Administrative Agent and the Lenders'), which makes it the near miss.
+
+  - id: ce_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "Bank of America, N.A."
+    note: >
+      'Bank of America, N.A., as Administrative Agent, a Swing Line Lender and
+      an L/C Issuer and the other Swing Line Lenders and L/C Issuers party
+      hereto'
+
+      The preamble; the cover gives the same name in capitals. The definition
+      uses the short form ('means Bank of America in its capacity as
+      administrative agent under any of the Loan Documents'). Deutsche Bank
+      Securities Inc. is Syndication Agent and BofA Securities, Inc. is an
+      arranger and the Sustainability Agent.
+
+  - id: ce_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE
+      STATE OF NEW YORK'
+
+      Section 10.14(a), which covers this Agreement and the other Loan
+      Documents unless one of them says otherwise.
+
+  - id: ce_commitment_in_omitted_schedule
+    family: F03_external_reference
+    member: schedule_omitted_from_filing
+    kind: field_status
+    target: revolver.commitment
+    expect: external_reference
+    note: >
+      'in an aggregate principal amount at any one time outstanding not to
+      exceed the Dollar amount set forth opposite such Lender'
+
+      The Revolving Commitment definition continues "name on Schedule 2.01 or
+      in the Assignment and Assumption pursuant to which such Lender becomes a
+      party hereto", and the aggregate is only the sum of those ('Aggregate
+      Revolving Commitments" means the Revolving Commitments of all the
+      Revolving Lenders'). No definition, the cover or Section 2.01(b) states
+      the total, and Schedule 2.01 is not in the filing because the exhibit
+      ends with the signature pages. So the size is a real term held in a
+      schedule the filer did not file: external_reference, not absent. The
+      figures a reader might take instead are ceilings and sublimits: the
+      accordion in Section 2.16 ('by an amount not exceeding $500,000,000 in
+      the aggregate for all such Credit Increases'), the $250,000,000 Letter of
+      Credit Sublimit and the 75,000,000 euro Swing Line Sublimit.
+
+  - id: ce_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-08-09
+    note: >
+      'means the later of (a) August 11, 2030 and (b) if maturity is extended
+      pursuant to Section 2.15'
+
+      The same definition ends 'if such date is not a Business Day, the
+      Maturity Date shall be the next preceding Business Day'. August 11, 2030
+      is a Sunday, so the definition itself moves the date back to Friday,
+      August 9, 2030; 2030-08-11, the date as printed, is the near miss.
+      Section 2.15 allows two one-year extensions at the discretion of the
+      Revolving Lenders, capped at August 11, 2032; they are conditional and
+      have not happened, so clause (a) governs.
+
+  - id: ce_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.000%"
+    note: >
+      'Daily SOFR Loan Margin, Term SOFR Loan Margin, Alternative Currency Loan
+      Margin and Letter of Credit Fee'
+
+      The column of the Applicable Rate grid that prices Term SOFR Loans. Its
+      top row is Pricing Level 6 ('6 | | | BB / Ba2 / BB or worse | | | 0.350 |
+      % | | | 2.000 | % | | | 1.000 | %'): commitment fee 0.350%, Term SOFR
+      margin 2.000%, Base Rate margin 1.000%. Level 1 (A- / A3 / A- or better)
+      is 1.000%. Section 2.19 lets a later Sustainability Amendment move the
+      margin by at most 0.05% either way ('an increase and/or decrease of
+      0.05%'), but the agreement contains no such amendment, so the grid
+      stands as printed.
+
+  - id: ce_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than zero, the Term SOFR shall be deemed zero for
+      purposes of this Agreement'
+
+      The closing proviso of the Term SOFR definition, covering both its
+      Interest Period clause and its Base Rate clause. The Base Rate carries
+      its own floor ('provided that Base Rate shall not be less than 0.00% per
+      annum'), the same number but a floor on the base rate. Daily Simple
+      SOFR, the Alternative Currency rates and the euro Swing Line Rate are
+      each floored at zero as well.
+
+  - id: ce_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.350%"
+    note: >
+      'a commitment fee in Dollars equal to the Applicable Rate times the actual
+      daily amount by which the Aggregate Revolving Commitments exceed the sum
+      of'
+
+      Section 2.09(a): a fee on the unused amount (commitments less
+      outstanding Revolving Loans and L/C Obligations; Swing Line Loans do not
+      count as usage). Its rate is the Commitment Fee column of the ratings
+      grid, 0.090% at Level 1 up to 0.350% at Level 6. Section 2.19 allows a
+      later Sustainability Amendment to move it by at most 0.01% ('in the case
+      of the commitment fee payable pursuant to Section 2.09(a), an increase
+      and/or decrease of 0.01%'), which has not happened.
+
+  - id: ce_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50:1.00"
+    note: >
+      'the Financial Covenant for each fiscal quarter ended after the end of the
+      Covenant Relief Period shall be a Consolidated Leverage Ratio of
+      3.50:1.00 in lieu of the levels set forth in the table above'
+
+      Section 7.07(b), the maximum Consolidated Leverage Ratio, defined as the
+      Financial Covenant. 3.50:1.00 is the base level. The table above it is
+      temporary relief, stepping down from 6.50:1.00 at the first test date
+      ('September 30, 2025 | | 6.50:1.00') to the base level as the Covenant
+      Relief Period ends ('December 31, 2029 and each fiscal quarter ended
+      thereafter | | 3.50:1.00'), and if the Company ends that period early,
+      the quoted sentence puts 3.50:1.00 in place of the table from then on.
+      6.50:1.00, the first and largest figure in the table, is the near miss.
+      The step-up: after a Qualifying Acquisition, once the level has been
+      3.50:1.00 for two quarters, the Company may raise it for four quarters,
+      at most twice ('the company may elect to increase the Financial Covenant
+      to 4.25:1.00 for each of the four fiscal quarters ending thereafter').
+      Each Qualifying Disposition in the relief period after the first lowers
+      the table by 0.25:1.00. Section 7.07(a) is a Consolidated Fixed Charge
+      Coverage Ratio minimum (1.20:1.00 rising to 1.40:1.00), a floor rather
+      than a leverage cap.

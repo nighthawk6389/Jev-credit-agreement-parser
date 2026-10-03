@@ -1,0 +1,169 @@
+# Tier 2 assertions: Globe Life Inc. / Wells Fargo Bank, National Association,
+# Third Amended and Restated Credit Agreement dated as of June 26, 2026,
+# filed 2026-08-05 by Globe Life Inc. as Exhibit 10.5.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. A complete third amended and restated agreement, not
+# an amendment: one $1,000,000,000 revolving facility priced off S&P and
+# Moody's ratings, with a facility fee and no unused fee, and TMK Re, Ltd. as
+# a second Loan Party that is not a Borrower. The term loan is a separate
+# agreement of the same date; Schedule 2.01 is referenced but not printed.
+
+document: ig_globe_life_2026
+corpus_name: IG_globe-life-inc_2026-08-05_0000320335-26-000216_a105thirdamendedandresta
+source: real
+tier: 2
+
+assertions:
+
+  - id: gl_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "GLOBE LIFE INC."
+    note: >
+      'GLOBE LIFE INC., a Delaware corporation (the "Borrower"), and TMK RE,
+      LTD., a Bermuda exempted company'
+
+      The preamble defines the Borrower. TMK Re, Ltd., the Bermuda reinsurer
+      named next, is a Loan Party (defined as TMK) and not a Borrower, so it is
+      the near miss; the cover reads the same way ('GLOBE LIFE INC., as the
+      Borrower, TMK RE, LTD., as a Loan Party').
+
+  - id: gl_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+    note: >
+      'WELLS FARGO BANK, NATIONAL ASSOCIATION, as Administrative Agent, Swing
+      Line Lender and L/C Administrator, GLOBE LIFE INC.'
+
+      The preamble. The definition uses the short name ('"Administrative
+      Agent" means Wells Fargo Bank (or any of its designated branch offices or
+      affiliates)'), so the legal name is the preamble one. The recital names
+      Bank of America, N.A. as agent under the Second Amended and Restated
+      Credit Agreement being restated ('as administrative agent (in such
+      capacity, the "Existing Administrative Agent")'), which is the near miss.
+
+  - id: gl_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE
+      STATE OF NEW YORK'
+
+      Section 10.14(a). Submission to jurisdiction in Section 10.14(b) is also
+      to the New York state and federal courts sitting in New York County.
+
+  - id: gl_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'As of the Effective Date, the Aggregate Commitments are $1,000,000,000.'
+
+      The definition of Aggregate Commitments; the cover agrees ('$1,000,000,000
+      THIRD AMENDED AND RESTATED CREDIT AGREEMENT Dated as of June 26, 2026').
+      There is one revolving facility: the Letter of Credit Sublimit
+      ($250,000,000) and the Swing Line Sublimit ($50,000,000) are each part
+      of, and not in addition to, the Aggregate Commitments. Section 2.14 lets
+      the Borrower request increases up to a ceiling ('the amount of the
+      Aggregate Commitments after giving effect to any such increase shall not
+      exceed $1,250,000,000'), which is the accordion, not the commitment.
+
+  - id: gl_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-26
+    note: >
+      '"Maturity Date" means (a) June 26, 2031, or if such date is not a
+      Business Day, the next preceding Business Day'
+
+      June 26, 2031 is a Thursday, so the roll in the definition does not move
+      it. Clause (b) is the earlier termination or acceleration of the
+      Commitments, an event. Section 2.16 lets the Borrower ask the Lenders,
+      each in its sole discretion, for a one-year extension, by notice given
+      shortly before the first and before the second anniversary of the
+      Effective Date; that is conditional, so the stated date is labelled.
+
+  - id: gl_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.35%"
+    note: >
+      '5 < BBB/Baa2 0.15% 1.35% 0.35% 1.50%'
+
+      Pricing Level 5 of the Applicable Rate grid, read against its column
+      heads ('Facility Fee Term SOFR Loans & Letter of Credit Fee Base Rate
+      Loans All-In Drawn'): facility fee 0.15%, Term SOFR Loans and Letter of
+      Credit Fee 1.35%, Base Rate Loans 0.35%, all-in drawn 1.50%. The top
+      margin over Term SOFR is 1.35%. The 1.50% beside it is the all-in drawn
+      cost (facility fee plus margin), not the margin; Level 5 also applies if
+      the Borrower has no rating from either agency. The levels run from
+      0.805% at A+/A1 or better.
+
+  - id: gl_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than the Floor, Term SOFR shall be deemed to be
+      the Floor'
+
+      The last proviso of the Term SOFR definition, covering both the Term
+      SOFR Loan clause and the Base Rate clause, with the Floor defined as zero
+      ('"Floor" means a rate of interest equal to 0%'). The near miss is the
+      minimum on the Base Rate ('in no event shall the Base Rate as of any date
+      of determination be less than 1.00%'), a floor on the base rate rather
+      than on Term SOFR.
+
+  - id: gl_no_unused_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'times the actual daily amount of the Aggregate Commitments (or, if the
+      Aggregate Commitments have terminated, on the Outstanding Amount of all
+      Revolving Loans, Swing Line Loans and L/C Obligations), regardless of
+      usage'
+
+      Section 2.09(a), the Facility Fee: charged on the whole Aggregate
+      Commitments, drawn or not, at the Applicable Rate (0.07% at Level 1 to
+      0.15% at Level 5). The agreement has no commitment fee or unused fee on
+      undrawn commitments, so the field is null, and the 0.15% top Facility
+      Fee is the near miss the pipeline must not report. Section 2.09(b)
+      leaves the other fees to the Fee Letters and the upfront fees.
+
+  - id: gl_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "0.40 to 1.0"
+    note: >
+      'The Borrower will maintain at all times a ratio of Consolidated
+      Indebtedness to Consolidated Capitalization of not greater than 0.40 to
+      1.0.'
+
+      Section 7.07(b): a maximum debt to capitalization ratio, written with one
+      decimal on the right, flat for the life of the facility with no
+      acquisition step-up. Section 7.07(a), the only other financial covenant,
+      is a Consolidated Net Worth floor ('Consolidated Net Worth equal to not
+      less than the sum of (i) $5,060,500,000'), a minimum rather than a
+      leverage cap.

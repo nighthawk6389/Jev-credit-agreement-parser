@@ -1,0 +1,158 @@
+# Tier 2 assertions: Target Corporation / Bank of America, N.A., Five-Year
+# Credit Agreement dated as of August 14, 2026, filed 2026-08-14 by Target
+# Corp as Exhibit 10.28.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original (not amended) five-year $4,000,000,000
+# revolving credit agreement, priced off the S&P and Moody's senior unsecured
+# ratings of Target on a five-level grid, with a facility fee on the whole
+# commitment and no unused fee. Schedule 1.01(b) of commitments is printed.
+# The Effective Date is event-defined (Section 3.01), so no closing date is
+# labelled.
+
+document: ig_target_2026
+corpus_name: IG_target-corp_2026-08-14_0000027419-26-000032_five-yearcreditagreementex
+source: real
+tier: 2
+
+assertions:
+
+  - id: tgt_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "TARGET CORPORATION"
+    note: >
+      'is among TARGET CORPORATION , a Minnesota corporation, the BANKS listed
+      on the signature pages hereof'
+
+      The preamble; the definition agrees: '" Borrower " means Target
+      Corporation, a Minnesota corporation, and its successors.' The EDGAR
+      filer name abbreviates it to TARGET CORP; the agreement spells it out.
+
+  - id: tgt_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      '" Agent " means Bank of America, N.A. in its capacity as Administrative
+      Agent for the Banks hereunder'
+
+      The agreement calls the administrative agent the Agent; the preamble
+      names 'BANK OF AMERICA, N.A. , as Administrative Agent'. Citibank, N.A.
+      and Wells Fargo Bank, National Association are Co-Syndication Agents and
+      JPMorgan Chase Bank, N.A. and U.S. Bank National Association
+      Co-Documentation Agents; none of them is the agent.
+
+  - id: tgt_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'and the transactions contemplated hereby and thereby shall be governed
+      by and construed in accordance with the laws of the State of New York'
+
+      Section 9.09(a). The Borrower is a Minnesota corporation, and Minnesota
+      is its state of incorporation, not the governing law.
+
+  - id: tgt_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$4,000,000,000"
+    note: >
+      'the aggregate amount of which at the Effective Date is $4,000,000,000'
+
+      The definition of Commitment, one revolving tranche with no term loan;
+      printed Schedule 1.01(b) ends 'Total | $4,000,000,000.00 |
+      100.000000000%'. Section 2.16 lets the Borrower add commitments, but
+      that is the accordion ceiling, not the commitment: 'shall result in
+      combined Commitments exceeding $5,000,000,000'.
+
+  - id: tgt_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-14
+    note: >
+      '" Termination Date " means the later of (a) August 14, 2031 or (b) if
+      the term of this Agreement is extended pursuant to Section 2.17'
+
+      Section 2.05: 'The Borrower shall repay to the Banks on the Termination
+      Date the aggregate principal amount of all Loans outstanding on such
+      date'. Section 2.17 allows up to two one-year extension requests, each
+      at the sole discretion of each Bank, so the date as it stands is
+      labelled. August 14, 2031 is a Thursday, so the preceding Business Day
+      roll in the definition does not move it.
+
+  - id: tgt_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "0.900%"
+    note: >
+      'Level | Debt Rating | Applicable Margin for Term SOFR Loans | Applicable
+      Margin for Base Rate Loans'
+
+      Section 2.06(d). The top of the grid is Level V, at BBB+ or Baa1 and
+      below, which reads in full "V | Equal to or less than BBB+ by S&P or
+      Baa1 by Moody's | 0.900% | 0.000%"; the grid runs from 0.455% at Level
+      I. The Base Rate margin is 0.000% at every level, and the 0.045% to
+      0.100% Facility Fee Rate is a fee, not a margin.
+
+  - id: tgt_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than 0.00%, then Term SOFR shall be deemed to be
+      0.00% for purposes of this Agreement'
+
+      The proviso to the definition of Term SOFR: a zero floor on the
+      benchmark itself. The identical 0.00% floors on the Federal Funds Rate (a
+      Base Rate input) and on any Successor Rate are different provisions.
+
+  - id: tgt_commitment_fee_null
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'The Facility Fee shall accrue at all times while the Aggregate
+      Commitments exist, including at any time during which one or more of the
+      conditions in Section 3.02 is not met, on the daily aggregate amount of
+      the Commitments (whether used or unused).'
+
+      Section 2.07 charges only a facility fee, on the whole commitment, at the
+      Facility Fee Rate of 0.045% (Level I) to 0.100% (Level V): '(v) 0.100%
+      if Level V Status exists at such date'. There is no commitment fee or
+      unused fee anywhere in the agreement, so the field has no value, and the
+      facility fee is the near miss the pipeline must not report.
+
+  - id: tgt_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "0.75 to 1.00"
+    note: >
+      'permit the ratio of (a) Total Finance Liabilities to (b) Total
+      Capitalization to be greater than or equal to 0.75 to 1.00'
+
+      Section 5.08 (Leverage Ratio), tested at the end of each fiscal quarter:
+      a debt-to-capitalization cap, where Total Finance Liabilities include
+      operating lease liabilities. It neither steps nor rises after an
+      acquisition. The only other quarterly test, Section 5.07, limits secured
+      Debt to 20% of Consolidated Tangible Net Worth; that is a cap on secured
+      debt, not a leverage or coverage ratio.

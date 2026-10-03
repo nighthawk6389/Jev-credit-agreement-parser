@@ -1,0 +1,147 @@
+# Tier 2 assertions: Intercontinental Exchange, Inc. / Wells Fargo Bank,
+# National Association, Credit Agreement dated as of April 3, 2014 as amended
+# through the Fourteenth Amendment dated as of August 20, 2026, filed
+# 2026-08-21 by Intercontinental Exchange, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. A short Fourteenth Amendment, the restated Schedule
+# 1.1(a) of commitments, and a composite blacklined conformed copy of the
+# Credit Agreement (Exhibit A); every label is read from the conformed text. An
+# amend-and-extend: consenting lenders get a maturity five years from the
+# amendment and a lower ratings grid, while the one non-consenting lender (UBS
+# AG, Stamford Branch, $230,000,000) keeps the May 31, 2029 maturity and its
+# own grid. It also adds a $1,500,000,000 MarketAxess Revolving tranche for the
+# MarketAxess acquisition. Not labelled: the margin and commitment fee (one
+# ratings grid per lender class, so no single top level) and the leverage
+# covenant (a dated step-down schedule, 5.00:1.00 in 2024 to 3.75:1.00).
+
+document: ig_intercontinental_exchange_2026
+corpus_name: IG_intercontinental-exchange-inc_2026-08-21_0001193125-26-359930_d369319dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: ice_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "INTERCONTINENTAL EXCHANGE, INC."
+    note: >
+      'is entered into by and among INTERCONTINENTAL EXCHANGE, INC., a Delaware
+      corporation (the " Borrower ")'
+
+      The amendment preamble, which defines the Borrower. The conformed
+      preamble names the same company with a small-capitals split, 'is made
+      among I NTERCONTINENTAL EXCHANGE, INC. , a Delaware corporation', and
+      the amendment signature block drops the comma (INTERCONTINENTAL EXCHANGE
+      INC.); neither is the name as defined.
+
+  - id: ice_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+    note: >
+      'WELLS FARGO BANK, NATIONAL ASSOCIATION , as Primary Administrative Agent'
+
+      The conformed preamble; the amendment is made with the same bank as
+      Administrative Agent. Administrative Agent 'means, (a) during a Wells
+      Fargo Availability Period, the Primary Administrative Agent and (b)
+      during a Wells Fargo Unavailability Period, the Backup Administrative
+      Agent', and the Unavailability Period runs only while Wells Fargo is
+      determined to be a Defaulting Lender. Bank of America, N.A., the Backup
+      Administrative Agent and a Co-Syndication Agent, is the near miss.
+
+  - id: ice_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'be governed by, and construed in accordance with, the law of the State of
+      New York'
+
+      Section 10.02(a) of the conformed agreement; Section 6.01 of the
+      amendment applies the same section to the amendment. Letters of credit
+      follow the laws or rules they designate, else the ISP, which is a carve
+      out and not the governing law of the facility.
+
+  - id: ice_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$3,900,000,000"
+    note: >
+      'make available a revolving credit facility to the Borrower in the
+      aggregate principal amount of $3,900,000,000'
+
+      The conformed Background Statement; the conformed cover prints
+      '$3,900,000,000 Senior Credit Facilities'. Revolving Commitments are the
+      Dollar, Multicurrency and MarketAxess Revolving Commitments, and restated
+      Schedule 1.1(a) totals them by column only ($2,140,000,000 Multicurrency,
+      $260,000,000 Dollar, $1,500,000,000 MarketAxess), so the printed aggregate
+      is the label and the largest tranche is the near miss. Section 2.25 later
+      converts the MarketAxess tranche into Multicurrency commitments, leaving
+      the total unchanged. Not this: the accordion ($1,250,000,000 Available
+      Incremental Amount), the $6,200,000,000 MarketAxess Bridge Facility and
+      the $2,000,000,000 Term Loan Facility, which are separate facilities.
+
+  - id: ice_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-20
+    note: >
+      'with respect to each Fourteenth Amendment Consenting Lender, the later of
+      (i) the Final Maturity Date and (ii) if the Final Maturity Date is
+      extended for such Lender pursuant to Section 2.23'
+
+      Maturity Date, then Final Maturity Date ('means the fifth anniversary of
+      the Fourteenth Amendment Effective Date'), then '" Fourteenth Amendment
+      Effective Date " means August 20, 2026.' August 20, 2031 is a
+      Wednesday, so the preceding-Business-Day roll does not move it. The near
+      miss is the Original Maturity Date, the fifth anniversary of the May 31,
+      2024 Thirteenth Amendment Effective Date (2029-05-31), which still binds
+      the one Fourteenth Amendment Non-Consenting Lender, UBS AG, Stamford
+      Branch, with $230,000,000; every other commitment is consenting, so by
+      the largest-by-commitment rule the consenting date is labelled, and the
+      Final Termination Date, Letter of Credit Maturity Date and Swingline
+      Maturity Date all key off it. Section 2.23 extensions need lender
+      consent and are conditional.
+
+  - id: ice_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if Adjusted Term SOFR as so determined shall ever be less
+      than the Floor, then Adjusted Term SOFR shall be deemed to be the Floor'
+
+      And the Floor is zero: 'Floor " means a rate of interest equal to 0%'.
+      One floor for every lender; EURIBOR and TIBOR are floored at the same
+      Floor. The 0.10% Term SOFR Adjustment is a spread added to Term SOFR for
+      the Non-Consenting Lender only, not a floor.
+
+  - id: ice_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2014-04-03
+    note: >
+      'THIS CREDIT AGREEMENT, dated as of the 3rd day of April, 2014, is made
+      among'
+
+      The conformed agreement keeps its own Closing Date as an explicit date:
+      '" Closing Date " means April 3, 2014.' The Fourteenth Amendment
+      Effective Date (August 20, 2026) and the Thirteenth Amendment Effective
+      Date (May 31, 2024) are amendment dates, not the closing of the
+      agreement, and are the near misses for a reader of the newest document.

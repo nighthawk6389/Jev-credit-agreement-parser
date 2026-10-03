@@ -1,0 +1,163 @@
+# Tier 2 assertions: Cencora, Inc. / JPMorgan Chase Bank, N.A., Amended and
+# Restated Credit Agreement dated as of July 31, 2026, filed 2026-08-05 by
+# Cencora, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An amended and restated multicurrency revolving
+# credit agreement, the full clean text, replacing an Existing Credit Agreement
+# the text does not date. Two revolving tranches (Tranche One US$355,000,000,
+# Tranche Two US$6,645,000,000, aggregate printed) on one Maturity Date and one
+# ratings grid in basis points, with a facility fee and no unused fee. The
+# Restatement Effective Date is event-defined, so closing_date is not labelled.
+
+document: ig_cencora_2026
+corpus_name: IG_cencora-inc_2026-08-05_0001104659-26-090691_tm2621845d1_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: cen_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "CENCORA, INC."
+    note: >
+      'among CENCORA, INC., a Delaware corporation'
+
+      The preamble, which defines it as the Company; a Borrower means the
+      Company or any Borrowing Subsidiary, so Cencora, Inc. is the borrower
+      named first. The initial Borrowing Subsidiary, Innomar Strategies Inc.
+      (an Ontario corporation), is a co-borrower, not the answer.
+
+  - id: cen_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'the LENDERS from time to time party hereto and JPMORGAN CHASE BANK,
+      N.A., as Administrative Agent'
+
+      The preamble. The definition uses the short name (the Administrative
+      Agent means JPMorgan in its capacity as administrative agent) and
+      JPMorgan is defined as JPMorgan Chase Bank, N.A. Bank of America, N.A.
+      is the Syndication Agent and four banks are Documentation Agents; none
+      is the agent.
+
+  - id: cen_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be construed in accordance with and governed by the laws of the
+      State of New York'
+
+      Section 11.09(a). The Canadian and other non-US borrowers do not change
+      the governing law.
+
+  - id: cen_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$7,000,000,000"
+    note: >
+      'The aggregate amount of the Commitments as of the Restatement Effective
+      Date is US$7,000,000,000.'
+
+      The definition of Commitments, which are the Tranche One and Tranche Two
+      Commitments together. Two revolving tranches, so the total the
+      agreement itself prints is the answer; the tranche definitions state
+      US$355,000,000 for Tranche One and US$6,645,000,000 for Tranche Two
+      (the larger). Rejected: the accordion in Section 2.09, under which 'the
+      aggregate amount of the Commitment Increases pursuant to this paragraph
+      shall not exceed US$1,000,000,000'.
+
+  - id: cen_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-07-31
+    note: >
+      'means, subject to extension pursuant to Section 2.23, July 31, 2031'
+
+      The Maturity Date, one date for both tranches; Section 2.10(a) has each
+      Borrower pay 'the then unpaid principal amount of each Revolving Loan of
+      such Borrower on the Maturity Date'. Section 2.23 allows up to two
+      one-year extensions, each needing the Required Lenders to agree and
+      binding only the Lenders that do; that is conditional, so the date as it
+      stands is labelled. July 31, 2031 is a Thursday, so the
+      preceding-Business-Day proviso does not move it.
+
+  - id: cen_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.100%"
+    note: >
+      'Category 5 | Lower than BBB/Baa2/BBB | 15.0 | 110.0 | 10.0'
+
+      The Applicable Rate grid, five Categories keyed to the S&P, Moody and
+      Fitch Ratings, printed in basis points. The column 'Term
+      Benchmark/RFR/ Swingline Loans Spread (basis points per annum)' runs from
+      69.5 at Category 1 to 110.0 at Category 5, which also applies when no
+      Rating is in effect; 110.0 basis points is 1.100%. Rejected: the 10.0
+      ABR/Canadian Prime Rate spread and the 15.0 facility fee in the same
+      row, and reading 110.0 as a percent.
+
+  - id: cen_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'as such rate is published by the CME Term SOFR Administrator; provided
+      that if such rate as so determined shall be less than zero, such rate
+      shall be deemed to be zero'
+
+      The end of the Term SOFR definition: a zero floor on the benchmark
+      itself. Daily Simple SOFR, the EURIBO and CORRA rates and the NYFRB Rate
+      carry the same proviso, Daily Simple SONIA is the greater of SONIA and
+      zero, and the defined Floor points back to these, so every benchmark
+      floor in the agreement is zero.
+
+  - id: cen_commitment_fee_is_facility_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee, which shall accrue at the Applicable Rate on the daily
+      amount of each Commitment of such Lender, whether used or unused'
+
+      Section 2.12(a). The only commitment-based fee is this facility fee,
+      charged on the whole Commitment whether used or unused, at the Facility
+      Fee Rate column of the grid, 5.5 to 15.0 basis points; the agreement has
+      no commitment fee or unused fee. The near miss the pipeline must not
+      report is 15.0 basis points (0.150%).
+
+  - id: cen_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.25 to 1.00"
+    note: >
+      'The Company will not permit the Leverage Ratio as of the last day of
+      any Test Period to exceed 4.25 to 1.00'
+
+      Section 6.05, the only financial covenant: Total Indebtedness to
+      Consolidated EBITDA. The base level is labelled. Step-up: after a
+      Material Acquisition with at least US$500,000,000 of cash consideration
+      and a written election, 'the maximum permitted Leverage Ratio set forth
+      above shall increase to 4.75 to 1.00' for the quarter of closing and the
+      next three full quarters.

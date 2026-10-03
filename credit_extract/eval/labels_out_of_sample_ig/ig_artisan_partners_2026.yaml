@@ -1,0 +1,178 @@
+# Tier 2 assertions: Artisan Partners Holdings LP / Bank of America, N.A.,
+# Credit Agreement dated as of September 23, 2026, filed 2026-09-25 by
+# Artisan Partners Asset Management Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original (not amended) five-year revolving credit
+# agreement with a letter of credit sublimit, made by the operating
+# partnership Artisan Partners Holdings LP; the filer, Artisan Partners Asset
+# Management Inc., is its general partner and signs for it. It refinances the
+# 2022 Citibank-agented revolver. Unlike most of this set, pricing steps on the
+# Consolidated Leverage Ratio, not on debt ratings. The schedules, including
+# the Schedule 2.01 commitments, are not in the filing.
+
+document: ig_artisan_partners_2026
+corpus_name: IG_artisan-partners-asset-management-inc_2026-09-25_0001517302-26-000124_creditagreement-artisanpar
+source: real
+tier: 2
+
+assertions:
+
+  - id: artisan_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "ARTISAN PARTNERS HOLDINGS LP"
+    note: >
+      'among ARTISAN PARTNERS HOLDINGS LP, a Delaware limited partnership'
+
+      The preamble, which defines the Borrower; the signature block agrees. The
+      EDGAR filer, Artisan Partners Asset Management Inc., is defined as the
+      General Partner of the Borrower and signs on its behalf, so it is the near
+      miss; the guarantor Artisan Partners Limited Partnership is a different
+      entity again.
+
+  - id: artisan_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'and BANK OF AMERICA, N.A., as the Administrative Agent and the L/C Issuer'
+
+      The preamble. The definition uses the short name ('means Bank of America
+      in its capacity as administrative agent under any of the Loan Documents')
+      and Bank of America is defined as Bank of America, N.A. Citibank, N.A. is
+      only the Syndication Agent here, though it was the agent under the
+      Existing Credit Agreement that this facility refinances.
+
+  - id: artisan_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE
+      STATE OF NEW YORK'
+
+      Section 11.14(a). The Borrower and the guarantors are Delaware
+      partnerships and a Delaware limited liability company; Delaware is their
+      place of organization, not the governing law.
+
+  - id: artisan_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$150,000,000"
+    note: >
+      'The Aggregate Commitments on the Closing Date is $150,000,000.'
+
+      The definition of Aggregate Commitments: one revolving tranche of
+      Committed Loans, with a $10,000,000 Letter of Credit Sublimit inside it
+      and no term loan. Schedule 2.01 is not in the filing. Section 2.14 lets
+      the commitments grow, but that is the accordion ceiling, not the
+      commitment: 'after giving effect to any Incremental Commitments Increase,
+      the Aggregate Commitments shall not exceed $225,000,000'.
+
+  - id: artisan_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-09-23
+    note: >
+      'means September 23, 2031; provided , that , if such date is not a
+      Business Day, the Maturity Date shall be the immediately preceding
+      Business Day'
+
+      The Maturity Date, five years after the September 23, 2026 Closing Date.
+      September 23, 2031 is a Tuesday, so the roll in the definition does not
+      move it. The agreement has no extension option; the Availability Period
+      ends at the earliest of the Maturity Date and the termination events.
+
+  - id: artisan_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.000%"
+    note: >
+      '4 | > 2.00:1.00 | 2.00% | 1.00% | 0.275%'
+
+      Pricing Tier 4 of the Applicable Rate grid, whose columns are 'Term SOFR
+      Loans, Daily Floating Term SOFR Loans, and Letter of Credit Fees | Base
+      Rate Loans | Commitment Fee'. The grid steps on the Consolidated Leverage
+      Ratio, not on ratings, from 1.25% (Tier 1, which also applies from
+      closing until the first Compliance Certificate) to 2.00% above
+      2.00:1.00; Tier 4 also applies while a Compliance Certificate is late.
+      The 1.00% in the same row is the Base Rate margin, not this.
+
+  - id: artisan_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if the Term SOFR determined in accordance with clause (a) or (b) of this
+      definition would otherwise be less than zero, the Term SOFR shall be
+      deemed zero for purposes of this Agreement'
+
+      A zero floor on Term SOFR itself; Daily Floating Term SOFR carries the
+      same proviso. The zero floors on the Federal Funds Rate (a Base Rate
+      input) and on any Successor Rate are different provisions with the same
+      number. There is no defined Floor and no positive floor.
+
+  - id: artisan_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.275%"
+    note: >
+      'a commitment fee equal to (i) the Applicable Rate times (ii) the actual
+      daily amount by which the Aggregate Commitments exceed the sum of (A) the
+      Outstanding Amount of Loans and (B) the Outstanding Amount of L/C'
+
+      Section 2.09(a): a fee on the unused amount, at the Commitment Fee column
+      of the Applicable Rate grid, which runs from 0.125% in Tier 1 to 0.275%
+      in Tier 4 (Consolidated Leverage Ratio above 2.00:1.00): '4 | > 2.00:1.00
+      | 2.00% | 1.00% | 0.275%'. There is no facility fee; the Fee Letter fees
+      are paid to the Administrative Agent for its own account.
+
+  - id: artisan_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.00 to 1.00"
+    note: >
+      'The Borrower will not permit the Consolidated Leverage Ratio, as of the
+      last day of any fiscal quarter of the Borrower, to be greater than
+      3.00:1.00'
+
+      Section 7.09(a), written 3.00:1.00: Consolidated Total Indebtedness to
+      Consolidated EBITDA. At the election of the Borrower it steps up to
+      3.50:1.00 for the four fiscal quarters after a Qualified Acquisition (a
+      Leverage Increase Period, no more than two of them), so the base level is
+      labelled. Section 7.09(b) adds a minimum Consolidated Interest Coverage
+      Ratio of 4.00:1.00, which is the second covenant, not the leverage level.
+
+  - id: artisan_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-09-23
+    note: >
+      '" Closing Date " means September 23, 2026.'
+
+      An explicit date for the effectiveness of this agreement (the Section
+      4.01 conditions are the conditions to effectiveness), and the same as the
+      agreement date: 'is entered into as of September 23, 2026'. The Fee
+      Letter (August 17, 2026) and the Existing Credit Agreement (August 16,
+      2022) carry other dates.

@@ -1,0 +1,178 @@
+# Tier 2 assertions: Apple Hospitality REIT, Inc. / Bank of America, N.A.,
+# Fourth Amended and Restated Credit Agreement dated as of July 23, 2026, filed
+# 2026-07-28 by Apple Hospitality REIT, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An executed fourth amendment and restatement (the
+# third, of July 25, 2022, had one First Amendment of March 18, 2026) with
+# three facilities: a $700,000,000 revolver, a $275,000,000 Term A-1 loan and a
+# $300,000,000 Term A-2 loan. Not yet ratings-priced: a leverage grid applies
+# until the Borrower obtains an investment grade rating and irrevocably elects
+# the ratings grid, which also swaps the unused fee for a facility fee. The
+# text stops at the signature page heading, so Schedule 2.01 and the
+# signatures are not in it; the Restatement Effective Date is defined by the
+# Section 4.01 conditions, so no closing date is labelled.
+
+document: ig_apple_hospitality_2026
+corpus_name: IG_apple-hospitality-reit-inc_2026-07-28_0001193125-26-321027_aple-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: aple_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "APPLE HOSPITALITY REIT, INC."
+    note: >
+      'is entered into as of July 23, 2026, among APPLE HOSPITALITY REIT,
+      INC., a Virginia corporation'
+
+      The preamble defines it as Apple Hospitality REIT, and the cover names it
+      as the Borrower. Borrower 'means, (a) prior to the Assumption Date, Apple
+      Hospitality REIT and (b) on and after the Assumption Date, the OpCo'; the
+      OpCo is an operating partnership that may be formed in a future UPREIT
+      reorganization (Section 11.24) and is not named, so the Borrower today is
+      the REIT.
+
+  - id: aple_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'each L/C Issuer from time to time party hereto, and BANK OF AMERICA,
+      N.A., as Administrative Agent'
+
+      The preamble. The definition uses the short name ('means Bank of America
+      in its capacity as administrative agent under any of the Loan
+      Documents'). Wells Fargo, KeyBank and U.S. Bank are co-syndication
+      agents, not the agent.
+
+  - id: aple_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of NEW yORK'
+
+      Section 11.14(a), covering this Agreement and the other Loan Documents;
+      the odd capitalization is in the text.
+
+  - id: aple_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$700,000,000"
+    note: >
+      'On the Restatement Effective Date, the Revolving Credit Facility is
+      $700,000,000.'
+
+      The Revolving Credit Facility definition, the aggregate of the Revolving
+      Credit Commitments; Schedule 2.01 is not in the text. The other two
+      facilities are term loans and not revolvers: 'The Term A-1 Facility on
+      the Restatement Effective Date is $275,000,000' and the Term A-2 Facility
+      is $300,000,000. The Section 2.15 accordion, which lets all Facilities
+      grow to $1,750,000,000 in aggregate, is a ceiling, not a commitment.
+
+  - id: aple_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-07-24
+    note: >
+      'Initial Revolving Credit Maturity Date " means July 24, 2030.'
+
+      Revolving Credit Maturity Date means the later of this date and any date
+      extended under Section 2.14, which lets the Borrower extend once by a
+      year or twice by six months, each on notice, no Default and an extension
+      fee; those are conditional, so the date as it stands is labelled. July
+      24, 2030 is a Wednesday. The near misses are the term loan maturities,
+      'Term A-1 Maturity Date " means July 24, 2031' and January 23, 2032 for
+      Term A-2.
+
+  - id: aple_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.30%"
+    note: >
+      'Category 8 | ≥ 6.5x | 2.30% | 1.30% | 2.25% | 1.25%'
+
+      The top row of the Leverage-Based Applicable Rate, which applies 'until
+      the Investment Grade Pricing Effective Date'; its columns are the
+      Revolving Credit Facility Daily SOFR and Term SOFR Loans, its Base Rate
+      Loans, then the Term A-1 and Term A-2 Term SOFR and Base Rate Loans. The
+      revolving Term SOFR margin runs from 1.40% to 2.30%; the 2.25% is the
+      term loans. The near miss is the Ratings-Based Applicable Rate, whose
+      revolving top is 1.350% ('< BBB- / Baa3 (or unrated) | 0.300% | 1.350% |
+      0.350% | 1.550% | 0.550%'), which applies only after the Borrower obtains
+      an investment grade rating and irrevocably elects it. The unconditional
+      grid is labelled.
+
+  - id: aple_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than zero, Term SOFR shall be deemed to be zero
+      for purposes of this Agreement (except for the Term A-1 Hedged Portion
+      and the Term A-2 Hedged Portion)'
+
+      The proviso closing the Term SOFR definition. Revolving loans are Term
+      SOFR or Daily SOFR Loans and both benchmarks are floored at zero (the
+      Daily Simple SOFR definition: 'If the rate as so determined would be
+      less than zero, such rate shall be deemed to be zero for purposes of
+      this Agreement'). The carve-out reaches only the swapped portions of the
+      two term loans, which Section 2.19 splits off to carry differing rate
+      floors; it does not touch the revolver.
+
+  - id: aple_unused_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.25%"
+    note: >
+      'prior to the Investment Grade Pricing Effective Date, an unused line
+      fee'
+
+      Section 2.09(a)(i): the Unused Fee is the Applicable Fee Rate times the
+      daily amount by which the Revolving Credit Facility exceeds outstanding
+      revolving loans and L/C Obligations. The Applicable Fee Rate grid is
+      'Revolver Usage | Applicable Fee Rate < 50% | 0.25% ≥ 50% | 0.20%', so
+      the top level is 0.25%. The near miss is the Facility Fee of Section
+      2.09(a)(ii), charged on the whole Revolving Credit Facility only on and
+      after the Investment Grade Pricing Effective Date, at 0.125% to 0.300% of
+      the ratings grid; it is conditional and is a facility fee, not this one.
+
+  - id: aple_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "7.25 to 1.00"
+    note: >
+      'Maximum Consolidated Leverage Ratio. Permit, as of the last day of each
+      fiscal quarter of Apple Hospitality REIT, the Consolidated Leverage Ratio
+      to exceed 7.25 to 1.00.'
+
+      Section 7.11(a); Consolidated Leverage Ratio is Consolidated Total Net
+      Indebtedness to Consolidated EBITDA, with no step. Section 7.11 also caps
+      secured debt at 45% and secured recourse debt at 10% of Consolidated
+      Total Assets, sets a 1.50:1.00 minimum fixed charge coverage and a
+      2.00:1.00 minimum unsecured interest coverage, and caps net unsecured
+      debt at 60% of Unencumbered Asset Value, raised to 65% during a Surge
+      Period after a Material Acquisition. The surge reaches only that
+      unsecured test, so the leverage covenant is labelled at its one level.

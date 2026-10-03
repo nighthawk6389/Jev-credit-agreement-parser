@@ -1,0 +1,158 @@
+# Tier 2 assertions: Franklin Resources, Inc. / Bank of America, N.A., Second
+# Amended and Restated Credit Agreement dated as of July 30, 2026, filed
+# 2026-07-30 by Franklin Resources Inc as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An executed second amendment and restatement (not a
+# short amendment with a conformed copy) of the April 30, 2025 Amended and
+# Restated Credit Agreement: one $1,500,000,000 unsecured revolving facility
+# with no swing line or letters of credit, priced off the S&P, Moody's and
+# Fitch ratings with a separate unused commitment fee, and a single maximum net
+# leverage covenant. Closing Date is defined by the satisfaction of the
+# Section 4.01 conditions, so no closing date is labelled.
+
+document: ig_franklin_resources_2026
+corpus_name: IG_franklin-resources-inc_2026-07-30_0001552781-26-000398_e26317_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ben_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "FRANKLIN RESOURCES, INC."
+    note: >
+      'is entered into as of July 30, 2026, among FRANKLIN RESOURCES, INC., a
+      Delaware corporation'
+
+      The preamble, which defines the Borrower; the only borrower. The EDGAR
+      filer name drops the comma before Inc; the agreement writes it.
+
+  - id: ben_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'and BANK OF AMERICA, N.A., as Administrative Agent'
+
+      The preamble. The definition uses the short name ('means Bank of America
+      in its capacity as administrative agent under any of the Loan
+      Documents'), so the legal name is the preamble one. HSBC Bank USA, N.A.
+      and Wells Fargo Bank, National Association are syndication agents and
+      arrangers, not the agent.
+
+  - id: ben_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of NEW YORK'
+
+      Section 10.14(a), covering this Agreement and the other Loan Documents.
+
+  - id: ben_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,500,000,000"
+    note: >
+      'The Bank of New York Mellon | | $ | 90,000,000.00 | | | | 6.000000000 |
+      % Total | | $ | 1,500,000,000'
+
+      The total line of Schedule 2.01, which the text prints; Aggregate
+      Commitments means the Commitments of all the Lenders, and each Commitment
+      is the amount opposite the Lender on Schedule 2.01. One revolving
+      tranche, no term loan. The near miss is the accordion in Section 2.12(a),
+      'request an increase in the Aggregate Commitments by an amount (for all
+      such requests) not exceeding $500,000,000', which is a ceiling on
+      increases, not a commitment.
+
+  - id: ben_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-07-30
+    note: >
+      'means July 30, 2031; provided, however, that, in each case, if such
+      date is not a Business Day, the Maturity Date shall be the immediately
+      preceding Business Day'
+
+      The Maturity Date definition. July 30, 2031 is a Wednesday, so the
+      preceding-Business-Day roll does not move it, and the agreement has no
+      extension option. The Availability Period ends on the earliest of this
+      date and the termination events.
+
+  - id: ben_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.250%"
+    note: >
+      'Applicable Rate for Term SOFR Loans and Daily Simple SOFR Loans'
+
+      Column header of the five-level ratings grid in the Applicable Rate
+      definition; the lowest level reads '5 | ≤ BBB+ / Baa1 / BBB+ | 0.120% |
+      1.250% | 0.250%', and Level 1 is 0.625%. The top Term SOFR margin is
+      1.250%. The 0.250% in the same row is the Base Rate margin and the 0.120%
+      is the commitment fee; Pricing Level 5 also applies if the Borrower has
+      no rating.
+
+  - id: ben_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than zero, Term SOFR shall be deemed zero for
+      purposes of this Agreement'
+
+      The proviso closing the Term SOFR definition, a zero floor on the
+      benchmark itself. Daily Simple SOFR and the Federal Funds Rate carry the
+      same zero floor; no higher floor appears anywhere.
+
+  - id: ben_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.120%"
+    note: >
+      'equal to the Applicable Rate for the Commitment Fee times the actual
+      daily amount by which the Aggregate Commitments exceed the Outstanding
+      Amount of Committed Loans'
+
+      Section 2.07(a): a fee on unused commitments, read off the Commitment Fee
+      column of the ratings grid, which runs from 0.050% at Level 1 to 0.120%
+      at Level 5. There is no facility fee; Section 2.07(b) covers only the
+      Fee Letter fees of BofA Securities and the Administrative Agent and any
+      fees separately agreed with a Lender, not this one.
+
+  - id: ben_net_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.25 to 1.00"
+    note: >
+      'Permit the Consolidated Net Leverage Ratio as of the end of any period
+      of four fiscal quarters of the Borrower to be greater than 3.25:1.00'
+
+      Section 7.08, the only financial covenant; the same section also writes
+      the base level as 3.25 to 1.00. After an acquisition with consideration
+      over $500,000,000 the Borrower may elect to raise it 'to 3.75 to 1.00,
+      which increase shall be applicable for the fiscal quarter in which such
+      acquisition or series of acquisitions is consummated and the three (3)
+      consecutive fiscal quarters thereafter', at most twice. The base level
+      is labelled.

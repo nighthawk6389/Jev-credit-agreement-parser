@@ -277,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
     from .families import load_families
 
     labelled: list[str] = []
-    for directory in ("labels", "labels_out_of_sample"):
+    for directory in ("labels", "labels_out_of_sample", "labels_out_of_sample_ig"):
         path = Path(__file__).parent / directory
         if not path.exists():
             continue

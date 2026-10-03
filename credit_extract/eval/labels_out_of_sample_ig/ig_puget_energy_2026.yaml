@@ -1,0 +1,167 @@
+# Tier 2 assertions: Puget Sound Energy, Inc. / Mizuho Bank, Ltd., Second
+# Amended and Restated Credit Agreement dated as of May 18, 2026, filed
+# 2026-07-29 by Puget Energy Inc /WA and Puget Sound Energy Inc as
+# Exhibit 10.2.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An executed second amendment and restatement of the
+# May 16, 2022 Amended and Restated Credit Agreement, filed about ten weeks
+# after signing; no later amendment is in the text. One $1,000,000,000
+# revolving facility for the utility (swingline loans and letters of credit
+# are drawn under the same Commitments), priced off its senior debt ratings,
+# with a debt-to-capitalization covenant. The co-filer Puget Energy, Inc. is the Parent, not the Borrower.
+# The Effective Date is defined by the Section 4.01 conditions, so no closing
+# date is labelled.
+
+document: ig_puget_energy_2026
+corpus_name: IG_puget-energy-inc-wa_2026-07-29_0001085392-26-000016_exhibit102-pugetsoundenerg
+source: real
+tier: 2
+
+assertions:
+
+  - id: pse_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "PUGET SOUND ENERGY, INC."
+    note: >
+      'dated as of May 18, 2026 among PUGET SOUND ENERGY, INC., the LENDERS
+      from time to time party hereto, MIZUHO BANK, LTD., as Administrative
+      Agent'
+
+      The preamble; the definition agrees ('means Puget Sound Energy, Inc., a
+      Washington corporation'). The near miss is the EDGAR co-filer and parent
+      ('Parent " means Puget Energy, Inc., a Washington corporation'), which
+      is not a party as borrower.
+
+  - id: pse_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "MIZUHO BANK, LTD."
+    note: >
+      'means Mizuho Bank, Ltd. (including its branches and affiliates), in its
+      capacity as administrative agent for the Lenders hereunder'
+
+      The Administrative Agent definition, matching the preamble (MIZUHO BANK,
+      LTD., as Administrative Agent). The cover page heading drops the comma
+      (MIZUHO BANK LTD.); the defined name is labelled. JPMorgan Chase Bank,
+      N.A. is Syndication Agent, not the agent.
+
+  - id: pse_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by
+      the law of the State of New York.'
+
+      Section 9.09(a). The Exhibit M subordination terms are also New York.
+
+  - id: pse_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'As of the Effective Date, the Aggregate Commitment is $1,000,000,000.'
+
+      The Aggregate Commitment definition; Schedule 2.01 prints the same total
+      ('Aggregate Commitments | $1,000,000,000'). One revolving facility, with
+      swingline and letter of credit exposure inside the Commitments. The near
+      miss is the Section 2.20 Expansion Option, under which increases and
+      Incremental Term Loans together may not exceed $600,000,000; that is a
+      ceiling on increases, not a commitment.
+
+  - id: pse_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-05-16
+    note: >
+      'means May 18, 2031, as such date may be extended in accordance with
+      Section 2.22; provided that, in each case, if such date is not a
+      Business Day, the Maturity Date shall be the next preceding Business
+      Day'
+
+      May 18, 2031 is a Sunday, and the definition itself rolls it back to the
+      preceding Business Day, Friday May 16, 2031 (Business Day is any
+      non-weekend day banks are open in New York City). The stated date
+      2031-05-18 is the near miss. The Section 2.22 one-year extensions need
+      each Lender to agree in its sole discretion, so the date as it stands
+      is labelled.
+
+  - id: pse_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.750%"
+    note: >
+      'Level V | 0.275% | 1.750% | 1.750% | 0.750%'
+
+      The bottom row of the five-level ratings grid in the Applicable Rate
+      definition, whose columns are Commitment Fee Rate, RFR Spread for RFR
+      Loans, 'Term Benchmark Spread for Term Benchmark Loans' and ABR Spread.
+      Term Benchmark Loans bear interest at the Term SOFR Rate, and their
+      spread runs from 1.00% at Level I to 1.750% at Level V. The 0.750% is the
+      ABR spread and the 0.275% the commitment fee; Level V also applies while
+      an Event of Default continues or the Borrower is unrated.
+
+  - id: pse_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'For the avoidance of doubt the initial Floor for each of the Term SOFR
+      Rate or Daily Simple SOFR shall be 0.0%.'
+
+      The Floor definition. The Term SOFR Rate definition applies it ('if the
+      Term SOFR Rate as so determined would be less than the Floor, such rate
+      shall be deemed to be equal to the Floor'), so the benchmark floor is
+      zero. The zero floors on the NYFRB Rate and the Federal Funds Effective
+      Rate feed the Alternate Base Rate and are not this field.
+
+  - id: pse_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.275%"
+    note: >
+      'on the average daily amount of the Available Revolving Commitment of
+      such Lender'
+
+      Section 2.12(a), a commitment fee at the Commitment Fee Rate of the
+      ratings grid, from 0.10% at Level I to 0.275% at Level V. Available
+      Revolving Commitment 'means, at any time with respect to any Lender, the
+      Commitment of such Lender then in effect minus the Revolving Credit
+      Exposure of such Lender at such time', so the fee is on unused
+      commitments even though the Applicable Rate definition calls it 'the
+      facility fees payable hereunder'. The 0.20% is the letter of credit
+      fronting fee, not this.
+
+  - id: pse_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "0.65 to 1.00"
+    note: >
+      'Maximum Leverage Ratio. Permit the Leverage Ratio to be greater than
+      0.65 to 1.00'
+
+      Section 6.09(a), the only financial covenant, tested at any time with no
+      step or acquisition holiday. Leverage Ratio is 'the ratio of (a) Total
+      Funded Indebtedness at such date, to (b) Total Capitalization at such
+      date', a debt-to-capitalization cap written as a ratio rather than as
+      65%.

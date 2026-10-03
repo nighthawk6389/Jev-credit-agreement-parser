@@ -1,0 +1,173 @@
+# Tier 2 assertions: TERADYNE, INC. / PNC BANK, NATIONAL ASSOCIATION, Credit
+# Agreement dated as of August 7, 2026, filed 2026-08-10 by Teradyne, Inc. as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original (not amended) five-year $1,000,000,000
+# revolver, secured and guaranteed until an Investment Grade Rating Trigger
+# Date releases the collateral and guarantees. Pricing is not a pure ratings
+# grid: Schedule I has a Leverage-Based Pricing Grid for all times outside an
+# Investment Grade Suspension Period and a Leverage and Debt Ratings-Based
+# Pricing Grid (the more favorable of leverage or rating) during one. Schedule
+# II (commitments) is listed but not printed. Not labelled: the closing date
+# (Closing Date is defined by satisfaction of conditions).
+
+document: ig_teradyne_2026
+corpus_name: IG_teradyne-inc_2026-08-10_0001193125-26-342367_ter-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ter_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "TERADYNE, INC."
+    note: >
+      'by and among TERADYNE, INC., a Massachusetts corporation (the "
+      Borrower "), the several banks and other financial institutions and
+      lenders from time to time party hereto'
+
+      The preamble, which defines the Borrower; a single borrower. The
+      Guarantors under the Collateral and Guaranty Agreement are not
+      borrowers.
+
+  - id: ter_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "PNC BANK, NATIONAL ASSOCIATION"
+    note: >
+      'and PNC BANK, NATIONAL ASSOCIATION (" PNC "), as Administrative Agent
+      (as hereinafter defined) for the Lenders'
+
+      The preamble. The definition uses the short name ('means PNC, in its
+      capacity as administrative agent under any of the Loan Documents'), and
+      PNC is defined here as PNC BANK, NATIONAL ASSOCIATION, so the legal name
+      is the preamble one. PNC Capital Markets LLC is a Joint Lead Arranger,
+      the near miss.
+
+  - id: ter_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be construed in accordance with and be governed by the law
+      (without giving effect to the conflict of law principles thereof) of the
+      State of New York'
+
+      Section 10.5(a). Massachusetts is where the Borrower is incorporated, and
+      the Pittsburgh, Pennsylvania time in the Term SOFR fallback is an
+      administrative cut-off; neither is the governing law.
+
+  - id: ter_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'On the Closing Date, the Aggregate Revolving Commitment Amount is
+      $1,000,000,000.'
+
+      The Aggregate Revolving Commitment Amount definition; one revolving
+      facility, with per-Lender amounts on Schedule II, which is not printed.
+      Section 2.23 Incremental Facilities (revolving increases or term loans)
+      are the accordion, and the $100,000,000 LC Commitment Amount and
+      Swingline Commitment are sublimits, not the commitment.
+
+  - id: ter_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-07
+    note: >
+      'means the earliest of (i) August 7, 2031, (ii) the date on which the
+      Aggregate Revolving Commitments are terminated pursuant to Section 2.8'
+
+      The earliest of a date and termination or acceleration events, so the
+      date. No Business Day roll in the definition, and August 7, 2031 is a
+      Thursday. Section 2.27 Extension Offers extend only Lenders who accept,
+      so they are conditional and the stated date is labelled.
+
+  - id: ter_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.75%"
+    note: >
+      'I | Greater than 3.00:1.00 | 1.75% per annum | 0.75% per annum | 0.225%
+      per annum | 1.75% per annum'
+
+      Pricing Level I of the Leverage-Based Pricing Grid in Schedule I, in the
+      column Applicable Margin for SOFR Loans (SOFR Loans bear interest based
+      on Term SOFR). That grid governs outside an Investment Grade Suspension
+      Period ('(b) at all other times, by reference to the Consolidated
+      Leverage Ratio in effect on such date as set forth in the Leverage-Based
+      Pricing Grid on Schedule I'), and 1.75% is the highest margin over Term
+      SOFR the pricing sets. Near misses: the Leverage and Debt
+      Ratings-Based Pricing Grid used during a suspension period tops out at
+      1.50% ('I | Greater than 3.00:1.00 | BB+/Ba1 or worse | 1.50% per
+      annum'); 0.75% is the Base Rate margin; Pricing Level IV is only the
+      initial level after closing.
+
+  - id: ter_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'If Term SOFR, determined as provided above, would be less than the
+      Floor, then Term SOFR shall be deemed to be the Floor.'
+
+      The Term SOFR definition, with the Floor defined as 'a rate of interest
+      equal to zero percent (0.00%)', so a zero floor on the benchmark itself.
+      Daily Simple SOFR and any Benchmark Replacement use the same Floor.
+
+  - id: ter_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.225%"
+    note: >
+      'a nonrefundable commitment fee (the " Commitment Fee ") in Dollars,
+      equal to the Applicable Percentage per annum (determined daily in
+      accordance with Schedule I ) multiplied by the difference for such day
+      between the amount of (x) the Revolving Commitments minus (y) the
+      Revolving Credit Exposure'
+
+      Section 2.14(b), a fee on unused commitments. The top Applicable
+      Percentage for Commitment Fee is 0.225% per annum, at Pricing Level I of
+      the Leverage-Based Pricing Grid, which applies outside an Investment
+      Grade Suspension Period; the ratings-based grid tops out at 0.20%, the
+      near miss. Section 2.14(a) agent fees are separately agreed and are not
+      this fee.
+
+  - id: ter_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50:1.00"
+    note: >
+      'permit, on the last day of any fiscal quarter, the Consolidated Leverage
+      Ratio for the four consecutive fiscal quarters of the Borrower ending
+      with such fiscal quarter end date to exceed 3.50:1.00'
+
+      Section 6.1(a): a maximum Consolidated Leverage Ratio (Consolidated Total
+      Debt to Consolidated EBITDA), written with a colon, tested from the
+      quarter ending around September 30, 2026. After a Material Acquisition
+      (over $200,000,000) the cap is 4.00:1.00 for the Modified Leverage Period
+      (that quarter and the three following); the base level is labelled.
+      Section 6.2 also sets a minimum Interest Coverage Ratio of 2.50:1.00, but
+      only outside an Investment Grade Suspension Period; the leverage cap
+      always applies and is the one labelled.

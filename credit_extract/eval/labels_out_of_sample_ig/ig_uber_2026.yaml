@@ -1,0 +1,127 @@
+# Tier 2 assertions: Uber Technologies, Inc. / Bank of America, N.A., Credit
+# Agreement dated as of August 6, 2026, filed 2026-08-07 by Uber Technologies,
+# Inc as Exhibit 10.3.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original multicurrency revolving credit agreement
+# with a $4,000,000,000 letter of credit sublimit and a $3,000,000,000
+# accordion; no swingline or term loan. Schedule 2.01A is not printed and the
+# text states no aggregate commitment, so revolver.commitment is not labelled.
+# The Maturity Date is five years after the Closing Date, which is
+# event-defined and never dated, so maturity_date and closing_date are not
+# labelled.
+
+document: ig_uber_2026
+corpus_name: IG_uber-technologies-inc_2026-08-07_0001552781-26-000414_e26328_ex10-3
+source: real
+tier: 2
+
+assertions:
+
+  - id: uber_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "UBER TECHNOLOGIES, INC."
+    note: >
+      'is entered into as of August 6, 2026, among UBER TECHNOLOGIES, INC., a
+      Delaware corporation'
+
+      The preamble, which defines it as the Borrower; the only borrower. The
+      EDGAR filer name drops the comma and the period (Uber Technologies,
+      Inc); the agreement writes both.
+
+  - id: uber_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'and BANK OF AMERICA, N.A., as Administrative Agent and an L/C Issuer'
+
+      The preamble. The definition uses the short name (the Administrative
+      Agent means Bank of America in its capacity as administrative agent),
+      so the legal name is the preamble one. BofA Securities, Inc. is a Joint
+      Lead Arranger, a different entity and role, and the four Syndication
+      Agents are not the agent.
+
+  - id: uber_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of NEW YORK'
+
+      Section 10.14(a), covering this Agreement and the other Loan Documents.
+
+  - id: uber_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.25%"
+    note: >
+      'Commitment Fee | Loans (other than Base Rate Loans) and Letter of Credit
+      Fees | Base Rate Loans'
+
+      The column heads of the Applicable Rate grid, six Pricing Levels keyed
+      to the S&P, Moody and Fitch Debt Ratings. The margin for Term SOFR Loans
+      (and Alternative Currency Loans) runs from 0.55% at Level 1 to 1.25% at
+      Level 6, the row printed as '≤ BBB-/Baa3/BBB- | 0.15% | 1.25% | 0.25%'.
+      Rejected: the 0.25% Base Rate margin and the 0.15% commitment fee in the
+      same row.
+
+  - id: uber_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'and (y) in no event shall Term SOFR be less than 0.00%'
+
+      The closing proviso of the Term SOFR definition; it says in no event, so
+      it bounds Term SOFR wherever the rate is used, for Term SOFR Loans and
+      inside the Base Rate. The alternative currency rates and any Successor
+      Rate are separately deemed zero when negative, the same number. A zero
+      floor on the benchmark itself.
+
+  - id: uber_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.15%"
+    note: >
+      'a commitment fee in Dollars equal to the Applicable Rate times the
+      actual daily amount by which the Aggregate Commitments exceed the sum of
+      (i) the Outstanding Amount of Committed Loans and (ii) the Outstanding
+      Amount of L/C Obligations'
+
+      Section 2.09(a): a fee on unused commitments, priced off the Commitment
+      Fee column of the ratings grid, from 0.05% at Pricing Level 1 to 0.15%
+      at Pricing Level 6. There is no facility fee. The other fees in Section
+      2.09(b) are the arranger and agency fees in the Fee Letter and fees
+      separately agreed with the Lenders, which carry no rate here.
+
+  - id: uber_interest_coverage
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.00 to 1.00"
+    note: >
+      'of (x) Consolidated Adjusted EBITDA to (y) Consolidated Interest
+      Expense, for any Measurement Period ended on such date, to be less than
+      3.00:1.00'
+
+      Section 7.05, the only financial covenant: a minimum interest coverage
+      ratio tested at each fiscal quarter end after the Closing Date, written
+      3.00:1.00, with no step. There is no leverage covenant; the greater of
+      $10,000,000,000 and 15.0% of Consolidated Total Assets in Article VII
+      caps priority debt, not a ratio covenant.

@@ -29,7 +29,8 @@ def label_paths() -> list[Path]:
     """Every label file, in-sample and out of sample: one contract for both."""
     return sorted(
         path
-        for directory in (EVAL / "labels", EVAL / "labels_out_of_sample")
+        for directory in (EVAL / "labels", EVAL / "labels_out_of_sample",
+                          EVAL / "labels_out_of_sample_ig")
         for path in directory.glob("*.yaml")
     )
 
@@ -57,12 +58,13 @@ def test_a_document_cannot_be_quietly_moved_to_the_fit_side(tmp_path):
 
 
 def test_an_out_of_sample_document_is_its_own_side():
-    """Twenty BDC agreements harvested after the split was frozen, labelled
-    before the pipeline ran on them. They are not in the harvest the
-    derivation reads, so they are named instead, and they are scored on a row
-    of their own rather than counted as fit or holdout."""
+    """Twenty BDC agreements, and later twenty investment-grade credit
+    agreements, harvested after the split was frozen and labelled before the
+    pipeline ran on them. They are not in the harvest the derivation reads, so
+    they are named instead, and they are scored on a row of their own rather
+    than counted as fit or holdout."""
     split = split_mod.load_split()
-    assert len(split.out_of_sample) == 20
+    assert len(split.out_of_sample) == 40
     for document in split.out_of_sample:
         assert split.side_of(document) == "out_of_sample"
         assert document not in split.assignment

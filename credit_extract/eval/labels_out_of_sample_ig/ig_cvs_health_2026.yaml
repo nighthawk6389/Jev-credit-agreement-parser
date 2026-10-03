@@ -1,0 +1,164 @@
+# Tier 2 assertions: CVS Health Corporation / Bank of America, N.A., Fifth
+# Amendment to Five Year Credit Agreement dated as of May 22, 2026, with the
+# Five Year Credit Agreement (dated as of May 11, 2021) restated as Annex A,
+# filed 2026-08-05 by CVS Health Corp as Exhibit 10.2.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. A short amendment that amends and restates the whole
+# agreement (not its Exhibits) as Annex A; every label is read from that clean
+# conformed Annex A. One revolving facility with swingline, letter of credit
+# and competitive bid loans, on a six-level ratings grid with a facility fee,
+# not an unused fee. Exhibit A (commitments) is not printed. The Effective
+# Date is event-defined, so closing_date is not labelled.
+
+document: ig_cvs_health_2026
+corpus_name: IG_cvs-health-corp_2026-08-05_0000064803-26-000098_a06302026ex102
+source: real
+tier: 2
+
+assertions:
+
+  - id: cvs_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "CVS HEALTH CORPORATION"
+    note: >
+      'dated as of May 11, 2021, by and among CVS HEALTH CORPORATION, a
+      Delaware corporation'
+
+      The preamble of the conformed agreement in Annex A, which defines the
+      Borrower; the only borrower. The amendment preamble writes the same name
+      in title case. The EDGAR filer name abbreviates Corporation to Corp.
+
+  - id: cvs_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'and BANK OF AMERICA, N.A., as administrative agent for the Lenders'
+
+      The conformed preamble; the Fifth Amendment is also entered into with
+      Bank of America, N.A., as Administrative Agent. BofA Securities, Inc. is
+      a Joint Lead Arranger, a different entity and role. Barclays and JPMorgan
+      are Co-Syndication Agents and Citibank, Goldman Sachs and Wells Fargo are
+      Co-Documentation Agents, none of them the agent.
+
+  - id: cvs_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'The Loan Documents and the rights and obligations of the parties thereto
+      shall be governed by, and construed and interpreted in accordance with,
+      the laws of the State of New York.'
+
+      Section 11.11 of the conformed agreement. The Fifth Amendment carries
+      its own New York governing law clause in Section 4(d).
+
+  - id: cvs_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$2,500,000,000"
+    note: >
+      'The Aggregate Commitment Amount on the Fifth Amendment Effective Date is
+      $2,500,000,000.'
+
+      The conformed definition of Aggregate Commitment Amount, so the size as
+      amended. Exhibit A, which lists each Commitment Amount, is not printed.
+      Rejected: the accordion in Section 2.6(d), whose increases after the
+      Fifth Amendment Effective Date 'shall not exceed $500,000,000'; the
+      $100,000,000 Swing Line Commitment and the $250,000,000 Aggregate Letter
+      of Credit Commitment, which are sublimits, not separate tranches.
+
+  - id: cvs_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-05-22
+    note: >
+      'the earlier of (i) May 22, 2031 (subject to extension as provided in
+      Section 2.12 ) and (ii) the date on which the Loans shall become due and
+      payable'
+
+      The conformed Commitment Termination Date; Section 2.1(b) makes the
+      revolving loans 'due and payable on the Commitment Termination Date'.
+      The earlier-of form gives the date. The two one-year extensions in
+      Section 2.12 apply only to Lenders that agree, in their sole discretion,
+      and only if conditions are met, so the date as it stands is labelled.
+      The amendment signature pages call this the 2031 Facility. May 22, 2031
+      is a Thursday.
+
+  - id: cvs_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.275%"
+    note: >
+      'Pricing Level VI | 0.275% | 1.275% | 0.225% | 1.275% | 0.6375%'
+
+      The Applicable Margin grid, whose columns are ABR Advances, Term SOFR
+      Advances/Swing Line Loans, Facility Fee and the two Letter of Credit
+      Participation Fees. The Term SOFR margin runs from 0.700% at Pricing
+      Level I to 1.275% at Pricing Level VI, the lowest rating level, which
+      applies when none of Pricing Levels I to V does. Rejected: the
+      0.275% ABR margin, the 0.225% facility fee and the standby letter of
+      credit fee, which repeats 1.275% in its own column.
+
+  - id: cvs_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'that if Term SOFR determined pursuant to the above would be less than
+      zero, Term SOFR shall be deemed zero for purposes of this Agreement and
+      the other Loan Documents'
+
+      The last proviso of the Term SOFR definition: a zero floor on the
+      benchmark itself. Not a floor on the Alternate Base Rate.
+
+  - id: cvs_commitment_fee_is_facility_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'at a rate per annum equal to the Applicable Margin of (a) prior to the
+      Commitment Termination Date or such earlier date upon which all of the
+      Commitments shall have been terminated in accordance with Section 2.6 ,
+      the Commitment Amount of such Lender (whether used or unused)'
+
+      Section 3.11. The only commitment-based fee is this Facility Fee,
+      charged on the whole Commitment Amount whether used or unused, from
+      0.050% at Pricing Level I to 0.225% at Pricing Level VI; the agreement
+      has no commitment fee or unused fee. The near miss the pipeline must
+      not report is 0.225%.
+
+  - id: cvs_debt_to_cap_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "0.60 to 1.00"
+    note: >
+      'Permit its ratio of Consolidated Indebtedness to Total Capitalization at
+      the end of any fiscal quarter to exceed 0.60:1.00'
+
+      Section 8.9, the only financial covenant: a maximum debt to
+      capitalization ratio, written 0.60:1.00. The base level is labelled.
+      Step-up: on a Material Acquisition and a written election (allowed
+      twice), the maximum 'shall be increased by 0.05:1.00' (to 0.65:1.00)
+      for the quarter of closing and the next three quarters, and Acquisition
+      Debt is excluded between signing and closing.

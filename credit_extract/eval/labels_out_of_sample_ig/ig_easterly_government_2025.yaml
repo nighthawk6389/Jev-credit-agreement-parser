@@ -1,0 +1,210 @@
+# Tier 2 assertions: Easterly Government Properties LP / Citibank, N.A.,
+# Second Amended and Restated Credit Agreement dated as of July 23, 2021, as
+# amended through the Fifth Amendment dated as of August 21, 2025, filed
+# 2025-10-27 by Easterly Government Properties, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. The Fifth Amendment with a conformed copy of the
+# whole agreement (Annex A, a blackline with struck text removed); labels are
+# read from the conformed text, which the normalized file repeats three times.
+# As amended this is NOT a revolver: Advances cannot be reborrowed and the
+# borrower's revolver is a separate 2024 agreement, so the revolver fields are
+# not_applicable_to_archetype. Only the table of contents still says Revolving.
+
+document: ig_easterly_government_2025
+corpus_name: IG_easterly-government-properties-inc_2025-10-27_0001193125-25-251664_dea-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: dea_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "EASTERLY GOVERNMENT PROPERTIES LP"
+    note: >
+      'SECOND AMENDED AND RESTATED CREDIT AGREEMENT dated as of July 23, 2021
+      (this "Agreement") among EASTERLY GOVERNMENT PROPERTIES LP, a Delaware
+      limited partnership'
+
+      The conformed preamble, which defines this entity as the Borrower; the
+      Fifth Amendment preamble says the same. Easterly Government Properties,
+      Inc., the filer, is the Parent and a Guarantor, not the Borrower: the
+      near miss.
+
+  - id: dea_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "CITIBANK, N.A."
+    note: >
+      'and CITIBANK, N.A. ("Citibank"), as administrative agent (together with
+      any successor administrative agent appointed pursuant to Section 8.06'
+
+      The conformed preamble; the Fifth Amendment and the cover name the same
+      bank. Wells Fargo Bank, N.A., PNC, Truist and U.S. Bank are
+      co-syndication agents and Raymond James Bank is documentation agent.
+
+  - id: dea_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the laws of the
+      State of New York'
+
+      Section 9.17 of the conformed agreement by its table of contents and
+      cross-references (lettered S in the normalized body, whose
+      auto-lettering drifts ahead of the section numbers late in Article IX),
+      covering the Agreement and the other Loan Documents. The Fifth Amendment
+      has its own clause to the same effect ('THIS AMENDMENT SHALL BE GOVERNED
+      BY, AND SHALL BE CONSTRUED AND ENFORCED IN ACCORDANCE WITH THE LAWS OF
+      THE STATE OF NEW YORK').
+
+  - id: dea_no_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_status
+    target: revolver.commitment
+    expect: not_applicable_to_archetype
+    note: >
+      'The Borrower shall not have the right to reborrow any portion of the
+      Advances that is repaid or prepaid.'
+
+      Section 2.01 as amended: Lenders make Advances up to their unfunded
+      Commitments, and Section 2.04 has them repaid in full on the Maturity
+      Date ('the aggregate outstanding principal amount of the Advances then
+      outstanding'). The letter of credit section is intentionally omitted,
+      the ratings grid names the loans ('Applicable Margin for Term Facility
+      Base Rate Advances'), and the revolver is another agreement ('Existing
+      Revolving Credit Agreement" means that certain Credit Agreement dated as
+      of June 3, 2024'). So there is no revolving commitment to report,
+      because this is a term facility, not a revolver that happens to be
+      silent. The near miss is its size: the conformed recital says the Fifth
+      Amendment raised the Commitments ('increase the aggregate amount of the
+      Commitments from $150,000,000 to $200,000,000'), and Section 2.17 caps
+      increases at $300,000,000; both are term commitments. Schedule I, which
+      allocates them, is not in the text.
+
+  - id: dea_no_revolver_maturity
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_status
+    target: revolver.maturity_date
+    expect: not_applicable_to_archetype
+    note: >
+      'Maturity Date" means the earliest to occur of (i) August 21, 2028, as
+      such date may be extended pursuant to Section 2.16'
+
+      That is the maturity of the term facility (2028-08-21, a Monday, with two
+      twelve-month extensions available on request against a 12.5 bps fee),
+      not of a revolver. It follows dea_no_revolver_commitment: an agreement
+      with no revolving tranche has no revolver maturity. Kept as a separate
+      assertion because the field is scored on its own, and 2028-08-21 is
+      exactly what a reader who took the Commitments for revolving ones would
+      report.
+
+  - id: dea_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.70%"
+    note: >
+      'V | ≥ 50% but < 55% | 1.50% | 0.50% VI | ≥ 55% | 1.70% | 0.70%'
+
+      The last rows of the Leverage Ratio grid in the Applicable Margin
+      definition, under 'Applicable Margin for Adjusted Term SOFR and Adjusted
+      DSS Advances | Applicable Margin for Base Rate Advances'. This grid is
+      the operative one ('the Applicable Margin shall be at Pricing Level III
+      on the Fifth Amendment Effective Date'), running from 1.20% to 1.70% at
+      Level VI, which also applies while the leverage certificate is late.
+      Clause (b) offers a ratings grid, topping out at 1.60%, only after a
+      one-time irrevocable Ratings Grid Election ('In the event that the
+      Borrower or the Parent achieves an Investment Grade Rating, the Borrower
+      may, upon written notice to the Administrative Agent'), which the text
+      does not record; 1.70% is the higher of the two tops either way. The
+      0.10% Term SOFR Adjustment belongs to the benchmark, not the margin, and
+      the ESG adjustment of up to 0.01% needs an ESG Amendment that the text
+      does not contain. The facility is a term facility (see
+      dea_no_revolver_commitment); the field is deal-level and these are its
+      only Term SOFR loans.
+
+  - id: dea_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'Floor" means, with respect to (a) Adjusted Term SOFR, Adjusted Daily
+      Simple SOFR and the Federal Funds Rate, zero percent (0.00%) per annum and
+      (b) the Base Rate, one percent (1.00%) per annum'
+
+      One definition, two floors. The benchmark floor is zero, applied to
+      Adjusted Term SOFR ('in no event shall Adjusted Term SOFR be less than
+      the Floor') and to Term SOFR itself; the 1.00% in clause (b) is a floor
+      on the Base Rate and is the near miss. Written in words with the figure
+      in parentheses, so the percent is not in doubt.
+
+  - id: dea_no_unused_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'The Borrower shall pay to the Administrative Agent on each Extension
+      Date, for the account of each Lender, a Facility extension fee, in an
+      amount equal to 12.5 bps of each Lender'
+
+      Section 2.08 as amended has three parts: the agency fees in the Fee
+      Letter, this Extension Fee (payable only when the Maturity Date is
+      extended) and a Defaulting Lender clause. There is no commitment, unused
+      or facility fee on the Commitments, funded or unfunded, so the field is
+      null. The 12.5 bps Extension Fee, 0.125%, is the near miss, and the
+      words commitment fee that survive in Section 2.11 are a remnant with no
+      rate attached.
+
+  - id: dea_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "60%"
+    note: >
+      'Maintain at all times a Leverage Ratio of not greater than 60%;
+      provided, however, that the Leverage Ratio may be increased to 65% for
+      the four consecutive fiscal quarters following the fiscal quarter in
+      which a Material Acquisition occurs'
+
+      Section 5.04(a)(i), a maximum ratio of debt to asset value ('the ratio,
+      expressed as a percentage, of (a) Total Debt of the Parent and its
+      Subsidiaries'), measured against Total Asset Value. 60% is the base
+      level; 65% is the Leverage Increase Period after a Material Acquisition,
+      at most twice before the Maturity Date. The other covenants are a 40%
+      Secured Debt Leverage Ratio, a 60% Unsecured Leverage Ratio (also 65%
+      after an acquisition), a 1.50:1.0 Fixed Charge Coverage Ratio floor, a
+      1.75:1.00 Unencumbered Asset Debt Service Coverage Ratio floor and a 95%
+      Dividend Payout Ratio.
+
+  - id: dea_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2021-07-23
+    note: >
+      'Closing Date" means July 23, 2021.'
+
+      The conformed definition, an explicit date, matching the cover (dated as
+      of July 23, 2021) and the Effective Date definition ('the date on which
+      the conditions set forth in Article III shall be satisfied (or waived),
+      which is the date of this Agreement'). The Fifth Amendment Effective
+      Date, August 21, 2025, and the four earlier amendment dates are
+      amendment dates, not the closing: the near miss.

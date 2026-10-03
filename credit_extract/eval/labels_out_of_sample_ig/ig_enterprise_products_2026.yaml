@@ -1,0 +1,166 @@
+# Tier 2 assertions: Enterprise Products Operating LLC / Citibank, N.A.,
+# Revolving Credit Agreement dated as of July 28, 2026, filed 2026-07-30 by
+# Enterprise Products Partners L.P. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original, short-dated $1,000,000,000 revolver
+# maturing March 26, 2027, with no extension option or accordion, beside the
+# borrower's separate Multi-Year Credit Facility (Wells Fargo, agent). Ratings
+# pricing with a facility fee and no unused fee; Schedule 2.01 is printed. The
+# Effective Date is set by notice, so no closing date is labelled.
+
+document: ig_enterprise_products_2026
+corpus_name: IG_enterprise-products-partners-l-p_2026-07-30_0001061219-26-000017_epd-20260730xex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: epd_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "ENTERPRISE PRODUCTS OPERATING LLC"
+    note: >
+      'REVOLVING CREDIT AGREEMENT dated as of July 28, 2026, among ENTERPRISE
+      PRODUCTS OPERATING LLC, a Texas limited liability company'
+
+      The preamble; the definition repeats it ('Borrower" means Enterprise
+      Products Operating LLC, a Texas limited liability company'). Enterprise
+      Products Partners L.P., the filer, is EPD, the parent whose guaranty is
+      a separate EPD Guaranty Agreement, and not the Borrower.
+
+  - id: epd_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "CITIBANK, N.A."
+    note: >
+      'the LENDERS party hereto; CITIBANK, N.A., as Administrative Agent; and
+      the Co-Syndication Agents'
+
+      The preamble, matching the cover and the definition ('means Citibank,
+      N.A., in its capacity as administrative agent for the Lenders
+      hereunder'). Wells Fargo Bank, National Association, the first
+      Co-Syndication Agent here, is administrative agent of the Multi-Year
+      Credit Facility, a different agreement: the near miss.
+
+  - id: epd_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by the
+      law of the State of New York.'
+
+      Section 9.09(a). The Borrower is a Texas limited liability company, which
+      does not change the governing law.
+
+  - id: epd_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'Commitments as of the Effective Date is $1,000,000,000.'
+
+      The end of the Commitment definition (the initial aggregate amount of
+      the Commitments), matching the cover ('$1,000,000,000 Revolving Credit
+      Facility') and the total that Schedule 2.01 prints ('TOTAL |
+      $1,000,000,000.00 | 100%'). One revolving facility with no accordion:
+      Section 2.09 only terminates or reduces Commitments. The Multi-Year
+      Credit Facility is a separate agreement and no part of this figure.
+
+  - id: epd_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2027-03-26
+    note: >
+      '"Maturity Date" means March 26, 2027; provided, however, if such date is
+      not a Business Day, then the Maturity Date shall be the Business Day
+      immediately preceding such date.'
+
+      March 26, 2027 is a Friday, so the roll in the definition does not move
+      it. It is also Good Friday, which is not a weekend day; the general
+      Business Day test asks whether commercial banks in New York City are
+      authorized or required by law to close, and the stricter U.S. Government
+      Securities Business Day test applies only in connection with a SOFR
+      Loan, so the date is labelled as printed. There is no extension or
+      term-out option: about eight months after signing.
+
+  - id: epd_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.125%"
+    note: >
+      'Category 5 < Baa2/BBB | 1.125% | 0.125% | 0.125%'
+
+      The bottom row of the Applicable Rate grid, whose columns are named in
+      the definition ('the applicable rate per annum set forth below under the
+      caption "SOFR Spread", "ABR Spread" or "Facility Fee Rate"'). Category 5
+      is the highest margin: SOFR Spread 1.125%. The two 0.125% figures beside
+      it are the ABR Spread and the Facility Fee Rate, not the margin over
+      Term SOFR. Category 1 (written > A1/A+) is 0.710%; a split rating uses
+      the higher of the two ratings.
+
+  - id: epd_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided, that if Term SOFR as so determined shall ever be less than
+      zero, then Term SOFR shall be deemed to be zero.'
+
+      The proviso closes the Term SOFR definition after both clause (a), for
+      SOFR Loans, and clause (b), for the one-month rate inside the Alternate
+      Base Rate. The Federal Funds Effective Rate and any Benchmark
+      Replacement are separately floored at zero; there is no positive floor
+      anywhere in the pricing.
+
+  - id: epd_no_unused_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee, which shall accrue at the Applicable Rate on the daily
+      amount of the Commitment of such Lender (whether used or unused)'
+
+      Section 2.12(a): the only fee on the Commitments is a facility fee on
+      the whole Commitment, drawn or not, at the Facility Fee Rate (0.040% at
+      Category 1 to 0.125% at Category 5). Section 2.12(b) is Reserved and the
+      agreement has no commitment fee or unused fee, so the field is null and
+      the 0.125% Facility Fee Rate is the near miss the pipeline must not
+      report. Section 2.12(c) leaves the agency fees to a separate agreement.
+
+  - id: epd_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "5.00 to 1.00"
+    note: >
+      'The Borrower shall not permit its Debt Coverage Ratio in each case for
+      the four full fiscal quarters most recently ended to exceed: 5.00 to 1.00
+      as of the last day of any fiscal quarter'
+
+      Section 6.07, the only financial covenant; Debt Coverage Ratio means the
+      ratio of Consolidated Indebtedness to Consolidated EBITDA. 5.00 to 1.00
+      is the base level. Following a Specified Acquisition (one or more
+      acquisitions with an aggregate purchase price of at least $100,000,000
+      in a rolling 12-month period, at the election of the Borrower) the cap
+      steps up ('such ratio shall not exceed 5.50 to 1.00 as of the last day
+      of (i) the fiscal quarter in which the Specified Acquisition occurred')
+      for that quarter and the two that follow.

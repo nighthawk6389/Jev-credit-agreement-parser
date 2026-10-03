@@ -1,0 +1,182 @@
+# Tier 2 assertions: ILLUMINA, INC. / BANK OF AMERICA, N.A., Credit Agreement
+# dated as of August 13, 2026, filed 2026-08-13 by Illumina, Inc. as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original (not amended) five-year unsecured
+# revolver for a single borrower, $1,000,000,000 as of the Effective Date,
+# priced off a five-level ratings grid with a Term SOFR Spread, an ABR Spread
+# and a Facility Fee Rate; there is no unused fee. The commitment schedule is
+# not printed, but the Aggregate Commitment definition states the total. The
+# pricing grid is split by a page-break field in the text, with Level V after
+# it.
+
+document: ig_illumina_2026
+corpus_name: IG_illumina-inc_2026-08-13_0000950157-26-000888_ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: ilmn_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "ILLUMINA, INC."
+    note: >
+      'dated as of August 13, 2026 among ILLUMINA, INC., a Delaware
+      corporation, as the Borrower'
+
+      The preamble. Borrower is defined as the Company, and the Company as
+      'Illumina, Inc., a Delaware corporation'; the agreement has a single
+      borrower.
+
+  - id: ilmn_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'BANK OF AMERICA, N.A., as the Administrative Agent, an Issuing Bank and
+      the Swingline Lender'
+
+      The preamble; the definition agrees ('means Bank of America, N.A.
+      (including its branches and affiliates), in its capacity as
+      administrative agent for the Lenders hereunder'). JPMorgan Chase Bank,
+      N.A. is Syndication Agent and BofA Securities, Inc. a lead arranger, the
+      near misses.
+
+  - id: ilmn_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'THIS AGREEMENT AND THE RIGHTS AND OBLIGATIONS OF THE PARTIES HEREUNDER
+      SHALL BE CONSTRUED AND ENFORCED IN ACCORDANCE WITH AND GOVERNED BY THE
+      LAWS OF THE STATE OF NEW YORK'
+
+      Section 9.09(a). Delaware is the jurisdiction of incorporation of the
+      Borrower, not the governing law.
+
+  - id: ilmn_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'means the aggregate of the Commitments of all of the Lenders, as reduced
+      or increased from time to time pursuant to the terms and conditions
+      hereof. As of the Effective Date, the Aggregate Commitment is
+      $1,000,000,000.'
+
+      The Aggregate Commitment definition; one revolving tranche. Section 2.20
+      (Expansion Option) lets the Company add commitments or Incremental Term
+      Loans of up to $500,000,000 in aggregate, which is the accordion and not
+      the commitment; the $1,000,000,000 cash cap inside the Total Net Leverage
+      Ratio is a netting limit, not the commitment.
+
+  - id: ilmn_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-08-13
+    note: >
+      'means August 13, 2031 subject to extension (in the case of each Lender
+      consenting thereto) as provided in Section 2.21'
+
+      The Maturity Date definition. The date is a Wednesday, so the
+      preceding-Business-Day proviso does not move it. Section 2.21 allows up
+      to three one-year extensions, each only for consenting Lenders, so it is
+      conditional and the stated date is labelled.
+
+  - id: ilmn_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.300%"
+    note: >
+      'Level V | Ba1/BB+/BB+ or lower | 1.300% | 0.300% | 0.200%'
+
+      Level V (the lowest ratings) in the Term SOFR Spread column, which runs
+      from 0.805% at Level I to 1.300%. On the same row 0.300% is the ABR
+      Spread and 0.200% the Facility Fee Rate. Level III (1.025%) is only the
+      initial pricing level, and Level V sits after a page-break field that
+      splits the grid in the text.
+
+  - id: ilmn_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if Term SOFR determined in accordance with either of the
+      foregoing clause (a) or clause (b) of this definition would otherwise be
+      less than zero, Term SOFR shall be deemed zero for purposes of this
+      Agreement'
+
+      A zero floor on Term SOFR itself, covering both the Term SOFR Loan rate
+      and the Term SOFR leg of the Alternate Base Rate; there is no positive
+      floor anywhere in the pricing.
+
+  - id: ilmn_commitment_fee_none
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee, which shall accrue at the applicable Facility Fee Rate
+      (as specified in the definition of "Applicable Rate") on the actual daily
+      amount of the Aggregate Commitment'
+
+      Section 2.12(a): the fee runs on the whole Aggregate Commitment 'during
+      the period from and including the Effective Date to but excluding the
+      date on which the Commitments terminate' and is payable whether or not in
+      use, so it is a facility fee (0.070% to 0.200% across the grid). The
+      agreement has no commitment fee or unused fee; the 0.200% top Facility
+      Fee Rate is the near miss the pipeline must not report.
+
+  - id: ilmn_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      'all calculated for the Company and its Subsidiaries on a consolidated
+      basis, to be greater than 3.50 to 1.00; provided that upon notice by the
+      Company to the Administrative Agent upon the consummation of any
+      Qualified Acquisition (but in any case not more than three times), the
+      Company shall be permitted to increase the maximum Total Net Leverage
+      Ratio to 4.00 to 1.00'
+
+      Section 6.04(a), the only financial covenant: a maximum Total Net
+      Leverage Ratio (Consolidated Total Indebtedness less up to $1,000,000,000
+      of unrestricted cash, to Consolidated EBITDA). The 4.00 to 1.00 step-up
+      lasts for the quarter of a Qualified Acquisition and the three following;
+      the base level is labelled.
+
+  - id: ilmn_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-08-13
+    note: >
+      'Effective Date " means August 13, 2026.'
+
+      'The obligations of the Lenders to make Loans and of the Issuing Banks to
+      issue Letters of Credit hereunder shall not become effective until the
+      date on which each of the following conditions is satisfied'
+
+      The agreement defines its own effectiveness date (Section 4.01, Effective
+      Date) as an explicit date, the same day as the agreement is dated;
+      Closing Date is not defined.

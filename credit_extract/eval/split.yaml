@@ -38,6 +38,26 @@ out_of_sample:
 - BDC_stellus-private-credit-bdc_2024-08-06_0001104659-24-086159_tm2420896d1_ex10-1
 - BDC_vista-credit-strategic-lending-corp_2024-07-01_0001628280-24-030662_db-vistabdcxlfsa_60508078x5
 - BDC_willow-tree-capital-corp_2026-03-24_0001944831-26-000004_wtcapitalfundsecondamend
+- IG_apple-hospitality-reit-inc_2026-07-28_0001193125-26-321027_aple-ex10_1
+- IG_artisan-partners-asset-management-inc_2026-09-25_0001517302-26-000124_creditagreement-artisanpar
+- IG_athene-holding-ltd_2026-08-10_0001527469-26-000056_q22026exhibit101
+- IG_avnet-inc_2025-08-28_0000008858-25-000043_avt-20250828xex10d1
+- IG_cboe-global-markets-inc_2026-07-28_0001104659-26-087625_tm2621346d1_10-1
+- IG_celanese-corp_2025-08-11_0001104659-25-076253_tm2523061d1_ex10-1
+- IG_cencora-inc_2026-08-05_0001104659-26-090691_tm2621845d1_ex10-1
+- IG_cvs-health-corp_2026-08-05_0000064803-26-000098_a06302026ex102
+- IG_dynatrace-inc_2026-09-25_0001773383-26-000059_exhibit101-dynatracebofa
+- IG_easterly-government-properties-inc_2025-10-27_0001193125-25-251664_dea-ex10_1
+- IG_enterprise-products-partners-l-p_2026-07-30_0001061219-26-000017_epd-20260730xex101
+- IG_ferguson-enterprises-inc-de_2025-04-03_0001552781-25-000129_e25140_ex10-1
+- IG_franklin-resources-inc_2026-07-30_0001552781-26-000398_e26317_ex10-1
+- IG_globe-life-inc_2026-08-05_0000320335-26-000216_a105thirdamendedandresta
+- IG_illumina-inc_2026-08-13_0000950157-26-000888_ex10-1
+- IG_intercontinental-exchange-inc_2026-08-21_0001193125-26-359930_d369319dex101
+- IG_puget-energy-inc-wa_2026-07-29_0001085392-26-000016_exhibit102-pugetsoundenerg
+- IG_target-corp_2026-08-14_0000027419-26-000032_five-yearcreditagreementex
+- IG_teradyne-inc_2026-08-10_0001193125-26-342367_ter-ex10_1
+- IG_uber-technologies-inc_2026-08-07_0001552781-26-000414_e26328_ex10-3
 assignment:
   A_accelevation-holdings-corp_2026-09-02_0001628280-26-060083_exhibit101-sx1: fit
   A_accelevation-holdings-corp_2026-09-02_0001628280-26-060083_exhibit102-sx1: fit

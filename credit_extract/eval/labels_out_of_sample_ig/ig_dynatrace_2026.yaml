@@ -1,0 +1,172 @@
+# Tier 2 assertions: Dynatrace LLC / Bank of America, N.A., Credit Agreement
+# dated as of September 24, 2026, filed 2026-09-25 by Dynatrace, Inc. as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. An original (not amended) revolving credit agreement:
+# $500,000,000 of multicurrency revolving commitments with swing loans and
+# letters of credit, borrowed by Dynatrace LLC with Dynatrace Intermediate LLC
+# as Holdings; the filer, Dynatrace, Inc., is the parent and not a party. The
+# facility is secured until a Collateral Release, available at Baa3/BBB-
+# ratings. Pricing follows the Total Leverage Ratio unless the Borrower makes a
+# Credit Rating Margin Election, on one four-level grid. The normalized text
+# interleaves page-image file names, and the schedules are not in the filing.
+
+document: ig_dynatrace_2026
+corpus_name: IG_dynatrace-inc_2026-09-25_0001773383-26-000059_exhibit101-dynatracebofa
+source: real
+tier: 2
+
+assertions:
+
+  - id: dynatrace_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "DYNATRACE LLC"
+    note: >
+      'DYNATRACE LLC, a Delaware limited liability company (the "Borrower")'
+
+      The preamble, which names Holdings first: 'by and among DYNATRACE
+      INTERMEDIATE LLC, a Delaware limited liability company ("Holdings")'.
+      Holdings is a guarantor, not the Borrower. The EDGAR filer, Dynatrace,
+      Inc., is the parent and not a party; it appears only in the change of
+      control, Debt Rating and financial statement provisions and as guarantor
+      of the 2031 Exchangeable Notes.
+
+  - id: dynatrace_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'BANK OF AMERICA, N.A. ("Bank of America"), as Administrative Agent as
+      provided herein'
+
+      The preamble; the signature page signs as Administrative Agent in the
+      same name. BMO Capital Markets Corp. is the Syndication Agent and a joint
+      lead arranger, and BMO Bank, N.A. an Existing L/C Issuer; neither is the
+      agent.
+
+  - id: dynatrace_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This agreement, the Revolving Notes and the other Loan Documents, and the
+      rights and duties of the parties hereto, shall be construed and
+      determined in accordance with the laws of the State of New York'
+
+      Section 13.17. The Borrower and Holdings are Delaware limited liability
+      companies; Delaware is their place of organization, not the governing law.
+
+  - id: dynatrace_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$500,000,000"
+    note: >
+      'The Borrower and the Lenders acknowledge and agree that the Revolving
+      Credit Commitments of the Lenders aggregate $500,000,000 as of the Closing
+      Date.'
+
+      The definition of Revolving Credit Commitment; the preliminary statement
+      says the same ('revolving credit commitments in the aggregate amount of up
+      to $500,000,000'). Schedule 2.2 is not in the filing. Near misses: the
+      Incremental Facilities, capped at the greater of $650,000,000 and 100% of
+      Adjusted EBITDA plus an unlimited amount at 3.50 to 1.00, and the
+      $100,000,000 Agreed Foreign Currency Cap inside the commitments. There is
+      no term loan at closing.
+
+  - id: dynatrace_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-24
+    note: >
+      '"Revolving Credit Termination Date" means the earlier of (x) June 24,
+      2031 and (y) if any 2031 Exchangeable Notes remain outstanding in an
+      aggregate principal amount greater than $300,000,000'
+
+      Each Loan 'shall mature and be due and payable by the Borrower on the
+      Revolving Credit Termination Date'. The springing date (91 days before
+      the stated maturity of the 2031 Exchangeable Notes if more than
+      $300,000,000 of them remain outstanding) is conditional, as are the two
+      one-year Extension Requests, which need the consent of each Lender, so
+      the stated date is labelled. June 24, 2031 is a Tuesday.
+
+  - id: dynatrace_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.625%"
+    note: >
+      'IV Greater than or equal to 3.0 to 1.0 ≤ BB / Ba2 0.625% 1.625% 0.225%'
+
+      Level IV of the Applicable Margin grid, whose columns are base rate
+      loans, then 'APPLICABLE MARGIN FOR TERM BENCHMARK LOANS, RFR LOANS AND L/C
+      PARTICIPATION FEES SHALL BE', then the commitment fee. The same four
+      levels serve the Total Leverage Ratio test and, after a Credit Rating
+      Margin Election, the Debt Rating test, so the top is 1.625% either way.
+      Level II applies from closing to the first Pricing Date. The 0.625% is
+      the Base Rate margin, not this.
+
+  - id: dynatrace_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if Term SOFR determined as provided above shall ever be less than the
+      Floor, then Term SOFR shall be deemed to be the Floor'
+
+      And the Floor is defined as zero: '"Floor" means the rate per annum of
+      interest equal to 0.00%, applicable for the avoidance of doubt, to the
+      Relevant Rate'. The same Floor applies to the EURIBO Rate, Adjusted Term
+      CORRA Rate and Daily Simple SONIA; the zero floor on the Federal Funds
+      Rate is a Base Rate input, not this.
+
+  - id: dynatrace_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.225%"
+    note: >
+      'a commitment fee at the rate per annum equal to the Applicable Margin
+      (computed on the basis of a year of 360 days and the actual number of
+      days elapsed) times the actual daily amount by which the aggregate
+      Revolving Credit Commitments exceeds the principal amount of Revolving
+      Loans and L/C Obligations then outstanding'
+
+      Section 3.01(a): a fee on the unused amount, at the commitment fee column
+      of the grid, which runs from 0.125% at Level I to 0.225% at Level IV:
+      'IV Greater than or equal to 3.0 to 1.0 ≤ BB / Ba2 0.625% 1.625% 0.225%'.
+      There is no facility fee; the 0.125% fronting fee on letters of credit is
+      a different fee.
+
+  - id: dynatrace_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00 to 1.00"
+    note: >
+      'The Borrower shall not permit the Total Leverage Ratio, as determined on
+      the last day of each fiscal quarter (commencing with the fiscal quarter
+      ending December 31, 2026), to be greater than 4.00 to 1.00'
+
+      Section 8.24, the only financial covenant: Total Funded Debt less
+      Unrestricted Cash to Adjusted EBITDA. On notice for an acquisition with
+      Total Consideration over $150,000,000 it steps up to 4.50 to 1.00 for four
+      fiscal quarters (the Acquisition Holiday), so the base level is labelled.
+      The 3.50 to 1.00 in the incremental test is an incurrence condition, not
+      the covenant.

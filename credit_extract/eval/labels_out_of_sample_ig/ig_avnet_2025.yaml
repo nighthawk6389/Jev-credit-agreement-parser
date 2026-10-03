@@ -1,0 +1,150 @@
+# Tier 2 assertions: AVNET, INC. / BANK OF AMERICA, N.A., Third Amended and
+# Restated Credit Agreement dated as of January 17, 2025, as amended by
+# Amendment No. 1 dated as of August 28, 2025, filed 2025-08-28 by Avnet, Inc.
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the fifth pass and labelled before
+# the pipeline ran on it. A short Required Lender amendment (Amendment No. 1)
+# that adds a covenant Relief Period, with the conformed credit agreement
+# attached as Annex A in blackline form (struck text already excised by the
+# normalizer); every label is read from that conformed text, as amended. A
+# multicurrency revolver for Avnet, Inc. and Avnet Holding Europe BV priced off
+# a five-level ratings grid with a facility fee. Not labelled: the commitment
+# (Schedule 2.01 is not in the filing and no aggregate figure is printed) and
+# the closing date (Closing Date is defined by satisfaction of conditions).
+
+document: ig_avnet_2025
+corpus_name: IG_avnet-inc_2025-08-28_0000008858-25-000043_avt-20250828xex10d1
+source: real
+tier: 2
+
+assertions:
+
+  - id: avt_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "AVNET, INC."
+    note: >
+      'among AVNET, INC., a New York corporation (the " Company "), AVNET
+      HOLDING EUROPE BV, a Belgian privately held limited liability company'
+
+      The conformed preamble. The Borrowers are the Company, Avnet Holding
+      Europe BV and any Designated Borrower, and the Company is named first, so
+      the label is AVNET, INC.; Avnet Holding Europe BV is the second Borrower
+      and the near miss.
+
+  - id: avt_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'and BANK OF AMERICA, N.A., as Administrative Agent, Swing Line Lender
+      and an L/C Issuer'
+
+      The conformed preamble; the amendment names the same bank in its
+      capacity as administrative agent. BofA Securities, Inc. is a party to the
+      amendment fee letter, not the agent.
+
+  - id: avt_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'THIS AGREEMENT SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH,
+      THE LAW OF THE STATE OF NEW YORK'
+
+      Section 10.14(a) of the conformed agreement. The amendment itself is also
+      governed by New York law (its Section 7). Avnet Holding Europe BV being
+      Belgian is a party jurisdiction, not the governing law.
+
+  - id: avt_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-01-17
+    note: >
+      'means January 17, 2030; provided, however, that, if such date is not a
+      Business Day, the Maturity Date shall be the immediately preceding
+      Business Day'
+
+      The conformed Maturity Date definition, unchanged by Amendment No. 1.
+      January 17, 2030 is a Thursday, so the preceding-Business-Day roll does
+      not move it, and the agreement has no extension option. The Letter of
+      Credit Expiration Date (seven days earlier) is the near miss.
+
+  - id: avt_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.475%"
+    note: >
+      '5 | BB/Ba2/BB or worse | 0.275% | 1.475% | 0.475%'
+
+      Pricing Level 5 (the lowest ratings) of the Applicable Rate grid, in the
+      column headed Alternative Currency Term Rate + Alternative Currency Daily
+      Rate + Term SOFR + SOFR Daily Floating Rate + Letter of Credit Fee + Euro
+      Swing Line Rate; the margins run from 0.900% at Level 1 to 1.475%. On the
+      same row 0.475% is the Base Rate margin and 0.275% the facility fee.
+
+  - id: avt_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if the Term SOFR determined in accordance with either of
+      the foregoing provisions (a) or (b) of this definition would otherwise be
+      less than zero, the Term SOFR shall be deemed zero for purposes of this
+      Agreement'
+
+      A zero floor on Term SOFR itself, for Term SOFR Loans and for the Term
+      SOFR leg of the Base Rate; the agreement defines no separate Floor term.
+      The alternative currency rates, SOFR Daily Floating Rate and any Successor
+      Rate carry the same zero floor.
+
+  - id: avt_commitment_fee_none
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee in Dollars equal to the Applicable Rate times the actual
+      daily amount of the Aggregate Commitments (or, if the Aggregate
+      Commitments have terminated, on the Outstanding Amount of all Committed
+      Loans, Swing Line Loans and L/C Obligations), regardless of usage'
+
+      Section 2.09(a). The only commitment-based fee is this facility fee on
+      the whole Aggregate Commitments, drawn or not, at 0.100% to 0.275% across
+      the grid; the agreement has no commitment fee or unused fee. The 0.275%
+      top facility fee is the near miss the pipeline must not report.
+
+  - id: avt_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00 to 1.00"
+    note: >
+      'Permit the Consolidated Leverage Ratio as of the last day of any period
+      of four fiscal quarters of the Company (a) prior to the Amendment No. 1
+      Effective Date or following the Relief Period Termination Date to be
+      greater than 4.00 to 1.00'
+
+      Section 7.10 as amended: a maximum Consolidated Leverage Ratio
+      (Consolidated Funded Indebtedness to Consolidated EBITDA). During the
+      Relief Period added by Amendment No. 1 the cap steps up to 5.00 to 1.00
+      for the quarters ending around September 30, 2025 through March 31, 2026
+      and 4.50 to 1.00 for June 30, 2026, returning to 4.00 to 1.00 from
+      September 30, 2026; the base level is labelled. The 3.75 to 1.00 figure
+      in the Relief Period Termination Date definition is an early-exit test,
+      not the covenant.
