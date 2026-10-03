@@ -47,24 +47,28 @@ assertions:
       two hundred, and both came from the same inability to read a number
       spelled as English.
 
-  - id: eagle_point_maturity_is_three_years_after_an_undated_event
-    family: F10_conditionality
-    member: springing_on_trigger
-    kind: field_value
+  - id: eagle_point_maturity_hangs_on_a_fused_blackline_date
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
     target: revolver.maturity_date
-    expect: null
+    expect: needs_review
     note: >
-      '"Maturity Date" means the earlier of (a) the date that is three (3)
-      years after the earlier of the dates specified in clauses (b) and (c) of
-      the definition of Termination Date and (b) the date declared by the
-      Administrative Agent or occurring automatically in respect of the
-      occurrence of an Event of ...'.
+      '" Commitment Termination Date " means NovemberJune 1226, 20262028, or
+      such later date to which the Commitment Termination Date may be
+      extended'. The Maturity Date is three years after the earlier of
+      clauses (b) and (c) of the Termination Date; (b) is a date the
+      Borrower may select, an event, and (c) is this Commitment Termination
+      Date.
 
-      Four hops and it does not land. The maturity is three years after the
-      earlier of two limbs of another defined term, and those limbs are
-      themselves events. StepStone's chain is the same depth and resolves,
-      because its last hop is "the date of this Agreement"; this one ends at
-      an event and stops.
+      Corrected. This assertion used to expect no value because "those limbs
+      are themselves events"; limb (c) is a date, but one that survives only
+      fused with the date it replaced. Read deletion-first, as the rest of
+      this file's fusions read, it is June 26, 2028 and the maturity is
+      2031-06-26 -- both labellers reached that -- but it is an inference
+      about the filing's markup, not something the text states. The right
+      output is review, and a confident date of either reading is a silent
+      error.
 
   - id: eagle_point_trinity_governing_law
     family: F01_integrity
@@ -107,3 +111,44 @@ assertions:
       mentions are those of the Transferred Loans ('means, with respect to any
       Loan, the Person or Persons obligated to make payments pursuant to such
       Loan, including any guarantor thereof'), not of this facility.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: eagle_point_facility_size_survives_only_fused
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: revolver.commitment
+    expect: needs_review
+    note: >
+      'As of the First Amendment Effective Date, the Facility Amount is
+      $60,000,00075,000,000.' The conformed copy states the size, and KeyBank's
+      commitment on its signature page, with the struck figure and the new one
+      run together and no mark between them. The size is almost certainly $75,000,000 --
+      everywhere else in this file the deleted text comes first -- but that
+      is an inference about the filing's markup, not something the text
+      states. A reader that returns either half confidently has guessed.
+      Both labellers saw the fusion; one inferred $75,000,000 and one skipped.
+
+  - id: eagle_point_unused_fee_defined_in_lender_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_status
+    target: commitment_fee_pct
+    expect: external_reference
+    note: >
+      'Unused Fee is defined in the Lender Fee Letter'
+
+      'The Borrower shall pay to each Managing Agent, on behalf of the related
+      Lenders, on each Payment Date the Unused Fee for the related Interest
+      Period in accordance with Section 2.8'
+
+      'Lender Fee Letter means that certain Lender Fee Letter dated as of the
+      date hereof, among the Borrower, the Administrative Agent and the
+      Lenders'
+
+      The agreement has an unused fee but leaves its definition and rate to the
+      Lender Fee Letter, which is not in the filing; no rate appears in the
+      text. Rejected: the Applicable Reduction Premium Percentage (1.00%, then
+      0.00%), which is a premium on reducing the facility, not an unused fee.

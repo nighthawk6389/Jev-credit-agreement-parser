@@ -122,23 +122,25 @@ assertions:
 
   # -- F10: a facility size that is a ceiling, and two maturities ----------
 
-  - id: star_facility_size_is_not_the_accordion_cap
+  - id: star_aggregate_commitments_after_sixth_amendment
     family: F10_conditionality
     member: time_and_leverage_stepdown
     kind: field_value
     target: revolver.commitment
-    expect: null
+    expect: "$185,000,000"
     note: >
-      '"Maximum Facility Amount" means the Aggregate Commitments as then in
-      effect, which amount on the Closing Date shall equal the Initial
-      Commitment and may be increased pursuant to Section 2.18 to
-      $350,000,000'. The size is not stated: it is the Aggregate Commitments
-      as then in effect, and $350,000,000 is the ceiling an accordion could
-      raise them to. Reporting $350,000,000 reports the most the facility
-      could ever become as the amount committed. The same defined term means
-      something different again after the Revolving Period -- the aggregate
-      Advances Outstanding -- so one term carries three meanings across the
-      life of the deal.
+      'The Aggregate Commitments on the Sixth Amendment Effective Date are set
+      forth in Schedule 1.01(a) as in effect on such date and equal $ 185,000,000'
+
+      Corrected. This assertion used to expect no value, on the ground that
+      the size is not stated: the "Maximum Facility Amount" is "the Aggregate
+      Commitments as then in effect" and its only figure, $350,000,000, is
+      what Section 2.18 may raise them to. That reading stopped one definition
+      short. "Aggregate Commitments" states the size as of the Sixth Amendment
+      Effective Date, and the Schedule 1.01(a) TOTAL row agrees -- written
+      "$ 185,000,000" with a space, which a search for "$185,000,000" misses.
+      Both new labellers found it, and an adjudicator confirmed it. The
+      accordion lesson stands: $350,000,000 is a ceiling and the wrong answer.
 
   - id: star_maturity_is_a_year_after_availability_ends
     family: F10_conditionality

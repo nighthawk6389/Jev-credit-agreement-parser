@@ -128,3 +128,96 @@ assertions:
       guarantee of the Obligations. The guarantors it does mention support
       the loan pool, not this facility: 'any guarantees or similar credit
       enhancement for an Obligor'.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: athena_facility_amount_is_stated
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$250,000,000"
+    note: >
+      '" Facility Amount " means (a) prior to the end of the Revolving Period, $ 250,000,000 , unless this amount is permanently reduced pursuant to Section 2.5 or increased pursuant to Section 2.8'
+      and the Annex B Commitments schedule closes with 'Total: |  | $ | 250,000,000'.
+
+      The conformed Loan Financing and Servicing Agreement (through Amendment
+      No. 1) states the committed size, and the Annex B total (Deutsche Bank
+      and First-Citizens) states the same figure, so nothing is added up here.
+      Near misses rejected: the Section 2.8 accordion, which lets the Borrower
+      request an increase of the Facility Amount to an amount up to
+      $250,000,000 (the same number, but a ceiling, not the source), and the
+      $150,000,000 in Required Equity Stage 1 Period, which is an advances
+      threshold.
+
+  - id: athena_maturity_springs_from_undated_effective_date
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: null
+    note: >
+      '" Facility Termination Date " means the earliest of (i) the date that is two (2) years after the last day of the Revolving Period'
+      ; '" Revolving Period " means the period of time starting on the Effective Date and ending on the earliest to occur of (i) the date that is three (3) years after the Effective Date'
+      ; 'This Agreement shall become effective on the first day (the " Effective Date ") on which the Facility Agent, on behalf of the Lenders, shall have received the following'
+      ; and Section 2.4(a) requires repayment of the Advances 'in full on the Facility Termination Date'.
+
+      The final maturity is the Facility Termination Date: two years after a
+      Revolving Period that runs three years from the Effective Date, and the
+      Effective Date is the day the Section 6.1 conditions are satisfied, an
+      event the text never dates (no date later than 2026 appears anywhere in
+      the file). The pipeline must not report 2031-05-21, nor the Revolving
+      Period end 2029-05-21: both count from the May 21, 2026 as-of date of the
+      agreement, and the text does not say the Effective Date fell on that day.
+      The Section 2.6 option to extend the Revolving Period by twelve months is
+      noted; the other limbs of the earliest-of are events.
+
+  - id: athena_margin_steps_up_after_revolving_period
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.25%"
+    note: >
+      '" Applicable Margin " means (i) during the Revolving Period and prior to the occurrence of any Facility Termination Event, 2.10% per annum , (ii) on and after the end of the Revolving Period and prior to the occurrence of any Facility Termination Event, the Applicable Margin shall be increased by 0.15% per annum and (iii) after the occurrence of any Facility Termination Event, the Applicable Margin shall be increased by 2.00% per annum'
+      ; '" Interest Rate " means, for any Accrual Period and any Lender, a rate per annum equal to the sum of (a) the Applicable Margin and (b) the Cost of Funds Rate'
+      ; and the Applicable Interest Rate for a dollar Advance is 'with respect to any other Collateral Obligation or any other Advance, Term SOFR'.
+
+      Computed: the margin is 2.10% during the Revolving Period and
+      2.10% + 0.15% = 2.25% after the Revolving Period ends, so the highest
+      level of the schedule is 2.25%. The further +2.00% in clause (iii)
+      applies only after a Facility Termination Event (the Article XIII default
+      events) and is excluded as a default step-up. One margin applies to every
+      currency and to the Alternate Base Rate fallback; there is no separate
+      ABR margin.
+
+  - id: athena_term_sofr_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Term SOFR " means, for any calculation with respect to an Advance in Dollars (other than an Advance bearing interest at the Alternate Base Rate), the greater of (i) 0.0% and (ii) the Term SOFR Reference Rate for a tenor of three (3) months'
+
+      The dollar benchmark is floored at 0.0%, written here as 0.00%. The
+      EURIBOR Rate and Term CORRA carry the same zero floor. The Alternate Base
+      Rate floor (clause (c), 0) is a base-rate floor and was not the source.
+
+  - id: athena_undrawn_fee_rate_is_stated
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.25%"
+    note: >
+      '" Undrawn Fee Rate " means on any day until the end of the Revolving Period, 0.25%'
+      ; the Undrawn Fee is 'equal to (x) the excess of the aggregate Commitments on such day over the equivalent in Dollars of the aggregate principal amount of outstanding Advances on such day multiplied by (y) the Undrawn Fee Rate'.
+
+      A flat 0.25% on unused commitments during the Revolving Period, stated in
+      the agreement itself (Section 8.4 mentions fee letters only generally).
+      Near misses rejected: the Make-Whole Fee, which charges the Applicable
+      Margin on the shortfall of Advances below the Make-Whole Fee Percentage
+      (25%, 50%, 60%) of the Commitments, is a minimum utilization fee; the
+      Reduction Fee is a prepayment fee.

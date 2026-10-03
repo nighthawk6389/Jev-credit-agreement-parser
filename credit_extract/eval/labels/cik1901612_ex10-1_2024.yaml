@@ -206,3 +206,85 @@ assertions:
       Subsidiaries joined by a Securitization Subsidiary Joinder after the
       Closing Date. None is named, and none signs. The "guarantors" in the
       Obligor definition belong to the Collateral Loans, not this facility.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: gbdc_maximum_facility_amount_750m_uncommitted
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$750,000,000"
+    note: >
+      'Maximum Facility Amount means $750,000,000 (as such amount may be
+      reduced pursuant to Section 2.07); provided that it is understood that
+      the loan facility established under this Agreement is an uncommitted
+      facility'
+
+      'Facility Amount means (a) on or prior to the Facility Termination Date,
+      an amount equal to the Maximum Facility Amount'
+
+      The stated size of the revolving facility (Section 2.01) is the Maximum
+      Facility Amount, followed through Facility Amount to $750,000,000. There
+      is no accordion or increase cap; the Individual Lender Maximum Funding
+      Amounts are on Schedule 1, which is not in the text. The agreement calls
+      the facility uncommitted (lenders are committed only for approved
+      Collateral Loans and Section 5.01(f) fundings), so $750,000,000 is the
+      facility amount rather than a committed sum. Rejected: the Maximum
+      Available Amount (the lesser of this and the Borrowing Base) and the
+      Maximum Portfolio Amount (this divided by 0.60).
+
+  - id: gbdc_final_maturity_36_months_after_reinvestment_end
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-08-15
+    note: >
+      'Final Maturity Date means the earlier to occur of (i) the first Business
+      Day on or after the date that is the 36 month anniversary of the Facility
+      Termination Date and (ii) the date on which the Final Maturity Date is
+      declared pursuant to Section 6.01'
+
+      'Facility Termination Date means the last day of the Reinvestment Period'
+
+      'Reinvestment Period means the period from and including the Closing
+      Date to and including the earlier of (a) the date that is the 3rd
+      anniversary of the Closing Date (or such later date as may be agreed by
+      the Borrower, the Administrative Agent and each Lender)'
+
+      'Closing Date means August 15, 2024'
+
+      '100% of the outstanding principal amount of each Advance, together with
+      all accrued and unpaid Interest thereon, shall be payable on the Final
+      Maturity Date'
+
+      Computed: Closing Date 2024-08-15; 3rd anniversary 2027-08-15 is the last
+      day of the Reinvestment Period and so the Facility Termination Date; its
+      36 month anniversary is 2030-08-15, a Thursday and a Business Day, so the
+      first Business Day on or after it is 2030-08-15. The declared date in
+      clause (ii) is an event, so the date governs. Rejected: 2027-08-15, the
+      end of the Reinvestment Period, when the funding amounts reduce to zero
+      but the advances are not yet due. The Reinvestment Period can be
+      extended by agreement; the date is given as it stands.
+
+  - id: gbdc_term_sofr_floored_at_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'Floor means a rate of interest equal to 0%'
+
+      'if Term SOFR determined as provided above shall ever be less than the
+      Floor, then Term SOFR shall be deemed to be the Floor'
+
+      'Applicable Index means, with respect to (a) Dollar Advances, Term SOFR'
+
+      Term SOFR is the benchmark for Dollar Advances and is floored at the
+      Floor, defined as 0%. The facility has no Base Rate option (its fallback
+      is a Cost of Funds Rate), so there is no ABR floor to confuse with this.
+      Rejected: the Floor Loan definition, which describes a floor on the base
+      or prime rate of a Collateral Loan in the portfolio, not this facility.

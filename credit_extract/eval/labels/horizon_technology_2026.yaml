@@ -116,3 +116,24 @@ assertions:
       means, with respect to any Loan, any Person or Persons obligated to make
       payments pursuant to or with respect to such Loan, including any
       guarantor thereof'), not to the Notes.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: horizon_unused_fee_defined_in_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_status
+    target: commitment_fee_pct
+    expect: external_reference
+    note: >
+      '"Unused Fee" has the meaning specified in the 2026 Amendment Date Fee
+      Letter.' and '" 2026 Amendment Date Fee Letter " means that certain Fee
+      Letter, dated as of the 2026 Amendment Date, between the Issuer and the
+      Initial Purchasers'
+
+      In the conformed Sale and Servicing Agreement the Unused Fee is paid
+      through the waterfall ('the Class A Interest Amount and Unused Fee payable
+      to the Class A Noteholders', and likewise for Class B). The agreement
+      gives it no rate anywhere. The rate is in the fee letter, which is not in
+      the text.

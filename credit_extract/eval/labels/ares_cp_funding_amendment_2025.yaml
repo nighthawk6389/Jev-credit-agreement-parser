@@ -119,3 +119,88 @@ assertions:
       no guarantor signs Amendment No. 18. The only "Guarantor" in the text
       belonged to the 2004 Original Agreement, which the 2010 Restatement
       Agreement, without that guarantor as a party, amended and restated.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: ares_maximum_facility_amount_is_ceiling_only
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: null
+    note: >
+      '" Maximum Facility Amount " means the aggregate Commitments of the
+      Lenders then in effect, which amount may be up to $ 2,250,000,000'; 'the
+      dollar amount set forth opposite such Lender'.
+
+      Must not report $2,250,000,000 (also on the conformed cover as 'Up to
+      U.S. $ 2,250,000,000'): the text gives it only as an up-to ceiling and
+      defines the size as the aggregate Commitments then in effect, which are
+      the per-lender amounts on Annex A. Annex A is not in this text (the
+      filing reproduces only the amended pages, ending in Section 11.14, with
+      no Appendix B schedules), and the amendment itself gives the new lender
+      'a several, but not joint, Commitment in the amount set forth on Annex A
+      to the Loan and Servicing Agreement' with no figure. The $200,000,000
+      Swingline Commitment is a sublimit, not the facility size.
+
+  - id: ares_stated_maturity_five_years_after_eighteenth_amendment
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-07-28
+    note: >
+      '" Facility Maturity Date " means the earliest to occur of (i) the Stated
+      Maturity Date'; '" Stated Maturity Date " means, the five year
+      anniversary following the Eighteenth Amendment Effective Date';
+      '"Eighteenth Amendment Effective Date" means July 28, 2025'.
+
+      Computed: July 28, 2025 plus five years is July 28, 2030. The other
+      Facility Maturity Date limbs are undated events (declaration under
+      Section 7.01, the Collection Date, termination under Section 2.18(b)).
+      July 28, 2030 is a Sunday, but neither maturity definition carries a
+      business-day roll (only the Reinvestment Period definition does), and
+      no general roll is in these pages, so it is not moved. Rejected the
+      earlier end of the Reinvestment Period ('the three year anniversary of
+      the Eighteenth Amendment Effective Date', July 28, 2028). The option to
+      agree a later date under Section 2.19 is conditional and not applied.
+
+  - id: ares_applicable_spread_as_amended
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.80%"
+    note: >
+      '" Applicable Spread " means, (i) prior to the Eighteenth Amendment
+      Effective Date, 2.00% per annum and (ii) thereafter, 1.80 % per annum';
+      'an interest rate per annum equal to the applicable Benchmark for such
+      date (not less than zero) plus the Applicable Spread'.
+
+      Labelled as amended: the Eighteenth Amendment Effective Date is July 28,
+      2025, the date this amendment took effect, so the 2.00% level covers
+      only periods before it. That is the superseded pre-amendment rate, not a
+      level the schedule can still produce. From then on the spread over the
+      Benchmark is a flat 1.80%, and the same spread applies over the Base
+      Rate during a Disruption Event. Rejected the default and post-maturity
+      increase 'at any time during the existence of an Event of Default or
+      after the occurrence of the Facility Maturity Date, the Applicable
+      Spread shall be increased by 2.00% per annum'.
+
+  - id: ares_floor_defined_as_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means for purposes of this Agreement, 0%'; 'an interest rate
+      per annum equal to the applicable Benchmark for such date (not less than
+      zero) plus the Applicable Spread'.
+
+      The facility floor is 0%, and the Yield Rate applies it to the Benchmark
+      itself, before the spread is added, not to the all-in rate. Rejected the
+      next definition, Floor Obligation, which concerns floors on the
+      underlying portfolio loans ('calculated as the greater of (i) a
+      specified'), not this facility.

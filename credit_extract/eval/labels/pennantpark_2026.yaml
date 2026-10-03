@@ -167,3 +167,73 @@ assertions:
       guarantor in the text belongs to a portfolio loan: Obligor means 'any
       Person or Persons obligated to make payments pursuant to or with respect
       to such Loan, including any guarantor thereof'.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: pennantpark_termination_date_two_years_after_revolving_end
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-10-02
+    note: >
+      'Unless sooner prepaid pursuant to the terms hereof, the Advances
+      Outstanding shall be repaid in full on the Termination Date'; '"
+      Termination Date ": The earlier of (a) the date that is two (2) years
+      after the Revolving Period End Date'; '" Revolving Period End Date ": The
+      earliest to occur of (a) the Scheduled Revolving Period End Date, (b) the
+      date that is ninety (90) days after the termination of the "Investment
+      Period" (as defined in the Fund Operating Agreement)'; '" Scheduled
+      Revolving Period End Date ": October 2, 2028'.
+
+      Computed: the Revolving Period End Date is the earliest of the dated
+      Scheduled Revolving Period End Date (October 2, 2028) and two undated
+      events (90 days after the Investment Period ends; a declaration under
+      Section 9.2(a)), so it is October 2, 2028; the Termination Date is two
+      years after that, October 2, 2030, a Wednesday (no business-day
+      adjustment needed, and the definition carries none). The Termination
+      Date, not the Revolving Period End Date, is when the loans are finally
+      due; no extension option exists.
+
+  - id: pennantpark_spread_steps_up_after_revolving_period
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.125%"
+    note: >
+      'after the earlier to occur of the Revolving Period End Date and the
+      Termination Date, 2.125%'; 'Interest Rate ": (a) The Benchmark plus (b)
+      the Applicable Spread'.
+
+      The Applicable Spread over the Benchmark (Term SOFR for Dollars) has
+      these levels: 'prior to the twelve (12) month anniversary of the Closing
+      Date, 1.875%'; thereafter during the revolving period 1.875% if
+      Utilization exceeds 50% and 2.00% if it is below 50%; and 2.125% after
+      the revolving period ends, a post-revolving-period step-up that counts,
+      so 2.125% is the top. Rejected the default step-up 'the rate otherwise
+      in effect shall be increased by 2.00%'. There is no separate base-rate
+      margin: the same Applicable Spread applies over the Base Rate during a
+      Disruption Event.
+
+  - id: pennantpark_non_usage_fee_tops_at_75bps
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.75%"
+    note: >
+      'the sum of the products for each such day during such Accrual Period of
+      (A) one divided by 360, (B) three-quarters of one percent (0.75%)';
+      'Advances Outstanding owing to such Lender on such day are less than the
+      product of fifty percent (50.00%)'.
+
+      The Non-Usage Fee ('With respect to each Lender, a fee payable quarterly
+      in arrears for each day during the Revolving Period equal to the sum of
+      the following') is charged on the Unused Commitment Amount and steps
+      with time and usage: for the first nine months after the Closing Date
+      (or six months after a Permitted Securitization) 0.50% at or below 75%
+      usage and 0.25% above it; thereafter 0.75% below 50% usage, 0.50% from
+      50% to 75%, and 0.25% above 75%. The highest rate is 0.75%. The 1.00%
+      Commitment Reduction Percentage is a reduction fee, not this fee.

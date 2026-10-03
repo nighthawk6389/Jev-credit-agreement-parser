@@ -114,3 +114,34 @@ assertions:
       required pursuant to the terms of the Limited Guaranty'. The Related
       Guarantors in the eligibility and FICO definitions guarantee Collateral
       Loans, not this facility.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: pimco_final_maturity_four_years_after_closing
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-06-01
+    note: >
+      'Final Maturity Date " means the earliest of (a) the four (4) year
+      anniversary of the Closing Date, (b) the date of the acceleration of the
+      Advances pursuant to Section 6.02'
+
+      'Closing Date " means June 1, 2026'
+
+      'Scheduled Funding Termination Date " means the twenty-four month
+      anniversary of the Closing Date'
+
+      'payment need not be made on such date, but may be made on the next
+      succeeding Business Day with the same force and effect as if made'
+
+      Computed: the Final Maturity Date is the earliest of the four year
+      anniversary and events (acceleration, payment in full), so it is June 1,
+      2026 plus four years = June 1, 2030. That is a Saturday; the definition has
+      no Business Day roll (unlike the Funding Termination Date definition), and
+      Section 13.16 only lets a payment due then be made on the next Business Day
+      as if made on the nominal date, so the date stands. Rejected the Scheduled
+      Funding Termination Date (June 1, 2028), the end of the availability
+      period, and the thirty-six month anniversary, which only steps up pricing.

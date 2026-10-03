@@ -26,27 +26,25 @@ tier: 2
 
 assertions:
 
-  - id: blackrock_maturity_definition_names_itself
+  - id: blackrock_maturity_resolves_past_its_self_reference
     family: F09_definitional_depth
     member: circular_definition
     kind: field_value
     target: revolver.maturity_date
-    expect: null
+    expect: 2030-07-30
     note: >
-      No answer, and the reason is worth separating from the corpus's other
-      empty maturities.
+      '" Stated Maturity Date " means July 30, 2030.' and '" Maturity Date "
+      means the earliest to occur of (i) the Stated Maturity Date, (ii) the
+      date of the declaration, or automatic occurrence, of the Maturity Date
+      pursuant to Section 7.2 and (iii) the Collection Date.'
 
-      Aspen's is empty because its chain ends at an undated event. Eagle
-      Point's is empty because four hops end at two events. This one is empty
-      because the only limb that could carry a date is limb (i), the Stated
-      Maturity Date, which this exhibit does not define in the text available;
-      limb (ii) points at itself and limb (iii) is the Collection Date, an
-      event.
-
-      So a reader must establish that a three-limb "earliest to occur of"
-      resolves to nothing, while two nearly identical constructions elsewhere
-      in the corpus -- Fidelity's and Blue Owl Technology's -- resolve to a
-      date because one limb carries one. The phrase is not the signal.
+      Corrected. This assertion used to expect no answer, on the ground that
+      the exhibit does not define the Stated Maturity Date in the text
+      available. It does, in the definitions article, and two independent
+      labellers found it. Limb (ii) names the term it defines and limb (iii)
+      is an event, so the one limb with a date settles it: the circularity is
+      real and harmless. A reader that refuses any definition naming itself
+      loses this maturity; one that follows limb (i) gets it.
 
   - id: blackrock_closing_date_is_stated
     family: F05_versioning
@@ -98,3 +96,72 @@ assertions:
       LLC' (or BLK Holding) and the Administrative Agent, which the definitions
       file under Pledge Agreement, and nothing says either guarantees the
       Obligations.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: blackrock_maximum_facility_amount_is_stated
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$410,000,000"
+    note: >
+      '" Maximum Facility Amount " means the aggregate Commitments as then in
+      effect, which amount shall not exceed $ 410,000,000 (as such amount may be
+      increased from time to time with the consent of the Administrative Agent,
+      the Required Lenders and the Borrower in accordance with Section 2.13 )'
+      and the conformed cover 'CHANGES CONFORMED THROUGH AMENDMENT NO. 5 U.S. $
+      410,000,000 CREDIT AGREEMENT'.
+
+      The $410,000,000 is the facility amount as amended by Amendment No. 5
+      (whose conditions refer to 'the increase to the Maximum Facility Amount as
+      of the date hereof'), stated on the cover and in the definition as the
+      amount before any Section 2.13 increase, so it is the commitment and not a
+      ceiling. Rejected the accordion, which is separate: 'to increase the
+      Maximum Facility Amount by up to an additional amount of $ 240,000,000'
+      (never added in). Annex A with the per-lender Commitments is not in the
+      text; after the Funding Period the Maximum Facility Amount becomes the
+      Advances Outstanding.
+
+  - id: blackrock_spread_steps_up_after_funding_period
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.50%"
+    note: >
+      '" Applicable Spread " means (i) from the Closing Date through and
+      including the last day of the Funding Period, 2.00%, and (ii) from day
+      following the last day of the Funding Period to the Maturity Date, 2.50%.'
+
+      The Interest Rate is 'an interest rate per annum equal to the Benchmark
+      for such date plus the Applicable Spread' and '" Benchmark " means,
+      initially, Term SOFR'. Two levels exist: 2.00% during the Funding Period
+      (to July 30, 2028) and 2.50% after it ends. A step-up after the revolving
+      period is part of the schedule, so the highest level, 2.50%, is the
+      answer. There is no base rate margin. Rejected the Default Rate ('the per
+      annum rate which is two percent (2.0%) greater than the Interest Rate
+      applicable to such Advance'), which applies only after an Event of
+      Default.
+
+  - id: blackrock_non_usage_fee_steps_with_utilization
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.25%"
+    note: >
+      'The Non-Usage Fee Rate (the " Non-Usage Fee Rate ") shall be equal to:
+      (a) if the average daily Advances Outstanding during such Remittance
+      Period are less than or equal to 70% of the Maximum Facility Amount, 0.25%
+      , and (b) if the average daily Advances Outstanding during such Remittance
+      Period are greater than 70% of the Maximum Facility Amount, 0.00% .'
+
+      The Non-Usage Fee accrues on the Maximum Facility Amount minus the
+      Advances Outstanding. It is 0.25% at or below 70% utilization and 0.00%
+      above it, so the highest rate is 0.25%. Rejected the separately defined
+      Commitment Fee, 'an aggregate amount equal to the product of the Maximum
+      Facility Amount and 0.25%'. That is a one-time fee on the whole facility,
+      paid at closing and on each Advance, so it is an upfront fee and not a fee
+      on undrawn commitments. It happens to use the same rate.

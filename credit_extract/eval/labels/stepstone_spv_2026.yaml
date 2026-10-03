@@ -226,3 +226,77 @@ assertions:
       the guarantors in the eligibility criteria ('without the consent of the
       borrower or the guarantor, if any, of such Loan Obligation') belong to
       portfolio loans.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: stepstone_spread_flat_over_adjusted_term_sofr
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.90%"
+    note: >
+      'Spread means 1.90% per annum'
+
+      'Facility Fee Rate means, with respect to any Interest Period, a rate per
+      annum equal to the sum of (a) the applicable Benchmark plus (b) the
+      Spread'
+
+      'Benchmark means, initially, for any Loans, Adjusted Term SOFR'
+
+      'the product of (A) the Facility Fee Rate applicable to such Loan and (B)
+      the Interest Reference Amount for such day'
+
+      Loans bear interest at the Facility Fee Rate, Adjusted Term SOFR plus the
+      Spread. The Spread is a single flat level: there is no grid and no
+      step-up after the Reinvestment Period, and the same Spread is added to
+      the Base Rate fallback. Rejected: the 2.0% default-interest increment in
+      Section 2.6, the 1.0% added to the Benchmark inside the Base Rate, the
+      2%/1% Make-Whole Premium Percentage, and the 2.25% minimum cash spread
+      required of PIK Collateral Obligations, a portfolio term.
+
+  - id: stepstone_adjusted_term_sofr_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that, notwithstanding the foregoing, Adjusted Term SOFR shall
+      at no time be less than 0.0% per annum'
+
+      'Benchmark means, initially, for any Loans, Adjusted Term SOFR'
+
+      'in respect of each Loan and all principal and interest payments on Loans
+      hereunder, USD'
+
+      All Loans are in USD and use Adjusted Term SOFR as the Benchmark, which
+      is floored at 0.0%; a Benchmark Replacement is floored at 0.00% as well.
+      The Base Rate carries no separate floor; its reference to the Benchmark
+      after giving effect to any floor points back to this one.
+
+  - id: stepstone_commitment_fees_set_in_commitment_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_status
+    target: commitment_fee_pct
+    expect: external_reference
+    note: >
+      'The Borrower Parties agree to pay to the Administrative Agent for the
+      pro rata benefit of the Lenders non-utilization fees (the Commitment
+      Fees) in the amounts set forth in the Commitment Fee Letter'
+
+      'Commitment Fee Letter means the Fee Letter dated on or around the
+      Closing Date among the Lenders and the Borrower Parties with respect to
+      certain fees to be paid from time to time to the Lenders'
+
+      'Minimum Utilization Amount has the meaning set forth in the Commitment
+      Fee Letter'
+
+      The unused (non-utilization) fee is named in Section 2.7(b) but its
+      amount is left to the Commitment Fee Letter, which is not in the filing;
+      the separate Non-Utilization Fees of Section 2.7(d) and the Minimum
+      Utilization Amount are in the same letter. No rate appears in the text.
+      Rejected: the Upfront Fee (GS Fee Letter), the Agent Fees and the
+      Make-Whole Amount.

@@ -131,3 +131,61 @@ assertions:
       the portfolio ('means, in respect of any Collateral Asset, any Person
       obligated to pay Collections in respect of such Collateral Asset,
       including any applicable guarantors'), not to this facility.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: blue_owl_core_income_facility_amount_is_stated
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$500,000,000"
+    note: >
+      '" Facility Amount " means during the Reinvestment Period, $500,000,000 (as such amount may be reduced from time to time pursuant to Section 2.06 , increased pursuant to Section 2.22'
+
+      The conformed Credit and Security Agreement (through Amendment No. 2)
+      states the committed size; Schedule 1 with the per-lender Commitments is
+      not in the text. Near misses rejected: the Section 2.22 accordion,
+      'the Borrower may request one or more increases to the Facility Amount (up to, in the aggregate, $300,000,000)',
+      which caps increases, and the $833,000,000 Concentration Denominator,
+      which is a collateral figure.
+
+  - id: blue_owl_core_income_final_maturity_two_years_after_reinvestment
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-05-21
+    note: >
+      '" Closing Date " means May 21, 2024'
+      ; '" Reinvestment Period " means, subject to the Lender Fee Letter, the period from and including the Closing Date to and including the earliest of (a) the date that is three (3) years after the Closing Date (unless extended with the consent of the Administrative Agent and each Lender)'
+      ; '" Commitment Termination Date " means the last day of the Reinvestment Period'
+      ; '" Final Maturity Date " means the earliest to occur of (i) the date on which the Borrower (or the Collateral Manager on its behalf) reduces the Facility Amount in full pursuant to Section 2.06(b) ; (ii) the day that is two (2) years after the Commitment Termination Date'
+      ; and Section 2.04(a) makes each Advance 'payable on the Final Maturity Date'.
+
+      Computed: May 21, 2024 plus three years is May 21, 2027 (a Friday, so no
+      Business Day roll), the last day of the Reinvestment Period and so the
+      Commitment Termination Date; plus two years is May 21, 2029, a Monday, so
+      no roll either. The other limbs of both earliest-of clauses are events.
+      Rejected: May 21, 2027, which ends the Reinvestment Period only. The
+      Reinvestment Period is stated to be subject to the Lender Fee Letter (not
+      in the filing) and may be extended with the consent of the
+      Administrative Agent and each Lender; the date given is the unextended
+      one as the text stands.
+
+  - id: blue_owl_core_income_commitment_fee_in_lender_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_status
+    target: commitment_fee_pct
+    expect: external_reference
+    note: >
+      '" Commitment Fee " has the meaning assigned to such term in the Lender Fee Letter'
+      ; Section 2.12(a): 'the Borrower shall pay to the Collateral Agent (for the account of the Lenders on a pro rata basis) the Commitment Fee in the amount set forth in the Lender Fee Letter'.
+
+      The fee on unused commitments is the Commitment Fee, and both its
+      definition and the operative fee clause point to the Lender Fee Letter,
+      which is not in the filing; no unused, undrawn or non-usage fee rate is
+      stated in the agreement. The Prepayment Fee, also left to the Lender Fee
+      Letter, is a different fee.

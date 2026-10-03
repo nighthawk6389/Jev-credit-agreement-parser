@@ -109,3 +109,68 @@ assertions:
       respect to Section 5.9' are therefore the Subsidiary Guarantors, named in
       this text even though the definition itself sends the reader to the
       Guarantee and Security Agreement. The Borrower signs only as Borrower.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: blue_owl_tech_largest_revolving_tranche_is_multicurrency
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$900,000,000"
+    note: >
+      'Multicurrency Commitments as of the Fourth Amendment Effective Date is $ 900,000,000'
+      ; 'Dollar Commitments as of the Fourth Amendment Effective Date is $25,000,000'
+      ; '" Revolving Commitments " means, collectively, the Dollar Commitments and the Multicurrency Commitments'.
+
+      Two revolving tranches. The text states each tranche aggregate but no
+      single figure for the Revolving Commitments, so under the tranche rule
+      this is the larger one, the Multicurrency tranche; the Dollar tranche is
+      $25,000,000, and the two were not added. Near misses rejected: the cover
+      page figure $ 975,000,000, a facility total the text never breaks down
+      (Initial Term Loans of $50,000,000 are also outstanding); the
+      $1,462,500,000 cap on Commitment Increases; the $200,000,000 Swingline
+      Loan limit. The Schedule I commitments (Exhibit B) are not in the text.
+
+  - id: blue_owl_tech_term_benchmark_margin_is_flat
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.875%"
+    note: >
+      '" Applicable Margin " means: (a) with respect to any ABR Loan, 0.875% per annum; (b) with respect to any Term Benchmark Loan, 1.875% per annum and (c) with respect to any RFR Loan, 1.875% per annum'
+
+      A single level with no grid, applying to Term Benchmark (Term SOFR) and
+      RFR loans, revolving and term alike. Rejected: the 0.875% ABR margin,
+      and the 0.10% Term SOFR Credit Adjustment Spread, which is part of Term
+      SOFR rather than margin.
+
+  - id: blue_owl_tech_term_sofr_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided , that if Term SOFR determined as provided above (including pursuant to the proviso under clause (a) or (b) above) shall ever be less than zero, then Term SOFR shall be deemed to be zero'
+
+      A zero floor on Term SOFR (which here includes the 0.10% credit
+      adjustment spread). The defined term '" Floor " means zero percent (0.00%)'
+      is used for Benchmark Replacements and agrees. The Alternate Base Rate
+      also has a zero floor, which is a base-rate floor and was not the source.
+
+  - id: blue_owl_tech_commitment_fee_is_flat
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.350%"
+    note: >
+      'a commitment fee, which shall accrue at a rate per annum equal to 0.350% on the average daily unused amount of the Dollar Commitment and Multicurrency Commitment'
+
+      A flat rate on the unused revolving commitments of both tranches, with
+      no utilization or time step. Rejected: the letter of credit fees in
+      Section 2.11(b), including the participation fee at the Term Benchmark
+      margin.

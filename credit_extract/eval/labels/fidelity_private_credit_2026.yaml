@@ -111,3 +111,65 @@ assertions:
       Subsidiaries). Schedule IV and Annex 4 spell the first one "Fidelity
       Direct Lending Fund 1 Blocker LLC"; the spelling in the signature block
       is used here.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: fidelity_aggregate_commitment_after_second_amendment
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$600,000,000"
+    note: >
+      'Lenders | Multicurrency Commitment | Dollar Commitment | Aggregate
+      Commitment' and 'Total | $550,000,000 | $50,000,000 | $600,000,000'
+
+      Schedule I, amended and restated by the Second Amendment (Exhibit B),
+      states the aggregate of both revolving tranches as one figure,
+      $600,000,000. The conformed definitions agree ('Multicurrency
+      Commitments as of the Second Amendment Effective Date is $ 550,000,000'
+      and 'Dollar Commitments as of the Second Amendment Effective Date is $
+      50,000,000') and the conformed cover reads $ 600,000,000; Schedule I
+      lists no Term Commitments. Not the accordion ceiling ('the aggregate
+      amount of all Revolving Commitments and outstanding Term Loans shall not
+      exceed $ 900,000,000'), the per-lender New Lender amounts in the
+      amendment, or the swingline and letter of credit sublimits.
+
+  - id: fidelity_margin_grid_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.875%"
+    note: >
+      '" Applicable Margin " means: if the Gross Borrowing Base (as of the most
+      recently delivered Borrowing Base Certificate) is (a) less than the
+      product of 1.60 and the Combined Debt Amount, (i) with respect to any ABR
+      Loan, 0.875% per annum; and (ii) with respect to any Index Rate Loan,
+      Term Benchmark Loan or RFR Loan, 1.875% per annum'
+
+      Two-level grid on borrowing base coverage: 1.875% below 1.60x and 1.750%
+      at or above 1.60x for Term Benchmark, Index Rate and RFR loans; the ABR
+      levels (0.875% and 0.750%) are rejected. The same margin applies in every
+      currency, since Section 2.12(c) adds the Applicable Margin to the
+      Relevant Rate, so the top benchmark level is 1.875%; the 2% default
+      interest in Section 2.12(e) is excluded.
+
+  - id: fidelity_commitment_fee_flat
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.375%"
+    note: >
+      'Commitment Fee . The Borrower agrees to pay to the Administrative Agent
+      for the account of each Revolving Lender a commitment fee, which shall
+      accrue at a rate per annum equal to 0.375% on the daily unused amount of
+      the Dollar Commitment and Multicurrency Commitment'
+
+      Section 2.11(a) sets a single flat rate with no utilization or time
+      steps, for both revolving tranches. Not the letter of credit
+      participation fee (the Applicable Margin) or the fronting fee ('a
+      fronting fee, which shall accrue at the rate of 0.25% per annum') in
+      Section 2.11(b).

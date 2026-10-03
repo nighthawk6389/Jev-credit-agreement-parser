@@ -89,3 +89,109 @@ assertions:
       mentions guarantees a portfolio Loan ('" Obligor ": With respect to any
       Loan, any Person or Persons obligated to make payments pursuant to or
       with respect to such Loan, including any guarantor thereof').
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: five_c_commitments_total_after_cathay_joinder
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$600,000,000"
+    note: >
+      '" Facility Amount ": As of any date, an amount equal to the lesser of (a)
+      $ 600,000,000 and (b) the aggregate principal amount of the Commitments
+      provided by the Administrative Agent and the Lenders as of such date' and
+      'Cathay Bank | $ 25,000,000 | | | Total: | $ 600,000,000'
+
+      The Facility Amount is the lesser of $600,000,000 and the aggregate
+      Commitments, and Annex B of the marked conformed copy (Exhibit A to the
+      Second Amendment) states the total of the Commitments as $600,000,000
+      (Ally Bank $575,000,000 and Cathay Bank $25,000,000, total stated by the
+      text); the cover reads U.S. $ 600,000,000. No fused struck figures
+      appear in these passages. Not the accordion ceiling ('following such
+      Increased Commitment, the Facility Amount shall not exceed $
+      1,000,000,000'), the $60,000,000 swingline commitment, or the
+      $200,000,000 floor on commitment reductions.
+
+  - id: five_c_termination_date_two_years_after_revolving_period
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-11-06
+    note: >
+      'Unless sooner prepaid pursuant to the terms hereof, the Advances
+      Outstanding shall be repaid in full on the Termination Date or on such
+      later date as is agreed to in writing by the Borrower, the Collateral
+      Manager, the Administrative Agent and each of the Lenders' ;
+      '" Termination Date ": The earliest of (a) the date that is two (2) years
+      after the Revolving Period End Date' ; '" Revolving Period End Date ": The
+      earlier to occur of (a) the Scheduled Revolving Period End Date and (b)
+      the date of the declaration of the Revolving Period End Date pursuant to
+      Section 9.2(a)' ; '" Scheduled Revolving Period End Date ": November 6,
+      2028'
+
+      Computed: Revolving Period End Date is the dated limb, November 6, 2028;
+      Termination Date is two years after it, November 6, 2028 + 2 years =
+      November 6, 2030 (a Wednesday, and the definition has no business-day
+      roll). The Advances are due on the Termination Date, not at the
+      November 6, 2028 end of the Revolving Period (rejected). The later date
+      agreed by all parties in Section 2.3(b) is a consensual amendment, not a
+      unilateral extension option; no extension option was found.
+
+  - id: five_c_applicable_spread_non_default_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.83%"
+    note: >
+      '" Applicable Spread ": A rate per annum equal to (a) with respect to any
+      Advance bearing interest at the Benchmark, (i) so long as no Event of
+      Default has occurred and is continuing, 1.83 %'
+
+      Interest is '" Interest Rate ": (a) The Benchmark, plus (b) the
+      Applicable Spread', the Benchmark being Daily Simple SOFR or one- or
+      three-month Term SOFR. The only level for Benchmark advances outside an
+      Event of Default is 1.83%; the 3.83% that applies if an Event of Default
+      is continuing is excluded, and 0.83% is the Base Rate spread (rejected).
+      The spread is stated in the agreement, not left to the Fee Letter.
+
+  - id: five_c_floor_defined_at_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor ": A rate of interest equal to 0.0%' and '" Term SOFR ": The
+      greater of (a) the Floor and (b) the forward-looking term rate based on
+      SOFR'
+
+      Term SOFR, and Daily Simple SOFR ('a rate per annum equal to the greater
+      of (a) SOFR for the day' and, in its clause (b), the Floor), are both
+      floored at the defined Floor of 0.0%, i.e. 0.00%. Not the zero limb
+      inside the Base Rate definition.
+
+  - id: five_c_non_usage_fee_steps_with_utilization
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.75%"
+    note: >
+      'for each day during such Accrual Period that the Advances Outstanding on
+      such day are less than the product of thirty-five percent (35.00%)
+      multiplied by the Facility Amount on such day, the sum of the products for
+      each such day during such Accrual Period of (A) one divided by 360, (B)
+      three-quarters of one percent (0.75%) and (C) the Unused Facility Amount
+      as of each such day'
+
+      The Non-Usage Fee on the Unused Facility Amount is 0.50% for the first
+      three months after the Effective Date, then 0.75% on days when usage is
+      below 35% of the Facility Amount and 0.50% otherwise, so the highest rate
+      is 0.75%. It is charged on the whole unused amount, not on a shortfall
+      below required usage, and the agreement states the rates itself rather
+      than pointing to the Fee Letter.

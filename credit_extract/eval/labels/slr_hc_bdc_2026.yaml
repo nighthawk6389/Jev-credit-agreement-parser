@@ -94,3 +94,106 @@ assertions:
       guaranty is among the Transaction Documents, and no guarantor signs. The
       "guaranties" the text mentions support the Collateral Obligations owed
       by Obligors or the Hedge Counterparties, not this facility.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: slr_facility_amount_before_end_of_revolving_period
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$35,000,000"
+    note: >
+      '" Facility Amount" means (a) prior to the end of the Revolving Period,
+      $35,000,000, unless this amount is permanently reduced pursuant to
+      Section 2.5 or increased pursuant to Section 2.8' and 'Lender | |
+      Commitment | Deutsche Bank AG, New York Branch | | $ | 35,000,000'
+
+      The Facility Amount and the only Committed Lender commitment on Annex B
+      are both $35,000,000. Not the Section 2.8 accordion ceiling ('to an
+      aggregate amount not to exceed $100,000,000'), and not the post-revolving
+      meaning of Facility Amount (the Advances outstanding).
+
+  - id: slr_facility_termination_date_springs_from_undated_closing
+    family: F10_conditionality
+    member: springing_on_trigger
+    kind: field_value
+    target: revolver.maturity_date
+    expect: null
+    note: >
+      '" Facility Termination Date " means the earliest to occur of (i) the
+      date that is two (2) years after the last day of the Revolving Period' ;
+      '" Revolving Period " means the period of time starting on the Closing
+      Date and ending on the earliest to occur of (a) an Equityholder RP
+      Extension Failure Event; (b) the date that is three (3) years after the
+      Closing Date or, if such date is extended pursuant to Section 2.6 , the
+      date mutually agreed upon by the Borrower and the Facility Agent' ;
+      'This Agreement shall become effective on the first day (the " Closing
+      Date ") on which the Facility Agent, on behalf of the Lenders, shall have
+      received (or waived in writing in its sole discretion) the following'
+
+      Advances are repaid 'in full on the Facility Termination Date' (Section
+      2.4(a)), two years after a Revolving Period that ends three years after
+      the Closing Date, but the Closing Date is defined only as the day the
+      Section 6.1 conditions are met and is never dated, so no date follows
+      from the text. The pipeline must not report 2031-08-14, nor the
+      2029-08-14 end of the Revolving Period, which come only from assuming
+      the Closing Date equals the agreement date ('made and entered into as of
+      August 14, 2026'). The Revolving Period can also end earlier on an
+      Equityholder RP Extension Failure Event, and Section 2.6 allows
+      twelve-month extension requests.
+
+  - id: slr_margin_steps_up_after_revolving_period
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.80%"
+    note: >
+      '" Applicable Margin " means (i) during the Revolving Period, 2.60% per
+      annum and (ii) after the end of the Revolving Period, 2.80% per annum'
+
+      The rate is '" Interest Rate" means, for any Accrual Period and any
+      Lender, a rate per annum equal to the sum of (a) the Applicable Margin and
+      (b) the Cost of Funds Rate', which for a Committed Lender is the Base
+      Rate, and '" Base Rate" for any Advance means a rate per annum equal to
+      Term SOFR for the Advance or portion thereof'. Levels are 2.60% during
+      and 2.80% after the Revolving Period; the step-up after the revolving
+      period is part of the schedule, so the top level is 2.80%. The extra
+      2.00% during an Event of Default is excluded, and the Term SOFR plus
+      0.50% cap on a Conduit Lender commercial paper cost of funds is a cost
+      of funds limb, not the Applicable Margin (Annex B lists only a Committed
+      Lender).
+
+  - id: slr_term_sofr_floor_quarter_point
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.25%"
+    note: >
+      '"Term SOFR" means, for any calculation with respect to an Advance (other
+      than an Advance bearing interest at the Alternate Base Rate), the greater
+      of (i) 0.25% and (ii) the Term SOFR Reference Rate for a tenor of three
+      (3) months'
+
+      Term SOFR, which is the Base Rate that Committed Lender advances bear,
+      cannot fall below 0.25%. Not the zero limb inside the Alternate Base Rate
+      definition, which applies only to the fallback rate, and not the 0.0%
+      floor on the Federal Funds Rate.
+
+  - id: slr_undrawn_fee_rate_in_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_status
+    target: commitment_fee_pct
+    expect: external_reference
+    note: >
+      '" Undrawn Fee Rate " has the meaning set forth in the Fee Letter'
+
+      The Undrawn Fee is the unused Commitments times the Undrawn Fee Rate
+      times 1/360 during the Revolving Period, and the rate is defined only by
+      reference to the Fee Letter (Section 8.4: fees 'in the amounts and on the
+      dates set forth herein or in one or more fee letter agreements'); no
+      undrawn fee rate is stated in the agreement.

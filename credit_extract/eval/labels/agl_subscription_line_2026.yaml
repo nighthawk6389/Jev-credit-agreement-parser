@@ -203,3 +203,69 @@ assertions:
       Qualified Borrower, and no Qualified Borrower is party: Schedule I lists
       AGL Private Credit Income Fund as the only Credit Party and only the
       Initial Borrower signs as an obligor.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: agl_maximum_commitment_includes_uncommitted_tranche
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$150,000,000"
+    note: >
+      '" Maximum Commitment " means $ 150,000,000 as may be (i) reduced by the
+      Borrowers pursuant to Section 3.6 or (ii) increased from time to time by
+      the Borrowers pursuant to Section 2.15'; 'For the avoidance of doubt, the
+      Maximum Commitment is inclusive of both the aggregate Committed Lender
+      Amount and the aggregate Uncommitted Lender Amount.'
+
+      The text (the Third Amendment conformed copy, a Litera blackline whose
+      struck text is excised) states the aggregate of its two tranches as one
+      figure, and Schedule II ('Commitments as of the Third Amendment Effective
+      Date') totals the Maximum Commitment column at $150,000,000 (each of
+      Societe Generale and State Street: $50,000,000 Committed Lender Amount
+      plus $25,000,000 Uncommitted Lender Amount). The "Commitment" of each
+      Lender is defined as the sum of its Committed and Uncommitted Lender Amounts,
+      so the aggregate Commitments are this figure; the committed-only total
+      is never stated as one figure, so it is not used. Rejected the accordion
+      ceiling: 'increase the Maximum Commitment to an amount not exceeding
+      $500,000,000'.
+
+  - id: agl_stated_maturity_date_is_answer
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2027-09-03
+    note: >
+      '" Stated Maturity Date " means September 3 , 2027 , subject to Section
+      2.16'; 'Maturity Date " means the earliest of: (a) the Stated Maturity
+      Date'; 'The Principal Obligations outstanding on the Maturity Date,
+      together with all accrued but unpaid interest thereon and any other
+      outstanding Obligations, shall be due and payable on the Maturity Date.'
+
+      Subscription line: the Availability Period ends on the same Maturity
+      Date, whose only dated limb is the Stated Maturity Date (the other limbs
+      are events: acceleration, loss of capital-call rights, dissolution
+      notice, Exchange Listing, termination of Commitments). Extension option
+      noted but not applied, as it is conditional: 'The Borrowers shall have
+      an option to extend the Stated Maturity Date then in effect for one (1)
+      additional term not longer than 364 days'.
+
+  - id: agl_unused_fee_rate_in_fee_letter
+    family: F03_external_reference
+    member: fee_letter
+    kind: field_status
+    target: commitment_fee_pct
+    expect: external_reference
+    note: >
+      '" Unused Commitment Fee Rate " has the meaning assigned to such term in
+      the applicable Fee Letter'; 'an unused commitment fee at the Unused
+      Commitment Fee Rate on the Committed Lender Amounts of the Lenders which
+      were unused'.
+
+      Section 2.13 charges the unused fee at the Unused Commitment Fee Rate,
+      and that rate is defined only by pointer to the Fee Letter; no rate
+      figure for it appears anywhere in the text. The 12.5 basis point
+      fronting fee in Section 2.14 is a letter of credit fee and was rejected.

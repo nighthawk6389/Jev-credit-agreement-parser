@@ -26,23 +26,24 @@ tier: 2
 
 assertions:
 
-  - id: blackrock_june_maturity_names_itself_too
+  - id: blackrock_june_maturity_resolves_past_its_self_reference_too
     family: F09_definitional_depth
     member: circular_definition
     kind: field_value
     target: revolver.maturity_date
-    expect: null
+    expect: 2029-06-01
     note: >
-      No answer, for the same reason as the August facility: limb (ii) points
-      at itself, limb (iii) is an event, and limb (i) is a Stated Maturity
-      Date this exhibit does not define in the text available.
+      '" Stated Maturity Date " means June 1, 2029, as the same may be
+      extended in accordance with the terms of Section 2.14 hereof.' The
+      Maturity Date is the earliest of the Stated Maturity Date, a
+      declaration of the Maturity Date itself, and the Collection Date.
 
-      The value of having both is that one document showing a cycle could be a
-      drafting error worth reporting to a reader. Two independent facilities
-      from the same sponsor using the identical wording ten months apart make
-      it a convention, which is a different finding: a definition graph that
-      refuses cycles will lose this field on every facility this sponsor
-      writes, not on one.
+      Corrected, for the same reason as the August facility: the Stated
+      Maturity Date is defined in the text after all. The two extension
+      options in Section 2.14 are conditional, so the date stands as written.
+      What the pair still shows is a sponsor convention: two facilities ten
+      months apart define the Maturity Date in terms of itself, and a
+      definition graph that refuses cycles would lose both.
 
   - id: blackrock_june_closing_date_is_stated
     family: F05_versioning
@@ -85,3 +86,87 @@ assertions:
       (the "Liability Cap") until a Full Recourse Event, but it is a guarantee
       of the Obligations, so the REIT is a Guarantor. No other guarantor is
       named.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: blackrock_june_maximum_facility_amount_is_stated
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$100,000,000"
+    note: >
+      '" Maximum Facility Amount " means the aggregate Commitments as then in
+      effect, which amount shall not exceed $100,000,000 (as such amount may be
+      increased from time to time with the consent of the Administrative Agent,
+      each Lender and the Borrower in accordance with Section 2.13 )'
+
+      The $100,000,000 is the facility amount before any increase. Rejected the
+      accordion ceiling in Section 2.13, 'to increase the Maximum Facility
+      Amount up to a total amount of $150,000,000'. The line revolves (a repaid
+      amount 'may, subject to the terms and conditions hereof, be
+      reborrowed'). Annex A with the per-lender Commitments is not in the text.
+      Section 2.1 leaves each Advance to the sole discretion of the Lender, but
+      the agreement still sizes the Commitments and charges a Non-Usage Fee on
+      the undrawn Maximum Facility Amount.
+
+  - id: blackrock_june_spread_steps_down_at_stabilization
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "3.00%"
+    note: >
+      '" Applicable Spread " means, with respect to each Advance, (i) from the
+      applicable Advance Date through and including the day on which (x) a
+      temporary certificate of occupancy is issued in respect of the related
+      Mortgaged Property, and (y) not less than twenty percent (20%) of the
+      rentable units at the related Mortgaged Property are subject to active
+      lease agreements (such date, the " Stabilization Date "), 3.00%, and (ii)
+      from the day following the Stabilization Date to the Maturity Date, 2.50%.'
+
+      The Interest Rate is 'the Benchmark for such date plus the Applicable
+      Spread', and the Benchmark is initially Term SOFR. Each Advance carries
+      3.00% until its property reaches the Stabilization Date and 2.50% after
+      that, so the highest level is 3.00%. It is a different term from the
+      3.00% floor in the Term SOFR definition, though the two figures match. There
+      is no base rate margin. Rejected the Default Rate ('five percent (5.0%)
+      greater than the Interest Rate'), which applies only after an Event of
+      Default.
+
+  - id: blackrock_june_term_sofr_floor_three_percent
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "3.00%"
+    note: >
+      '" Term SOFR " means for any calculation with respect to a SOFR Advance,
+      the greater of (x) three percent (3.00%) per annum, or (y) the Term SOFR
+      Reference Rate for a tenor of one month'
+
+      The floor sits inside the Term SOFR definition, written in words and in
+      figures; there is no separate Floor definition. Term SOFR is the initial
+      Benchmark, so the benchmark floor is 3.00%. It is a floor on the benchmark
+      only, not on the all-in rate. It is distinct from the 3.00% top level of
+      the Applicable Spread.
+
+  - id: blackrock_june_non_usage_fee_below_65_percent_utilization
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.25%"
+    note: >
+      'The Non-Usage Fee Rate (the " Non-Usage Fee Rate ") shall be equal to: if
+      the Advances Outstanding on such day are less than or equal to 65% of the
+      Maximum Facility Amount, 0.25%.'
+
+      The Non-Usage Fee accrues daily on the Maximum Facility Amount minus the
+      Advances Outstanding. The only rate stated is 0.25%, which applies at or
+      below 65% utilization and only from twelve months after the Closing Date,
+      so the highest rate is 0.25%. Rejected the Commitment Fee ('an aggregate
+      amount equal to $250,000'). It is collected partly as 0.25% of each
+      Advance, so it is an upfront fee on drawn amounts. Also rejected the
+      0.125% Extension Fee.

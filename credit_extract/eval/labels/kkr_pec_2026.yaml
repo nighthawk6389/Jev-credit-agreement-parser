@@ -119,3 +119,88 @@ assertions:
       nor K-PEC Holdco is a party. The only guaranties it mentions are the
       Permitted Unsecured Guaranties that Borrowers may give for Holding
       Vehicle debt.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: kkr_aggregate_commitments_stated
+    family: F06_structure
+    member: nav_or_subscription_line
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,325,000,000"
+    note: >
+      'The aggregate principal amount of the Commitments of all Lenders as of
+      the Amendment and Restatement Date is $1,325,000,000'.
+
+      The amended and restated agreement states the aggregate Commitments as
+      one figure inside the definition of Commitment (Schedule 1.01(A), which
+      holds the per-lender amounts, is not in the text). The Maximum Commitment
+      carries no figure of its own ('means the Commitment as it may be (a)
+      reduced from time to time pursuant to Section 2.08 hereof'). Rejected
+      the accordion ceiling 'the Maximum Commitment as increased pursuant to
+      this Section 2.02 shall not exceed $2,500,000,000 at any one time' and
+      the $100,000,000 minimum below which reductions may not go.
+
+  - id: kkr_stated_maturity_date_is_answer
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2029-09-11
+    note: >
+      '"Stated Maturity Date" means September 11, 2029'; '"Maturity Date"
+      means the earlier of: (a) the Stated Maturity Date; and (b) the date
+      upon which the Administrative Agent declares the Obligations due and
+      payable'; 'shall be due and payable on the Maturity Date, and the
+      Borrowers hereby unconditionally promise to pay'.
+
+      Section 2.06(b) makes the loans due on the Maturity Date, whose only
+      dated limb is the Stated Maturity Date (the others are acceleration and
+      a Change of Control). Rejected the earlier end of availability: '"Commitment
+      Termination Date" means the earliest to occur of (a) the Business Day
+      following the date that is one (1) month before the Stated Maturity
+      Date'. Extension noted, not applied, since it needs lender consent:
+      'The Borrowers may request to extend, at their option, the Stated
+      Maturity Date then in effect'.
+
+  - id: kkr_margin_tops_with_cash_sweep_ltv_step
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "3.50%"
+    note: >
+      '"Margin" means three percent (3.00%) per annum in the case of Term Rate
+      Loans or Daily SOFR Loans and two percent (2.00%) per annum in the case
+      of Base Rate Loans'; 'the relevant Margin for all Loans shall be
+      increased by one-half percent (0.50%) per annum'; '"Cash Sweep LTV"
+      means twenty-seven and one-half percent (27.50%)'.
+
+      Computed: 3.00% + 0.50% = 3.50%. The SOFR margin has two levels set by
+      LTV: 3.00%, and 3.50% while the latest reported LTV is at or above the
+      27.50% Cash Sweep LTV. That step is a coverage level, not a default
+      step-up (an LTV above the Cash Sweep LTV triggers sweeps and cure plans,
+      and only failing a Required LTV Plan is an Event of Default), so it
+      counts. Rejected the 2.00% Base Rate margin and the extra 2.00% that
+      applies only while certain Events of Default continue. The definition
+      also says "or any greater percent per annum applicable pursuant to
+      Section 2.02", but Section 2.02 (the accordion) sets no margin, so the
+      text fixes no higher rate.
+
+  - id: kkr_unused_rate_steps_with_usage
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.65%"
+    note: >
+      '"Unused Rate" means the following percentages per annum based upon the
+      Daily Usage as set forth below: Daily Usage Unused Rate ≤50% 0.65% >50%
+      0.45%'; 'an unused fee calculated daily equal to the Unused Rate
+      multiplied by the amount by which the aggregate Commitments during such
+      period exceed'.
+
+      Section 2.05(b) charges the unused fee at the Unused Rate, which steps
+      with Daily Usage: 0.65% at or below 50% usage and 0.45% above it. The
+      highest rate is 0.65%. No other undrawn or minimum-use fee appears.

@@ -171,3 +171,86 @@ assertions:
       Collateral Loan ('any Person who is obligated to repay such Collateral
       Loan (including, if applicable, a guarantor thereof)'), not of these
       Loans.
+
+  # -- economic terms: labelled twice, independently, from the text,
+  # -- before the readers for them were written --
+
+  - id: bain_stated_maturity_is_may_2034
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2034-05-08
+    note: >
+      'Section 2.4 Maturity . Each Loan shall mature, and the principal amount
+      thereof shall be due and payable, on the Stated Maturity' and
+      '" Stated Maturity " means May 8, 2034'
+
+      Followed Section 2.4 to the Stated Maturity definition, a bare date with
+      no business-day roll, which governs both the Revolving Loans and the Term
+      Loans. Rejected the earlier end of availability: the Revolving Loan
+      Commitment Period ends on the last day of the Reinvestment Period, which
+      ends on the earliest of events including '(a) the 18-month anniversary of
+      the Closing Date'. No extension option exists; extending the Stated
+      Maturity needs an amendment signed by all Lenders (Section 12.6).
+
+  - id: bain_margin_steps_up_at_18_month_anniversary
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.85%"
+    note: >
+      '" Applicable Margin " means (i) from and including the Closing Date to
+      but excluding the 18-month anniversary of the Closing Date, 1.70 % per
+      annum and (ii) from and including the day that is the 18-month
+      anniversary of the Closing Date and thereafter, 1.85 % per annum'
+
+      Interest is the Applicable Rate, '" Applicable Rate " means, the sum of
+      (x) the Benchmark applicable to the relevant Interest Period plus (y) the
+      Applicable Margin', and '" Benchmark " means Term SOFR'. Two levels exist,
+      1.70% and then 1.85% from the 18-month anniversary, the same date the
+      Reinvestment Period ends under its clause (a); a step-up after the
+      reinvestment period is part of the schedule, so the top level is 1.85%.
+      There is no separate ABR margin (the ABR fallback adds the same
+      Applicable Margin), and the Post-Default Rate extra two percent is
+      excluded.
+
+  - id: bain_term_sofr_floor_is_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'If Term SOFR as so determined would be less than the Floor, such rate
+      shall be deemed to be equal to the Floor' and 'with respect to Term SOFR
+      or any Benchmark Replacement. Commencing on the Closing Date, the Floor
+      shall be zero'
+
+      The Term SOFR definition floors the benchmark at the defined Floor, and
+      the Floor definition sets it at zero (the text writes the word zero),
+      i.e. 0.00%. Not the floor of zero inside the Alternate Base Rate
+      definition, and not the Floor Obligation definition, which describes
+      collateral loans held by the Borrower.
+
+  - id: bain_commitment_fee_steps_with_unused_amount
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "1.00%"
+    note: >
+      '(ii) from and including the six-month anniversary of the Closing Date,
+      (x) 0.50% of the Undrawn Commitment in respect of the Loans as of the end
+      of such day so long as the daily average unused amount is less than 25%
+      of the Total Revolving Loan Commitment or the Total Term Loan Commitment
+      (as applicable), and (y) otherwise, 1.00% of the Undrawn Commitment in
+      respect of the Loans as of the end of such day'
+
+      Section 2.6(a) Commitment Fee: 0.50% of the Undrawn Commitment for the
+      first six months, then 0.50% while the daily average unused amount is
+      below 25% of the commitment and 1.00% otherwise, so the highest rate is
+      1.00%. It is charged on the whole Undrawn Commitment, so it is a
+      commitment fee that steps with utilization, not a minimum utilization
+      fee on a shortfall; no other unused fee appears in the agreement.
