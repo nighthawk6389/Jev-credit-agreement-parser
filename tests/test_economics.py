@@ -155,6 +155,23 @@ def test_a_total_the_agreement_prints_is_the_aggregate():
     assert _value(E.commitment_candidates, *_TRANCHES, schedule) == Decimal("925000000")
 
 
+def test_an_amendments_total_dated_before_it_is_stale():
+    """Lafayette Square's Amendment No. 1 increases the Maximum Commitment
+    and carries the Multicurrency total "as of the Effective Date" through
+    unchanged. Blue Owl Technology dates its totals as of the amendment."""
+    def doc(as_of):
+        return NormalizedDocument(
+            document_id="t", source_path="t", source_format="txt",
+            text=("AMENDMENT NO. 1 TO SENIOR SECURED REVOLVING CREDIT AGREEMENT\n\n"
+                  '" Multicurrency Commitment " means each Lender\'s commitment. The '
+                  "aggregate amount of the Lenders' Multicurrency Commitments as of "
+                  f"the {as_of} is $75,000,000.00.\n"))
+    stale, current = doc("Effective Date"), doc("First Amendment Effective Date")
+    assert E.commitment_candidates(stale, build_definition_graph(stale)) == []
+    found = E.commitment_candidates(current, build_definition_graph(current))
+    assert [c.value for c in found] == [Decimal("75000000.00")]
+
+
 def test_a_term_loan_agreements_commitments_are_not_a_revolver():
     """Constellation Brands' TERM LOAN CREDIT AGREEMENT states its total in
     the same words a revolver does."""

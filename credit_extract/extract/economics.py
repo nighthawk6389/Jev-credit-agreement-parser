@@ -292,9 +292,20 @@ _TRANCHE_TOTAL = re.compile(
     r"The\s+aggregate\s+(?:principal\s+)?amount\s+of\s+(?:the\s+)?"
     r"(?:(?:Lenders['’]?|Lender['’]s)\s+(?P<tranche>(?:[A-Z][\w\-]*\s+){0,3})"
     r"Commitments|Commitments\s+of\s+all\s+(?:of\s+the\s+)?Lenders)"
-    r"\s+(?:as\s+of\s+[^.$]{0,80}?\s+)?(?:is|was|equals|shall\s+be)\s+(?P<amount>"
+    r"\s+(?:as\s+of\s+(?P<asof>[^.$]{0,80}?)\s+)?(?:is|was|equals|shall\s+be)\s+(?P<amount>"
     + _MONEY + r")"
 )
+#: An amendment, from its title. Its conformed copy keeps statements dated
+#: before it: Lafayette Square's Amendment No. 1 carries "The aggregate amount
+#: of the Lenders' Multicurrency Commitments as of the Effective Date is
+#: $75,000,000.00" through "the increase to the Maximum Commitment" the
+#: amendment makes. Blue Owl Technology, Fidelity and KKR date theirs as of
+#: the amendment's or the restatement's own date.
+_AMENDMENT_TITLE = re.compile(
+    r"\bAMENDMENT\s+NO\.|\b[A-Z]+(?:TH|ST|ND|RD)\s+AMENDMENT\s+TO\b|"
+    r"\b(?:FIRST|SECOND|THIRD)\s+AMENDMENT\s+TO\b|\bAMENDMENT\s+TO\s+[A-Z ]*"
+    r"(?:CREDIT|LOAN)\s+AGREEMENT")
+_AMENDMENT_DATE = re.compile(r"Amendment|Restatement", re.I)
 
 
 #: A size definition that hands the size to another one. The GBDC facility's
@@ -359,7 +370,10 @@ def _tranche_totals(doc: NormalizedDocument) -> list[Any]:
     """
     totals: list[tuple[Decimal, str, re.Match]] = []
     tranches: list[tuple[Decimal, str, re.Match]] = []
+    amendment = bool(_AMENDMENT_TITLE.search(doc.text[:3000]))
     for match in _TRANCHE_TOTAL.finditer(doc.text):
+        if amendment and not _AMENDMENT_DATE.search(match.group("asof") or ""):
+            continue                    # dated before the amendment it sits in
         tranche = _flat(match.group("tranche") or "")
         if re.search(r"\b(?:Term|Incremental|Swingline|Swing|Delayed|Increase)",
                      tranche):
