@@ -784,6 +784,13 @@ def guarantors_established(doc: NormalizedDocument) -> str | None:
     return None
 
 
+#: A span that opens with a defined term and its verb is a whole definition.
+_OPENS_A_DEFINITION = re.compile(
+    r'\s*["“]\s*[A-Z][^"“”\n]{1,90}?\s*["”]\s*(?:means|shall mean|has the '
+    r'meaning|shall have the meaning|:)'
+)
+
+
 def _sentence_window(doc: NormalizedDocument, span: Span, cap: int = 900) -> str:
     """The sentence the span sits in, not a fixed character window.
 
@@ -791,7 +798,15 @@ def _sentence_window(doc: NormalizedDocument, span: Span, cap: int = 900) -> str
     500 characters of "Indebtedness set forth on Schedule 6.01" does not get
     its magnitude from that schedule, and a fixed window cannot tell the
     difference. Sentence bounds can.
+
+    A span that is a whole definition is its own window. Ares CP Funding's
+    Applicable Spread ends "per annum ." with a space before the stop, so the
+    next ". " was inside the following definition -- "Approval Notice ...
+    attached hereto as Exhibit A" -- and the margin was asked whether Exhibit
+    A sets it.
     """
+    if _OPENS_A_DEFINITION.match(doc.text, span.start):
+        return doc.text[span.start:span.end]
     lo = max(0, span.start - cap)
     hi = min(len(doc.text), span.end + cap)
     before = doc.text.rfind(". ", lo, span.start)

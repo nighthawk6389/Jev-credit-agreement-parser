@@ -1211,6 +1211,15 @@ OFFLINE_RULES: tuple[Rule, ...] = (
     Rule("libor_floor_pct",
          r"LIBO Rate shall not at any time be less than\s+(" + _PCT + r")", 0.92),
     Rule("commitment_fee_pct", r"commitment fee equal to\s+(" + _PCT + r")", 0.88),
+    # The BDC revolver's form, Blue Owl Technology's and Fidelity's: "a
+    # commitment fee, which shall accrue at a rate per annum equal to 0.350%
+    # on the average daily unused amount". The percentage must follow "equal
+    # to" directly, so a fee that steps with utilization -- "equal to (a)
+    # 0.50% ... and (b) 0.25%" -- is not read as its first step.
+    Rule("commitment_fee_pct",
+         r"commitment fee,?\s+which shall accrue at (?:a|the) rate per annum "
+         r"equal to\s+(" + _PCT + r")\s+on the (?:average )?daily unused",
+         0.88),
     Rule("fronting_fee_pct", r"fronting fee\s+equal to\s+(" + _PCT + r")", 0.88),
     Rule("ticking_fee_pct", r"ticking fee[^.]{0,120}?equal to\s+(" + _PCT + r")", 0.85),
     Rule("excess_cash_flow.sweep_pct",
@@ -1862,7 +1871,9 @@ def run_passes(
     # ladder is measured against, and a baseline missing a free tier the
     # ladder has would flatter the ladder rather than test it.
     from .definitions import definition_candidates
+    from .economics import economic_candidates
     from_definitions = definition_candidates(doc, graph, specs)
+    from_definitions += economic_candidates(doc, graph, specs)
     if from_definitions:
         candidates.extend(from_definitions)
         cost.deterministic_calls += 1

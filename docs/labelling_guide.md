@@ -210,6 +210,13 @@ test_labelling_contract.py` enforces it.
   normalized text. Label the bold-double-underlined value. If both survive in
   what you are reading, you are reading the raw filing, not the normalized
   text.
+- A blackline the normalizer **missed** — the struck figure survives fused to
+  the new one, with nothing between them: Eagle Point's "the Facility Amount
+  is $60,000,00075,000,000" and "NovemberJune 1226, 20262028". Neither figure
+  is the label, and neither is `null`. Use `kind: field_status`,
+  `expect: needs_review`, `F05_versioning / operative_version_ambiguous`: the
+  right output is review, and a confident value of either reading is a silent
+  error even when it happens to be the new one.
 - A **conditional** change ("as extended in accordance with any Extension
   Amendment") — label the unconditional value and record the condition in the
   note. A conditional variant is a different assertion kind, not a different
@@ -254,6 +261,36 @@ means anything, and this guide is missing a rule.
 
 Add the rule here when that happens. That is how this file is supposed to
 grow.
+
+### What double-labelling the fund facilities settled
+
+The five economic terms were labelled twice on the twenty in-sample fund and
+BDC agreements. The two sets agreed on 77 of 100 slots and both skipped 17;
+these are the rules the rest needed.
+
+- **A weekend maturity.** Roll it to the next Business Day only when the
+  maturity's own definition says so ("or, if such day is not a Business Day,
+  the next succeeding Business Day"). A payment-date convention elsewhere in
+  the agreement moves the payment, not the defined date: StepStone's
+  five-year anniversary is 2031-09-14, a Sunday, and the label is that date.
+- **Several revolving tranches whose total is printed.** "Largest by
+  commitment, never a sum" stands, unless the agreement itself prints the
+  aggregate as one figure -- Fidelity's restated schedule ends "Total |
+  $550,000,000 | $50,000,000 | $600,000,000". Then that figure is the answer:
+  it is written, not computed.
+- **A margin an amendment superseded** is history, not a level of the
+  schedule. Ares CP Funding's spread is "(i) prior to the Eighteenth Amendment
+  Effective Date, 2.00% per annum and (ii) thereafter, 1.80 % per annum", the
+  operative text is the eighteenth amendment's, and the top level is 1.80%.
+- **A step-up that is not a default rate** is part of the schedule, arithmetic
+  included. KKR's margin rises by 0.50% while an LTV test is failed; both
+  labellers wrote 3.50%, and a reader that cannot add should decline rather
+  than report 3.00%.
+- **A size the definition hands to another definition.** Follow it.
+  Star Mountain's "Maximum Facility Amount" is "the Aggregate Commitments as
+  then in effect", and "Aggregate Commitments" states $185,000,000. The
+  corpus's first label stopped at the first definition and called the size
+  unstated.
 
 ## If you are also recording a model reading
 

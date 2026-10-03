@@ -96,6 +96,7 @@ from ..ingest.segment import Chunk
 from ..models.core import CostLedger, Span
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from .definitions import definition_candidates
+from .economics import economic_candidates
 from .passes import (
     Candidate, ExtractionFailed, _extract_with_priors, table_candidates,
 )
@@ -563,6 +564,7 @@ def deterministic_stage(
     # the graph already knows which span that is. Free, and it runs before the
     # prose rules so that "dated as of" cannot outvote the definitions article.
     from_definitions = definition_candidates(doc, graph, specs)
+    from_definitions += economic_candidates(doc, graph, specs)
     if from_definitions:
         result.candidates.extend(from_definitions)
         result.cost.deterministic_calls += 1
