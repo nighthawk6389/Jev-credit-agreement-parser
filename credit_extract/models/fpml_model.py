@@ -438,8 +438,15 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
               presence="This agreement contains a provision stating when the "
                        "term loans funded at closing mature, however those "
                        "loans are named."),
+        # The description is what validator A's support question names, and
+        # it names the thing, not one agreement's word for it. "The maturity
+        # date of the Revolving Credit Facility" asked of a fund facility's
+        # '"Stated Maturity Date" means July 30, 2030' scored 0.76-0.87, under
+        # the 0.88 bar for dates, on every directly stated maturity in the
+        # fund set: those facilities have no Revolving Credit Facility.
         _spec("revolver.maturity_date",
-              "the maturity date of the Revolving Credit Facility", "date",
+              "the date the revolving loans mature, however that date is "
+              "named", "date",
               "dates", 5, "fpml:maturityDate", "fpml",
               anchors=["Revolving Credit Maturity Date"],
               presence="This agreement contains a provision stating when the "
@@ -468,7 +475,8 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
                        "commitments to make term loans after the closing "
                        "date, however those commitments are named."),
         _spec("revolver.commitment",
-              "the aggregate Revolving Credit Commitments", "money",
+              "the total amount of the lenders' revolving commitments, however "
+              "they are named", "money",
               "economic_terms", 5, "fpml:totalCommitmentAmount", "fpml",
               anchors=["Revolving Credit Commitment"],
               presence="This agreement contains a provision stating the "
@@ -489,13 +497,22 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         _spec("libor_floor_pct", "the benchmark rate floor", "percent",
               "economic_terms", 5, "fpml:floorRate", "fpml",
               anchors=["Floor", "SOFR Floor", "LIBO Rate"]),
+        # A fund facility's margin is an "Applicable Spread" or a "Spread" and
+        # its schedule steps by period or utilization, not by a grid. The
+        # presence question keeps the old words, so the answers validator C
+        # already bought about margins stay valid.
         _spec("applicable_margin.eurodollar_top_level_pct",
               "the highest margin over Term SOFR, Eurodollar or another "
-              "benchmark in the pricing grid (the Applicable Rate or "
-              "Applicable Margin)",
+              "benchmark that the agreement's pricing sets, however the margin "
+              "is named (Applicable Rate, Applicable Margin, Applicable Spread "
+              "or Spread)",
               "percent", "economic_terms", 5, "fpml:spread", "fpml",
               anchors=["Applicable Margin"],
-              sections=["2.12"]),
+              sections=["2.12"],
+              presence="This agreement contains a provision addressing the "
+                       "highest margin over Term SOFR, Eurodollar or another "
+                       "benchmark in the pricing grid (the Applicable Rate or "
+                       "Applicable Margin)."),
         _spec("commitment_fee_pct", "the unused commitment fee", "percent",
               "economic_terms", 4, "fpml:accruingFeeOption", "fpml",
               sections=["2.09"]),
