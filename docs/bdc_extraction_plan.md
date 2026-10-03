@@ -1,6 +1,8 @@
 # Plan: economic terms on BDC and fund facilities
 
-Status: proposed, not started.
+Status: done. What each step found is in `docs/jev_live_pass.md`, "The
+fifth pass: economic terms on fund facilities"; the outcome against this
+plan's own bar is at the end.
 
 ## The problem
 
@@ -149,3 +151,46 @@ and the same labels would measure it.
 * The out-of-sample run has been reported against its blind labels.
 * A fresh out-of-sample set has been harvested and labelled before anything
   runs on it.
+
+## Outcome
+
+* **Labels.** The labels were written twice, independently, before any
+  reader existed. That gave 60 new assertions, and four existing ones turned
+  out wrong. The two sets agreed on 77 of 100 slots. The rules the
+  disagreements needed are in the labelling guide.
+* **Diagnosis.** Missing anchors and forms dominated: every fit agreement
+  wrote at least one of these terms in a shape no rule read. Values several
+  definitions deep came next, mostly maturities. No value sat in a grid the
+  text reader could not take. One blackline fused its figures, and is now a
+  `needs_review` label, not a value.
+* **Steps 3 to 5** are `extract/economics.py`, with a test on each form and
+  each near miss. Measuring found two confident wrong answers on the way, and
+  both are fixed: validator E's window ran past a definition's end, and a term
+  loan's flat rate was read as a revolver's margin.
+* **In sample, live.** On the 81 assertions on these fields: 47 confidently
+  right, 0 wrong and 18 more right in review, against 12, 1 and 0. The whole
+  gate: 425 confident and 0 wrong.
+* **Out of sample, once.** 28 of the 61 economic values are confidently
+  right where none had been read, with 0 wrong. The audit of unlabelled
+  confident claims found one wrong commitment, since fixed.
+* **The fresh set** is twenty investment-grade credit agreements, nineteen
+  of them revolvers. They carry 179 blind assertions, committed and pushed
+  before anything ran on them.
+
+Against "done when", the plan's bar is met for:
+
+* floors and fees, which are confidently right on most in-sample fund
+  facilities;
+* zero silent errors;
+* the out-of-sample report;
+* the fresh set.
+
+It is not met for commitments and margins, about half confident, or for
+maturities, mostly right but in review. Two reasons:
+
+* A literal reader cannot confirm a computed date.
+* Validator A's thresholds for dates and economic terms were fitted before
+  these labels existed.
+
+Refitting them is the first thing to try next.
+

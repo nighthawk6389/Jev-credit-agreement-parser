@@ -83,6 +83,10 @@ python -m credit_extract.eval.family_report --gate --jev api --workers 6 \
 # Twenty BDC agreements labelled blind, which CI never scores (about $0.70).
 python -m credit_extract.eval.family_report --out-of-sample --no-mutations \
     --jev api --workers 6
+# Twenty investment-grade credit agreements labelled blind, not yet run:
+# the next out-of-sample measurement.
+python -m credit_extract.eval.family_report --no-mutations --jev api \
+    --workers 6 --labels credit_extract/eval/labels_out_of_sample_ig
 
 # The same model tier through Vercel's AI Gateway, which speaks the Messages
 # API. One key, and the gateway's own model catalogue behind it.
@@ -505,12 +509,12 @@ classes have **no labelled failures**, which means every threshold clears the
 target trivially and the fitted value carries no information — the report
 prints that in full rather than showing a clean 1.000 and moving on.
 
-**Four live Jev passes, an out-of-sample set, and no Jev in CI.**
+**Five live Jev passes, two out-of-sample sets, and no Jev in CI.**
 `OfflineJev` is a deterministic lexical stand-in implementing the same typed
 interface, so the pipeline, its tests and its calibration all run offline,
 and every CI build is still answered by it. It is not a calibrated model, and
 the orphan sweep's concept lexicons are its weakest part. Live System One
-(`jev-1.13.0`) has been run four times through the gate. The
+(`jev-1.13.0`) has been run five times through the gate. The
 first pass found 54 of 425 confident propositions wrong (12.71%), and traced
 them to four questions a literal reader answered as written, not as meant.
 The second rewrote those questions and found 3 wrong of 364 (0.82%) on the
@@ -524,7 +528,13 @@ the corpus. An audit of those 188 found 7 wrong, all guarantors reported
 absent, and two of them named in the document. The fourth pass labelled
 guarantors on 86 in-sample agreements and fixed that: 23 right and 0 wrong
 live where there had been 16 and 2, and no wrong guarantor among the BDCs.
-`docs/jev_live_pass.md` records all of it.
+The fifth labelled the economic terms of the twenty in-sample fund
+facilities twice, independently, before writing readers for them
+(`extract/economics.py`). On the BDCs, run once more, 28 of the 61 labelled
+commitments, maturities, margins and fees are confidently right where none
+had been read, and none is wrong. A second out-of-sample set, twenty
+investment-grade credit agreements, is labelled blind and waits for the next
+measurement. `docs/jev_live_pass.md` records all of it.
 Thresholds are
 tagged with the backend they were fitted against, each scorer has its own
 file, and `load_thresholds` **refuses a backend mismatch** rather than
@@ -564,6 +574,7 @@ credit_extract/
   graph/      definitions.py    defined-term DAG, closure, cycles, external refs
               precedence.py     notwithstanding / subject to, as a directed graph
   extract/    passes.py         deterministic + LLM backends, pass planning
+              economics.py      fund facilities' size, maturity, margin, fee, floor
               reconcile.py      agreement, conflict, single-pass suspicion
               recorded.py       a model reading, checked in and replayed
               recordings/       one JSON per document read that way
@@ -578,6 +589,7 @@ credit_extract/
               split.yaml          frozen fit/holdout assignment, derived not chosen
               labels/             Tier 2 assertions, one file per document
               labels_out_of_sample/  the same for twenty BDC agreements, never in CI
+              labels_out_of_sample_ig/  and for twenty investment-grade agreements
               families.py         registers, coverage, consistency check
               assertions.py       assertion kinds and evaluation
               split.py            derives and re-checks the document split
@@ -593,6 +605,7 @@ config/thresholds.json          fitted, versioned, CI-asserted (offline stand-in
 config/thresholds.jev-1.13.0.json  fitted against live Jev, that version only
 corpus/real/                    four SEC filings, read in detail and labelled
 corpus/real/bdc/                twenty BDC agreements, out of sample, labelled blind
+corpus/real/ig/                 twenty investment-grade agreements, the same, not yet run
 corpus/edgar/                   100 more, stratified, zipped, all labelled
 docs/orientation.md             start here: goals, labels vs recordings, families
 docs/corpus_findings.md         what those 100 say about the pipeline

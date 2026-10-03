@@ -257,9 +257,10 @@ untestable_in_this_environment:
     status: partially_lifted
     reason: >
       CI has no JEV_API_KEY, so OfflineJev, a deterministic lexical stand-in,
-      answers every validator question in every build. Three live passes and
-      one out-of-sample run have been made from a session that had a key, all
-      against System One jev-1.13.0 on 2026-09-30 and recorded in
+      answers every validator question in every build. Five live passes have
+      been made from a session that had a key, with the out-of-sample set run
+      after the third, fourth and fifth, all against System One jev-1.13.0
+      between 2026-09-30 and 2026-10-03 and recorded in
       docs/jev_live_pass.md. The first ran on the original questions, the
       second and third on rewritten ones. Each is one draw of a scorer that
       is not deterministic.
@@ -282,7 +283,15 @@ untestable_in_this_environment:
       guarantors on 86 in-sample agreements, read them where they are named
       and stopped C calling them absent where the text has them: in sample
       23 right and 0 wrong where live v9 had 16 and 2, and on the BDC
-      agreements 7 right and 0 wrong where the audit found 5 and 7.
+      agreements 7 right and 0 wrong where the audit found 5 and 7. The
+      fifth pass labelled the five economic terms on the twenty in-sample
+      fund agreements twice and wrote readers for them: live, 47 of those 81
+      assertions confidently right and none wrong, where there had been 12
+      and 1. On the twenty BDC agreements, run once, 28 of the 61 labelled
+      commitments, maturities, margins and fees are confidently right where
+      none had been read, and none is wrong; one of seven confident claims
+      no label covered was wrong, a pre-amendment commitment total, since
+      fixed.
 
       What the first pass measured, under thresholds fitted for the live
       scorer on the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
@@ -399,7 +408,9 @@ untestable_in_this_environment:
       GBDC and EPRT labels the second pass exposed; let validator E speak for
       a field a document names and points elsewhere without stating it;
       label a sample of live Jev's absent_from_document claims, which is
-      where its unmeasured confident output lives; and fit C's and A's
+      where its unmeasured confident output lives; fit A's thresholds for
+      dates and economic terms on the fund labels, under which 18 right
+      answers sit in review; and fit C's and A's
       parties thresholds on real filings rather than the synthetic corpus,
       which is all the harness fits today. Lifting this fully needs the key
       in CI as a secret, for a scheduled live gate, which the answer cache

@@ -998,22 +998,284 @@ second blind test.
     guarantor;
   * Kennedy Lewis, whose only guaranty is a non-recourse carve-out.
 
+# The fifth pass: economic terms on fund facilities
+
+The out-of-sample run read none of the 61 commitments, maturities, top
+margins and commitment fees the twenty BDC agreements' blind labels carry.
+Every rule for those fields had been written against the synthetic fixture's
+drafting, and fund facilities write differently. `docs/bdc_extraction_plan.md`
+set out the order: labels first, in sample; readers written against the fit
+documents; measure in sample; then the twenty BDCs once.
+
+## Labels first, twice
+
+The five fields were labelled on the twenty in-sample fund and BDC
+agreements by two independent sets of readers, from the text, before any
+reader for them existed. Of the 100 (document, field) slots the sets agreed
+on 77 and both skipped 17. In 4 only one set wrote a label. In the last 2
+the sets differed, both times on whether a payment-day clause elsewhere rolls
+a weekend maturity. The brief counts only the definition's own roll, so the
+unrolled dates stand.
+
+60 assertions are new. Four existing labels on these fields were wrong:
+
+* **BlackRock Monticello, both facilities.** The old labels said the Stated
+  Maturity Date is not defined in the text, so the maturity has no answer.
+  It is defined ("July 30, 2030"; "June 1, 2029"). The Maturity Date's
+  self-referencing limb is real and harmless.
+* **Eagle Point.** The old label said the maturity chain ends at events. Its
+  last dated link is a Commitment Termination Date that survives only fused
+  with the date it replaced: "NovemberJune 1226, 20262028". The label is now
+  `needs_review`, the output a fused figure should get, and the fused
+  commitment ("$60,000,00075,000,000") gets the same.
+* **Star Mountain.** The old label said the size is not stated. It stopped at
+  "Maximum Facility Amount"; "Aggregate Commitments" states $185,000,000,
+  written "$ 185,000,000". An adjudicator settled it, since this is a
+  holdout document.
+
+The rules the disagreements needed are now in the labelling guide.
+
+Against the code before this pass, the 81 assertions on these fields scored
+12 confidently right, 1 wrong and 62 in review. The wrong one was a standing
+bug: KKR states its unused rate (0.65% at 50% usage or less, 0.45% above),
+and the fee-letter route called the fee external because the agreement also
+has a Fee Letter for other fees.
+
+## The readers
+
+`extract/economics.py` holds the readers. Each takes a value only from the
+place the agreement designates as settling the term, and only in a shape that
+fixes it. Every other shape is a decline, which leaves the field open for
+review.
+
+They were written against the 14 fit and contaminated fund agreements, and
+each names the one whose drafting it is for. The six holdout agreements were
+measured, not read. One leak is worth recording: the labellers' reports
+described some holdout drafting. No reader was written for a form seen only
+there.
+
+The near misses mattered more than the forms:
+
+* **Commitment.** The reader takes the figure from size definitions in the
+  shapes that fix it:
+  * "the lesser of (a) $X and (b) the aggregate Commitments";
+  * "(a) $X plus (b) New Commitments";
+  * "(a) prior to the end of the Revolving Period, $X";
+  * "the aggregate Commitments as then in effect, which amount shall not
+    exceed $X (as such amount may be increased)".
+
+  It follows a size definition that hands off to another one. With tranches,
+  it takes a total the agreement prints in a Total row, or else the largest
+  revolving tranche; it never sums them. It declines on:
+  * an accordion ceiling ("may be up to", "may be increased to");
+  * a figure fused with the one it replaced;
+  * a term loan agreement, which states its commitments in the same words.
+* **Maturity.** The reader resolves the agreement's maturity term over the
+  definition graph:
+  * "the earliest of" keeps its dated limbs and ignores its events;
+  * "the date that is N years after" and "the Nth anniversary of" are added;
+  * "the first Business Day on or after" is rolled;
+  * "the last day of" a defined period is read;
+  * "the date of this Agreement" is the cover date.
+
+  The first maturity term the agreement defines decides, resolved or not.
+  The Commitment Termination Date and the ends of the revolving,
+  reinvestment and funding periods are never reached. A chain that ends at an
+  event, a fused date or another document resolves to nothing. A date reached
+  through references cites the definition that writes it. A computed one
+  carries its route and stays in review (below).
+* **Top margin.** The reader takes the top level of the margin schedule. It
+  sets aside the base-rate margin, the default increment (including one
+  inside a parenthesised proviso, and one whose proviso cites "clause (i) or
+  clause (ii)"), and a rate the operative amendment superseded. It declines
+  on:
+  * an increment it would have to add (KKR's LTV step-up);
+  * a schedule that sends part of its pricing to a table;
+  * a term tranche priced beside a revolver (Latham, below);
+  * a collateral loan's "Spread" (Eagle Point).
+
+  A margin given by a fee letter is an external reference.
+* **Commitment fee.** The reader takes the top tier of an unused, non-usage,
+  non-utilization or undrawn fee, with its thresholds set aside. It also
+  reads the BDC revolver's prose "commitment fee, which shall accrue at a
+  rate per annum equal to X% on the average daily unused amount". An upfront
+  "Commitment Fee" charged on the whole facility is not the unused fee. A
+  rate in a fee letter, given by definition, "is defined in" or "in the
+  amounts set forth in", is an external reference.
+* **Floor.** The reader takes "zero (0)" with no unit, and a floor written
+  into the benchmark's own definition: "the greater of (x) three percent
+  (3.00%) per annum, or (y) the Term SOFR Reference Rate", or "shall at no
+  time be less than 0.0%".
+
+Measuring found two confident wrong answers, both now fixed:
+
+* **Ares CP Funding's margin** came back `external_reference`. Validator E
+  extends a span to the next ". ", and the definition ends "per annum ." with
+  a space, so the window ran into "Approval Notice ... attached hereto as
+  Exhibit A". A span that is a whole definition is now its own window.
+* **Latham's margin** came back 4.00%, the answer its label names as the one
+  to avoid. That is the term loans' flat rate; the revolver's grid is a table
+  the filing omits.
+
+The readers also run on every corporate agreement in the corpus. Outside the
+fund set they confirm Air T's and Health Catalyst's margins, and Hornbeck's
+and Valvoline's floors. They put seven corporate maturities into review with
+the right value, three of them springing maturities read at their
+unconditional date. Every value they produce on an unlabelled development
+document was checked against its text.
+
+## Computed maturities and a literal reader
+
+Validator A asks whether the cited text supports a value. For a computed
+maturity no text states the date, so a live experiment ($0.0002) asked Jev
+about six computed maturities in two ways. Each was asked about the right
+date and two near misses: a year later, and the last dated link.
+
+* **Against the maturity definition alone,** which is what A sends, Jev
+  cannot tell them apart: 0.12–0.19 for all three.
+* **Against every definition in the chain,** it usually prefers the right
+  date: 0.51–0.73, against at most 0.35 for the near misses. But nothing
+  reaches the 0.94 date threshold. On the three-hop GBDC chain it rated the
+  date a year late (0.35) above the right one (0.32).
+
+So computed maturities stay in review, with the route in a `derived`
+qualifier. A literal reader confirms what is written. Arithmetic is
+Python's, and so far nothing checks it independently.
+
+## Results in sample
+
+**The live gate, 757 assertions:** 425 confident and 0 wrong, 525 passed.
+On the 693 assertions it shares with the fourth pass's gate, that is 387
+confident, 0 wrong and 470 passed, against 381, 0 and 452. Nothing that
+passed before fails now. The offline stand-in that CI runs passes at 340
+confident and 0 wrong (304 and 0 before). Every run read nearly all its
+answers from the cache: the live gates cost under a cent each.
+
+**The 81 assertions on these five fields, live:**
+
+| | confident and right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- |
+| before this pass | 12 | 1 | 0 | 62 |
+| **after** | **47** | **0** | 18 | 10 |
+
+Six more pass that assert no value or review: three null labels, and three
+`needs_review` labels met by review, the fused figures among them.
+
+| field | confident and right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- |
+| commitment | 7 | 0 | 4 | 3 |
+| maturity | 3 | 0 | 10 | 2 |
+| top margin | 7 | 0 | 4 | 2 |
+| floor | 15 | 0 | 0 | 2 |
+| commitment fee | 15 | 0 | 0 | 1 |
+
+By split side, the fit agreements score 34 right, 13 more in review and 2
+missed. The six holdout agreements, never read while the readers were
+written, score 11 right, 1 in review and 8 missed, none of them wrong.
+
+Floors and fees clear the plan's bar: confidently right on most in-sample
+fund facilities that state them. Commitments and margins reach about half.
+Maturities fall short. Their values are right, but a computed date cannot
+clear a literal reader, and a stated one scored 0.74–0.87 against the 0.88
+bar for dates.
+
+One change moved those scores. Validator A asks about each field by its
+description, and three descriptions named a facility fund agreements do not
+have: "the maturity date of the Revolving Credit Facility", "the aggregate
+Revolving Credit Commitments" and "the highest margin ... in the pricing
+grid". They now name the thing however it is named, as the third pass did
+for absence questions. That confirmed five more right answers, put one back
+in review and made nothing wrong. The thresholds were not refitted.
+
+## Out of sample: the twenty BDCs, once
+
+Nothing in this pass was developed on them. They were run once, on the code
+that measured in sample, against their blind labels.
+
+| | confident and right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- |
+| economic terms, fourth pass | 0 | 0 | 0 | 61 |
+| **economic terms, now** | **28** | **0** | 10 | 23 |
+| floors, fourth pass | 8 | 0 | 0 | 10 |
+| **floors, now** | **12** | **0** | 0 | 6 |
+
+The 61 economic labels split as:
+
+* commitments: 5 right, 5 in review, 6 missed of 16;
+* maturities: 8 right, 4 in review, 7 missed of 19;
+* top margins: 9 right, 1 in review, 4 missed of 14;
+* commitment fees: 6 right and 6 missed of 12.
+
+All 168 blind assertions: 91 confident and 0 wrong, 107 passed, against 59, 0
+and 65 in the fourth pass. The run cost $0.002.
+
+The confident claims no label covers were audited as before. On these five
+fields there are seven:
+
+* AMG Comvest's floor, '"Floor" means zero';
+* five margins and fees whose definitions hand the rate to a fee letter;
+* Lafayette Square's commitment, $75,000,000.
+
+The first six are right. The last is wrong. It is the conformed copy's "as of
+the Effective Date" total of an amendment that, in its own words, increases
+the Maximum Commitment. In an amendment, a stated total now counts only when
+it is dated as of an amendment's or restatement's own date. No in-sample
+document changes. Like every fix after a run, it was informed by these
+twenty, which is why the next measurement uses a fresh set.
+
+## A fresh out-of-sample set
+
+The plan's last step: twenty investment-grade credit agreements, a segment
+the corpus holds few of. They were found by pricing keyed to the borrower's
+debt ratings ("Index Debt", "Public Debt Rating"), are whole EX-10 credit
+agreements filed in 2025 and 2026, and come from companies the corpus does
+not hold. The set includes Target, Uber, CVS, Illumina, ICE, Celanese and
+Puget Energy, and two real estate investment trusts.
+
+The labels were written from the text alone by readers who did not run the
+pipeline, and were committed and pushed (8ac263c) before anything ran on the
+set. There are 179 assertions in `credit_extract/eval/labels_out_of_sample_ig`,
+on the same ten fields as the BDC set. Every quotation in every note was
+checked against the text. Three things to know when reading the results:
+
+* **One is not a revolver.** Easterly Government Properties' agreement is a
+  term facility: "The Borrower shall not have the right to reborrow". Its
+  revolver commitment and maturity are labelled not applicable, with the
+  term facility's figures as the near misses. It stays in the set as an
+  out-of-sample test of the term-loan guard.
+* **Eight of the nineteen commitment-fee labels are null.** Seven of those
+  agreements charge a facility fee on the whole commitment, drawn or not,
+  and no unused fee; each note quotes the facility fee as the answer not to
+  give. The eighth is Easterly's, which charges no fee on unused
+  commitments; its extension fee is the near miss.
+* **Three filings print no total commitment** and omit the schedule that
+  has one: Celanese, Uber and Avnet. Celanese's is labelled an external
+  reference, and the other two are left unlabelled.
+
+Nothing in this pass has run on the set.
+
 # What is next
 
-1. Decide the labels the second pass exposed: GBDC's `abl_revolver` against
-   Athena's `unknown`. It now has out-of-sample company: two BDC revolvers
-   pass the own-receivables question, and the corpus has no BDC profile to
-   send them to.
-2. Let validator E, or a status C can reach, say "named here, stated
-   elsewhere". That was Sysco's case. For guarantors, the fourth pass found
-   that a definition pointing at a guarantee agreement is not enough, so a
-   real answer has to find who signs and who is scheduled.
-3. Extraction on BDC facilities. The rules tier found no commitment,
-   maturity, margin or fee in twenty agreements. `docs/bdc_extraction_plan.md`
-   is the plan.
-4. Fit A's parties threshold on real names, and label a sample of the
-   corpus's unlabelled `absent_from_document` claims, as the audit above did
-   for these twenty.
-5. Put the key in CI for a scheduled live gate. A question change costs
-   about two thirds of a cold run, so a gate after one is about $2–4. Until
-   then, CI measures the stand-in, which passes at 304 confident / 0 wrong.
+1. Run the investment-grade set once. Its labels are blind and nothing has
+   run on it. It is the next measurement, and the first on a segment the
+   readers were not written for.
+2. Fit A's thresholds for dates and economic terms on the fund labels. 18
+   right answers sit in review under bars fitted before these labels
+   existed, among them every stated fund maturity below 0.88.
+3. Check computed maturities with something other than a literal reader.
+   Python's arithmetic over the definition graph is exact where every link
+   resolves, but nothing confirms the parse. Against the whole chain, Jev
+   preferred the right date in five of six cases, which is not enough to
+   confirm one.
+4. Decide the labels the second pass exposed: GBDC's `abl_revolver` against
+   Athena's `unknown`.
+5. Let validator E, or a status C can reach, say "named here, stated
+   elsewhere". That was Sysco's case. For guarantors, a definition pointing at
+   a guarantee agreement is not enough, so a real answer has to find who signs
+   and who is scheduled.
+6. Fit A's parties threshold on real names, and label a sample of the
+   corpus's unlabelled `absent_from_document` claims.
+7. Put the key in CI for a scheduled live gate. With the answer cache, a
+   gate after a code change costs cents; a question change costs about two
+   thirds of a cold run, $2–4. Until then, CI measures the stand-in, which
+   passes at 340 confident / 0 wrong.
