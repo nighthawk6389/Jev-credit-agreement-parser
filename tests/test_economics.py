@@ -368,6 +368,41 @@ def test_a_period_to_but_excluding_a_date_ends_the_day_before_and_says_so():
             "day before the second anniversary of the Closing Date.") in _premises(found[0])
 
 
+def test_a_definition_s_own_business_day_convention_rolls_its_date():
+    """Puget Energy, found out of sample: May 18, 2031 is a Sunday and the
+    definition says the Maturity Date is then the next preceding Business
+    Day. The date it comes to is not written anywhere, so it is computed and
+    carries its premise."""
+    found = _read(
+        E.maturity_candidates,
+        '" Maturity Date " means May 18, 2031, as such date may be extended in '
+        "accordance with Section 2.22; provided that, in each case, if such date "
+        "is not a Business Day, the Maturity Date shall be the next preceding "
+        "Business Day.",
+    )
+    assert dt.date(2031, 5, 18).weekday() == 6
+    assert [c.value for c in found] == [dt.date(2031, 5, 16)]
+    assert _premises(found[0]) == [
+        "The text defines the Maturity Date as May 18, 2031, or the preceding "
+        "Business Day if that date is not a Business Day."]
+
+
+@pytest.mark.parametrize("written, expected", [
+    # Accelevation: January 2, 2031 is a Thursday, so nothing moves and the
+    # date stays one the text states.
+    ("the earlier of (i) January 2, 2031 or, if such date is not a Business Day, "
+     "the immediately preceding Business Day and (ii) the date on which the "
+     "Revolving Credit Commitments shall terminate.", dt.date(2031, 1, 2)),
+    # Forward where the definition says so: Saturday 2 August 2031.
+    ("August 2, 2031; provided that if such date is not a Business Day, the "
+     "Maturity Date shall be the next succeeding Business Day.", dt.date(2031, 8, 4)),
+])
+def test_the_convention_moves_only_a_date_that_is_not_a_business_day(written, expected):
+    found = _read(E.maturity_candidates, f'" Maturity Date " means {written}')
+    assert [c.value for c in found] == [expected]
+    assert ("derived" in found[0].qualifiers) == (expected.day == 4)
+
+
 def test_a_stated_maturity_carries_no_premises():
     """A date the text writes is asked about directly; there is nothing to
     compute and nothing to confirm step by step."""
@@ -422,6 +457,11 @@ def test_an_unresolved_maturity_is_not_replaced_by_the_termination_date():
     ("Amounts repaid or prepaid in respect of Term Loans may not be reborrowed. "
      "Any Revolving Loan so repaid may, subject to the terms and conditions "
      "hereof, be reborrowed.", dt.date(2031, 9, 10)),
+    # Easterly Government Properties: a term facility priced off ratings that
+    # never says "term loan". Found out of sample, on the investment-grade set,
+    # where its maturity was confirmed as a revolver's.
+    ("The Borrower shall not have the right to reborrow any portion of the "
+     "Advances that is repaid or prepaid.", None),
 ])
 def test_a_term_facility_has_no_revolver_maturity(evidence, expected):
     doc = _doc('" Maturity Date " means September 10, 2031.')

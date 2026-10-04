@@ -199,7 +199,13 @@ _PORTFOLIO_TERM = re.compile(r"Collateral|Loan\s+Asset|Obligation|Reserve", re.I
 _REBORROW = re.compile(
     r"(?:may|shall|can)(?!\s+not)[^.]{0,80}?\bbe\s+re-?borrowed|\bborrow\b[^.]{0,20}"
     r"\bre-?borrow|\brepay\b[^.]{0,20}\bre-?borrow", re.I)
-_NO_REBORROW = re.compile(r"(?:may|shall)\s+not\s+be\s+re-?borrowed", re.I)
+#: Easterly Government Properties' term facility, priced like a revolver and
+#: never calling itself a term loan, says only "The Borrower shall not have the
+#: right to reborrow any portion of the Advances that is repaid or prepaid".
+_NO_REBORROW = re.compile(
+    r"(?:may|shall)\s+not\s+be\s+re-?borrowed|"
+    r"(?:shall|will)\s+not\s+have\s+the\s+right\s+to\s+re-?borrow|"
+    r"(?:may|shall)\s+not\s+re-?borrow", re.I)
 _TERM_TITLE = re.compile(r"TERM\s+LOAN\s+(?:CREDIT\s+)?AGREEMENT", re.I)
 
 
@@ -499,6 +505,13 @@ _LAST_DAY = re.compile(r"(?:the\s+)?last\s+day\s+of\s+(?P<rest>.*)", re.I)
 _PERIOD_END = re.compile(
     r"(?P<how>ending\s+on|to\s+and\s+including|through\s+and\s+including|"
     r"to\s+but\s+excluding|through|until)\s+(?P<rest>.*)", re.I)
+#: A definition's own business-day convention: Puget Energy's "May 18, 2031
+#: ... ; provided that, in each case, if such date is not a Business Day, the
+#: Maturity Date shall be the next preceding Business Day". May 18, 2031 is a
+#: Sunday.
+_ROLL_PROVISO = re.compile(
+    r"if\s+(?:any\s+)?such\s+(?:date|day)\s+is\s+not\s+a\s+Business\s+Day\b"
+    r"[^.;]{0,80}?\b(?P<way>preceding|succeeding|following|next\s+Business)", re.I)
 _THIS_AGREEMENT = re.compile(r"(?:the\s+)?(?:date\s+of\s+this\s+Agreement|"
                              r"date\s+hereof)\b", re.I)
 
@@ -525,12 +538,14 @@ def _shift(date: dt.date, n: int, unit: str) -> dt.date:
             day -= 1
 
 
-def _roll(date: dt.date, strictly: bool) -> dt.date:
-    """The next weekday on or after ``date`` (holidays are not modelled)."""
+def _roll(date: dt.date, strictly: bool, back: bool = False) -> dt.date:
+    """The next weekday on or after ``date``, or on or before it with ``back``
+    (holidays are not modelled)."""
+    step = dt.timedelta(days=-1 if back else 1)
     if strictly:
-        date += dt.timedelta(days=1)
+        date += step
     while date.weekday() >= 5:
-        date += dt.timedelta(days=1)
+        date += step
     return date
 
 
@@ -602,9 +617,20 @@ class _Chain:
         read = self.read(body, stack + (name,))
         if read is None:
             return None
+        found, words = read
+        roll = _ROLL_PROVISO.search(body)
+        if roll is not None:
+            back = roll.group("way").lower() == "preceding"
+            words = (f"{words}, or the {'preceding' if back else 'next'} Business "
+                     f"Day if that date is not a Business Day")
+            rolled = _roll(found, strictly=False, back=back)
+            if rolled != found:
+                # The date the definition comes to is no longer one it writes.
+                self.arithmetic = True
+                found = rolled
         self.links.append((name, node.span))
-        self.premises.append((node.span, f"The text defines the {name} as {read[1]}."))
-        return read[0]
+        self.premises.append((node.span, f"The text defines the {name} as {words}."))
+        return found
 
     def expr(self, text: str, stack: tuple[str, ...]) -> dt.date | None:
         read = self.read(text, stack)
