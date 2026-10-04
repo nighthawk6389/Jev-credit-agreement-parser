@@ -58,6 +58,7 @@ one sits beside the right answer in these documents:
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 from decimal import Decimal
 from typing import Any
@@ -472,6 +473,7 @@ _WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
 _ORDINALS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5,
              "sixth": 6, "seventh": 7, "1st": 1, "2nd": 2, "3rd": 3, "4th": 4,
              "5th": 5, "6th": 6, "7th": 7}
+_ORDINAL_WORDS = {n: w for w, n in _ORDINALS.items() if w.isalpha()}
 _NUM = (r"(?:(?P<w>[a-z]+(?:-[a-z]+)?)\s*\(\s*(?P<d>\d+)\s*\)|(?P<n>\d+)"
         r"|(?P<w2>one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve"
         r"|eighteen|twenty-four|thirty-six|forty-eight|sixty))")
@@ -543,6 +545,14 @@ class _Chain:
     which is the cover date. Anything else in a link -- an event, a date in
     another document, a self-reference -- is not a date, and a chain with no
     dated route through it resolves to nothing.
+
+    Every definition it resolves is also written down as a premise: what the
+    resolver read that definition to say, as a sentence the definition can be
+    checked against ("The text defines the Final Maturity Date as the
+    earliest of the 4-year anniversary of the Closing Date and the other
+    dates and events it lists"). No sentence states a computed date, but each
+    premise is stated, so a literal reader can confirm the parse step by step
+    while the arithmetic stays here.
     """
 
     def __init__(self, doc: NormalizedDocument, graph: Any) -> None:
@@ -551,6 +561,8 @@ class _Chain:
         self.names = sorted(graph.nodes, key=len, reverse=True)
         self.links: list[tuple[str, Span]] = []
         self.arithmetic = False
+        #: (span, statement): each definition on the route, as read.
+        self.premises: list[tuple[Span, str]] = []
 
     def term_at(self, text: str) -> str | None:
         t = re.sub(r"^\s*(?:the|such)\s+", "", text)
@@ -563,13 +575,22 @@ class _Chain:
 
     def cover_date(self) -> dt.date | None:
         """The one "dated as of" date on the cover, or None if it is not one."""
-        found = {
-            _date(m.group(1))
-            for m in re.finditer(r"dated\s+as\s+of\s+(" + _DATE + r")",
-                                 self.doc.text[:6000])
-        }
-        found.discard(None)
-        return next(iter(found)) if len(found) == 1 else None
+        cover = self.cover()
+        return None if cover is None else cover[0]
+
+    def cover(self) -> tuple[dt.date, Span] | None:
+        """The cover date and where the cover writes it."""
+        found: dict[dt.date, re.Match] = {}
+        for m in re.finditer(r"dated\s+as\s+of\s+(" + _DATE + r")",
+                             self.doc.text[:6000]):
+            date = _date(m.group(1))
+            if date is not None:
+                found.setdefault(date, m)
+        if len(found) != 1:
+            return None
+        date, m = next(iter(found.items()))
+        start, end = max(0, m.start() - 300), min(len(self.doc.text), m.end() + 100)
+        return date, Span(start=start, end=end, text=self.doc.text[start:end])
 
     def term(self, name: str, stack: tuple[str, ...]) -> dt.date | None:
         if name in stack or len(stack) > 8:
@@ -578,61 +599,91 @@ class _Chain:
         if node is None:
             return None
         body = re.sub(r"^[\s,:]+", "", _flat(node.body))
-        found = self.expr(body, stack + (name,))
-        if found is not None:
-            self.links.append((name, node.span))
-        return found
+        read = self.read(body, stack + (name,))
+        if read is None:
+            return None
+        self.links.append((name, node.span))
+        self.premises.append((node.span, f"The text defines the {name} as {read[1]}."))
+        return read[0]
 
     def expr(self, text: str, stack: tuple[str, ...]) -> dt.date | None:
+        read = self.read(text, stack)
+        return None if read is None else read[0]
+
+    def read(self, text: str, stack: tuple[str, ...]) -> tuple[dt.date, str] | None:
+        """The date an expression comes to, and how it was read, in words."""
         text = re.sub(r"^(?:means|shall mean)\s+", "", text.strip())
         stated = _date(text)
         if stated is not None:
-            return stated
+            return stated, f"{stated:%B} {stated.day}, {stated.year}"
         if _THIS_AGREEMENT.match(text):
-            return self.cover_date()
+            cover = self.cover()
+            if cover is None:
+                return None
+            date, span = cover
+            self.premises.append((
+                span, f"This Agreement is dated as of {date:%B} {date.day}, {date.year}."))
+            return date, "the date of this Agreement"
         match = _EARLIEST.match(text)
         if match:
             return self.earliest(text[match.end():], stack)
         match = _BUSINESS_DAY.match(text)
         if match:
-            base = self.expr(match.group("rest"), stack)
-            return None if base is None else _roll(base, strictly=not match.group("on"))
+            base = self.read(match.group("rest"), stack)
+            if base is None:
+                return None
+            how = "on or after" if match.group("on") else "after"
+            return (_roll(base[0], strictly=not match.group("on")),
+                    f"the first Business Day {how} {base[1]}")
         for pattern in (_AFTER, _ANNIVERSARY):
             match = pattern.match(text)
             if match:
-                n, base = _number(match), self.expr(match.group("rest"), stack)
+                n, base = _number(match), self.read(match.group("rest"), stack)
                 if n is None or base is None:
                     return None
                 self.arithmetic = True
-                return _shift(base, n, match.group("unit"))
+                unit = match.group("unit").lower().rstrip("s")
+                words = (f"the date {n} {unit}{'' if n == 1 else 's'} after {base[1]}"
+                         if pattern is _AFTER else f"the {n}-{unit} anniversary of {base[1]}")
+                return _shift(base[0], n, match.group("unit")), words
         match = _ORDINAL_ANNIVERSARY.match(text)
         if match:
-            base = self.expr(match.group("rest"), stack)
+            base = self.read(match.group("rest"), stack)
             if base is None:
                 return None
             self.arithmetic = True
-            return _shift(base, _ORDINALS[match.group("ord").lower()], "year")
+            n = _ORDINALS[match.group("ord").lower()]
+            return (_shift(base[0], n, "year"),
+                    f"the {_ORDINAL_WORDS[n]} anniversary of {base[1]}")
         match = _LAST_DAY.match(text)
         if match:
             name = self.term_at(match.group("rest"))
-            return None if name is None else self.period_end(name, stack)
+            found = None if name is None else self.period_end(name, stack)
+            return None if found is None else (found, f"the last day of the {name}")
         name = self.term_at(text)
         if name is not None:
-            return self.term(name, stack)
+            found = self.term(name, stack)
+            return None if found is None else (found, f"the {name}")
         return None
 
-    def earliest(self, text: str, stack: tuple[str, ...]) -> dt.date | None:
+    def earliest(self, text: str, stack: tuple[str, ...]) -> tuple[dt.date, str] | None:
         marks = list(_LIMB.finditer(text))
         if len(marks) < 2:
             return None
-        dates = []
+        dated: list[tuple[dt.date, str]] = []
         for index, mark in enumerate(marks):
             end = marks[index + 1].start() if index + 1 < len(marks) else len(text)
             limb = re.sub(r"[\s,;]+(?:and|or)?[\s,;]*$", "", text[mark.end():end])
-            found = self.expr(limb, stack)
+            found = self.read(limb, stack)
             if found is not None:
-                dates.append(found)
-        return min(dates) if dates else None
+                dated.append(found)
+        if not dated:
+            return None
+        words = [w for _, w in dated]
+        if len(dated) < len(marks):
+            words.append("the other dates and events it lists")
+        listed = words[0] if len(words) == 1 else ", ".join(words[:-1]) + " and " + words[-1]
+        return min(d for d, _ in dated), f"the earliest of {listed}"
 
     def period_end(self, name: str, stack: tuple[str, ...]) -> dt.date | None:
         node = self.graph.get(name)
@@ -641,12 +692,15 @@ class _Chain:
         match = _PERIOD_END.search(_flat(node.body))
         if match is None:
             return None
-        found = self.expr(match.group("rest"), stack + (name,))
-        if found is None:
+        read = self.read(match.group("rest"), stack + (name,))
+        if read is None:
             return None
+        found, words = read
         self.links.append((name, node.span))
         if match.group("how").lower().startswith("to but"):
             found -= dt.timedelta(days=1)
+            words = f"the day before {words}"
+        self.premises.append((node.span, f"The text defines the {name} as a period that ends on {words}."))
         return found
 
 
@@ -663,11 +717,13 @@ def maturity_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
     links = list(dict.fromkeys(term for term, _ in chain.links))
     route = " <- ".join(reversed(links))
     if chain.arithmetic:
+        premises = [[span.start, span.end, statement]
+                    for span, statement in dict.fromkeys(chain.premises)]
         return [_candidate(
             "revolver.maturity_date", value, node.span,
             f"computed over the definitions: {route}. No sentence states this "
             "date; every link in the chain resolved to one",
-            qualifiers={"derived": route},
+            qualifiers={"derived": route, "premises": json.dumps(premises)},
         )]
     # A pure reference chain ends at a definition that states the date. Cite
     # that one: it is where the date is written, and the only place a reader

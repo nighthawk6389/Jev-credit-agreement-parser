@@ -17,6 +17,7 @@ one is a confident wrong answer.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 from decimal import Decimal
 from pathlib import Path
@@ -282,6 +283,101 @@ def test_the_first_business_day_on_or_after_rolls_a_weekend():
     )
     assert dt.date(2030, 8, 17).weekday() == 5
     assert [c.value for c in found] == [dt.date(2030, 8, 19)]
+    assert _premises(found[0]) == [
+        "The text defines the Closing Date as August 17, 2024.",
+        "The text defines the Reinvestment Period as a period that ends on the "
+        "earliest of the third anniversary of the Closing Date and the other "
+        "dates and events it lists.",
+        "The text defines the Facility Termination Date as the last day of the "
+        "Reinvestment Period.",
+        "The text defines the Final Maturity Date as the earliest of the first "
+        "Business Day on or after the 36-month anniversary of the Facility "
+        "Termination Date and the other dates and events it lists.",
+    ]
+
+
+def _premises(candidate):
+    """The statements a computed candidate was computed from, in order."""
+    return [statement for _, _, statement in json.loads(candidate.qualifiers["premises"])]
+
+
+def test_a_computed_maturity_carries_the_premises_it_was_computed_from():
+    """No sentence states 5C's maturity, so validator A cannot confirm it. What
+    the text states is each step, and the candidate carries those, each with
+    the span of the definition that states it, for validator_a_premises to ask."""
+    doc = _doc(
+        '" Revolving Period End Date ": The earlier to occur of (a) the Scheduled '
+        "Revolving Period End Date and (b) the date of the declaration of the "
+        "Revolving Period End Date pursuant to Section 9.2(a).",
+        '" Scheduled Revolving Period End Date ": November 6, 2028.',
+        '" Termination Date ": The earliest of (a) the date that is two (2) years '
+        "after the Revolving Period End Date, (b) the date of the declaration of "
+        "the Termination Date pursuant to Section 9.2(a) or (c) the date of the "
+        "termination of the Commitments.",
+    )
+    found = E.maturity_candidates(doc, build_definition_graph(doc))
+    premises = json.loads(found[0].qualifiers["premises"])
+    assert [statement for *_, statement in premises] == [
+        "The text defines the Scheduled Revolving Period End Date as November 6, 2028.",
+        "The text defines the Revolving Period End Date as the earliest of the "
+        "Scheduled Revolving Period End Date and the other dates and events it lists.",
+        "The text defines the Termination Date as the earliest of the date 2 years "
+        "after the Revolving Period End Date and the other dates and events it lists.",
+    ]
+    stated = [doc.text[start:end] for start, end, _ in premises]
+    assert "November 6, 2028" in stated[0]
+    assert "two (2) years" in stated[2]
+
+
+def test_the_cover_date_is_a_premise_of_its_own():
+    """StepStone's Closing Date is "the date of this Agreement": the cover's
+    date is a premise, asked against the cover."""
+    doc = _doc(
+        '" Closing Date " means the date of this Agreement.',
+        '" Maturity Date " means the earlier of (a) the Scheduled Maturity Date '
+        "and (b) the date on which all Loans shall become due and payable in "
+        "full hereunder, whether by acceleration or otherwise.",
+        '" Scheduled Maturity Date " means the five-year anniversary of the '
+        "Closing Date.",
+        cover="CREDIT AGREEMENT dated as of September 14, 2026 among the parties "
+              "hereto.\n\n",
+    )
+    found = E.maturity_candidates(doc, build_definition_graph(doc))
+    premises = json.loads(found[0].qualifiers["premises"])
+    cover = [(s, e) for s, e, st in premises
+             if st == "This Agreement is dated as of September 14, 2026."]
+    assert len(cover) == 1
+    assert "dated as of September 14, 2026" in doc.text[slice(*cover[0])]
+    assert "The text defines the Closing Date as the date of this Agreement." in [
+        st for *_, st in premises]
+    assert ("The text defines the Scheduled Maturity Date as the 5-year "
+            "anniversary of the Closing Date.") in [st for *_, st in premises]
+
+
+def test_a_period_to_but_excluding_a_date_ends_the_day_before_and_says_so():
+    found = _read(
+        E.maturity_candidates,
+        '" Closing Date " means March 3, 2025.',
+        '" Revolving Period " means the period from and including the Closing '
+        "Date to but excluding the second anniversary of the Closing Date.",
+        '" Maturity Date " means the date that is two (2) years after the last '
+        "day of the Revolving Period.",
+    )
+    assert [c.value for c in found] == [dt.date(2029, 3, 2)]
+    assert ("The text defines the Revolving Period as a period that ends on the "
+            "day before the second anniversary of the Closing Date.") in _premises(found[0])
+
+
+def test_a_stated_maturity_carries_no_premises():
+    """A date the text writes is asked about directly; there is nothing to
+    compute and nothing to confirm step by step."""
+    found = _read(
+        E.maturity_candidates,
+        '" Maturity Date " means the earliest to occur of (i) the Stated Maturity '
+        "Date and (ii) the Collection Date.",
+        '" Stated Maturity Date " means July 30, 2030.',
+    )
+    assert "premises" not in found[0].qualifiers
 
 
 @pytest.mark.parametrize("definitions", [
