@@ -1,12 +1,12 @@
 {
-  "version": "9",
+  "version": "10",
   "backend": "jev-1.13.0",
-  "fitted_on": "synthetic gold corpus, 24 documents",
+  "fitted_on": "synthetic gold corpus, 24 documents; A_span_support/dates refitted on the real in-sample filings by credit_extract.eval.realfit",
   "n_documents": 24,
   "per_class": {
     "A_span_support/baskets": 0.88,
     "A_span_support/covenant_levels": 0.85,
-    "A_span_support/dates": 0.88,
+    "A_span_support/dates": 0.8,
     "A_span_support/economic_terms": 0.77,
     "A_span_support/parties": 0.96,
     "C_negative_space/economic_terms": 0.8,
@@ -57,18 +57,18 @@
     "A_span_support/dates": {
       "field_class": "dates",
       "validator": "A_span_support",
-      "threshold": 0.88,
+      "threshold": 0.8,
       "target_precision": 0.99,
       "precision": 1.0,
-      "recall": 1.0,
-      "coverage": 1.0,
-      "precision_lower_bound": 0.862,
+      "recall": 0.4286,
+      "coverage": 0.0968,
+      "precision_lower_bound": 0.4385,
       "certified": false,
       "silent_error_rate": 0.0,
-      "n": 48,
-      "n_accepted": 24,
-      "n_holdout": 24,
-      "n_incorrect": 0
+      "n": 76,
+      "n_accepted": 3,
+      "n_holdout": 31,
+      "n_incorrect": 58
     },
     "A_span_support/economic_terms": {
       "field_class": "economic_terms",
@@ -135,5 +135,5 @@
       "n_incorrect": 0
     }
   },
-  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings. Fitted to the presence questions of the third live pass, which ask about each term however the agreement names it; v8, fitted after the first two of those ten changes, came out identical. Under this set the full live gate on 2026-09-30, on the 611 assertions every run shares, asserted 358 propositions confidently and none was wrong, against 3 of 364 under v7, 53 of 424 under v6 and 0 of 293 for the offline stand-in. Run once, unrefitted, on twenty BDC agreements labelled blind, it asserted 59 of 168 labelled propositions confidently and none was wrong. Most of its absent_from_document claims fall on fields no label covers and are not measured; see docs/jev_live_pass.md."
+  "notes": "Fitted against live System One (jev-1.13.0) on synthetic variants. Valid for that model version only, and measured on generated documents rather than real filings. Fitted to the presence questions of the third live pass, which ask about each term however the agreement names it; v8, fitted after the first two of those ten changes, came out identical. Under this set the full live gate on 2026-09-30, on the 611 assertions every run shares, asserted 358 propositions confidently and none was wrong, against 3 of 364 under v7, 53 of 424 under v6 and 0 of 293 for the offline stand-in. Run once, unrefitted, on twenty BDC agreements labelled blind, it asserted 59 of 168 labelled propositions confidently and none was wrong. Most of its absent_from_document claims fall on fields no label covers and are not measured; see docs/jev_live_pass.md. v10: A_span_support/dates 0.88 -> 0.80, all three fits agree, fitted on 76 fit-side samples of which 58 wrong; held out, 3 of 31 cleared at a silent error rate of 0.000. Kept: A_span_support/economic_terms at 0.77, the fits disagree, so the threshold rests on how often the reader picks a wrong figure from the right text, which nothing here measures."
 }

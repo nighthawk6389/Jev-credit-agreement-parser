@@ -24,6 +24,7 @@ for judgements about what text says.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field as dc_field
 from datetime import date
@@ -102,7 +103,11 @@ class ValidationContext:
 
 
 def _describe(field: ExtractedField, spec: FieldSpec) -> str:
-    value = field.value
+    return describe_value(field.value, spec)
+
+
+def describe_value(value: Any, spec: FieldSpec) -> str:
+    """A value as validator A writes it into a question."""
     if isinstance(value, Decimal):
         text = format(value.normalize(), "f")
     elif value is None:
@@ -130,7 +135,19 @@ def _support_statement(field: ExtractedField, spec: FieldSpec) -> str:
     its name on those terms. Asked whether the value *is* the institution's
     legal name, a literal reader can say no.
     """
-    value = _describe(field, spec)
+    return support_statement(field.value, spec)
+
+
+def support_statement(value: Any, spec: FieldSpec) -> str:
+    """Validator A's question about any value of a field, extracted or not.
+
+    The threshold fit on real filings asks it of values that are wrong on
+    purpose, and it must be A's question word for word. A copy of the field
+    with ``value`` replaced is not a way to get there: a field's value lives
+    on its primary variant, so the copy asks about the original value, and
+    the fit counted the right answer's score as a wrong one's.
+    """
+    value = describe_value(value, spec)
     if spec.name.endswith(".legal_name"):
         return f'In this text, "{value}" is {spec.description}.'
     return f"The text supports a value of {value} for {spec.description}."
@@ -196,6 +213,69 @@ def validator_a_span_support(ctx: ValidationContext) -> int:
                 )
             checked += 1
     return checked
+
+
+def validator_a_premises(ctx: ValidationContext) -> int:
+    """Confirm a computed value by the premises it was computed from.
+
+    No sentence states a computed maturity, so validator A's question -- does
+    the cited text support this date? -- has no literal answer. The live
+    scorer gave every computed fund maturity 0.06-0.07, the right date and
+    its near misses alike. What the text does state is each step: that the
+    Closing Date is June 1, 2026; that the Final Maturity Date is the earliest
+    of the four-year anniversary of the Closing Date and the events it lists.
+    Those are literal, and the reader that cannot confirm the conclusion can
+    confirm them. The arithmetic between them is Python's.
+
+    Only a value A turned down is asked about, and only one whose extractor
+    wrote down its premises (``qualifiers["premises"]``: each a definition's
+    span and what the resolver read it to say). It is confirmed only if every
+    premise clears A's threshold for its class. Otherwise it stays in review,
+    and the note names the weakest premise.
+    """
+    asked = 0
+    for name, field in ctx.fields.items():
+        raw = field.qualifiers.get("premises")
+        if not raw or field.value is None or field.status != "needs_review":
+            continue
+        refused = [e for e in field.trace if e.validator == "A_span_support"]
+        if not refused or refused[-1].passed:
+            continue
+        threshold = ctx.threshold_for(name, "A_span_support")
+        scored: list[tuple[float, str]] = []
+        for index, (start, end, statement) in enumerate(json.loads(raw)):
+            question = Noul(name=f"{name}#premise{index}", statement=statement)
+            result = ctx.session.ask(ctx.doc.slice(start, end), [question],
+                                     label="A_premises")
+            decision = result.get(question.name)
+            probability = decision.confidence if decision is not None else 0.0
+            field.record(ValidationEvent(
+                validator="A_premises", question=statement, jev_type="noul",
+                probability=probability, threshold=threshold,
+                passed=probability >= threshold,
+                backend=decision.backend if decision is not None else "none",
+            ))
+            scored.append((probability, statement))
+            asked += 1
+        if not scored:
+            continue
+        weakest, statement = min(scored)
+        if weakest >= threshold:
+            field.status = "confirmed"
+            field.validation_confidence = weakest
+            field.validation_source = "A_premises"
+            field.notes = (
+                f"computed; each of the {len(scored)} premises it was computed "
+                f"from is supported by its own definition (the weakest at "
+                f"{weakest:.2f}, threshold {threshold:.2f})"
+            )
+        else:
+            field.notes = (
+                f"computed; the premise {statement!r} is supported at "
+                f"{weakest:.2f}, below the {threshold:.2f} threshold for "
+                f"{ctx.specs[name].field_class}"
+            )
+    return asked
 
 
 # ---------------------------------------------------------------------------

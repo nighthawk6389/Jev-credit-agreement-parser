@@ -410,6 +410,7 @@ def run_pipeline(
     # away on their own rather than needing a second switch.
     if arm.runs("A"):
         V.validator_a_span_support(ctx)
+        V.validator_a_premises(ctx)
     orphans = (
         V.validator_b_orphan_sweep(ctx, prefetch_absence=arm.runs("C"))
         if arm.runs("B") else []
