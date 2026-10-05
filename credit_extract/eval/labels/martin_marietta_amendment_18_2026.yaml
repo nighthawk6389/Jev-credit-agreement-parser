@@ -172,3 +172,17 @@ assertions:
       contain no guaranty and no guarantor signs; the only "guaranties" in the
       text are those supporting the purchased Receivables, which back the
       collateral, not this facility.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: martin_marietta_benchmark_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means a rate of interest equal to 0%.' and 'if Adjusted Term SOFR as so determined shall ever be less than the Floor, then Adjusted Term SOFR shall be deemed to be the Floor'
+
+      Adjusted Term SOFR is floored at the Floor, 0% (written 0.00%). Rejected the Reserve Floor (12% plus a dilution component), which is a receivables reserve percentage, not an interest-rate floor.

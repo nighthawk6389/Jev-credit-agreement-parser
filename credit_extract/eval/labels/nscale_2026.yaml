@@ -93,3 +93,17 @@ assertions:
       Guarantor only 'solely for the purpose of guaranteeing the obligations
       of the other Guarantors under Secured Hedge Agreements, the Borrower',
       not of its own Obligations.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: nscale_fronting_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: fronting_fee_pct
+    expect: "0.125%"
+    note: >
+      'a fronting fee equal to 0.125%, per annum, multiplied by the face amount of such Letters of Credit issued during such year without regard to whether any such Letter of Credit remains outstanding'
+
+      Section 2.09(b)(i) states the fee per annum (360-day basis, paid quarterly in arrears) but applies it to the face amount of Letters of Credit issued during the year, whether or not still outstanding. Rejected the Letter of Credit participation fee at the Applicable Rate for Term Benchmark Loans.

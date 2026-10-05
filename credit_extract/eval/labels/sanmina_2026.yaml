@@ -189,3 +189,17 @@ assertions:
       and the operative definition is limited to Subsidiaries ('" Guarantors "
       means, collectively, (a) each Subsidiary identified as a "Guarantor" on
       the signature pages hereto').
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: sanmina_ticking_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: ticking_fee_pct
+    expect: "0.375%"
+    note: >
+      'calculated in an amount equal to the average daily unused amount of the Delayed Draw Term A Loan Commitments, multiplied by 0.375% per annum'
+
+      The Delayed Draw Commitment Fee is the charge on undrawn Delayed Draw Term A Loan Commitments and is the highest such rate. Rejected the 0.25% per annum Ticking Fee, which ran only from 60 days after signing to the Initial Funding Date on all Pro Rata Facilities Commitments.

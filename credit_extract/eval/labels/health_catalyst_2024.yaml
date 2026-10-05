@@ -338,3 +338,17 @@ assertions:
       names but the filing does not include. No guarantor is a party to or
       signs this agreement: the parties are Health Catalyst, Inc. (the
       Borrower), the Lenders and the Administrative Agent.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: health_catalyst_benchmark_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "1.00%"
+    note: >
+      '" Floor ": 1.00% per annum' and 'SOFR would be less than the Floor, then solely with respect to the Initial Loans and the Delayed Draw Loans, Term SOFR will be deemed to be the Floor'
+
+      The Floor on Term SOFR for the Initial Loans and Delayed Draw Loans is 1.00% per annum. Rejected the 2.00% minimum on ABR, which is a base-rate floor.

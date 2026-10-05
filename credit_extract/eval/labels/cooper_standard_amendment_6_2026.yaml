@@ -203,3 +203,17 @@ assertions:
       Specified Jurisdiction Guarantor. All of those roles are Guarantors
       under '" Guarantors ": Canadian Facility Guarantors, U.S. Facility
       Guarantors, the Specified Jurisdiction Guarantor'.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: cooper_bb_inventory_rate
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_value
+    target: borrowing_base.advance_rate_inventory
+    expect: "70%"
+    note: >
+      'the lesser of (i) 70% of the Value of Eligible Inventory of the U.S. Borrower; and (ii) 85% of the NOLV Percentage of the Value of Eligible Inventory of the U.S. Borrower'
+
+      The U.S. Borrowing Base (and the identical Canadian Borrowing Base) advances 70% against the Value of Eligible Inventory, capped at 85% of NOLV, with no seasonal or temporary change. Rejected the 85% figure, which applies to the NOLV percentage as a cap (and is also the rate on ordinary Eligible Accounts).

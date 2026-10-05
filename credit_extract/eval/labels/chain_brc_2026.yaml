@@ -116,3 +116,28 @@ assertions:
       B. Riley side gives only the Sponsor Pledge Agreement over the equity of
       Parent. Amendment No. 5, the other chain member, is not in the folded
       text.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: chain_brc_csa
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.10%"
+    note: >
+      '" Term SOFR Adjustment " shall mean 0.10% (10 basis points).'
+
+      In the conformed Annex A, Term SOFR is the Term SOFR Reference Rate plus this flat 0.10% adjustment, which does not vary by tenor. Rejected the 0.00% Floor, the other component of the Term SOFR definition.
+
+  - id: chain_brc_benchmark_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means a rate of interest equal to 0.00%.' and 'plus (ii) the Term SOFR Adjustment, and (b) the Floor.'
+
+      Term SOFR is the greater of the reference rate plus the adjustment and the Floor, so the benchmark floor is 0.00%; Base Rate is itself defined as Term SOFR, so no separate base-rate floor exists. Rejected the 0.10% Term SOFR Adjustment, which is a spread, not a floor.

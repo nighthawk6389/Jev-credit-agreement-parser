@@ -269,3 +269,17 @@ assertions:
       and that rate is defined only by pointer to the Fee Letter; no rate
       figure for it appears anywhere in the text. The 12.5 basis point
       fronting fee in Section 2.14 is a letter of credit fee and was rejected.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: agl_fronting_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: fronting_fee_pct
+    expect: "0.125%"
+    note: >
+      'a non-refundable fronting fee equal to 12.5 basis points (0.125%) of the portion of the maximum amount of such Letter of Credit in which any Lender (other than the Letter of Credit Issuer or its Affiliates) participates, payable in quarterly installments in arrears'
+
+      Section 2.14(b)(i) of the conformed agreement states 12.5 bps (0.125%) of the participated portion of the maximum (face) amount, charged upon issuance and collected in quarterly installments; it carries no per annum language, unlike the clause (a) letter of credit fee at the Applicable Margin on a 360-day basis, so it reads as a charge on face amount rather than a per annum rate. Rejected the flat $1,000 per issuance or amendment charge in clause (ii).

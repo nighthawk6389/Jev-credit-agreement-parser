@@ -195,3 +195,17 @@ assertions:
       Loan Party, Topco and EG Group Holdings Europe Limited expressly
       acknowledges the terms of this Amendment and reaffirms', so they are
       left out.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: cumberland_benchmark_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means (a) in the case of any Initial Term Loans that are Term Benchmark Loans, 0.00% per annum and (b) in the case of the Closing Date Revolving Tranche, 0.00% per annum.'
+
+      The Term SOFR Rate is deemed equal to the Floor if lower, and the First Amendment 2026 Term Loans are deemed Initial Term Loans, so the same 0.00% applies. Rejected the 0.00% deemed floor differential in the All-In Yield definition, which is a yield-comparison convention, not the benchmark floor.

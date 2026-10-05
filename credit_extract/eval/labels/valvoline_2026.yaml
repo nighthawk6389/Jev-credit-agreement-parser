@@ -162,3 +162,17 @@ assertions:
       hereto, and so the Guarantors, each reaffirming in Section 6 'its
       Guarantee of the Obligations (if applicable)'. VALVOLINE INSTANT OIL
       CHANGE FRANCHISING, INC. is broken across two lines on the signature page.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: valvoline_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$600,000,000"
+    note: >
+      'As of the Amendment No. 2 Effective Date, the aggregate principal amount of the Revolving Credit Commitments is $600,000,000.'
+
+      Amendment No. 2 replaced the prior revolving commitments with $600,000,000 of Amendment No. 2 Revolving Credit Commitments (the Schedule 2.01 total). Rejected the incremental capacity (greater of $515,000,000 and 100% of Consolidated EBITDA) and the $100,000,000 Letter of Credit Sublimit.

@@ -101,3 +101,45 @@ assertions:
       Guarantor'). Any other Guarantor is identified only as a party to the
       Guarantee (Exhibit B), and neither that document nor the guarantor
       reaffirmation the amendment calls for is in this text.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: accel_joinder_itl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$200,000,000"
+    note: >
+      'The aggregate amount of the Initial Term Loan Commitments as of the Closing Date is $200,000,000.'
+
+      The conformed agreement attached to the September 5, 2025 Joinder Agreement and First Amendment keeps the closing-date initial term loan commitment at $200,000,000. Rejected the $20,000,000 Amendment No. 1 Incremental Term Loans (a post-closing incremental, though fungible with and deemed Initial Term Loans) and the $75,000,000 delayed draw facility.
+
+  - id: accel_joinder_revolver_commitment_not_stated
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: revolver.commitment
+    expect: needs_review
+    note: >
+      'provided that such Initial Revolving Credit Commitments shall be
+      increased in the amount of the Amendment No. 1 Incremental Revolving
+      Credit Commitment on the Amendment No. 1 Effective Date'
+
+      The $50,000,000 closing-date revolving commitments are increased by
+      Amendment No. 1's $10,000,000 incremental revolving commitments, of the
+      same class. The total in effect, $60,000,000, is printed nowhere, and the
+      labelling guide never adds figures up. A reader that confirms $50,000,000
+      has reported a superseded amount; review is the honest answer.
+
+  - id: accel_joinder_ticking_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: ticking_fee_pct
+    expect: "1.00%"
+    note: >
+      'a ticking fee equal to 1.00% per annum of the average daily unused amount of such Delayed Draw Term Loan Lender'
+
+      Section 4.1(f) of the conformed agreement is unchanged by the amendment: a flat 1.00% per annum on unused Delayed Draw Term Loan Commitments. Rejected the 0.125% letter of credit fronting fee in Section 4.1(d).

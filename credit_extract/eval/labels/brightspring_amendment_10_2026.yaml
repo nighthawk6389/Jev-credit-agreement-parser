@@ -198,3 +198,39 @@ assertions:
       the amendment nor the conformed agreement is signed by any guarantor
       other than Holdings, so no subsidiary is listed. Phoenix Guarantor Inc.
       is the Borrower despite its name, and is not a guarantor.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: brightspring_ddtl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: delayed_draw.commitment
+    expect: "$150,000,000"
+    note: >
+      'The aggregate amount of the Delayed Draw Term Loan Commitments as of the Closing Date is $150,000,000.'
+
+      The agreement as amended by Amendment No. 10 still defines its only delayed draw facility (the Delayed Draw First Lien Term Loan Facility) at $150,000,000, available until six months after the March 5, 2019 Closing Date. Rejected the $1,800,000,000 recital total, which adds the delayed draw loans to the $1,650,000,000 initial term loans.
+
+  - id: brightspring_itl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$1,650,000,000"
+    note: >
+      'The aggregate amount of the Initial Term Loan Commitments as of the Closing Date is $1,650,000,000.'
+
+      This is the closing-date initial term loan commitment; the $1,800,000,000 recital figure also counts the $150,000,000 delayed draw facility. Rejected the $2,214,872,450 Tranche B-6 Term Loan Commitments, which are the Amendment No. 10 replacement tranche, not the initial term loans at closing.
+
+  - id: brightspring_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$475,000,000"
+    note: >
+      'The aggregate Revolving Credit Commitments of all Revolving Credit Lenders shall be $475,000,000 on the Amendment No. 6 Effective Date'
+
+      The revolving commitments in effect under the amended agreement are $475,000,000, and no printed total combines them with the separate $65,000,000 2020 Letter of Credit Commitments, so the larger tranche is taken. Rejected the superseded $187,500,000 closing-date revolver in the recitals.

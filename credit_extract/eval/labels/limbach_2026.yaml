@@ -132,3 +132,28 @@ assertions:
       Obligations described in clauses (b), (d) and (e) of the definition of'
       Obligations, which are hedge and bank-product obligations; it signs as
       BORROWER and does not guarantee its own loans, so it is left off.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: limbach_ddtl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: delayed_draw.commitment
+    expect: "$50,000,000"
+    note: >
+      'On the Closing Date, the aggregate Delayed Draw Term Loan Commitments of all the Lenders are $50,000,000.'
+
+      The $50,000,000 Delayed Draw Term Loan Facility is drawable in up to five draws through March 9, 2028. Rejected the separate $50,000,000 closing-date Term Loan Facility (same amount, different tranche) and the $200,000,000 revolver.
+
+  - id: limbach_fronting_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: fronting_fee_pct
+    expect: "0.125%"
+    note: >
+      'a fronting fee equal to 0.125 % per annum on the daily amount available to be drawn under each Letter of Credit'
+
+      The Issuing Lender fronting fee is a per annum rate on the daily available amount (360-day basis, paid quarterly in arrears), not a one-time charge on face amount. Rejected the Letter of Credit Fee at the Applicable Margin, which is paid to all Lenders.

@@ -110,3 +110,17 @@ assertions:
       Borrowers and are left off; their only guarantor capacity is '(b) each
       Borrower in its capacity as a guarantor of the Bank Product Obligations
       of any Loan Party'.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: smart_sand_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.75%"
+    note: >
+      'with respect to Revolving Loans (a) 1.75%, in the case of Base Rate Loans, and (b) 2.75%, in the case of Term SOFR Loans'
+
+      The Applicable Margin for revolving Term SOFR Loans is a flat 2.75% with no grid, so it is the top level. Rejected the 1.75% Base Rate margin and the 2.00% default-rate add-on.

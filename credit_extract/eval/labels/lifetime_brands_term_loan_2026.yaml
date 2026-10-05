@@ -124,3 +124,17 @@ assertions:
       Article X Loan Guaranty. Lifetime Brands, Inc. signs only as the
       Company and sole Borrower and is left off, because a guarantor of the
       obligations of the borrower cannot be the borrower itself.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: lifetime_tl_bb_accounts_rate
+    family: F06_structure
+    member: abl_borrowing_base
+    kind: field_value
+    target: borrowing_base.advance_rate_accounts
+    expect: "15%"
+    note: >
+      '(b) 15% of the Eligible Accounts of the Loan Parties at such time, to the extent not included in the preceding clause (a)'
+
+      The term loan Borrowing Base advances 15% against Eligible Accounts (stacked on the ABL, subject to a 100.0% combined cap), with no seasonal change. Rejected the 10% rate on Eligible Investment-Grade Accounts in clause (a) and the 100.0% all-in cap.

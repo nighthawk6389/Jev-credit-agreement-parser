@@ -223,3 +223,17 @@ assertions:
       (Rocket Lab USA, Inc.) gives an unsecured Downstream Guaranty as a
       condition to the Amendment No. 4 Effective Date under Section 9.12(f),
       outside the Guarantor definition, so neither is listed.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: iridium_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.50%"
+    note: >
+      'with respect to any 2023 Revolving Loans, (i) 2.50% per annum for SOFR Loans and (ii) 1.50% per annum for Base Rate Loans'
+
+      The 2023 Revolving Loans, the only revolving tranche ($100,000,000), carry a flat 2.50% SOFR margin, so that is the top revolving level. Rejected the 3.00% Level III SOFR margin in the Term B-4 ratings grid, which applies to term loans, and the 1.50% Base Rate margin.

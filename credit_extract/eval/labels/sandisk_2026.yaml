@@ -196,3 +196,17 @@ assertions:
       Parties and not its own Obligations, so it is not listed. Other
       Subsidiary Guarantors would be parties to the Guaranty (Exhibit K, not
       in this text).
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: sandisk_fronting_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: fronting_fee_pct
+    expect: "0.125%"
+    note: >
+      'a fronting fee equal to 0.125% of the face amount of (or of the increase in the face amount of) each outstanding Letter of Credit'
+
+      The fronting fee is stated as a flat 0.125% of face amount (or of any increase in face amount) with no per annum language, so it is a one-time charge on face amount, collected quarterly in arrears. Rejected the separate letter of credit fee, which is a rate per annum equal to the Applicable Margin for Term Benchmark revolving loans.

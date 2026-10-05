@@ -151,3 +151,17 @@ assertions:
       Vivid Seats Asia Pacific Inc. are Third Party Guarantors under a Limited
       Guarantee Agreement that the text never says guarantees the Obligations,
       and the definition says neither is a Loan Guarantor, so they are left off.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: vivid_seats_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "3.75%"
+    note: >
+      '3.75% per annum in the case of any Revolving Loan that is a Term SOFR Loan, Term CORRA Loan, RFR Loan or EURIBOR Loan'
+
+      The Applicable Rate is a flat 3.75% for benchmark revolving loans, with no step-down grid. Rejected the 2.75% rate for ABR, Central Bank Rate and Canadian Prime Rate revolving loans.

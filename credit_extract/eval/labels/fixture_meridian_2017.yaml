@@ -169,3 +169,116 @@ assertions:
       spans exactly seven years and the quarter count is checkable by hand --
       which is why a synthetic fixture is still worth having after 105 real
       documents.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: meridian_amort_quarterly
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: amortization.quarterly_amount
+    expect: "$376,250"
+    note: >
+      'The Borrower shall repay the outstanding principal amount of the Initial Term Loans in consecutive quarterly installments' and 'December 31, 2017 | $376,250'
+
+      Every installment in the Section 2.10(a) table is $376,250 (0.25% of the $150,500,000 initial term loans). Rejected the balloon due on the Initial Term Loan Maturity Date and the duplicated 2023 dates in the table, which do not change the quarterly amount.
+
+  - id: meridian_margin_top
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "5.00%"
+    note: >
+      'I | Greater than 5.50:1.00 | 5.00% | 4.00%'
+
+      Level I (leverage above 5.50:1.00) carries the highest Eurodollar Rate margin, 5.00%, which applies to Revolving Credit Loans as well as Initial Term Loans. Rejected the 4.00% Base Rate margin on the same row.
+
+  - id: meridian_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.50%"
+    note: >
+      'a commitment fee equal to 0.50% per annum on the average daily unused amount of the Revolving Credit Commitment of such Lender'
+
+      The unused revolving commitment fee is a flat 0.50% per annum with no step-down. Rejected the 1.00% ticking fee, which is charged on undrawn Delayed Draw Term Loan Commitments.
+
+  - id: meridian_ddtl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: delayed_draw.commitment
+    expect: "$25,000,000"
+    note: >
+      'The aggregate Delayed Draw Term Loan Commitments on the Closing Date are $25,000,000.'
+
+      The definition and the Section 2.01 table both give $25,000,000 for the Delayed Draw Term Loan Facility. Rejected the $150,500,000 Initial Term Loan Facility.
+
+  - id: meridian_ecf_sweep
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: excess_cash_flow.sweep_pct
+    expect: "50%"
+    note: >
+      'The Borrower shall prepay the Initial Term Loans with 50% of Excess Cash Flow for each fiscal year, with step-downs to 25% and 0%'
+
+      The highest sweep is the 50% starting level. Rejected the leverage-based step-downs to 25% and 0%.
+
+  - id: meridian_fronting_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: fronting_fee_pct
+    expect: "0.125%"
+    note: >
+      'The Borrower shall pay to the Issuing Bank a fronting fee equal to 0.125% per annum of the daily maximum amount available to be drawn under each Letter of Credit.'
+
+      The fronting fee is stated per annum (0.125% on the daily maximum available amount), not as a one-time charge on face amount. Rejected the 0.50% commitment fee and the $5,000,000 Letter of Credit Sublimit nearby.
+
+  - id: meridian_lc_sublimit
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: lc_sublimit
+    expect: "$5,000,000"
+    note: >
+      'The aggregate face amount of all Letters of Credit outstanding at any time shall not exceed $5,000,000 (the "Letter of Credit Sublimit").'
+
+      Section 2.05 caps outstanding Letters of Credit at $5,000,000. Rejected the $20,000,000 Revolving Credit Facility within which the sublimit sits.
+
+  - id: meridian_benchmark_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "1.00%"
+    note: >
+      'provided that the LIBO Rate shall not at any time be less than 1.00% per annum.'
+
+      The floor sits on the LIBO Rate benchmark itself at 1.00% per annum; no Base Rate floor is stated. Rejected the generic mention of a LIBO Rate floor in the All-In Yield definition, which states no rate.
+
+  - id: meridian_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$20,000,000"
+    note: >
+      'The aggregate Revolving Credit Commitments on the Closing Date are $20,000,000.'
+
+      The definition and the Section 2.01 table both give a $20,000,000 Revolving Credit Facility. Rejected the Section 2.14 incremental capacity (greater of $30,000,000 and 100% of Consolidated EBITDA), which is accordion.
+
+  - id: meridian_ticking_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: ticking_fee_pct
+    expect: "1.00%"
+    note: >
+      'The Borrower agrees to pay a ticking fee on the undrawn Delayed Draw Term Loan Commitments equal to 1.00% per annum'
+
+      The ticking fee is a flat 1.00% per annum, accruing from 60 days after the Closing Date. Rejected the 0.50% revolving commitment fee.

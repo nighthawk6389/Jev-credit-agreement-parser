@@ -286,3 +286,17 @@ assertions:
       The Borrower is a Subsidiary Guarantor only for the Obligations of other
       Borrowers, Restricted Subsidiaries and Holdings; as the sole Borrower it
       guarantees none of the borrower obligations and is not listed.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: latham_itl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$300,000,000"
+    note: >
+      'The aggregate amount of the Initial Term Loan Commitments as of the Closing Date shall be $300,000,000.'
+
+      The recitals confirm $300,000,000 of Initial Term Loans on the August 20, 2026 Closing Date, and there is no delayed draw tranche. Rejected the $75,000,000 Initial Revolving Facility.

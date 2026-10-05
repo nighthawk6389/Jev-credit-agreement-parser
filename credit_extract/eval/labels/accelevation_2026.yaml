@@ -138,3 +138,39 @@ assertions:
       subsidiary guarantors are only those "party to the Guarantee" (Exhibit B),
       which is not in this text, so they are not listed. The Borrower
       (ACCELEVATION, LLC) and the Merger Sub are borrowers, not guarantors.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: accel_itl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$200,000,000"
+    note: >
+      'The aggregate amount of the Initial Term Loan Commitments as of the Closing Date is $200,000,000.'
+
+      The Initial Term Loan Commitment definition (repeated in Section 2.1(a)) fixes the closing-date initial term loans at $200,000,000. Rejected the $75,000,000 Delayed Draw Term Loan commitment in Section 2.1(a)(ii), which is a delayed draw commitment, not the initial term loan.
+
+  - id: accel_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$50,000,000"
+    note: >
+      'The aggregate Revolving Credit Commitments of all Revolving Credit Lenders shall be $50,000,000 on the Closing Date'
+
+      The Revolving Credit Commitment definition sets the single revolving tranche at $50,000,000, and this filing attaches no amendment. Rejected the $25,000,000 cap on post-closing Incremental Revolving Credit Commitments in Section 2.14, which is accordion capacity.
+
+  - id: accel_ticking_fee
+    family: F08_units
+    member: bps_vs_percent
+    kind: field_value
+    target: ticking_fee_pct
+    expect: "1.00%"
+    note: >
+      'a ticking fee equal to 1.00% per annum of the average daily unused amount of such Delayed Draw Term Loan Lender'
+
+      Section 4.1(f) charges a flat 1.00% per annum on unused Delayed Draw Term Loan Commitments from the Closing Date to the commitment termination date, with no step-up. Rejected the 0.125% Fronting Fee in Section 4.1(d), which is a letter of credit charge.

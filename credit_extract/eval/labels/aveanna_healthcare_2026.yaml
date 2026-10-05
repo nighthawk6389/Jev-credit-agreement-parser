@@ -184,3 +184,28 @@ assertions:
       conformed signature pages are on file with the Administrative Agent, so
       no subsidiary guarantor is named in this text and the list is Holdings
       only.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: aveanna_benchmark_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'with respect to the 2026 Term Loans, 0.00% per annum and (y) with respect to Revolving Credit Loans, 0.00% per annum'
+
+      The Floor definition sets 0.00% for both the 2026 Term Loans and the Revolving Credit Loans, and Term SOFR is deemed to be the Floor whenever it would be lower. Rejected the 2.00% minimum on ABR for the term loans, which is a base-rate floor.
+
+  - id: aveanna_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$250,000,000"
+    note: >
+      'The aggregate Revolving Credit Commitment of all Revolving Credit Lenders shall be $250,000,000 as of the Thirteenth Amendment Effective Date'
+
+      The Thirteenth Amendment 2026 Refinancing Revolving Credit Commitments refinance the prior revolving commitments in full, and Schedule A totals them at $250,000,000. Rejected the $1,318,375,000 total of 2026 Refinancing Term Loan Commitments.

@@ -126,3 +126,17 @@ assertions:
       obligor. The guarantees the text does mention are given by subsidiaries
       of the Portfolio Companies for Intercompany Debt owed to the Borrower,
       which is collateral rather than a guarantee of the Obligations.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: compass_dup_csa
+    family: F07_benchmark
+    member: sofr_credit_spread_adjustment
+    kind: field_value
+    target: accrual.credit_spread_adjustment_pct
+    expect: "0.10%"
+    note: >
+      '" SOFR Adjustment " means 0.10% (10.00 basis points).'
+
+      In the agreement as amended by the Sixth Amendment, Term SOFR for Term SOFR Loans is the screen rate plus this SOFR Adjustment, a flat 0.10% that does not vary by tenor. Rejected the provision deeming Term SOFR zero if negative, which is a floor rather than a spread adjustment.

@@ -49,6 +49,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from ..models.core import RESOLVED_NULL_STATES
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from ..validate import validators as V
 from ..validate.calibrate import (
@@ -71,8 +72,10 @@ VALIDATOR = "A_span_support"
 #: legal name is asked differently, and is not in these classes.
 A_OPENING = "The text supports a value of "
 PER_FIELD = 3
-#: A label status that makes any value a wrong one.
-_NO_VALUE = {"absent_from_document", "not_applicable_to_archetype"}
+#: A label status that makes any value a wrong one. Review is one: Accelevation's
+#: joinder labels its revolving commitment needs_review because the amount in
+#: force is printed nowhere, and A confirmed the superseded $50,000,000.
+_NO_VALUE = RESOLVED_NULL_STATES
 #: Each negative set, cumulatively: the labelled values alone, then with the
 #: off-text values, then with the in-text near misses as well.
 FITS = (("labelled", ()), ("+off-text", ("off_text",)),
@@ -438,7 +441,11 @@ def weighted_threshold(train: list[Row], target: float,
     expected precision).
     """
     rights = [r.probability for r in train if r.kind == "labelled" and r.correct]
-    wrongs = [r.probability for r in train if r.kind in MISTAKES]
+    # The reader's own wrong values are mistakes too, and can score as high
+    # as any asked on purpose: nVent's margin, read from the right grid at
+    # the wrong level, scored 0.84.
+    wrongs = [r.probability for r in train
+              if r.kind in MISTAKES or (r.kind == "labelled" and not r.correct)]
     if not rights or not wrongs:
         return None, 0.0
     floor = max((r.probability for r in train if r.kind == "off_text"), default=-1.0)

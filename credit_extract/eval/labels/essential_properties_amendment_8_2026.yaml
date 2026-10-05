@@ -431,3 +431,17 @@ assertions:
       Guarantor 'are hereby released from their respective Guarantee
       Obligations under the Loan Documents' as of the Eighth Amendment
       Effective Date, so the operative list is the Parent REIT alone.
+
+  # Labelled from the text, without the pipeline's answer, to measure how
+  # often the reader hands validator A a wrong value (the seventh pass).
+
+  - id: essential_itl_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: initial_term_loan.commitment
+    expect: "$200,000,000"
+    note: >
+      'a term loan facility in the initial amount of $200,000,000 and a second tranche term loan facility in the initial amount of $400,000,000'
+
+      The Initial Term Loan Commitment definition agrees that the aggregate on the Restatement Effective Date (April 12, 2019) was $200,000,000. Rejected the later tranches ($400,000,000 Second Tranche, $450,000,000 each for the Fourth and Fifth Amendment term loans) and the $300,000,000 Eighth Amendment revolving increase.

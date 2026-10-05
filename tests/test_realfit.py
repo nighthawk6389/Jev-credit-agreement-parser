@@ -19,7 +19,7 @@ from datetime import date
 from decimal import Decimal
 
 from credit_extract.eval import realfit as R
-from credit_extract.eval.realfit import ProbingBackend, Row, fit_class
+from credit_extract.eval.realfit import ProbingBackend, Row, fit_class, weighted_threshold
 from credit_extract.models.core import ExtractedField, Span
 from credit_extract.models.fpml_model import FIELD_REGISTRY
 from credit_extract.validate import validators as V
@@ -212,6 +212,34 @@ def test_the_measured_rate_never_lets_a_value_the_text_lacks_through():
             + _rows("economic_terms", "in_text", [0.7, 0.65, 0.58], False))
     fit = fit_class(rows, "economic_terms", current=0.77)
     assert fit.adopted is not None and fit.adopted > 0.62
+
+
+def test_a_wrong_value_the_reader_really_read_counts_as_a_mistake():
+    """A labelled value the reader got wrong is a mistake A must turn down,
+    like a near miss asked on purpose, and it can score higher than any of
+    them: here it holds the threshold above 0.93 where the near misses alone
+    would settle at 0.90."""
+    rows = (_rows("economic_terms", "labelled", [0.98] * 189 + [0.9] * 10, True)
+            + _rows("economic_terms", "labelled", [0.93], False)
+            + _rows("economic_terms", "in_text", [0.5], False)
+            + _rows("economic_terms", "off_text", [0.05], False))
+    assert weighted_threshold(rows, 0.99, rate=0.028)[0] == 0.98
+    near_misses_only = [r for r in rows if r.correct or r.kind != "labelled"]
+    assert weighted_threshold(near_misses_only, 0.99, rate=0.028)[0] == 0.9
+
+
+def test_a_label_that_withholds_the_value_makes_any_value_wrong():
+    """Accelevation's joinder labels its revolving commitment needs_review: the
+    amount in force is printed nowhere. Whatever the reader hands A for it is
+    a mistake, so the field is sampled with the labelled ones."""
+    from pathlib import Path
+
+    from credit_extract.eval.assertions import load_assertion_file
+    from credit_extract.eval.families import load_families
+
+    path = Path(R.__file__).parent / "labels" / "accelevation_joinder_2026.yaml"
+    labelled = R._labelled(load_assertion_file(path, load_families()))
+    assert [a.expect for a in labelled["revolver.commitment"]] == ["needs_review"]
 
 
 def test_a_term_tranches_maturity_is_asked_as_the_revolvers():
