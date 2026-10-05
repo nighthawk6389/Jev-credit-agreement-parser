@@ -1233,7 +1233,14 @@ OFFLINE_RULES: tuple[Rule, ...] = (
          r"equal to\s+(" + _PCT + r")\s+on the (?:average )?daily unused",
          0.88),
     Rule("fronting_fee_pct", r"fronting fee\s+equal to\s+(" + _PCT + r")", 0.88),
-    Rule("ticking_fee_pct", r"ticking fee[^.]{0,120}?equal to\s+(" + _PCT + r")", 0.85),
+    # The field is the fee on undrawn delayed draw commitments, so the sentence
+    # has to put it there. Sanmina's "Ticking Fee" is 0.25% "of the average
+    # daily total amount of such Lender's Pro Rata Facilities Commitments"
+    # between signing and funding, and its delayed draw fee is another one.
+    Rule("ticking_fee_pct",
+         r"ticking fee(?=(?:[^.]|(?<=\d)\.(?=\d)){0,300}?delayed\s+draw)"
+         r"[^.]{0,120}?equal to\s+("
+         + _PCT + r")", 0.85),
     Rule("excess_cash_flow.sweep_pct",
          r"prepay the Initial Term Loans with\s+(" + _PCT + r")\s+of Excess Cash Flow",
          0.88),

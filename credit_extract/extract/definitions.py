@@ -125,6 +125,21 @@ _SELF_REFERENTIAL = re.compile(
 )
 
 
+#: A figure its own definition says has since changed. Accelevation's joinder
+#: conforms "The aggregate Revolving Credit Commitments ... shall be
+#: $50,000,000 on the Closing Date ...; provided that such Initial Revolving
+#: Credit Commitments shall be increased in the amount of the Amendment No. 1
+#: Incremental Revolving Credit Commitment on the Amendment No. 1 Effective
+#: Date". The figure is the closing-date amount, the amount in force is printed
+#: nowhere, and validator A confirmed the figure at 0.92 because the text does
+#: say it. "May be increased" is an option, which changes nothing.
+_SINCE_CHANGED = re.compile(
+    r"\bshall\s+be\s+(?:increased|decreased|reduced)\s+(?:in\s+the\s+amount\s+of|by)\b"
+    r"(?:[^.;]|(?<=No)\.){0,200}?\bon\s+the\s+(?:[^.;]|(?<=No)\.){0,80}?\bDate\b",
+    re.I,
+)
+
+
 #: A tranche named inside a definition, with the phrase that attributes the
 #: value to it. This is the shape that lets one definition state a different
 #: number for each tranche::
@@ -300,6 +315,27 @@ def definition_candidates(
                 # clause with the right shape.
                 break
             value, as_written = found
+            changed = _SINCE_CHANGED.search(body)
+            if changed:
+                # Settles nothing, and says so: a valueless candidate keeps
+                # validator C from calling the term absent.
+                out.append(Candidate(
+                    field=spec.name,
+                    value=None,
+                    span=span,
+                    confidence=CONFIDENCE,
+                    pass_id="deterministic:definitions",
+                    segmentation="definitional",
+                    qualifiers={"unsettled_in_definition": str(as_written),
+                                "since_changed": " ".join(changed.group(0).split())},
+                    notes=(
+                        f"the definition of {resolved!r} states {as_written} and "
+                        f"then says it {' '.join(changed.group(0).split())}, so "
+                        "the figure is not the one in force and this tier "
+                        "settles nothing"
+                    ),
+                ))
+                break
             out.append(Candidate(
                 field=spec.name,
                 value=value,

@@ -722,6 +722,25 @@ def test_a_stepped_prose_fee_is_not_read_as_its_first_step():
     assert re.search(rule.pattern, text, rule.flags) is None
 
 
+def test_a_ticking_fee_is_the_one_on_delayed_draw_commitments():
+    """Sanmina's "Ticking Fee" runs between signing and funding on every Pro
+    Rata Facilities Commitment; the field is the fee on undrawn delayed draw
+    commitments, so the sentence has to put it there, before the rate or
+    after it."""
+    (rule,) = [r for r in OFFLINE_RULES if r.field == "ticking_fee_pct"]
+    sanmina = ('a ticking fee (the " Ticking Fee ") at a rate per annum equal to '
+               "0.25% of the average daily total amount of such Lender's Pro Rata "
+               "Facilities Commitments in effect during such period.")
+    after = ("a ticking fee equal to 1.00% per annum of the average daily unused "
+             "amount of such Delayed Draw Term Loan Lender's Delayed Draw Term "
+             "Loan Commitment.")
+    before = ("The Borrower agrees to pay a ticking fee on the undrawn Delayed Draw "
+              "Term Loan Commitments equal to 1.00% per annum.")
+    assert re.search(rule.pattern, sanmina, rule.flags) is None
+    assert re.search(rule.pattern, after, rule.flags).group(1) == "1.00%"
+    assert re.search(rule.pattern, before, rule.flags).group(1) == "1.00%"
+
+
 # ---------------------------------------------------------------------------
 # libor_floor_pct
 # ---------------------------------------------------------------------------

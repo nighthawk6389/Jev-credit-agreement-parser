@@ -225,6 +225,32 @@ def test_the_floor_anchors_name_terms_the_corpus_actually_defines():
 # ---------------------------------------------------------------------------
 
 
+def test_a_figure_its_definition_says_has_since_changed_settles_nothing():
+    """Accelevation's joinder: the definition states the closing-date total and
+    then that it "shall be increased ... on the Amendment No. 1 Effective
+    Date". The amount in force is printed nowhere, so nothing is read -- but
+    the term is said to be there, with what was found, so it is not absent."""
+    body = ('" Revolving Credit Commitment " shall mean ... The aggregate '
+            "Revolving Credit Commitments of all Revolving Credit Lenders shall "
+            'be $50,000,000 on the Closing Date (the " Initial Revolving Credit '
+            'Commitments "); provided that such Initial Revolving Credit '
+            "Commitments shall be increased in the amount of the Amendment No. 1 "
+            "Incremental Revolving Credit Commitment on the Amendment No. 1 "
+            "Effective Date and may be further adjusted from time to time.")
+    graph = _graph_with(body, "Revolving Credit Commitment")
+    found = definition_candidates(_Doc(), graph, _spec("revolver.commitment"))
+
+    assert len(found) == 1 and found[0].value is None
+    assert found[0].qualifiers["unsettled_in_definition"] == "$50,000,000"
+    assert found[0].qualifiers["since_changed"].startswith("shall be increased")
+
+    # An option to increase is not a change, and the figure stands.
+    option = body.replace("shall be increased in the amount of", "may be increased by")
+    found = definition_candidates(_Doc(), _graph_with(option, "Revolving Credit Commitment"),
+                                  _spec("revolver.commitment"))
+    assert [c.value for c in found] == [Decimal("50000000")]
+
+
 def test_the_tier_is_not_date_specific():
     """The principle is about defined terms, not about dates: whatever kind
     the field declares is what gets parsed out of its definition."""

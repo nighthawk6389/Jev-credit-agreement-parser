@@ -573,7 +573,13 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
             field.status = "needs_review"
             field.validation_confidence = probability
             axis = field.qualifiers.get("indexed_by")
-            field.notes = (
+            changed = field.qualifiers.get("since_changed")
+            field.notes = ((
+                f"defined, and its definition states {unsettled} and then says "
+                f"it {changed}, so this is not absence: the term is in the "
+                "document and what is missing is the amount in force. Absence "
+                f"scored {probability:.2f} and is the wrong question"
+            ) if changed else (
                 f"defined, and its definition carries several values "
                 f"({unsettled}) rather than one"
                 + (f", indexed by {axis}" if axis else "")
@@ -581,7 +587,7 @@ def validator_c_negative_space(ctx: ValidationContext) -> dict[str, float]:
                   "what is missing is which of these is the value, or what "
                   f"reduction over them is. Absence scored {probability:.2f} "
                   "and is the wrong question"
-            )
+            ))
         elif guarantors:
             # The sixth, and the one the out-of-sample set found. The
             # agreement defines, names or grants a guaranty -- validator E
