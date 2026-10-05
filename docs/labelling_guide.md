@@ -300,6 +300,14 @@ Properties' label moved from 1.550% to its revolving column's 1.350%. It is
 on the held-out side, and the grid reader's disagreement with it is what
 exposed the two rules, so that one assertion is no longer a blind test.
 
+"Top" means the highest figure, never the first row. Grids run both ways:
+KBR's Level 1 is its most expensive row, Hornbeck's its cheapest. nVent's
+term loan label had taken Level I, 0.875%, under a field already defined as
+"the highest Eurodollar Applicable Margin in the pricing grid"; it now
+expects Level V's 1.50%. It is held out too, and was found the same way, when
+the pipeline confirmed 1.50% against it. Every other margin and fee label
+was read for the same mistake and none makes it.
+
 ## What double-labelling the fund facilities settled
 
 The five economic terms were labelled twice on the twenty in-sample fund and

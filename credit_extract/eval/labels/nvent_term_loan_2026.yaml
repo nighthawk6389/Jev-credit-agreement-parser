@@ -49,26 +49,30 @@ assertions:
       twice in five years, and no security package -- an unsecured
       investment-grade term loan, and the classifier says so.
 
-  - id: nvent_grid_top_level_is_the_cheapest
+  - id: nvent_term_loan_margin_is_the_grid_top
     family: F07_benchmark
     member: pricing_grid_stepdowns
     kind: field_value
     target: applicable_margin.eurodollar_top_level_pct
-    expect: "0.875%"
+    expect: "1.50%"
     note: >
-      Level I pays 0.875% over the Term Benchmark, and Level I is the best
-      row here -- the same direction as Hornbeck and the opposite of KBR,
-      whose Level 1 is leverage above 4.25:1.00 at 2.25%.
+      'Level V | | | 1.50 | % | | | 0.50 | % | | | 0.20 | %'
 
-      Three documents, three grids, and the corpus now has both conventions
-      twice over. There is no reading of "Level 1" that is right about all
-      three, which is what makes the level number useless as a key and the
-      leverage band the only thing that carries meaning across documents.
+      The highest Term Benchmark Spread for Term Loans is Level V's 1.50%,
+      and the field is the highest margin over the benchmark. Level I pays
+      0.875% and is the best row here -- the same direction as Hornbeck and
+      the opposite of KBR, whose Level 1 is leverage above 4.25:1.00 at
+      2.25% -- so the level number is useless as a key and the figure itself
+      has to be compared. On the same row 0.50% is the ABR spread and 0.20%
+      the ticking fee.
 
-      Except here, where the leverage band is not in the table at all: it is
-      in the sentence that maps Pricing Level I to Leverage Level 1 and
-      Ratings Level A. So the one piece of information that generalises is the
-      one this grid leaves out of its own rows.
+      This label first expected Level I's 0.875%, reading "top level" as the
+      top row, although the field was already defined as "the highest
+      Eurodollar Applicable Margin in the pricing grid". It was corrected in
+      the seventh pass after the pipeline confirmed 1.50% against it; no other
+      margin or fee label reads a grid's first row as its top. The leverage
+      band is not in the table at all: it is in the sentence that maps
+      Pricing Level I to Leverage Level 1 and Ratings Level A.
 
   - id: nvent_covenant_may_be_stepped_up_twice
     family: F10_conditionality
