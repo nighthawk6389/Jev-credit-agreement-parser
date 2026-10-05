@@ -894,6 +894,69 @@ def test_the_revolving_column_is_the_margin_where_the_grid_prices_loans_apart(tm
     assert E.fee_candidates(doc, graph) == []
 
 
+def test_a_grid_an_amendment_has_replaced_is_not_read(tmp_path):
+    """Brightspring's margin definition keeps two old grids, "(a) prior to the
+    Amendment No. 7 Effective Date" and "(b) ... prior to the Amendment No.
+    10 Effective Date", before the flat rate in force."""
+    def grid(top: str) -> str:
+        return ("<table>" + _row("Pricing Level", "Ratio", "ABR Rate Revolving Credit Loans",
+                                 "Adjusted Term SOFR Rate Revolving Credit Loans")
+                + _row("I", "> 4.00:1.00", "3.25%", top)
+                + _row("II", "< 4.00:1.00", "3.00%", "4.00%") + "</table>")
+    body = ("<p>&#8220;Applicable Margin&#8221; means a percentage per annum equal to "
+            "(a) prior to the Amendment No. 7 Effective Date, the percentages per "
+            "annum set forth in the table below:</p>" + grid("4.25%")
+            + "<p>(b) from and after the Amendment No. 7 Effective Date, the "
+            "percentages per annum set forth in the table below:</p>" + grid("4.50%"))
+    doc, graph = _filing(tmp_path, body)
+    assert [c.value for c in E.margin_candidates(doc, graph)] == [Decimal("4.50")]
+
+    replaced = body.replace("(b) from and after the Amendment No. 7 Effective Date",
+                            "(b) prior to the Amendment No. 10 Effective Date")
+    doc, graph = _filing(tmp_path, replaced)
+    assert E.margin_candidates(doc, graph) == []
+
+    # Cooper-Standard: the replaced margin is a limb of its own, and the grid
+    # hangs from the limb in force.
+    cooper = ("<p>&#8220;Applicable Margin&#8221; means, (x) for any day prior to the "
+              "Sixth Amendment Effective Date, such margin set forth in this Agreement "
+              "as in effect on such day and (y) as of the Sixth Amendment Effective "
+              "Date and each day thereafter, the respective margin set forth below:</p>"
+              + grid("4.75%"))
+    doc, graph = _filing(tmp_path, cooper)
+    assert [c.value for c in E.margin_candidates(doc, graph)] == [Decimal("4.75")]
+
+
+def test_a_term_tranches_grid_is_not_the_revolvers_margin(tmp_path):
+    """Iridium prices its Term B-4 Loans by a ratings grid and its revolver at
+    a flat rate in the next limb."""
+    body = ("<p>&#8220;Applicable Margin&#8221; means, (a) with respect to any Term "
+            "B-4 Loans, the applicable percentage per annum set forth below:</p><table>"
+            + _row("Level", "Credit Ratings", "SOFR Loans", "Base Rate Loans")
+            + _row("I", "BB- or better", "2.50%", "1.50%")
+            + _row("III", "Worse than BB-", "3.00%", "2.00%") + "</table>"
+            + "<p>and (b) with respect to any 2023 Revolving Loans, (i) 2.50% per annum "
+            "for SOFR Loans and (ii) 1.50% per annum for Base Rate Loans.</p>"
+            "<p>&#8220;Revolving Loans&#8221; means the loans made under Section 2.01.</p>")
+    doc, graph = _filing(tmp_path, body)
+    assert all(c.value != Decimal("3.00") for c in E.margin_candidates(doc, graph))
+
+
+def test_a_grid_carried_past_a_page_break_is_read_whole(tmp_path):
+    """CVS prints Levels I to V in one table and Level VI, the top, alone in
+    the next; Illumina's last level follows a page-number fragment."""
+    body = ("<p>&#8220;Applicable Rate&#8221; means the rate per annum set forth in "
+            "the table below:</p><table>"
+            + _row("Pricing Level", "Debt Ratings", "Term SOFR Spread", "ABR Spread")
+            + _row("Level I", "A3/A-", "0.805%", "0.000%")
+            + _row("Level IV", "Baa3/BBB-", "1.100%", "0.100%") + "</table>"
+            + "<table>" + _row("Field: Sequence; Type: Arabic; Value: 2; Name: PageNo 2")
+            + "</table><table>" + _row("Level V", "Ba1/BB+", "1.300%", "0.300%")
+            + "</table>")
+    doc, graph = _filing(tmp_path, body)
+    assert [c.value for c in E.margin_candidates(doc, graph)] == [Decimal("1.300")]
+
+
 def test_a_grid_in_basis_points_is_read_in_percent(tmp_path):
     grid = (
         "<p>&#8220;Applicable Rate&#8221; means the rate set forth in the "

@@ -515,25 +515,22 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         # already bought about margins stay valid. Where a grid prices
         # revolving and term loans in columns of their own -- nVent's,
         # Essential Properties' -- the field is the revolving loans', as the
-        # labelling guide says; the subject keeps the old words, so only
-        # validator A's question changes.
+        # labelling guide says, and the reader takes that column. The
+        # question does not say so: naming the revolving loans in it cost
+        # eight single-rate fund margins their confirmation live, for two
+        # split grids, so a split grid's revolving top goes to review.
         _spec("applicable_margin.eurodollar_top_level_pct",
               "the highest margin over Term SOFR, Eurodollar or another "
-              "benchmark that the agreement's pricing sets, taking the revolving "
-              "loans' margin where revolving and term loans are priced apart, "
-              "however the margin is named (Applicable Rate, Applicable Margin, "
-              "Applicable Spread or Spread)",
+              "benchmark that the agreement's pricing sets, however the margin "
+              "is named (Applicable Rate, Applicable Margin, Applicable Spread "
+              "or Spread)",
               "percent", "economic_terms", 5, "fpml:spread", "fpml",
               anchors=["Applicable Margin"],
               sections=["2.12"],
               presence="This agreement contains a provision addressing the "
                        "highest margin over Term SOFR, Eurodollar or another "
                        "benchmark in the pricing grid (the Applicable Rate or "
-                       "Applicable Margin).",
-              subject="the highest margin over Term SOFR, Eurodollar or another "
-                      "benchmark that the agreement's pricing sets, however the "
-                      "margin is named (Applicable Rate, Applicable Margin, "
-                      "Applicable Spread or Spread)"),
+                       "Applicable Margin)."),
         # The highest level, as the margin's question says: asked about "the
         # unused commitment fee", a literal reader confirmed every tier of a
         # grid -- PennantPark's 0.25% and 0.50% at 0.96 and 0.95 beside the

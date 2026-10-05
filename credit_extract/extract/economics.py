@@ -68,7 +68,7 @@ from ..ingest.tables import parse_money, parse_percent
 from ..models.core import Span
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from ..models.quantities import quantity_for
-from .definitions import _SINCE_CHANGED
+from .definitions import _SELF_REFERENTIAL, _SINCE_CHANGED
 
 #: The definitions tier's pass id, deliberately. ``reconcile`` ranks a value
 #: read from the term's own definition above every other reading, and these
@@ -1124,7 +1124,35 @@ def _cells(row: list[Any]) -> list[tuple[str, Any]]:
     return [(" ".join(c.text.split()), c) for c in row]
 
 
-def read_grid(table: Any) -> list[tuple[str, list[tuple[Decimal, str, Any]]]] | None:
+def _figure_count(row: list[Any]) -> int:
+    return sum(bool(_NUMBER_CELL.match(" ".join(c.text.split()))) for c in row)
+
+
+def _continuation(tables: list[Any], index: int) -> list[Any]:
+    """The tables after ``tables[index]`` that carry its rows past a page break.
+
+    CVS prints Pricing Levels I to V in one table and Level VI alone in the
+    next; Illumina's Level V follows a page-number fragment; Easterly's grid
+    runs across three tables. A table of figure rows close behind continues
+    the grid, a fragment with no figures is skipped, and a heading -- a row
+    of labels -- is another table and ends the run.
+    """
+    run, last = [], tables[index]
+    for table in tables[index + 1:]:
+        if table.start - last.end > 400:
+            break
+        rows = [[c for c in row if c.text.strip()] for row in table.rows()]
+        rows = [row for row in rows if row]
+        if any(len(row) >= 2 and not _figure_count(row) for row in rows):
+            break
+        if any(_figure_count(row) >= 2 for row in rows):
+            run.append(table)
+        last = table
+    return run
+
+
+def read_grid(table: Any, more: list[Any] = ()
+              ) -> list[tuple[str, list[tuple[Decimal, str, Any]]]] | None:
     """A pricing grid's value columns, each with its value in every row.
 
     Investment-grade grids are printed with their headings over two rows,
@@ -1134,9 +1162,11 @@ def read_grid(table: Any) -> list[tuple[str, list[tuple[Decimal, str, Any]]]] | 
     Currency Loans | Base Rate | Performance Letter of Credit | Commitment
     Fee". The level and the ratings or ratio that select a row are set aside,
     and a row whose figures do not line up with the value columns is
-    skipped, never guessed into place. None if the table is not a grid.
+    skipped, never guessed into place. ``more`` holds the tables that carry
+    the grid's rows on past a page break. None if the table is not a grid.
     """
-    rows = [r for r in table.rows() if any(c.text.strip() for c in r)]
+    rows = [r for part in (table, *more) for r in part.rows()
+            if any(c.text.strip() for c in r)]
     header: list[list[Any]] = []
     body: list[list[tuple[Decimal, str, Any]]] = []
     for row in rows:
@@ -1202,6 +1232,13 @@ def _fee_column(columns: list[tuple[str, list]]) -> tuple[str, list] | None:
     return (revolving or unused or [None])[0]
 
 
+#: A limb that prices a term tranche: Iridium's grid hangs from "(a) with
+#: respect to any Term B-4 Loans", and its revolver's rate is "(b) with
+#: respect to any 2023 Revolving Loans, (i) 2.50% per annum for SOFR Loans".
+_TERM_LIMB = re.compile(
+    r"\bTerm\s+(?:[A-Z](?:-\d+)?\s+)?Loans?\b|\bTerm\s+(?:Loan|[A-Z](?:-\d+)?)\s+Facility")
+
+
 def _definition_grid(doc: NormalizedDocument, graph: Any
                      ) -> tuple[str, Any, list[tuple[str, list]]] | None:
     """The pricing grid the margin's definition carries or sends its levels to.
@@ -1219,8 +1256,30 @@ def _definition_grid(doc: NormalizedDocument, graph: Any
     if node is None:
         return None
     reach = 8000 if _TABLE.search(_flat(node.body)) else 0
-    for table in doc.tables_in(node.span.start, node.span.end + reach):
-        columns = read_grid(table)
+    tables = doc.tables_in(node.span.start, node.span.end + reach)
+    lead_from, skip_to = node.span.start, -1
+    for index, table in enumerate(tables):
+        if table.start < skip_to:
+            continue
+        more = _continuation(tables, index)
+        lead_in = _limbs(_flat(doc.text[lead_from:table.start]))[-1]
+        lead_from = (more[-1] if more else table).end
+        if _SUPERSEDED.search(" ".join(lead_in)):
+            # The limb the table hangs from has been replaced. Brightspring's
+            # grids are "(a) prior to the Amendment No. 7 Effective Date" and
+            # "(b) ... prior to the Amendment No. 10 Effective Date"; the rate
+            # in force is (c)'s flat 2.00%. Cooper-Standard's "(x) for any day
+            # prior to the Sixth Amendment Effective Date" is a limb of its
+            # own, and its tables hang from "(y) as of the Sixth Amendment
+            # Effective Date and each day thereafter".
+            skip_to = lead_from
+            continue
+        limb = " ".join(lead_in)
+        if (_TERM_LIMB.search(limb) and not re.search(r"Revolv", limb)
+                and revolving_evidence(doc, graph)):
+            skip_to = lead_from         # a term tranche's grid, beside a revolver
+            continue
+        columns = read_grid(table, more)
         if columns and (_margin_column(columns) or _fee_column(columns)):
             return name, node, columns
     return None
@@ -1398,7 +1457,8 @@ _GREATER_OF_FLOOR = re.compile(
     r"Daily\s+Simple\s+SOFR|Benchmark|LIBO)", re.I)
 #: StepStone: "Adjusted Term SOFR shall at no time be less than 0.0% per annum."
 _NOT_LESS_THAN_FLOOR = re.compile(
-    r"shall\s+(?:at\s+no\s+time|not\s+at\s+any\s+time|in\s+no\s+event|not)\s+"
+    r"(?:shall\s+(?:at\s+no\s+time|not\s+at\s+any\s+time|in\s+no\s+event|not)|"
+    r"in\s+no\s+event\s+shall\s+[^.,;]{0,60}?)\s+"
     r"be\s+less\s+than\s+(\d+(?:\.\d+)?\s*%)", re.I)
 #: Constellation's Term SOFR: "if the Term SOFR determined in accordance with
 #: either of the foregoing provisions ... would otherwise be less than zero,
@@ -1406,9 +1466,17 @@ _NOT_LESS_THAN_FLOOR = re.compile(
 #: definition: the same proviso sits on the federal funds rate, the base rate
 #: and CORRA, and none of those is this floor.
 _DEEMED_ZERO = re.compile(
-    r"less\s+than\s+(?P<below>zero|0(?:\.0+)?\s*%)\s*,\s*(?:then\s+)?(?:the\s+"
+    r"less\s+than\s+(?P<below>zero|0(?:\.0+)?\s*%)\s*,\s*(?:then\s+)?(?:(?:the\s+)?"
     r"[A-Z][\w\- ]{0,40}?|such\s+rate|it)\s+shall\s+be\s+deemed\s+(?:to\s+be\s+)?"
     r"(?:equal\s+to\s+)?(?:zero|0(?:\.0+)?\s*%)", re.I)
+#: Easterly's "Floor" is stated per benchmark: "with respect to (a) Adjusted
+#: Term SOFR, Adjusted Daily Simple SOFR and the Federal Funds Rate, zero
+#: percent (0.00%) per annum and (b) the Base Rate, one percent (1.00%)". The
+#: definitions tier rightly settles neither; the Term SOFR limb is this floor.
+_TERM_SOFR_LIMB = re.compile(
+    r"(?:with\s+respect\s+to|for)\s+\(\s*(?:a|i)\s*\)\s+(?:the\s+)?(?:Adjusted\s+)?"
+    r"Term\s+SOFR\b[^;()]{0,120}?,\s*(?:[a-z\-]+(?:\s+[a-z\-]+)*\s+percent\s*)?\(?\s*"
+    r"(\d+(?:\.\d+)?\s*%)", re.I)
 #: SanDisk's "Floor" is the benchmark-replacement boilerplate the definitions
 #: tier refuses, and then says what it is: "For the avoidance of doubt the
 #: initial Floor for the Adjusted Term SOFR Rate shall be 0%".
@@ -1431,7 +1499,8 @@ def floor_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
                 "the definition of 'Floor' writes zero in words, with no unit",
                 as_written=_flat(node.body)[:40],
             )]
-        initial = _INITIAL_FLOOR.search(_flat(node.body))
+        body = _flat(node.body)
+        initial = _INITIAL_FLOOR.search(body)
         value = initial and parse_percent(initial.group(1))
         if value is not None:
             return [_candidate(
@@ -1440,7 +1509,19 @@ def floor_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
                 f"states the initial Floor for Term SOFR, {initial.group(1)}",
                 as_written=initial.group(1),
             )]
-        return []          # the definitions tier reads a Floor with a percentage
+        limb = _TERM_SOFR_LIMB.search(body)
+        value = limb and parse_percent(limb.group(1))
+        if value is not None:
+            return [_candidate(
+                "libor_floor_pct", value, node.span,
+                "the definition of 'Floor' states a floor per benchmark, and "
+                f"{limb.group(1)} is Term SOFR's",
+                as_written=limb.group(1),
+            )]
+        if not _SELF_REFERENTIAL.search(body):
+            return []      # the definitions tier reads a Floor with a percentage
+        # Cencora's "Floor" is the boilerplate and nothing more; its Term SOFR
+        # says what the floor is.
     for term in _BENCHMARK_TERMS:
         resolved = _resolve(graph, term)
         if resolved is None:
