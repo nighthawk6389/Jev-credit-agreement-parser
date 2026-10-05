@@ -1254,28 +1254,302 @@ checked against the text. Three things to know when reading the results:
 
 Nothing in this pass has run on the set.
 
+# The sixth pass: what validator A can confirm
+
+The fifth pass ended with three things to do. Run the investment-grade set
+once. Fit validator A's thresholds for dates and economic terms on real
+labels. Check computed maturities some other way than asking a literal
+reader about a date no sentence states. The second and third were done in
+sample first, so that the one run of the investment-grade set measures all
+three.
+
+## Fitting validator A on real filings
+
+A's thresholds for dates and economic terms, 0.88 and 0.77 in live v9, were
+fitted on the synthetic corpus. A never met a wrong date or economic term
+there, so each threshold was the lowest score a right value happened to get.
+On the real in-sample filings the labels give the positives: 104 labelled
+values A asked about, all but two of them right. Two failures cannot place a
+threshold. So `eval/realfit.py` asks A about wrong values on purpose, in A's
+own words, in A's own request and against the text A was shown:
+
+* **in-text**: the other dates, percentages and amounts in that text, nearest
+  the right one first. This is the reader's plausible mistake: the right
+  clause, the wrong figure.
+* **off-text**: the right value moved to figures the text does not contain:
+  a year either way, a quarter point more, $25 million more. A misparse or a
+  slip in arithmetic produces those.
+
+| live score | dates | economic terms |
+| --- | --- | --- |
+| right values (labelled) | stated 0.67–0.99 | 0.49–0.98 |
+| wrong values in the text | at most 0.43 (9 asked) | up to 0.96; 11 of 54 at 0.49 or more |
+| values not in the text | at most 0.09 (73 asked) | at most 0.45 (234 asked) |
+
+So:
+
+* **Values not in the text:** A rejects them.
+* **Wrong dates the text does contain:** A rejects almost every one.
+* **A wrong economic term from the right clause:** A does not reliably reject
+  it. The ones that get through are figures the field's own question does not
+  rule out:
+  * lower tiers of a fee grid;
+  * a default rate;
+  * a utilization threshold.
+
+Each class was fitted on the fit side three ways, with the repository's own
+`fit_threshold`:
+
+1. on the labelled values alone;
+2. with the off-text values added;
+3. with the in-text ones added too.
+
+A threshold is adopted only where all three agree.
+
+* **Dates: 0.80** in all three fits, so v10 lowers it from 0.88.
+  * No wrong date of either kind clears it.
+  * It confirms 15 of the 25 labelled right dates, where 0.88 confirmed 9.
+  * Four dates no label covers clear it too, and each was checked against its
+    text:
+    * Accelevation's revolver maturity, twice. It is cited from the term
+      loan's definition, which states the same day.
+    * Martin Marietta's facility termination date.
+    * The Meridian fixture's revolver maturity.
+* **Economic terms: kept at 0.77.** The fits gave 0.49, 0.49 and 0.94.
+  * The labelled values alone would lower it to 0.49, which confirms every
+    right value.
+  * It would also let through nearly three times as many in-text near misses:
+    11 of 54 against 4.
+  * Whether that costs anything depends on how often the reader picks a wrong
+    figure from the right clause. In sample it did so twice in 104, and A
+    caught both. That is too few to set a threshold on.
+
+The first version of this fit came out the other way, and it was wrong.
+
+* **The bug:** each wrong value's question was built from a copy of the field
+  with the value replaced. A field's value lives on its primary variant, so
+  every "wrong" question asked about the right value again.
+* **What it looked like:** A appeared unable to tell a right figure from any
+  other, and values not in the text scored 0.98.
+* **How it showed:** one question sent by itself.
+* **The fix:** `validators.support_statement` now builds A's question from any
+  value, and a test pins it to A's own question word for word. The probe also
+  refuses a wrong value whose question equals the right one's.
+
+## Computed maturities, premise by premise
+
+No sentence states a computed maturity, so A's question about it has no
+literal answer. The six computed fund maturities scored 0.06–0.07, right or
+wrong. But each step of the computation is stated, in the definition it came
+from. The resolver now writes each step down as a sentence that definition
+can be checked against. For PIMCO:
+
+> The text defines the Closing Date as June 1, 2026.
+>
+> The text defines the Final Maturity Date as the earliest of the 4-year
+> anniversary of the Closing Date and the other dates and events it lists.
+
+How the check works:
+
+* **The cover date:** "The date of this Agreement" adds the cover's date as a
+  premise, asked against the cover.
+* **The check:** a new step, `validator_a_premises`, asks each premise against
+  its own definition after A turns the value down.
+* **The bar:** the date is confirmed only if every premise clears A's date
+  threshold.
+* **The arithmetic:** it stays in Python, where it is exact and tested.
+
+Asked live beside wrong versions of each one, the premises separate cleanly:
+
+| | live score |
+| --- | --- |
+| the true premises of the six fit-side computed maturities | 0.86–0.99 |
+| wrong versions (listed below) | 0.01–0.22 |
+
+The wrong versions were:
+
+* a year off;
+* a count one off;
+* the next ordinal;
+* "latest" for "earliest";
+* "preceding" for "on or after";
+* a period ending a day early;
+* the wrong defined term.
+
+One wrong version scored 0.93, and it was not wrong: it named the Collection
+Date, which is another limb of that same definition.
+
+## Results in sample
+
+**The live gate, 757 assertions:**
+
+| | confident | wrong | passed |
+| --- | --- | --- | --- |
+| fifth pass (thresholds v9) | 425 | 0 | 525 |
+| dates refitted (v10) | 431 | 0 | 525 |
+| **and premises** | **437** | **0** | **525** |
+
+* **Nothing lost.** Nothing that passed before fails now.
+* **Every change is a right answer leaving review:** six dates under v10, and
+  the six computed fund maturities by their premises.
+* **Nothing unlabelled.** No field without a label is confirmed by premises.
+* **The offline stand-in CI runs is unchanged** at 340 confident, 0 wrong
+  and 503 passed. It confirms no premise at its own date threshold of 0.94.
+
+The new answers cost $0.0003.
+
+**The 81 assertions on the fund fields:**
+
+| | confident and right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- |
+| fifth pass | 47 | 0 | 18 | 10 |
+| **now** | **57** | **0** | 8 | 10 |
+
+* **Maturities** went from 3 confidently right to 13.
+* **Commitments and margins** are where they were. Their right answers in
+  review sit under the economic-term threshold, which stayed.
+
+## The investment-grade set, once
+
+The twenty investment-grade credit agreements labelled blind in 8ac263c were
+run once, on 3644a1f, which carries both changes above. They are a segment
+the readers were not written for: revolvers priced off the borrower's
+ratings, from companies the corpus did not hold.
+
+| of 179 blind assertions | confident | wrong | right, in review |
+| --- | --- | --- | --- |
+| live | 68 | 4 | 4 |
+| offline stand-in | 45 | 2 | 19 |
+
+The live run cost $0.54. This is the first out-of-sample run with confident
+wrong answers. The stand-in's two (Celanese's fixed-charge minimum read as
+its leverage cap, Dynatrace's agent read as "Loan Document") are its own;
+live gets both right.
+
+Running the same twenty through the fifth pass's code and through v10, in
+worktrees and almost entirely from the cache, separates this pass from what
+was there before:
+
+| code | confident | wrong |
+| --- | --- | --- |
+| fifth pass (thresholds v9) | 61 | 3 |
+| dates at 0.80 (v10) | 67 | 4 |
+| **and premises** | **68** | **4** |
+
+* **The refit** confirmed five more right maturities: Cboe, Enterprise
+  Products, Franklin, Illumina and Teradyne.
+  * It also confirmed one wrong one: Easterly Government Properties'
+    2028-08-21, scored 0.82, between the old bar and the new.
+  * That date is right for Easterly's term facility, and Easterly has no
+    revolver. The refit's stress set held wrong dates. It held no right date
+    for the wrong kind of facility.
+* **The premise check** confirmed one more right maturity, ICE's
+  2031-08-20, and nothing wrong.
+* **Three errors were already there** under the fifth pass's code:
+  * **Athene's borrower.** Four borrowers share one "as Borrowers", and the
+    rule took the last.
+  * **Avnet's leverage covenant.** It came back as 5.00, the first row of a
+    relief-period step table. The standing level, which the labelling guide
+    asks for, is 4.00.
+  * **Puget Energy's maturity.** It came back as May 18, 2031, a Sunday,
+    which the definition itself moves to the preceding Business Day, May 16.
+
+Per field, live:
+
+| field | confident and right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- |
+| borrower | 11 | 1 | 0 | 8 |
+| agent | 16 | 0 | 2 | 2 |
+| governing law | 17 | 0 | 2 | 1 |
+| commitment | 1 | 0 | 0 | 17 |
+| maturity | 9 | 2 | 0 | 8 |
+| top margin | 1 | 0 | 0 | 18 |
+| floor | 5 | 0 | 0 | 15 |
+| commitment fee | 0 | 0 | 0 | 11 |
+| covenant | 0 | 1 | 0 | 18 |
+| closing date | 4 | 0 | 0 | 1 |
+
+All eight null commitment-fee labels pass: no facility fee was reported as
+an unused fee.
+
+The parties, governing law and maturities carry over; the economic terms do
+not. Nearly every miss is a value not read at all, rather than a wrong one:
+
+* **Margins** are priced from ratings grids printed as tables.
+* **Commitments** are stated in schedules.
+* **Floors** are written as "if Term SOFR would otherwise be less than zero,
+  Term SOFR shall be deemed to be zero". That is the form of 12 of the 15
+  missed floors, and the fund floor reader does not read it.
+
+The confident claims no label covers were audited as before, on the fields
+that matter: 27 values and absences. 20 are right, 3 arguable and 4 wrong.
+
+* **Three of the four wrong** repeat Athene's error:
+  * the last of seven syndication agents, twice;
+  * the last of six arrangers.
+* **The fourth wrong one** is Globe Life's guarantor, called absent. Its
+  Section 10.19 makes the borrower guarantee its co-borrower.
+* **The arguable three** state a real figure more broadly than it applies:
+  * a one-time fronting fee read as a rate;
+  * ICE's credit spread adjustment, which applies only to its one
+    non-consenting lender;
+  * Uber's springing guarantee.
+
+## Fixed after the run
+
+Three of the misreadings were general, and are fixed in f6417b1 and
+c44e2f0:
+
+* **The term-facility guard** reads "shall not have the right to reborrow"
+  (Easterly).
+* **A definition's own business-day convention** is applied (Puget). A date
+  it moves becomes a computed one, with the convention as a premise.
+* **The party rules decline a role in the plural**, of whose list they can
+  only see the last name (Athene, and the three audited).
+
+The covenant table and Globe Life's guaranty are recorded, not fixed.
+
+* **In sample:** nothing changed. Live is 437 confident, 0 wrong and 525
+  passed; offline is 340, 0 and 503.
+* **Out of sample:** replayed with the fixes, the twenty come to 66
+  confident and 1 wrong, Avnet's covenant. Puget's maturity is now
+  confirmed by its premises. Athene's borrower, Easterly's maturity and the
+  three audited parties are in review.
+
+That replay is not a measurement. Every fix was written against these twenty
+documents, and for those rules they are now a fit set, as the BDCs became for
+the amendment-date rule. The next measurement of them needs fresh documents.
+
 # What is next
 
-1. Run the investment-grade set once. Its labels are blind and nothing has
-   run on it. It is the next measurement, and the first on a segment the
-   readers were not written for.
-2. Fit A's thresholds for dates and economic terms on the fund labels. 18
-   right answers sit in review under bars fitted before these labels
-   existed, among them every stated fund maturity below 0.88.
-3. Check computed maturities with something other than a literal reader.
-   Python's arithmetic over the definition graph is exact where every link
-   resolves, but nothing confirms the parse. Against the whole chain, Jev
-   preferred the right date in five of six cases, which is not enough to
-   confirm one.
-4. Decide the labels the second pass exposed: GBDC's `abl_revolver` against
-   Athena's `unknown`.
-5. Let validator E, or a status C can reach, say "named here, stated
-   elsewhere". That was Sysco's case. For guarantors, a definition pointing at
-   a guarantee agreement is not enough, so a real answer has to find who signs
-   and who is scheduled.
-6. Fit A's parties threshold on real names, and label a sample of the
-   corpus's unlabelled `absent_from_document` claims.
-7. Put the key in CI for a scheduled live gate. With the answer cache, a
-   gate after a code change costs cents; a question change costs about two
-   thirds of a cold run, $2–4. Until then, CI measures the stand-in, which
-   passes at 340 confident / 0 wrong.
+1. **Read the investment-grade economics the readers miss.** Measure them on
+   a fresh set. They are:
+   * the zero floor written as "deemed to be zero", which is 12 of the 15
+     missed floors;
+   * ratings grids printed as tables, for margins and fees;
+   * commitments stated in schedules.
+2. **Settle the covenant level.** The field's question asks for the level "as
+   it stands at a given date", while the labels take the standing level, and
+   Avnet's relief table is where the two part. Choose one, then read step
+   tables to it.
+3. **Fit the economic-term threshold.** It rests on how often the reader
+   takes a wrong figure from the right clause, which nothing measures yet.
+   Labelling a sample of the values A is asked about would.
+4. **Add a near miss to the date stress set:** a right date for the wrong
+   kind of facility. That is the one error the date refit let through.
+5. **Ask about the commitment fee by its top level,** as the margin's question
+   does. Lower tiers of a fee grid clear A today: PennantPark's 0.25% scored
+   0.96.
+6. **Harvest a fresh out-of-sample set.** The investment-grade set has been
+   run once, and fixed against since.
+7. **Decide the labels the second pass exposed:** GBDC's `abl_revolver`
+   against Athena's `unknown`.
+8. **Let validator E, or a status C can reach, say "named here, stated
+   elsewhere".** That was Sysco's case. And read a borrower's guaranty of its
+   co-borrower, which was Globe Life's.
+9. **Fit A's parties threshold on real names.** `eval/realfit.py` can do it
+   with the other names in the text as its near misses. Then label a sample
+   of the corpus's unlabelled `absent_from_document` claims.
+10. **Put the key in CI for a scheduled live gate.** With the answer cache,
+    a gate after a code change costs cents. Until then, CI measures the
+    stand-in, which passes at 340 confident and 0 wrong.

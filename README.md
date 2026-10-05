@@ -72,6 +72,10 @@ credit-extract extract agreement.htm --backend anthropic --jev api --out result.
 # The client pins jev-1.13.0 (JEV_MODEL overrides it) and the backend is named
 # after the pin, so each model version gets its own threshold file.
 python -m credit_extract.eval.harness --calibrate --jev api --version 9
+# Validator A's date and economic-term thresholds, refitted on the real
+# in-sample filings against wrong values A is asked about on purpose. From a
+# warm cache only those questions are paid for.
+python -m credit_extract.eval.realfit --jev api --workers 4 --write
 # Live answers are kept in .cache/jev-answers.sqlite (untracked) and never
 # bought twice. A full gate is about 36,000 requests from an empty cache, and
 # a rerun asks only what changed -- though a changed question is asked again
@@ -83,8 +87,8 @@ python -m credit_extract.eval.family_report --gate --jev api --workers 6 \
 # Twenty BDC agreements labelled blind, which CI never scores (about $0.70).
 python -m credit_extract.eval.family_report --out-of-sample --no-mutations \
     --jev api --workers 6
-# Twenty investment-grade credit agreements labelled blind, not yet run:
-# the next out-of-sample measurement.
+# Twenty investment-grade credit agreements labelled blind, run once in the
+# sixth pass (about $0.55) and fixed against since.
 python -m credit_extract.eval.family_report --no-mutations --jev api \
     --workers 6 --labels credit_extract/eval/labels_out_of_sample_ig
 
@@ -509,12 +513,12 @@ classes have **no labelled failures**, which means every threshold clears the
 target trivially and the fitted value carries no information — the report
 prints that in full rather than showing a clean 1.000 and moving on.
 
-**Five live Jev passes, two out-of-sample sets, and no Jev in CI.**
+**Six live Jev passes, two out-of-sample sets, and no Jev in CI.**
 `OfflineJev` is a deterministic lexical stand-in implementing the same typed
 interface, so the pipeline, its tests and its calibration all run offline,
 and every CI build is still answered by it. It is not a calibrated model, and
 the orphan sweep's concept lexicons are its weakest part. Live System One
-(`jev-1.13.0`) has been run five times through the gate. The
+(`jev-1.13.0`) has been run six times through the gate. The
 first pass found 54 of 425 confident propositions wrong (12.71%), and traced
 them to four questions a literal reader answered as written, not as meant.
 The second rewrote those questions and found 3 wrong of 364 (0.82%) on the
@@ -532,9 +536,15 @@ The fifth labelled the economic terms of the twenty in-sample fund
 facilities twice, independently, before writing readers for them
 (`extract/economics.py`). On the BDCs, run once more, 28 of the 61 labelled
 commitments, maturities, margins and fees are confidently right where none
-had been read, and none is wrong. A second out-of-sample set, twenty
-investment-grade credit agreements, is labelled blind and waits for the next
-measurement. `docs/jev_live_pass.md` records all of it.
+had been read, and none is wrong. The sixth refitted validator A's date
+threshold on real filings against wrong values asked on purpose
+(`eval/realfit.py`), and confirmed computed maturities by the premises they
+were computed from. In sample that is 437 confident and 0 wrong. A second
+out-of-sample set was then run once: twenty investment-grade credit
+agreements. It gave 68 confident and 4 wrong, the first out-of-sample errors
+this project has measured. Three of the four predate the sixth pass, and
+three are fixed since, against those documents.
+`docs/jev_live_pass.md` records all of it.
 Thresholds are
 tagged with the backend they were fitted against, each scorer has its own
 file, and `load_thresholds` **refuses a backend mismatch** rather than
@@ -598,6 +608,7 @@ credit_extract/
               family_report.py    the gated report
               gold/               fixture + corpus generator
               harness.py          evaluation and threshold fitting
+              realfit.py          A's thresholds, fitted on real filings against wrong values
               traps.py            the four traps as checks
   pipeline.py                   orchestration
   cli.py                        extract | traps | chain
@@ -605,7 +616,7 @@ config/thresholds.json          fitted, versioned, CI-asserted (offline stand-in
 config/thresholds.jev-1.13.0.json  fitted against live Jev, that version only
 corpus/real/                    four SEC filings, read in detail and labelled
 corpus/real/bdc/                twenty BDC agreements, out of sample, labelled blind
-corpus/real/ig/                 twenty investment-grade agreements, the same, not yet run
+corpus/real/ig/                 twenty investment-grade agreements, the same, run once
 corpus/edgar/                   100 more, stratified, zipped, all labelled
 docs/orientation.md             start here: goals, labels vs recordings, families
 docs/corpus_findings.md         what those 100 say about the pipeline
