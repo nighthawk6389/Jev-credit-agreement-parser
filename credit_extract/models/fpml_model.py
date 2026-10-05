@@ -347,6 +347,16 @@ class FieldSpec(BaseModel):
     #: literal reader told "this text contains no X" of a chunk that does not
     #: name X in those words agrees with it, however plainly X is there.
     presence_question: str = ""
+    #: What the other validators call the field, where validator A's
+    #: description has grown more specific than they need. Validator E asks
+    #: whether "the amount of" it is set by another document, F how material
+    #: it is, conflict resolution which candidate it is; a reworded
+    #: description would put each of those questions to the scorer afresh.
+    subject: str = ""
+
+    @property
+    def noun(self) -> str:
+        return self.subject or self.description
 
     @property
     def presence_statement(self) -> str:
@@ -367,6 +377,7 @@ def _spec(
     anchors: list[str] | None = None,
     sections: list[str] | None = None,
     presence: str = "",
+    subject: str = "",
 ) -> FieldSpec:
     return FieldSpec(
         name=name,
@@ -380,6 +391,7 @@ def _spec(
         definition_anchors=anchors or [],
         section_hints=sections or [],
         presence_question=presence,
+        subject=subject,
     )
 
 
@@ -513,9 +525,20 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
                        "highest margin over Term SOFR, Eurodollar or another "
                        "benchmark in the pricing grid (the Applicable Rate or "
                        "Applicable Margin)."),
-        _spec("commitment_fee_pct", "the unused commitment fee", "percent",
-              "economic_terms", 4, "fpml:accruingFeeOption", "fpml",
-              sections=["2.09"]),
+        # The highest level, as the margin's question says: asked about "the
+        # unused commitment fee", a literal reader confirmed every tier of a
+        # grid -- PennantPark's 0.25% and 0.50% at 0.96 and 0.95 beside the
+        # right 0.75% -- because each is an unused commitment fee. The presence
+        # question keeps the old words, so validator C's answers stay bought.
+        _spec("commitment_fee_pct",
+              "the highest rate of the fee on unused commitments that the "
+              "agreement's pricing sets, however the fee is named (commitment "
+              "fee, unused fee, non-usage fee or undrawn fee)",
+              "percent", "economic_terms", 4, "fpml:accruingFeeOption", "fpml",
+              sections=["2.09"],
+              presence="This agreement contains a provision addressing the "
+                       "unused commitment fee.",
+              subject="the unused commitment fee"),
         _spec("fronting_fee_pct", "the letter of credit fronting fee", "percent",
               "economic_terms", 2, "fpml:accruingFeeOption", "fpml",
               sections=["2.05"]),
@@ -589,11 +612,19 @@ FIELD_REGISTRY: dict[str, FieldSpec] = {
         # were reported absent. A BDC's asset coverage floor is assets over
         # debt and caps nothing against earnings, so it still reads as absent,
         # as its labels require.
+        # The standing level: the one that applies with no end date, as the
+        # labels have always taken it -- not a temporary relief level, an
+        # acquisition step-up or the first rung of a step-down. The other
+        # validators keep the old words, and with them their answers.
         _spec("financial_covenant.level",
-              "the maximum leverage level under the financial covenant, as it "
-              "stands at a given date", "ratio", "covenant_levels", 5,
+              "the standing maximum leverage level under the financial "
+              "covenant, the one that applies with no end date, not a "
+              "temporary relief or acquisition step-up level",
+              "ratio", "covenant_levels", 5,
               None, None, verified_term=False,
               anchors=["Total Leverage Ratio"], sections=["6.12"],
+              subject="the maximum leverage level under the financial "
+                      "covenant, as it stands at a given date",
               presence="This agreement contains a financial covenant that "
                        "limits the borrower's debt relative to its earnings, "
                        "or requires a minimum coverage of its interest or "

@@ -76,7 +76,12 @@ _NO_VALUE = {"absent_from_document", "not_applicable_to_archetype"}
 #: Each negative set, cumulatively: the labelled values alone, then with the
 #: off-text values, then with the in-text near misses as well.
 FITS = (("labelled", ()), ("+off-text", ("off_text",)),
-        ("+in-text", ("off_text", "in_text")))
+        ("+in-text", ("off_text", "in_text", "other_facility")))
+#: The reader's plausible mistakes: a wrong figure from the right text, and a
+#: right date for the wrong kind of facility.
+MISTAKES = ("in_text", "other_facility")
+#: A term tranche's maturity, by the name its definition gives it.
+_TERM_MATURITY = re.compile(r"\bTerm\b|\bTranche\b|Incremental|Delayed Draw")
 
 _MONTHS = ("January", "February", "March", "April", "May", "June", "July",
            "August", "September", "October", "November", "December")
@@ -234,7 +239,7 @@ class Row:
     side: str
     field: str
     field_class: str
-    kind: str              # "labelled", "in_text" or "off_text"
+    kind: str              # "labelled", "in_text", "off_text" or "other_facility"
     probability: float
     correct: bool
     value: str
@@ -308,6 +313,52 @@ def probe_file(path: Path, inner: Any) -> list[Row]:
                         FIELD_REGISTRY[found["field"]].field_class, found["kind"],
                         found["probability"], False, found["value"],
                         str(rights[found["field"]])))
+    if "revolver.maturity_date" in rights:
+        rows += other_facility(path.stem, side, result, rights["revolver.maturity_date"], inner)
+    return rows
+
+
+def other_facility(label: str, side: str, result: Any, expected: Any,
+                   inner: Any, limit: int = 2) -> list[Row]:
+    """A right date for the wrong kind of facility, asked as the revolver's.
+
+    Easterly Government Properties' term facility maturity was confirmed as a
+    revolver's out of sample, at 0.82, between the old date threshold and
+    the new; the stress set the refit was fitted on held no such date. Here
+    each term tranche maturity a definition states, where it differs from the
+    revolver's, is asked in A's words for the revolver, against its own
+    definition with A's padding.
+    """
+    from ..extract import economics as E
+    from ..graph.definitions import build_definition_graph
+    from ..validate.jev import JevSession
+
+    doc = getattr(result, "document", None)
+    if doc is None:
+        return []
+    spec = FIELD_REGISTRY["revolver.maturity_date"]
+    graph = build_definition_graph(doc)
+    session = JevSession(inner)
+    rows: list[Row] = []
+    for name in sorted(graph.nodes):
+        if "Maturity Date" not in name or not _TERM_MATURITY.search(name):
+            continue
+        node = graph.get(name)
+        # Resolved as the revolver's maturity would be: a date written, or one
+        # reached through references and arithmetic.
+        stated = E._Chain(doc, graph).term(name, ())
+        if stated is None or values_equal(expected, stated):
+            continue
+        lo, hi = node.span.expand(V.SPAN_CONTEXT_PAD, len(doc.text))
+        question = Noul(name=f"{spec.name}#other_facility",
+                        statement=V.support_statement(stated, spec))
+        decision = session.ask(doc.slice(lo, hi), [question], label="realfit").get(
+            question.name)
+        if decision is not None:
+            rows.append(Row(label, side, spec.name, spec.field_class, "other_facility",
+                            decision.confidence, False, str(stated), str(expected)))
+        if len(rows) == limit:
+            break
     return rows
 
 
@@ -354,6 +405,9 @@ class ClassFit:
     adopted: float | None = None
     reason: str = ""
     metrics: ClassMetrics | None = None
+    #: Where the fits disagree: the labelled values A was asked about and how
+    #: many were wrong, which bound the rate wrong values reach A at.
+    prevalence: tuple[int, int] | None = None
 
 
 def _side(rows: list[Row], side: str) -> list[Row]:
@@ -364,6 +418,41 @@ def _side(rows: list[Row], side: str) -> list[Row]:
 def _negatives(rows: list[Row], kinds: tuple[str, ...]) -> list[Sample]:
     return [r.sample() for r in rows
             if r.kind == "labelled" or r.kind in kinds]
+
+
+def wilson_upper_bound(successes: int, n: int) -> float:
+    """95% upper bound on a proportion."""
+    return 1.0 - wilson_lower_bound(n - successes, n) if n else 1.0
+
+
+def weighted_threshold(train: list[Row], target: float,
+                       rate: float) -> tuple[float | None, float]:
+    """Lowest threshold whose expected precision clears the target, when the
+    reader hands A a plausible mistake at ``rate`` and a right value otherwise.
+
+    The fits weigh every near miss as one real candidate, which is the reader
+    erring on every value it reads twice over; the labels say how often it
+    actually errs. A threshold must also turn down every value the text does
+    not contain: those are what A reliably catches, and a fit that ignored
+    them could settle below them. Returns (threshold or None, the best
+    expected precision).
+    """
+    rights = [r.probability for r in train if r.kind == "labelled" and r.correct]
+    wrongs = [r.probability for r in train if r.kind in MISTAKES]
+    if not rights or not wrongs:
+        return None, 0.0
+    floor = max((r.probability for r in train if r.kind == "off_text"), default=-1.0)
+    best = 0.0
+    for at in sorted({round(p, 4) for p in rights + wrongs if p > floor}):
+        q_right = sum(p >= at for p in rights) / len(rights)
+        q_wrong = sum(p >= at for p in wrongs) / len(wrongs)
+        if not q_right:
+            continue
+        precision = ((1 - rate) * q_right) / ((1 - rate) * q_right + rate * q_wrong)
+        best = max(best, precision)
+        if precision + 1e-9 >= target:
+            return at, precision
+    return None, best
 
 
 def fit_class(rows: list[Row], field_class: str, current: float) -> ClassFit:
@@ -385,14 +474,29 @@ def fit_class(rows: list[Row], field_class: str, current: float) -> ClassFit:
     if len(out.fitted) < len(FITS):
         out.reason = "not every fit had data"
     elif len(set(out.fitted.values())) > 1:
-        out.reason = ("the fits disagree, so the threshold rests on how often "
-                      "the reader picks a wrong figure from the right text, "
-                      "which nothing here measures")
+        labelled = [r for r in train if r.kind == "labelled"]
+        wrong = sum(1 for r in labelled if not r.correct)
+        rate = wilson_upper_bound(wrong, len(labelled))
+        out.prevalence = (wrong, len(labelled))
+        at, precision = weighted_threshold(train, target, rate)
+        if at is not None:
+            out.adopted = round(at, 4)
+            out.reason = (
+                f"the fits disagree; the reader gave A a wrong value {wrong} "
+                f"times in {len(labelled)}, at most {rate:.1%} at 95%, and at "
+                f"that rate {at:.2f} is the lowest threshold whose expected "
+                f"precision clears {target} ({precision:.4f})")
+        else:
+            out.reason = (
+                f"the fits disagree, and at the rate the reader gave A a wrong "
+                f"value ({wrong} in {len(labelled)}, at most {rate:.1%} at 95%) "
+                f"no threshold's expected precision clears {target} "
+                f"(best {precision:.4f})")
     else:
         out.adopted = next(iter(out.fitted.values()))
         out.reason = "all three fits agree"
     threshold = out.adopted if out.adopted is not None else current
-    held = _negatives(_side(mine, "holdout"), ("off_text", "in_text"))
+    held = _negatives(_side(mine, "holdout"), ("off_text",) + MISTAKES)
     scored = [s for s in held if s.probability >= threshold]
     wrong = sum(1 for s in scored if not s.correct)
     precision, recall, coverage = evaluate(held, threshold)
@@ -403,9 +507,9 @@ def fit_class(rows: list[Row], field_class: str, current: float) -> ClassFit:
             wilson_lower_bound(len(scored) - wrong, len(scored)), 4),
         certified=False, recall=round(recall, 4), coverage=round(coverage, 4),
         silent_error_rate=round(wrong / len(scored), 4) if scored else 0.0,
-        n=len(_negatives(train, ("off_text", "in_text"))),
+        n=len(_negatives(train, ("off_text",) + MISTAKES)),
         n_accepted=len(scored), n_holdout=len(held),
-        n_incorrect=sum(1 for s in _negatives(train, ("off_text", "in_text"))
+        n_incorrect=sum(1 for s in _negatives(train, ("off_text",) + MISTAKES)
                         if not s.correct),
     )
     return out
@@ -415,7 +519,8 @@ def curve(rows: list[Row], field_class: str, at: float) -> dict[str, str]:
     """Share of each kind of row A clears at one threshold."""
     out = {}
     for kind, correct in (("right", True), ("labelled wrong", False),
-                          ("in_text", False), ("off_text", False)):
+                          ("in_text", False), ("other_facility", False),
+                          ("off_text", False)):
         group = [r for r in rows if r.field_class == field_class
                  and (r.kind == "labelled" if kind in ("right", "labelled wrong")
                       else r.kind == kind)

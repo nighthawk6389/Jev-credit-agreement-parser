@@ -1012,7 +1012,7 @@ def validator_e_external_dependency(ctx: ValidationContext) -> list[str]:
         # add-back cap the agreement states because the add-backs themselves
         # come from the Sponsor Model.
         statement = (
-            f"The amount of {spec.description} is set by the {document}, not "
+            f"The amount of {spec.noun} is set by the {document}, not "
             "stated in this text."
         )
         result = ctx.session.ask(
@@ -1111,14 +1111,14 @@ def validator_f_criticality(ctx: ValidationContext) -> dict[str, int]:
         span = field.spans[0] if field.spans else None
         state = (
             ctx.doc.slice(*span.expand(SPAN_CONTEXT_PAD, len(ctx.doc.text)))
-            if span else spec.description
+            if span else spec.noun
         )
         result = ctx.session.ask(
             state,
             [ScoreQ(
                 name="criticality",
                 question=(
-                    f"How economically material is {spec.description} to this "
+                    f"How economically material is {spec.noun} to this "
                     "credit agreement?"
                 ),
                 rubric=CRITICALITY_RUBRIC_TEXT,
@@ -1191,7 +1191,7 @@ def resolve_conflicts(ctx: ValidationContext) -> list[ConflictRecord]:
         if field is None or field.status != "conflicted":
             continue
         spec = ctx.specs.get(record.field)
-        description = spec.description if spec else record.field
+        description = spec.noun if spec else record.field
         criteria: dict[str, str] = {}
         state_parts: list[str] = []
         for alternative in record.candidates:

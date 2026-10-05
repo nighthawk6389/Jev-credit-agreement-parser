@@ -262,7 +262,21 @@ means anything, and this guide is missing a rule.
 Add the rule here when that happens. That is how this file is supposed to
 grow.
 
-### What double-labelling the fund facilities settled
+### Covenant levels: the standing level
+
+`financial_covenant.level` is the **standing level**: the one that applies
+with no end date. With a step-down schedule, that is the level "thereafter",
+not the first rung. With a temporary relief period, it is the level outside
+the relief period. With an acquisition step-up the borrower may elect, it is
+the level before any election. Put the other levels in the note.
+
+The labels have always been written this way, from IDEX's 3.50 with its
+acquisition holiday to Flowers' recurring 3.25. Avnet's relief schedule, out
+of sample, is where the pipeline parted from it, and where the field's
+question said "as it stands at a given date". The question now names the
+standing level, and the schedule reader puts the open-ended row first.
+
+## What double-labelling the fund facilities settled
 
 The five economic terms were labelled twice on the twenty in-sample fund and
 BDC agreements. The two sets agreed on 77 of 100 slots and both skipped 17;

@@ -345,6 +345,26 @@ def test_e_asks_whether_this_fields_amount_is_set_by_the_named_document():
     assert question.polarity == "absence"
 
 
+def test_a_asks_for_the_fees_top_level_and_the_others_keep_their_words():
+    """Asked whether the text supports a value for "the unused commitment
+    fee", a literal reader confirmed every tier of a grid, because each is
+    one: PennantPark's 0.25% and 0.50% at 0.96 and 0.95 beside the right
+    0.75%. Validator A now asks for the highest rate; E, F and conflict
+    resolution keep the short name, and so keep every answer they bought."""
+    from credit_extract.validate.validators import support_statement
+
+    spec = FIELD_REGISTRY[FEE]
+    assert support_statement(Decimal("0.75"), spec) == (
+        "The text supports a value of 0.75% for the highest rate of the fee on "
+        "unused commitments that the agreement's pricing sets, however the fee "
+        "is named (commitment fee, unused fee, non-usage fee or undrawn fee).")
+    assert spec.noun == "the unused commitment fee"
+    assert spec.presence_statement == (
+        "This agreement contains a provision addressing the unused commitment fee.")
+    # A field with no subject of its own is called what it always was.
+    assert FIELD_REGISTRY["libor_floor_pct"].noun == "the benchmark rate floor"
+
+
 def test_a_figure_the_scorer_finds_stated_here_stays_confirmed():
     field, _, ctx = _fee_context(external=0.05)
 

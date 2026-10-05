@@ -422,3 +422,24 @@ def test_the_layered_backend_delegates_the_drift_report():
     assert LayeredBackend(model=_Model()).unplaced() == ["closing_date"]
     # No model tier, nothing to report -- and not an AttributeError.
     assert LayeredBackend().unplaced() == []
+
+
+def test_the_standing_level_leads_a_relief_schedule(monkeypatch):
+    """Avnet's Amendment No. 1 adds a relief period: 5.00 to 1.00 from
+    September 30, 2025, stepping down to "September 30, 2026 and each fiscal
+    quarter thereafter | 4.00 to 1.00", which is also the level outside the
+    relief period. Out of sample the covenant came back as 5.00: the open-ended
+    row was not recognised as open-ended, and the table's first row led. The
+    level that applies with no end date leads now."""
+    from credit_extract.extract import passes
+
+    span = Span(start=0, end=1, text="x")
+    rows = [("September 30, 2025", Decimal("5.00"), span),
+            ("December 31, 2025", Decimal("5.00"), span),
+            ("June 30, 2026", Decimal("4.50"), span),
+            ("September 30, 2026 and each fiscal quarter thereafter", Decimal("4.00"), span)]
+    monkeypatch.setattr(passes, "parse_covenant_grid", lambda doc: rows)
+    variants = passes.parse_covenant_variants(None)
+    assert variants[0]["level"] == Decimal("4.00")
+    assert variants[0]["effective_from"] == date(2026, 9, 30)
+    assert variants[0]["effective_to"] is None

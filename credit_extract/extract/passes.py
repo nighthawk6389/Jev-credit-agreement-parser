@@ -1937,8 +1937,15 @@ _PERIOD_RANGE_RE = re.compile(
     r"(?P<from>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})\s+(?:through|to|until)\s+"
     r"(?P<to>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})",
 )
+#: "June 30, 2027 and thereafter", and the longer way of saying it: Avnet's
+#: relief schedule ends "September 30, 2026 and each fiscal quarter
+#: thereafter". Read only as the short form, no row was open-ended, the table
+#: kept its printed order, and the relief level 5.00 was reported where the
+#: standing level is 4.00.
 _PERIOD_OPEN_RE = re.compile(
-    r"(?P<from>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})\s+and\s+thereafter",
+    r"(?P<from>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})\s+and\s+"
+    r"(?:(?:each|every|all|the\s+last\s+day\s+of\s+each)\s+[A-Za-z ]{0,40}?\s+)?"
+    r"thereafter",
 )
 #: "shall apply only if ... exceeds 35% of ..." -- a springing covenant is not
 #: in force until its trigger is, and a scalar cannot say that.

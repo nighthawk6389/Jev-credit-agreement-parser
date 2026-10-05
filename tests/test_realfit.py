@@ -180,15 +180,55 @@ def test_a_threshold_every_fit_agrees_on_is_adopted():
     assert (fit.metrics.n_holdout, fit.metrics.n_accepted) == (2, 1)
 
 
-def test_a_threshold_that_moves_with_the_near_misses_is_kept():
+def test_where_the_fits_disagree_the_measured_error_rate_decides():
     """Counting the in-text near misses moves the fit from 0.50 to 0.98, so
-    the answer depends on how often the reader makes that mistake."""
-    rows = (_rows("economic_terms", "labelled", [0.98] * 10 + [0.6, 0.55, 0.5], True)
-            + _rows("economic_terms", "labelled", [0.2], False)
-            + _rows("economic_terms", "off_text", [0.05, 0.1], False)
+    the answer turns on how often the reader hands A a wrong figure. The
+    labels measure that, and its 95% upper bound is what the threshold must
+    survive: one wrong in fourteen bounds the rate at about 31%, and only
+    0.98 survives that; one in two hundred bounds it near 2.8%, and 0.70
+    does -- below it, three of the four near misses clear and the expected
+    precision is 0.98."""
+    near = (_rows("economic_terms", "off_text", [0.05, 0.1], False)
             + _rows("economic_terms", "in_text", [0.7, 0.65, 0.62, 0.58], False))
-    fit = fit_class(rows, "economic_terms", current=0.77)
+    few = (_rows("economic_terms", "labelled", [0.98] * 10 + [0.6, 0.55, 0.5], True)
+           + _rows("economic_terms", "labelled", [0.2], False) + near)
+    fit = fit_class(few, "economic_terms", current=0.77)
     assert fit.fitted == {"labelled": 0.5, "+off-text": 0.5, "+in-text": 0.98}
-    assert fit.adopted is None
-    assert "disagree" in fit.reason
-    assert fit.metrics.threshold == 0.77
+    assert fit.prevalence == (1, 14)
+    assert fit.adopted == 0.98
+    assert "disagree" in fit.reason and "1 times in 14" in fit.reason
+
+    many = (_rows("economic_terms", "labelled", [0.98] * 189 + [0.6] * 10, True)
+            + _rows("economic_terms", "labelled", [0.2], False) + near)
+    fit = fit_class(many, "economic_terms", current=0.77)
+    assert fit.prevalence == (1, 200)
+    assert fit.adopted == 0.7
+
+
+def test_the_measured_rate_never_lets_a_value_the_text_lacks_through():
+    rows = (_rows("economic_terms", "labelled", [0.98] * 189 + [0.6] * 10, True)
+            + _rows("economic_terms", "labelled", [0.2], False)
+            + _rows("economic_terms", "off_text", [0.62], False)
+            + _rows("economic_terms", "in_text", [0.7, 0.65, 0.58], False))
+    fit = fit_class(rows, "economic_terms", current=0.77)
+    assert fit.adopted is not None and fit.adopted > 0.62
+
+
+def test_a_term_tranches_maturity_is_asked_as_the_revolvers():
+    """Easterly's term facility maturity was confirmed as a revolver's out of
+    sample. The probe asks A about each term tranche's maturity in the
+    revolver's words, against the definition that sets it."""
+    from types import SimpleNamespace
+    from credit_extract.ingest.normalize import NormalizedDocument
+
+    text = ('ARTICLE I DEFINITIONS\n\n" Closing Date " means March 1, 2025.\n\n'
+            '" Term Loan Maturity Date " means the date that is five (5) years '
+            'after the Closing Date.\n\n" Revolving Credit Maturity Date " means '
+            'March 1, 2029.\n\nARTICLE II THE LOANS\n')
+    doc = NormalizedDocument(document_id="t", source_path="t", source_format="txt", text=text)
+    inner = Scripted()
+    rows = R.other_facility("t", "fit", SimpleNamespace(document=doc),
+                            date(2029, 3, 1), inner)
+    assert [(r.kind, r.value, r.correct) for r in rows] == [
+        ("other_facility", "2030-03-01", False)]
+    assert inner.sent == [["revolver.maturity_date#other_facility"]]
