@@ -13,11 +13,14 @@
 #     II   0.11%   1.015%  0.015%  1.125%  0.125%
 #     III  0.125%  1.125%  0.125%  1.25%   0.25%
 #     IV   0.15%   1.225%  0.225%  1.375%  0.375%
+#     V    0.20%   1.425%  0.425%  1.625%  0.625%
 #
 # Five numeric columns, two of them benchmark margins that differ by facility
-# and never by more than 15 basis points. Every other grid in the corpus prices
+# and never by more than 20 basis points. Every other grid in the corpus prices
 # one facility per column set; this one makes "the applicable margin" a
-# question with two right answers at every level.
+# question with two candidate answers at every level, which the labelling
+# guide now settles: the revolving loans' column. (The first version of this
+# label stopped at Level IV and took the term loans' 1.375%.)
 #
 # And the filing leaks its own page furniture into the text. Between the
 # introduction to the table and its first row the normalized text reads:
@@ -36,25 +39,27 @@ tier: 2
 
 assertions:
 
-  - id: nvent_top_term_loan_margin
+  - id: nvent_top_revolving_margin
     family: F07_benchmark
     member: pricing_grid_stepdowns
     kind: field_value
     target: applicable_margin.eurodollar_top_level_pct
-    expect: "1.375%"
+    expect: "1.425%"
     note: >
-      Level IV, "Term Benchmark / RFR Spread for Term Loans", 1.375% -- the
-      highest benchmark margin in the table.
+      'Level V | | | 0.20 | % | | | 1.425 | % | | | 0.425 | % | | | 1.625 | %'
 
-      1.225% is the same level's revolving margin and is the answer a reader
-      gets by taking the first benchmark column rather than the highest. The
-      two are 15 basis points apart at every level and the columns are
+      Level V, "Term Benchmark / RFR Spread for Revolving Loans", 1.425% --
+      the top of the revolving loans' column, which is the field under the
+      labelling guide's rule for a grid that prices revolving and term loans
+      apart. The term loans' column tops at 1.625% on the same row; the two
+      are 10 to 20 basis points apart at every level and the columns are
       adjacent, distinguished only by the words "Revolving" and "Term" inside
       headers that wrap across lines in the filing's rendering.
 
-      The facility fee column tops at 0.15% and the two ABR columns at 0.225%
-      and 0.375%, so a row at Level IV holds five percentages between 0.15%
-      and 1.375% and only one of them answers this field.
+      The first version of this label read four levels and took the term
+      loans' Level IV, 1.375%. The grid has five, and the fifth is the top of
+      both columns. The facility fee column tops at 0.20% and the two ABR
+      columns at 0.425% and 0.625%.
 
   - id: nvent_covenant_level
     family: F10_conditionality

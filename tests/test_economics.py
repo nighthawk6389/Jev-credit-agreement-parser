@@ -742,8 +742,148 @@ def test_a_ticking_fee_is_the_one_on_delayed_draw_commitments():
 
 
 # ---------------------------------------------------------------------------
+# pricing grids
+# ---------------------------------------------------------------------------
+
+
+def _filing(tmp_path, body: str):
+    """A small HTML filing, ingested as a real one is, tables and all."""
+    from credit_extract.ingest.normalize import ingest
+
+    path = tmp_path / "filing.htm"
+    path.write_text(f"<html><body><p>ARTICLE I DEFINITIONS</p>{body}</body></html>")
+    doc = ingest(path)
+    return doc, build_definition_graph(doc)
+
+
+def _row(*cells: str) -> str:
+    return "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
+
+
+_RATINGS_GRID = (
+    "<p>&#8220;Applicable Rate&#8221; means, from time to time, the following "
+    "percentages per annum, based upon the Debt Rating as set forth below:</p>"
+    "<table>"
+    + _row("Pricing Level", "Debt Ratings S&amp;P/Moody&#8217;s", "Term SOFR Loans",
+           "Base Rate Loans", "Commitment Fee")
+    + _row("1", "A-/A3 or better", "0.700", "%", "0.000", "%", "0.060", "%")
+    + _row("2", "BBB+/Baa1", "0.800", "%", "0.000", "%", "0.080", "%")
+    + _row("3", "BB+/Ba1 or worse", "1.100", "%", "0.100", "%", "0.150", "%")
+    + "</table>"
+)
+
+
+def test_a_grid_inside_its_definition_is_read_however_the_definition_words_it(tmp_path):
+    """Constellation's "the following percentages per annum ... as set forth
+    below" never says "table", and its grid is between the definition's
+    first words and its last. The percent signs sit in cells of their own."""
+    doc, graph = _filing(tmp_path, _RATINGS_GRID)
+
+    (margin,) = E.margin_candidates(doc, graph)
+    assert margin.value == Decimal("1.100")
+    assert doc.text[margin.span.start:margin.span.end] == "1.100"
+    # The unused fee is priced in the same grid, and nothing else states it.
+    (fee,) = E.fee_candidates(doc, graph)
+    assert fee.value == Decimal("0.150")
+
+
+def test_the_revolving_column_is_the_margin_where_the_grid_prices_loans_apart(tmp_path):
+    """nVent's grid prices revolving and term loans in adjacent columns, and
+    the labelling guide takes the revolving loans'. Its fee column is a
+    facility fee, charged on the whole commitment, and is not the unused fee."""
+    grid = (
+        "<p>&#8220;Applicable Rate&#8221; means, for any day, the applicable rate "
+        "per annum set forth below under the caption &#8220;Term Benchmark / RFR "
+        "Spread for Revolving Loans&#8221; or &#8220;Term Benchmark / RFR Spread "
+        "for Term Loans&#8221;, as the case may be:</p><table>"
+        + _row("Pricing Level", "Facility Fee",
+               "Term Benchmark / RFR Spread for Revolving Loans",
+               "ABR Spread for Revolving Loans",
+               "Term Benchmark / RFR Spread for Term Loans", "ABR Spread for Term Loans")
+        + _row("Level I", "0.10", "%", "0.90", "%", "0", "%", "1.00", "%", "0", "%")
+        + _row("Level V", "0.20", "%", "1.425", "%", "0.425", "%", "1.625", "%",
+               "0.625", "%")
+        + "</table>"
+    )
+    doc, graph = _filing(tmp_path, grid)
+
+    assert [c.value for c in E.margin_candidates(doc, graph)] == [Decimal("1.425")]
+    assert E.fee_candidates(doc, graph) == []
+
+
+def test_a_grid_in_basis_points_is_read_in_percent(tmp_path):
+    grid = (
+        "<p>&#8220;Applicable Rate&#8221; means the rate set forth in the "
+        "following table:</p><table>"
+        + _row("Level", "Term SOFR Loans (bps)", "Base Rate Loans (bps)")
+        + _row("I", "100.0", "0.0")
+        + _row("II", "225.0", "125.0")
+        + "</table>"
+    )
+    doc, graph = _filing(tmp_path, grid)
+
+    assert [c.value for c in E.margin_candidates(doc, graph)] == [Decimal("2.25")]
+
+
+def test_a_table_after_a_definition_that_does_not_point_at_one_is_not_its_grid(tmp_path):
+    """Only a definition that names a table is followed past its own end: the
+    next table in the filing may be anybody's."""
+    body = (
+        "<p>&#8220;Applicable Rate&#8221; means 1.25% per annum.</p>"
+        "<p>&#8220;Excluded Taxes&#8221; means taxes.</p><table>"
+        + _row("Level", "Term SOFR Loans", "Base Rate Loans")
+        + _row("I", "3.00%", "2.00%")
+        + _row("II", "4.00%", "3.00%")
+        + "</table>"
+    )
+    doc, graph = _filing(tmp_path, body)
+
+    assert [c.value for c in E.margin_candidates(doc, graph)] == [Decimal("1.25")]
+
+
+# ---------------------------------------------------------------------------
 # libor_floor_pct
 # ---------------------------------------------------------------------------
+
+
+def test_a_benchmark_deemed_zero_below_zero_has_a_zero_floor(tmp_path):
+    """Constellation's Term SOFR "shall be deemed zero" when it would be less.
+    The same proviso on the federal funds rate is not this floor."""
+    fed_funds_only = (
+        "<p>&#8220;Federal Funds Rate&#8221; means the rate published by the NYFRB; "
+        "provided that if the Federal Funds Rate as so determined would be less "
+        "than zero, such rate shall be deemed to be zero.</p>"
+        "<p>&#8220;Term SOFR&#8221; means the Term SOFR Screen Rate.</p>"
+    )
+    doc, graph = _filing(tmp_path, fed_funds_only)
+    assert E.floor_candidates(doc, graph) == []
+
+    deemed = fed_funds_only.replace(
+        "the Term SOFR Screen Rate.",
+        "the Term SOFR Screen Rate; provided that if the Term SOFR determined in "
+        "accordance with the foregoing would otherwise be less than zero, the "
+        "Term SOFR shall be deemed zero for purposes of this Agreement.")
+    doc, graph = _filing(tmp_path, deemed)
+    (floor,) = E.floor_candidates(doc, graph)
+    assert floor.value == Decimal("0")
+
+
+def test_an_initial_floor_stated_after_the_replacement_boilerplate_is_read(tmp_path):
+    """SanDisk's "Floor" points back at the agreement, which the definitions
+    tier rightly refuses, and then says what the floor is."""
+    body = (
+        "<p>&#8220;Floor&#8221; means the benchmark rate floor, if any, provided in "
+        "this Agreement initially (as of the execution of this Agreement, the "
+        "modification, amendment or renewal of this Agreement or otherwise) with "
+        "respect to the Adjusted Term SOFR Rate or the Adjusted Daily Simple SOFR, "
+        "as applicable. For the avoidance of doubt the initial Floor for the "
+        "Adjusted Term SOFR Rate shall be 0%, and the initial Floor for the "
+        "Adjusted Daily Simple SOFR shall be 0%.</p>"
+    )
+    doc, graph = _filing(tmp_path, body)
+
+    (floor,) = E.floor_candidates(doc, graph)
+    assert floor.value == Decimal("0")
 
 
 @pytest.mark.parametrize("definitions, expected", [

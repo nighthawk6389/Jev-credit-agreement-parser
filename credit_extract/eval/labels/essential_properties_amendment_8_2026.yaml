@@ -102,24 +102,28 @@ assertions:
 
   # -- F02 precedence: the grid is a table inside a definition ---------------
 
-  - id: eprt_margin_is_the_highest_in_the_grid
+  - id: eprt_margin_is_the_revolving_top_level
     family: F02_precedence
     member: table_overrides_definition
     kind: field_value
     target: applicable_margin.eurodollar_top_level_pct
-    expect: 1.55
+    expect: "1.350%"
     note: >
+      'V | Credit Rating Level 5 | 1.350% | 0.750% | 1.550% | 0.550%'
+
       The Applicable Margin definition contains a five-row table with four
       margin columns: Revolving Term SOFR (0.675% to 1.350%), Revolving Base
       Rate, Term Loan Term SOFR (0.750% to 1.550%) and Term Loan Base Rate.
-      The field is defined as "the highest Eurodollar Applicable Margin in
-      the pricing grid", and the Eurodollar successor here is Term SOFR, so
-      the answer is 1.550% -- the term loan column at Credit Rating Level 5.
-      Three wrong answers are easier to reach than the right one. 0.675% is
-      the top printed row, which is the best rating and the lowest margin.
-      1.350% is the same cell for the revolver only. 0.550% is the Term Loan
-      Base Rate at Level 5, a different rate on the same row, and is what
-      the deterministic grid reader currently returns.
+      Where a grid prices revolving and term loans apart, the labelling
+      guide takes the revolving loans' column, so the answer is 1.350% --
+      'Applicable Margin for Revolving Credit Facility Term SOFR Loans' at
+      Credit Rating Level 5. Until the seventh pass this label read the
+      registry's older words, "the highest ... in the pricing grid", and
+      expected the term loan column's 1.550%; the guide records why it
+      changed and that the reader's disagreement exposed it. Two wrong
+      answers remain easier to reach than the right one: 0.675% is the top
+      printed row, the best rating and the lowest margin, and 0.750% is the
+      Revolving Base Rate on the right row.
 
   - id: eprt_a_notwithstanding_clause_moves_the_grid
     family: F02_precedence

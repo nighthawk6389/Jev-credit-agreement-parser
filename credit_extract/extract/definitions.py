@@ -378,19 +378,17 @@ def _unsettled(
     schedule or an amendment history.
 
     In particular it does not claim the field is unresolvable.
-    ``applicable_margin.eurodollar_top_level_pct`` is *defined* as "the highest
-    Eurodollar Applicable Margin in the pricing grid", so for that field a grid
-    is the expected shape and a reduction over it is the answer -- and the
-    reduction is not available here, because ``_distinct_values`` returns the
-    percentages in reading order with no idea which column each sits in.
-    Essential Properties' grid has four margin columns and the label for it
-    records three wrong answers that are easier to reach than the right one:
-    0.675% is the top row, 1.350% is the same cell for the revolver, 0.550% is
-    the Base Rate on the right row. A max over the flattened list would
-    sometimes hit 1.550% and sometimes not, at 0.90 from the definitions
-    article, which is the authoritative-looking wrong answer this module's
-    header warns about. Reading the grid is the model tier's job; saying it is
-    a grid is this tier's.
+    ``applicable_margin.eurodollar_top_level_pct`` is the highest margin over
+    the benchmark -- the revolving loans', where a grid prices them apart --
+    so for that field a grid is the expected shape and a reduction over one of
+    its columns is the answer. The reduction is not available here, because
+    ``_distinct_values`` returns the percentages in reading order with no idea
+    which column each sits in. Essential Properties' grid has four margin
+    columns, and its row V reads 1.350%, 0.750%, 1.550% and 0.550%: a max over
+    the flattened list returns the term loans' 1.550%, at 0.90 from the
+    definitions article, which is the authoritative-looking wrong answer this
+    module's header warns about. Reading the grid by its columns is
+    ``economics.read_grid``'s job; saying it is a grid is this tier's.
     """
     values = _distinct_values(body, spec.kind)
     if len(values) < 2:

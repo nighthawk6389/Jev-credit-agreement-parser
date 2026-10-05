@@ -276,6 +276,30 @@ of sample, is where the pipeline parted from it, and where the field's
 question said "as it stands at a given date". The question now names the
 standing level, and the schedule reader puts the open-ended row first.
 
+### Margins: the revolving loans' column
+
+`applicable_margin.eurodollar_top_level_pct` is the highest margin over the
+benchmark, and where a grid prices revolving and term loans in columns of
+their own it is the **revolving loans' column**. Take the top of that column,
+put the term loans' top in the note, and say which column you took.
+
+Two rules were in use until the seventh pass. The labels written against the
+registry's words took the highest benchmark margin anywhere in the table:
+Essential Properties' 1.550%, from its Term Loan Term SOFR column. Both
+investment-grade briefs said "If the grid gives different margins for
+different loan types, the Term SOFR revolving loans'", and forty labels out
+of sample follow it. The revolving column won because the fields beside it
+are the revolver's -- its commitment, its maturity, its unused fee -- and a
+margin that pairs with them should price the same loans. On a term-only
+facility the term loans' margin is still the answer, because nothing is
+priced apart from it.
+
+Two in-sample labels changed. nVent's Amendment No. 2 had also missed its
+grid's fifth row: its revolving column tops at 1.425%, not 1.375%. Essential
+Properties' label moved from 1.550% to its revolving column's 1.350%. It is
+on the held-out side, and the grid reader's disagreement with it is what
+exposed the two rules, so that one assertion is no longer a blind test.
+
 ## What double-labelling the fund facilities settled
 
 The five economic terms were labelled twice on the twenty in-sample fund and

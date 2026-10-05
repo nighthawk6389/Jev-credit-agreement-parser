@@ -955,6 +955,154 @@ def _benchmark_rates(body: str) -> tuple[list[tuple[Decimal, str]], bool]:
     return kept, False
 
 
+# ---------------------------------------------------------------------------
+# pricing grids
+# ---------------------------------------------------------------------------
+
+#: A grid's level column, and a level in a body row: "Level I", "1", "IV".
+_LEVEL_HEAD = re.compile(r"^\s*(?:Pricing\s+)?(?:Level|Tier|Category|Status)\b", re.I)
+_LEVEL_CELL = re.compile(
+    r"^\s*(?:(?:Pricing\s+)?(?:Level|Tier|Category|Status)\s+)?(?:[IVX]+|\d{1,2})\.?\s*$", re.I)
+#: A column that sorts the rows rather than pricing them.
+_CRITERION_HEAD = re.compile(
+    r"Rating|Ratio|Leverage|Availability|Usage|Utili[sz]ation|S&P|Moody|Fitch|"
+    r"\bDebt\b|Excess|Capacity", re.I)
+#: A heading that spans the value columns and names none of them.
+_PARENT_HEAD = re.compile(
+    r"^\s*(?:Applicable\s+(?:Rate|Margin|Spread|Percentage)|Rates?|Pricing|"
+    r"Margins?|Spreads?|Grid)\s*(?:\(.*\))?\s*:?\s*$", re.I)
+_BENCH_HEAD = re.compile(
+    r"SOFR|Bench-?\s*mark|\bRFR\b|Eurodollar|Euro-?currency|LIBO|\bBSBY\b|"
+    r"\bCDOR\b|\bCORRA\b|EURIBOR|SONIA|Term\s+Rate", re.I)
+_BASE_HEAD = re.compile(r"Base\s+Rate|\bABR\b|Prime|Alternate\s+Base", re.I)
+_FEE_HEAD = re.compile(r"\bFees?\b", re.I)
+_UNUSED_HEAD = re.compile(
+    r"Commitment\s+Fee|Unused|Non-?Usage|Undrawn|Unutili[sz]ed", re.I)
+_VALUE_HEAD = re.compile(r"Loans?|Margin|Spread|Letters?\s+of\s+Credit|Fee", re.I)
+_NUMBER_CELL = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(%|bps|basis\s+points)?\s*$", re.I)
+_BPS = re.compile(r"\bbps\b|basis\s+points", re.I)
+
+
+def _cells(row: list[Any]) -> list[tuple[str, Any]]:
+    return [(" ".join(c.text.split()), c) for c in row]
+
+
+def read_grid(table: Any) -> list[tuple[str, list[tuple[Decimal, str, Any]]]] | None:
+    """A pricing grid's value columns, each with its value in every row.
+
+    Investment-grade grids are printed with their headings over two rows,
+    their percent signs in cells of their own, and their columns named for
+    the loans they price: Constellation's "Applicable Rate" spans "Term SOFR
+    Loans | Base Rate Loans"; KBR's grid reads "Term SOFR Loans; Alternative
+    Currency Loans | Base Rate | Performance Letter of Credit | Commitment
+    Fee". The level and the ratings or ratio that select a row are set aside,
+    and a row whose figures do not line up with the value columns is
+    skipped, never guessed into place. None if the table is not a grid.
+    """
+    rows = [r for r in table.rows() if any(c.text.strip() for c in r)]
+    header: list[list[Any]] = []
+    body: list[list[tuple[Decimal, str, Any]]] = []
+    for row in rows:
+        cells = [(text, cell) for text, cell in _cells(row) if text and text != "%"]
+        if cells and _LEVEL_CELL.match(cells[0][0]):
+            cells = cells[1:]
+        figures = []
+        for text, cell in cells:
+            match = _NUMBER_CELL.match(text)
+            if match:
+                figures.append((match, cell))
+        if len(figures) >= 2 and (body or header):
+            body.append([(Decimal(m.group(1)), cell.text.strip(), cell, m.group(2))
+                         for m, cell in figures])
+        elif not body:
+            header.append(row)
+    if not header or not body:
+        return None
+    labels: list[str] = []
+    for row in header:
+        for text, _ in _cells(row):
+            if (not text or _LEVEL_HEAD.match(text) or _PARENT_HEAD.match(text)
+                    or (_CRITERION_HEAD.search(text) and not (
+                        _BENCH_HEAD.search(text) or _BASE_HEAD.search(text)
+                        or _FEE_HEAD.search(text)))):
+                continue
+            if (_BENCH_HEAD.search(text) or _BASE_HEAD.search(text)
+                    or _VALUE_HEAD.search(text)):
+                labels.append(text)
+    if len(labels) < 2:
+        return None
+    columns: list[tuple[str, list[tuple[Decimal, str, Any]]]] = [(l, []) for l in labels]
+    aligned = 0
+    for figures in body:
+        if len(figures) != len(labels):
+            continue
+        aligned += 1
+        for (label, values), (value, written, cell, unit) in zip(columns, figures):
+            if unit and _BPS.match(unit) or (_BPS.search(label) and value > 10):
+                value = value / 100
+            values.append((value, written, cell))
+    if aligned < max(2, (len(body) + 1) // 2):
+        return None
+    return columns
+
+
+def _margin_column(columns: list[tuple[str, list]]) -> tuple[str, list] | None:
+    benchmark = [(l, v) for l, v in columns
+                 if _BENCH_HEAD.search(l) and not _BASE_HEAD.search(l)]
+    if not benchmark:
+        return None
+    revolving = [(l, v) for l, v in benchmark if re.search(r"Revolv", l, re.I)]
+    if revolving:
+        return revolving[0]
+    untermed = [(l, v) for l, v in benchmark if not re.search(r"Term\s+Loan", l, re.I)]
+    return (untermed or benchmark)[0]
+
+
+def _fee_column(columns: list[tuple[str, list]]) -> tuple[str, list] | None:
+    unused = [(l, v) for l, v in columns
+              if _UNUSED_HEAD.search(l) and not re.search(r"Facility\s+Fee|Ticking", l, re.I)]
+    revolving = [(l, v) for l, v in unused if re.search(r"Revolv", l, re.I)]
+    return (revolving or unused or [None])[0]
+
+
+def _definition_grid(doc: NormalizedDocument, graph: Any
+                     ) -> tuple[str, Any, list[tuple[str, list]]] | None:
+    """The pricing grid the margin's definition carries or sends its levels to.
+
+    A table inside the definition is its grid however the definition words it:
+    Constellation's "the following percentages per annum ... as set forth
+    below", KBR's and Sanmina's "the applicable percentage per annum set forth
+    below", each with the table between the definition's first words and its
+    last. Only a definition that names a table or grid is followed past its
+    own end, to a table printed after it. The first grid wins: where a
+    definition prices more than one facility, KBR's and Sanmina's put the
+    revolver's grid first and a term tranche's flat rate or its own grid after.
+    """
+    name, node = _node(graph, *_MARGIN_TERMS)
+    if node is None:
+        return None
+    reach = 8000 if _TABLE.search(_flat(node.body)) else 0
+    for table in doc.tables_in(node.span.start, node.span.end + reach):
+        columns = read_grid(table)
+        if columns and (_margin_column(columns) or _fee_column(columns)):
+            return name, node, columns
+    return None
+
+
+def _top(doc: NormalizedDocument, field: str, name: str, column: tuple[str, list],
+         what: str, aside: str) -> list[Any]:
+    label, values = column
+    if not values:
+        return []
+    value, written, cell = max(values, key=lambda v: v[0])
+    return [_candidate(
+        field, value, doc.span(cell.start, cell.end),
+        f"the highest {what} in the pricing grid of {name!r}, column "
+        f"{label!r}; {aside}",
+        as_written=written,
+    )]
+
+
 def margin_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
     pointed = _defined_in_letter(
         doc, "applicable_margin.eurodollar_top_level_pct",
@@ -976,9 +1124,21 @@ def margin_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
             f"{pointer.group(1)}, which is not part of this agreement",
             external=pointer.group(1),
         )]
-    if _PORTFOLIO.search(body) or len(body) > 2500:
+    if _PORTFOLIO.search(body):
         return []
+    grid = _definition_grid(doc, graph)
+    column = grid and _margin_column(grid[2])
+    if column:
+        return _top(doc, "applicable_margin.eurodollar_top_level_pct", grid[0],
+                    column, "margin over the benchmark",
+                    "the base-rate and fee columns, and any term loans' column, "
+                    "are set aside")
     if _TABLE.search(body):
+        # The levels are in a table this reader cannot line up, or one the
+        # filing does not carry: Latham's is not in it, so there is nothing to
+        # read and nothing is.
+        return []
+    if len(body) > 2500:
         return []
     if _TERM_TRANCHE.search(body) and (re.search(r"\bRevolv", body)
                                        or revolving_evidence(doc, graph)):
@@ -1047,6 +1207,17 @@ def fee_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
             f"amount ({levels})",
             as_written=top_written,
         )]
+    # Investment-grade grids price the fee beside the margin: Sanmina's
+    # "Commitment Fee" column tops at 0.300% and KBR's at 0.325%, and neither
+    # defines a fee rate of its own. A facility fee is charged on the whole
+    # commitment and is not this one.
+    grid = _definition_grid(doc, graph)
+    column = grid and _fee_column(grid[2])
+    if column:
+        return _top(doc, "commitment_fee_pct", grid[0], column,
+                    "fee on unused commitments",
+                    "a facility fee would be charged on the whole commitment and "
+                    "is not this fee")
     pointed = _defined_in_letter(doc, "commitment_fee_pct", _FEE_TERMS)
     if pointed:
         return pointed
@@ -1092,6 +1263,22 @@ _GREATER_OF_FLOOR = re.compile(
 _NOT_LESS_THAN_FLOOR = re.compile(
     r"shall\s+(?:at\s+no\s+time|not\s+at\s+any\s+time|in\s+no\s+event|not)\s+"
     r"be\s+less\s+than\s+(\d+(?:\.\d+)?\s*%)", re.I)
+#: Constellation's Term SOFR: "if the Term SOFR determined in accordance with
+#: either of the foregoing provisions ... would otherwise be less than zero,
+#: the Term SOFR shall be deemed zero". Only inside the benchmark's own
+#: definition: the same proviso sits on the federal funds rate, the base rate
+#: and CORRA, and none of those is this floor.
+_DEEMED_ZERO = re.compile(
+    r"less\s+than\s+(?P<below>zero|0(?:\.0+)?\s*%)\s*,\s*(?:then\s+)?(?:the\s+"
+    r"[A-Z][\w\- ]{0,40}?|such\s+rate|it)\s+shall\s+be\s+deemed\s+(?:to\s+be\s+)?"
+    r"(?:equal\s+to\s+)?(?:zero|0(?:\.0+)?\s*%)", re.I)
+#: SanDisk's "Floor" is the benchmark-replacement boilerplate the definitions
+#: tier refuses, and then says what it is: "For the avoidance of doubt the
+#: initial Floor for the Adjusted Term SOFR Rate shall be 0%".
+_INITIAL_FLOOR = re.compile(
+    r"initial\s+Floor\s+(?:for|with\s+respect\s+to)\s+(?:each\s+of\s+)?(?:the\s+)?"
+    r"(?:Adjusted\s+)?Term\s+SOFR(?:\s+Rate)?\b[^.;]{0,160}?shall\s+be\s+"
+    r"(\d+(?:\.\d+)?\s*%)", re.I)
 _BENCHMARK_TERMS = ("Term SOFR", "Adjusted Term SOFR", "Term SOFR Rate",
                     "Daily Simple SOFR", "Adjusted Daily Simple SOFR", "SOFR",
                     "Benchmark", "LIBO Rate", "Adjusted LIBO Rate")
@@ -1107,6 +1294,15 @@ def floor_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
                 "the definition of 'Floor' writes zero in words, with no unit",
                 as_written=_flat(node.body)[:40],
             )]
+        initial = _INITIAL_FLOOR.search(_flat(node.body))
+        value = initial and parse_percent(initial.group(1))
+        if value is not None:
+            return [_candidate(
+                "libor_floor_pct", value, node.span,
+                "the definition of 'Floor' points back at the agreement and then "
+                f"states the initial Floor for Term SOFR, {initial.group(1)}",
+                as_written=initial.group(1),
+            )]
         return []          # the definitions tier reads a Floor with a percentage
     for term in _BENCHMARK_TERMS:
         resolved = _resolve(graph, term)
@@ -1115,16 +1311,20 @@ def floor_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
         node = graph.get(resolved)
         body = _flat(node.body)
         match = _GREATER_OF_FLOOR.search(body) or _NOT_LESS_THAN_FLOOR.search(body)
-        if match is None:
-            continue
-        value = parse_percent(match.group(1))
+        if match is not None:
+            value, written = parse_percent(match.group(1)), match.group(1)
+        else:
+            match = _DEEMED_ZERO.search(body)
+            if match is None:
+                continue
+            value, written = Decimal("0"), match.group("below")
         if value is None:
             continue
         return [_candidate(
             "libor_floor_pct", value, node.span,
             f"{resolved!r} is defined so that it is never less than "
-            f"{match.group(1)}, which is a floor on the benchmark",
-            as_written=match.group(1),
+            f"{written}, which is a floor on the benchmark",
+            as_written=written,
         )]
     return []
 
