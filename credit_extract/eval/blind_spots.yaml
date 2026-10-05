@@ -257,11 +257,11 @@ untestable_in_this_environment:
     status: partially_lifted
     reason: >
       CI has no JEV_API_KEY, so OfflineJev, a deterministic lexical stand-in,
-      answers every validator question in every build. Six live passes have
+      answers every validator question in every build. Seven live passes have
       been made from a session that had a key, with the BDC out-of-sample set
-      run after the third, fourth and fifth and an investment-grade set run
-      once after the sixth, all against System One jev-1.13.0 between
-      2026-09-30 and 2026-10-05 and recorded in
+      run after the third, fourth and fifth and two investment-grade sets each
+      run once, after the sixth and the seventh, all against System One
+      jev-1.13.0 between 2026-09-30 and 2026-10-05 and recorded in
       docs/jev_live_pass.md. The first ran on the original questions, the
       second and third on rewritten ones. Each is one draw of a scorer that
       is not deterministic.
@@ -301,7 +301,16 @@ untestable_in_this_environment:
       errors measured. Three of the four were in the fifth pass's code, and
       the refit added the fourth, a term facility's maturity confirmed as a
       revolver's. An audit of 27 claims no label covered found 4 more
-      wrong. Six of the eight are fixed since, against those documents.
+      wrong. Six of the eight are fixed since, against those documents. The
+      seventh read the investment-grade economics that set showed unread --
+      pricing grids, zero floors, commitment totals and schedules -- and set
+      A's economic-term threshold from the measured rate at which the reader
+      hands it a wrong figure, 2 in 111 (0.77 to 0.58): 502 confident and 0
+      wrong in sample. A second investment-grade set, labelled blind and run
+      once, gave 104 confident and 1 wrong of 191, the wrong one a restated
+      agreement's closing date the field's own definition leaves open; an
+      audit of 203 confident claims no label covered found 1 wrong, a
+      synergies cap asked about by a template's clause number.
 
       What the first pass measured, under thresholds fitted for the live
       scorer on the synthetic corpus: 54 of 425 confident propositions wrong (12.71%),
@@ -415,14 +424,15 @@ untestable_in_this_environment:
       every such error so far has been.
     remedy: >
       The four questions are fixed and measured. What remains: decide the
-      GBDC and EPRT labels the second pass exposed; let validator E speak for
-      a field a document names and points elsewhere without stating it;
-      label a sample of live Jev's absent_from_document claims, which is
-      where its unmeasured confident output lives; fit A's economic-term
-      threshold, which needs the rate at which the reader takes a wrong figure
-      from the right clause; and fit C's and A's
-      parties thresholds on real filings rather than the synthetic corpus,
-      which is all the harness fits today. Lifting this fully needs the key
+      GBDC label the second pass exposed (EPRT's closing date was settled in
+      the third); let validator E speak for a field a
+      document names and points elsewhere without stating it; label a sample
+      of live Jev's absent_from_document claims, which is where its
+      unmeasured confident output lives; settle a restated agreement's
+      closing date; stop field questions naming a template's clause numbers;
+      and fit C's and A's parties thresholds on real filings rather than the
+      synthetic corpus, which is all the harness fits today. Lifting this
+      fully needs the key
       in CI as a secret, for a scheduled live gate, which the answer cache
       now makes cheap: a rerun asks only the questions that changed. None
       of it will yield to more keywords -- the first pass is the argument

@@ -91,7 +91,8 @@ python -m credit_extract.eval.family_report --out-of-sample --no-mutations \
 # sixth pass (about $0.55) and fixed against since.
 python -m credit_extract.eval.family_report --no-mutations --jev api \
     --workers 6 --labels credit_extract/eval/labels_out_of_sample_ig
-# A second twenty, harvested after the sixth pass and labelled blind.
+# A second twenty, harvested after the sixth pass, labelled blind and run
+# once in the seventh (about $0.56).
 python -m credit_extract.eval.family_report --no-mutations --jev api \
     --workers 6 --labels credit_extract/eval/labels_out_of_sample_ig2
 
@@ -521,7 +522,7 @@ prints that in full rather than showing a clean 1.000 and moving on.
 interface, so the pipeline, its tests and its calibration all run offline,
 and every CI build is still answered by it. It is not a calibrated model, and
 the orphan sweep's concept lexicons are its weakest part. Live System One
-(`jev-1.13.0`) has been run six times through the gate. The
+(`jev-1.13.0`) has been run seven times through the gate. The
 first pass found 54 of 425 confident propositions wrong (12.71%), and traced
 them to four questions a literal reader answered as written, not as meant.
 The second rewrote those questions and found 3 wrong of 364 (0.82%) on the
@@ -546,7 +547,15 @@ were computed from. In sample that is 437 confident and 0 wrong. A second
 out-of-sample set was then run once: twenty investment-grade credit
 agreements. It gave 68 confident and 4 wrong, the first out-of-sample errors
 this project has measured. Three of the four predate the sixth pass, and
-three are fixed since, against those documents.
+three are fixed since, against those documents. The seventh read the
+investment-grade economics those agreements had shown unread -- pricing
+grids, zero floors, commitment totals and schedules -- and set A's
+economic-term threshold from a measured rate at which the reader hands it
+a wrong figure (0.77 to 0.58). In sample that is 502 confident and 0
+wrong. A fresh set of twenty investment-grade agreements, labelled blind
+and run once, gave 104 confident and 1 wrong of 191, with 37 economic
+terms confidently right where the first set's run had 7; the wrong one is
+a restated agreement's closing date, which the field itself leaves open.
 `docs/jev_live_pass.md` records all of it.
 Thresholds are
 tagged with the backend they were fitted against, each scorer has its own
@@ -621,6 +630,7 @@ config/thresholds.jev-1.13.0.json  fitted against live Jev, that version only
 corpus/real/                    four SEC filings, read in detail and labelled
 corpus/real/bdc/                twenty BDC agreements, out of sample, labelled blind
 corpus/real/ig/                 twenty investment-grade agreements, the same, run once
+corpus/real/ig2/                twenty more, harvested after the sixth pass, run once
 corpus/edgar/                   100 more, stratified, zipped, all labelled
 docs/orientation.md             start here: goals, labels vs recordings, families
 docs/corpus_findings.md         what those 100 say about the pipeline

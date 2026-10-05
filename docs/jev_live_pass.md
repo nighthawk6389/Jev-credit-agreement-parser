@@ -1520,36 +1520,326 @@ That replay is not a measurement. Every fix was written against these twenty
 documents, and for those rules they are now a fit set, as the BDCs became for
 the amendment-date rule. The next measurement of them needs fresh documents.
 
+# The seventh pass: investment-grade economics
+
+The sixth pass ended with ten things to do. This pass did the first six:
+read the investment-grade economics the readers missed, settle what the
+covenant level means, fit the economic-term threshold on a measured error
+rate, add a wrong-facility near miss for dates, ask the fee by its top level,
+and harvest a fresh out-of-sample set. The set was labelled blind and pushed
+in a735499 before anything ran on it, and run once at the end.
+
+## What the fields mean
+
+Three fields were asked or labelled more loosely than they are meant. The
+covenant and margin rules are now written in the labelling guide; the fee's
+was already how every fee label was written. Validator A's question follows
+each rule where that helped.
+
+* **The covenant level is the standing level** (5be3485): the one with no end
+  date, not a relief-period or step-up rung. The schedule reader also failed
+  to see "September 30, 2026 and each fiscal quarter thereafter" as
+  open-ended, which is how Avnet's relief level 5.00 led its table.
+* **The commitment fee is the top level** of the fee on unused commitments
+  (5be3485). Asked as "the unused commitment fee", A confirmed every tier of
+  PennantPark's grid. Live, wrong in-text figures that clear 0.77 fell from 4
+  in 54 to 1.
+* **The margin is the revolving loans' column** where a grid prices revolving
+  and term loans apart (178a091). The in-sample labels had followed the
+  registry's older words, "the highest ... in the pricing grid"; both
+  investment-grade briefs, and forty labels out of sample, took the revolving
+  column. Two in-sample labels changed: nVent's Amendment No. 2, which had
+  also missed its grid's fifth row (1.375% to 1.425%), and Essential
+  Properties' (1.550% to 1.350%). Essential Properties is held out, and the
+  reader's disagreement with its label is what exposed the two rules, so that
+  one assertion is no longer a blind test.
+
+  A's question named the revolving loans for one commit. Live, that cost
+  eight single-rate fund margins their confirmation, each the same value
+  scored lower, to help two split grids; 2335723 puts the question back in
+  its old words. A split grid's revolving top now goes to review.
+
+One scoring bug went with them (7eb428b). A covenant label written "4.00 to
+1.00" fell to the text branch of `values_equal`, so it could never equal the
+4.00 the pipeline stores: a right covenant level would have been scored a
+silent error the first time one was confirmed. A ratio over one now parses as
+its numerator.
+
+## How often the reader hands A a wrong figure
+
+The sixth pass could not set A's economic-term threshold. Its three fits
+disagreed, and which one is right turns on how often the reader hands A a
+wrong figure from the right clause. So 42 values A was asked about on 24
+in-sample agreements were labelled from the text, without the pipeline's
+answer (9db62fe). With the refit's other labelled rows, four values A was
+asked about turned out wrong: two were the reader's, now fixed, and two were
+labels.
+
+* **Accelevation's joinder:** the definitions tier read the closing-date
+  total, $50,000,000, from a definition that goes on to say it "shall be
+  increased in the amount of the Amendment No. 1 Incremental Revolving Credit
+  Commitment on the Amendment No. 1 Effective Date". A confirmed it at 0.92.
+  The amount in force is printed nowhere, so the label is review; the tier now
+  settles nothing from a figure its own definition says has since changed
+  (769da7f). Of 141 documents this fires on that one.
+* **Sanmina's ticking fee:** the rule took a "Ticking Fee" charged on every
+  Pro Rata Facilities Commitment between signing and funding. The field is
+  the fee on undrawn delayed draw commitments; the rule now needs the
+  sentence to say so (769da7f), which changes only Sanmina of 141.
+* **nVent's Amendment No. 2 and Essential Properties:** the margin
+  convention, above. The labels changed, not the reader.
+
+The refit also counted only a value or an absence as the reader's mistake.
+A label that withholds the value -- review, external, conflicted -- now
+makes any value wrong, so Accelevation's counts.
+
+With this pass's readers the refit's three fits still disagree: 0.49 on the
+labelled values, 0.49 with values the text lacks, 0.96 with the in-text near
+misses. So the rule committed in 5be3485 decides. On the fit side the reader
+handed A a wrong value 2 times in 111 -- Brightspring's and Iridium's
+margins, which A scored 0.18 and 0.13 -- at most 6.3% at 95%. At that rate
+0.58 is the lowest threshold whose expected precision clears 0.99, and
+live thresholds v11 adopt it (9a9e610).
+
+| live, economic terms | at 0.77 (v10) | at 0.58 (v11) |
+| --- | --- | --- |
+| the reader's right values, fit side | 95 of 109 | 106 of 109 |
+| the reader's right values, held out | 25 of 27 | 27 of 27 |
+| the reader's wrong values | 0 of 2 | 0 of 2 |
+| values the text lacks | 0 of 409 | 0 of 409 |
+| near misses in the text, both sides | 6 of 114 | 18 of 114 (fit side 14) |
+
+The near misses that clear 0.58 are the ones the field's own question does
+not rule out: a default rate (5C's 3.83%), a superseded rate (Ares CP
+Funding's 2.00%), the base-rate or fee column of a grid (KBR's 1.25% and
+0.325%), a term loan's column (Essential Properties' 1.550%, at 0.95). They
+cost something only if the reader hands A one, which it did 2 times in 111.
+The refit's held-out line had counted every one of them as an answer -- "31 of
+126 cleared at a silent error rate of 0.129" -- which is the fit's stress,
+not a rate a user meets. It now reports the reader's own held-out values
+beside it. Dates stay at 0.80, all three fits agreeing again. The date stress
+set also gained the near miss the sixth pass lacked: a term tranche's
+maturity, asked as the revolver's (5be3485). No in-sample document with a
+labelled revolver maturity states one, so it waits for one that does.
+
+## The readers
+
+The sixth pass's misses on the investment-grade set were values not read at
+all. Four readers were written for them, developed on fit-side agreements
+and on that first investment-grade set, which had been run and fixed against
+and is no longer out of sample:
+
+* **Pricing grids** (178a091, 2335723). The margin, and often the unused
+  fee, sit in a ratings or leverage grid inside the margin's definition,
+  with headings over two rows and percent signs in cells of their own. The
+  reader takes a grid by its columns: the level and the ratings or ratio
+  that select a row are set aside, a row that does not line up is skipped,
+  and basis points become percent. It takes the top of the benchmark column
+  for the margin -- the revolving loans' where the grid prices loan types
+  apart -- and of the commitment-fee column for the fee, never a facility
+  fee. A table inside the definition is its grid however the definition
+  words it; only a definition that names a table is followed past its end.
+  Run over the first set it got four margins wrong, each a grid read in the
+  wrong piece or limb, and those are fixed: a grid broken across tables at a
+  page break is read whole (CVS's Level VI, Illumina's Level V after a
+  page-number fragment, Easterly's grid over three tables); a grid in a limb
+  an amendment replaced is not read (Brightspring's, "prior to the Amendment
+  No. 7 Effective Date"), judged by the limb the table hangs from, since
+  Cooper-Standard's "(x) for any day prior to the Sixth Amendment Effective
+  Date" is a limb of its own; and a term tranche's grid beside a revolver is
+  not the revolver's margin (Iridium's Term B-4 Loans).
+* **Floors** (178a091, 2335723). A benchmark that "shall be deemed to be
+  zero" below zero has a zero floor; so does "in no event shall Term SOFR be
+  less than 0.00%", a "Floor" stated per benchmark (Easterly's), and a
+  "Floor" whose boilerplate points back at the agreement and then states the
+  initial floor for Term SOFR (SanDisk's). A boilerplate "Floor" with nothing
+  after it no longer stops the reader from the benchmark's own proviso
+  (Cencora's). The same proviso on the federal funds rate or CORRA is not
+  this floor.
+* **Commitments in the definition** (57834f6). Investment-grade agreements
+  print each lender's amount in a schedule the filing often omits and the
+  total in the commitment's own definition, dated to the day it took effect:
+  "As of the Effective Date, the Aggregate Commitments are $1,000,000,000".
+  A figure the definition says has since changed is not read, two different
+  totals settle nothing, and an accordion's, a term loan's or a sublimit's
+  total is not the revolver's.
+* **Commitment schedules** (9064639). Where nothing else gives the size, a
+  "Lender | Commitment" schedule's Total row is read -- only where the
+  lenders' rows add up to it and the commitment column comes first.
+
+What they read, before any validator, against the labels:
+
+| | first investment-grade set (spent) | fit side |
+| --- | --- | --- |
+| commitments | 14 of 16, none wrong | 16 right |
+| margins | 15 of 19, none wrong | 18 right, none wrong |
+| floors | 19 of 20 | 33 right |
+| unused fees | 8 of 11, and all 8 null fees pass | 8 right |
+
+The first set's remaining misses are a commitment printed only on the cover
+(Ferguson) or in a background statement (ICE), four margins in grids the
+reader does not see (Globe Life, Target, Teradyne, Uber), and Uber's floor,
+whose proviso the definition graph cuts off.
+
+## Results in sample
+
+**The live gate**, on 9a9e610 under v11, almost entirely from the answer cache:
+
+| | assertions | confident | wrong | passed |
+| --- | --- | --- | --- | --- |
+| sixth pass (thresholds v10) | 757 | 437 | 0 | 525 |
+| **seventh pass (v11), the 754 both share** | 754 | **461** | **0** | **543** |
+| the 45 new or renamed | 45 | 41 | 0 | 43 |
+| **all** | 799 | **502** | **0** | **586** |
+
+Nothing that passed before fails now. Per economic field, live:
+
+| field | sixth pass: right | wrong | now: right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- | --- | --- |
+| commitment | 9 | 0 | 20 | 0 | 4 | 5 |
+| maturity | 16 | 0 | 16 | 0 | 8 | 5 |
+| margin | 8 | 0 | 24 | 0 | 5 | 12 |
+| floor | 36 | 0 | 46 | 0 | 2 | 8 |
+| unused fee | 16 | 0 | 20 | 0 | 2 | 6 |
+| covenant level | 0 | 0 | 0 | 0 | 1 | 30 |
+
+(The sixth pass's rows count the labels it had; this pass added 42.)
+
+**The offline stand-in CI runs** is at 395 confident and 0 wrong, 564
+passed, on the same 799 assertions (377, 0 and 543 before the readers). It
+does not use the live thresholds.
+
+Two things on the way were put right:
+
+* **nVent's term loan**, held out, expected Level I's 0.875% under a field
+  already defined as the highest margin; the reader confirmed Level V's
+  1.50%. Corrected in 3b63542 (see the labelling guide).
+* **The reworded margin question** (178a091) moved eight single-rate
+  margins from confirmed to review, nothing wrong; reverted in 2335723.
+
+**Covenant levels are never confirmed.** Of 31 labelled in sample, 15 have
+no value from the reader and the rest sit in review. That is a reader gap,
+not a threshold.
+
+## The second investment-grade set, once
+
+Twenty investment-grade revolving credit agreements, harvested after the
+sixth pass from companies the corpus did not hold, were labelled blind --
+191 assertions, every quotation checked against the text the pipeline reads
+-- and pushed in a735499 before anything ran on them. Then the code and v11
+were pushed, and the set was run once, on 9a9e610.
+
+| of 191 blind assertions | confident | wrong | right, in review |
+| --- | --- | --- | --- |
+| live (v11) | **104** | **1** | 8 |
+| offline stand-in | 76 | 0 | 30 |
+
+The live run cost $0.56. Per field, live:
+
+| field | confident and right | wrong | right, in review | missed |
+| --- | --- | --- | --- | --- |
+| borrower | 9 | 0 | 1 | 10 |
+| agent | 15 | 0 | 3 | 2 |
+| governing law | 18 | 0 | 1 | 1 |
+| commitment | 9 | 0 | 0 | 11 |
+| maturity | 9 | 0 | 1 | 7 |
+| top margin | 12 | 0 | 1 | 6 |
+| floor | 17 | 0 | 0 | 3 |
+| unused fee | 7 | 0 | 0 | 5 |
+| covenant level | 0 | 0 | 0 | 19 |
+| closing date | 7 | 1 | 1 | 4 |
+
+All 7 null fee labels pass (no facility fee was reported as an unused fee),
+and Everforth's four fused-blackline terms all went to review, as their
+labels require. The first investment-grade set's one run, in the sixth pass,
+gave 68 confident and 4 wrong, with 1 commitment, 1 margin, 5 floors and no
+fee confidently right; here it is 9, 12, 17 and 7, none wrong.
+
+**The one wrong answer is a convention the field leaves open.** FTI's
+agreement is amended and restated. It defines "Closing Date" as June 26,
+2015, the original facility's, and the pipeline read that definition. The
+blind label took the "Restatement Effective Date", June 30, 2026, the day
+this agreement took effect, and its labeller named it in advance as the call
+most likely to differ. The field is defined as "the Closing Date" but its
+presence question asks for "the date on which it became effective", so the
+registry holds both readings. The label stands as written: it was frozen
+before the run.
+
+**What each change contributed**, by replaying the same twenty:
+
+| | confident | wrong | economic terms confidently right |
+| --- | --- | --- | --- |
+| live, v11 | 104 | 1 | 37 |
+| live, the same answers under v10 (0.77) | 98 | 1 | 31 |
+| offline stand-in, this pass's code | 76 | 0 | 24 |
+| offline stand-in, the sixth pass's code | 46 | 0 | 3 |
+
+* **The threshold** added six right economic confirmations, three margins and
+  three fees, and no error. The replay cost $0.0002.
+* **The readers**, on the stand-in: right values read go from 2 to 9
+  commitments, 0 to 13 margins, 8 to 17 floors and 0 to 7 fees, none wrong
+  either way. A live replay under the sixth pass's code stopped after 8 of
+  the 20 documents, when the TypeSafe account ran out of credits (HTTP 402).
+  It was not retried, and the stand-in stands in.
+
+**The confident claims no label covers** were audited as before, on fields of
+criticality 4 or more, from a replay of the live run's own answers (no
+requests). There are 203, and every one is an absence or a not-applicable:
+no unlabelled value was confirmed.
+
+* **56 on terms these agreements could carry** -- term loans, amortization,
+  excess cash flow sweeps, MFN protection, leverage tests -- were checked
+  against the text. All 56 are right.
+* **18 on EBITDA add-back caps**: 17 right, 1 wrong. CBRE's clause (xii) adds
+  back "pro forma 'run rate' cost savings, operating expense reductions and
+  other synergies" up to 20.0% of Consolidated EBITDA, and the field for that
+  cap was confirmed absent at 0.81. Its question asks about "the run-rate
+  synergies add-back in clause (a)(xvi)", a leveraged template's numbering.
+  Flex's, Kennametal's, PVH's and Everforth's capped add-backs are expenses,
+  litigation costs or acquisition costs, not synergies, and the cost-savings
+  cap field sits in review wherever a cap exists.
+* **The other 129** -- PIK, borrowing base, NAV and recurring-revenue terms --
+  name nothing the text contains.
+
+So out of sample: 1 wrong of 104 confident labelled answers, and 1 wrong of
+203 audited claims. Nothing has been changed against either; the set is
+still a test set.
+
 # What is next
 
-1. **Read the investment-grade economics the readers miss.** Measure them on
-   a fresh set. They are:
-   * the zero floor written as "deemed to be zero", which is 12 of the 15
-     missed floors;
-   * ratings grids printed as tables, for margins and fees;
-   * commitments stated in schedules.
-2. **Settle the covenant level.** The field's question asks for the level "as
-   it stands at a given date", while the labels take the standing level, and
-   Avnet's relief table is where the two part. Choose one, then read step
-   tables to it.
-3. **Fit the economic-term threshold.** It rests on how often the reader
-   takes a wrong figure from the right clause, which nothing measures yet.
-   Labelling a sample of the values A is asked about would.
-4. **Add a near miss to the date stress set:** a right date for the wrong
-   kind of facility. That is the one error the date refit let through.
-5. **Ask about the commitment fee by its top level,** as the margin's question
-   does. Lower tiers of a fee grid clear A today: PennantPark's 0.25% scored
-   0.96.
-6. **Harvest a fresh out-of-sample set.** The investment-grade set has been
-   run once, and fixed against since.
+1. **Settle the closing date of a restated agreement.** The field is defined
+   as "the Closing Date" and asked as "the date on which it became
+   effective"; FTI's restatement makes the two different dates, and the blind
+   label and the pipeline each took one. Choose, write it into the guide,
+   and make the question and the definitions tier say the same thing.
+2. **Stop asking about a template's clause numbers.** The run-rate synergies
+   cap is asked about "clause (a)(xvi)", and CBRE's 20% cap in clause (xii)
+   was confirmed absent. Read every field's question for numbering a
+   particular agreement uses.
+3. **Read covenant levels.** None is confirmed: in sample, 15 of the 31
+   labelled levels get no value from the reader and the rest sit in review;
+   out of sample, all 19 are missed. It is the largest economic gap left.
+4. **Let A confirm a split grid's revolving top.** The margin question says
+   "highest", which a term loan's column beats; naming the revolving loans in
+   it cost eight single-rate margins. A statement built per value, naming the
+   column the reader took, would ask only where it matters.
+5. **Read what the investment-grade readers still miss**, on fit-side
+   documents: a commitment printed only on the cover or in the background
+   statement (Ferguson, ICE); grids the reader does not see (Globe Life,
+   Target, Teradyne, Uber); a definition cut short by the definition graph
+   (Uber's Term SOFR, whose zero floor is in the part that is lost).
+6. **Fit A's parties threshold on real names**, and label a sample of the
+   corpus's unlabelled `absent_from_document` claims. Out of sample this pass
+   they were 202 of 203 right.
 7. **Decide the labels the second pass exposed:** GBDC's `abl_revolver`
    against Athena's `unknown`.
 8. **Let validator E, or a status C can reach, say "named here, stated
-   elsewhere".** That was Sysco's case. And read a borrower's guaranty of its
-   co-borrower, which was Globe Life's.
-9. **Fit A's parties threshold on real names.** `eval/realfit.py` can do it
-   with the other names in the text as its near misses. Then label a sample
-   of the corpus's unlabelled `absent_from_document` claims.
-10. **Put the key in CI for a scheduled live gate.** With the answer cache,
-    a gate after a code change costs cents. Until then, CI measures the
-    stand-in, which passes at 340 confident and 0 wrong.
+   elsewhere"** (Sysco), and read a borrower's guaranty of its co-borrower
+   (Globe Life).
+9. **Harvest the next fresh set** before fixing anything the second
+   investment-grade set found: once a rule is changed against it, it is a fit
+   set for that rule.
+10. **Put the key in CI for a scheduled live gate.** With the answer cache a
+    gate after a code change costs cents. The TypeSafe account ran out of
+    credits during this pass, so any live run needs them topped up first.
+    Until then CI measures the stand-in: 395 confident and 0 wrong.
