@@ -627,6 +627,12 @@ def test_a_percent_label_compares_against_a_decimal():
     assert values_equal("0.75%", Decimal("0.75"))
     assert values_equal("0.00%", Decimal("0"))
     assert values_equal("$1,300,000", Decimal("1300000"))
+    # A ratio over one is the number it scales, however it is written.
+    assert values_equal("4.00 to 1.00", Decimal("4"))
+    assert values_equal("3.75:1.00", Decimal("3.75"))
+    assert values_equal("0.40 to 1.0", Decimal("0.4"))
+    assert not values_equal("4.00 to 1.00", Decimal("5"))
+    assert not values_equal("3.75:1.00", "3.75:2.00")
 
 
 def test_stripping_decoration_does_not_rescale():
@@ -640,15 +646,20 @@ def test_stripping_decoration_does_not_rescale():
     assert not values_equal("100%", Decimal("1"))
 
 
-def test_a_ratio_still_falls_to_the_text_branch():
-    """3.50:1.00 must not parse as a number, or 3.50:1.00 and 3.50:2.00 would
-    compare on their first component alone."""
+def test_only_a_ratio_over_one_is_a_number():
+    """3.50:1.00 and 3.50:2.00 must not compare on their first component
+    alone, so a ratio over anything but one stays text. A ratio over one is
+    the number it scales, which is how the pipeline stores a covenant level:
+    read as text, "3.50:1.00" never equalled an extracted 3.50, and a right
+    covenant level would have been scored wrong."""
     from decimal import Decimal
 
     from credit_extract.eval.assertions import _as_decimal, values_equal
 
-    assert _as_decimal("3.50:1.00") is None
-    assert not values_equal("3.50:1.00", Decimal("3.5"))
+    assert _as_decimal("3.50:2.00") is None
+    assert not values_equal("3.50:1.00", "3.50:2.00")
+    assert _as_decimal("3.50:1.00") == Decimal("3.50")
+    assert values_equal("3.50:1.00", Decimal("3.5"))
     assert values_equal("3.50:1.00", "3.50:1.00")
 
 

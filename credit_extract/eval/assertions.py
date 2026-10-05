@@ -250,6 +250,7 @@ def load_assertions(
 #: A percent sign, a currency symbol, thousands separators, and the
 #: non-breaking space some filings put before the sign.
 _DECORATION = re.compile(r"[%$,\s ]")
+_OVER_ONE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(?::|to)\s*1(?:\.0+)?\s*$")
 
 
 def _as_decimal(value: Any) -> Decimal | None:
@@ -269,12 +270,18 @@ def _as_decimal(value: Any) -> Decimal | None:
     worst place to have a bug.
 
     Only decoration is removed. Nothing here rescales, so a percent stored as
-    a fraction still compares unequal to one stored as a number, and a ratio
-    like ``3.50:1.00`` still fails to parse and falls to the text branch where
-    it belongs.
+    a fraction still compares unequal to one stored as a number. A ratio over
+    one -- ``3.50:1.00``, ``3.50 to 1.00`` -- is the number it scales, which
+    is how the pipeline stores it: read as text, a label of "4.00 to 1.00"
+    could never equal an extracted 4.00, and a right covenant level would
+    have been scored as a silent error the day one was confirmed. A ratio
+    over anything else still falls to the text branch.
     """
     if value is None or isinstance(value, bool):
         return None
+    over_one = _OVER_ONE.match(str(value))
+    if over_one:
+        return Decimal(over_one.group(1))
     text = _DECORATION.sub("", str(value))
     if not text or text in ("-", "+", "."):
         return None
