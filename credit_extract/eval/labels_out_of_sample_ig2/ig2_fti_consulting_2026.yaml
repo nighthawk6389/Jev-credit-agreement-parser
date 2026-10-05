@@ -1,0 +1,175 @@
+# Tier 2 assertions: FTI Consulting, Inc. / Bank of America, N.A., Third
+# Amendment and Restatement Agreement dated as of June 30, 2026, with the Third
+# Amended and Restated Credit Agreement attached as Annex B, filed 2026-07-01
+# by FTI CONSULTING, INC as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A short amendment-and-restatement agreement followed
+# by the complete restated credit agreement (clean text, not a blackline),
+# which replaces the Second Amended and Restated Credit Agreement of November
+# 21, 2022. Every label is read from the restated agreement. A $1,500,000,000
+# revolver beside a continuing $300,000,000 term loan, guaranteed by
+# subsidiaries and priced off S&P, Fitch and Moody ratings. The agreement keeps
+# a legacy Closing Date of June 26, 2015 alongside its own Restatement
+# Effective Date. Schedule 2.01 is not in the text.
+
+document: ig2_fti_consulting_2026
+corpus_name: IG_fti-consulting-inc_2026-07-01_0001193125-26-291542_fcn-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: fcn_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "FTI CONSULTING, INC."
+    note: >
+      'among FTI CONSULTING, INC., a Maryland corporation (the " Borrower ")'
+
+      The preamble of the restated agreement; the amendment agreement names
+      the same company. The subsidiaries are Guarantors, not borrowers.
+
+  - id: fcn_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'BANK OF AMERICA, N.A., as Administrative Agent, Swing Line Lender and
+      an L/C Issuer'
+
+      The preamble of the restated agreement. BofA Securities, Inc. is the
+      lead left arranger, not the agent.
+
+  - id: fcn_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE
+      STATE OF NEW YORK (INCLUDING SECTION 5-1401'
+
+      Section 11.18(a) of the restated agreement.
+
+  - id: fcn_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,500,000,000"
+    note: >
+      'The aggregate principal amount of the Aggregate Revolving Commitments in
+      effect on the Restatement Effective Date is $1,500,000,000'
+
+      The definition of Aggregate Revolving Commitments; the amendment recital
+      gives the same figure for the A&R Revolving Commitments. The term loan
+      is a separate facility ('the outstanding principal balance of the Term
+      Loans on the Restatement Effective date is $300,000,000'), the
+      $50,000,000 Letter of Credit Sublimit sits inside the revolver ('The
+      Letter of Credit Sublimit is part of, and not in addition to, the
+      Aggregate Revolving Commitments'), and the incremental facility, whose
+      fixed amount is the greater of $500,000,000 and 100% of Consolidated
+      EBITDA, is an accordion; none of them is the revolver commitment.
+
+  - id: fcn_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-30
+    note: >
+      '" Revolving Credit Facility Maturity Date " means June 30, 2031 (or, if
+      such day is not a Business Day, the next preceding Business Day)'
+
+      June 30, 2031 is a Monday, so the business-day proviso does not move it.
+      Extensions under Section 2.18 run only through Extension Offers accepted
+      by individual Lenders, so the date as it stands is labelled. The Term
+      Loan Maturity Date (March 17, 2029) belongs to the term loan.
+
+  - id: fcn_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.625%"
+    note: >
+      '1 | < BB / BB / Ba2 | 0.275% | 1.625% | 0.625%'
+
+      Pricing Tier 1, the lowest rating tier and the one that applies with no
+      Debt Rating, in the column for Term SOFR, Daily SOFR and alternative
+      currency loans; the tiers run 1.000%, 1.125%, 1.250%, 1.500% and
+      1.625%, and one grid prices revolving and term loans alike. In that row
+      0.275% is the commitment fee and 0.625% the Base Rate margin. Pricing
+      starts at Tier 3.
+
+  - id: fcn_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'with a term equivalent to such Interest Period. If the rate as so
+      determined would be less than zero, such rate shall be deemed to be
+      zero'
+
+      The definition of Term SOFR: a zero floor. Daily Simple SOFR, the
+      alternative currency rates and the Base Rate are floored at zero the
+      same way; there is no floor above zero.
+
+  - id: fcn_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.275%"
+    note: >
+      'a commitment fee equal to the product of (i) the Applicable Rate times
+      (ii) the actual daily amount by which the Aggregate Revolving
+      Commitments exceed the sum of'
+
+      Section 2.09(a): an unused fee on the undrawn revolving commitments, at
+      the Commitment Fee column of the ratings grid, from 0.125% at Tier 5 up
+      to 0.275% at Tier 1 ('1 | < BB / BB / Ba2 | 0.275% | 1.625% | 0.625%').
+      The upfront fees in the amendment agreement (0.16% and 0.20%) are
+      one-time fees, not this.
+
+  - id: fcn_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00 to 1.00"
+    note: >
+      'Permit the Consolidated Total Net Leverage Ratio as of the end of any
+      fiscal quarter of the Borrower to be greater than 4.00 to 1.00'
+
+      Section 8.11, the only financial covenant (debt to EBITDA). After a
+      Specified Acquisition the cap rises for four quarters ('shall be no
+      greater than 4.50 to 1.00 for a period of four consecutive fiscal
+      quarters'), for at most two acquisitions; that is an acquisition
+      step-up, not the standing level.
+
+  - id: fcn_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-30
+    note: >
+      '" Restatement Effective Date " means June 30, 2026.'
+
+      The date this restated agreement took effect (Section 5.01: 'This
+      Agreement, as amended and restated pursuant to the Amendment and
+      Restatement Agreement, shall become effective upon the satisfaction of
+      the following conditions precedent'). The agreement also keeps
+      '" Closing Date " means June 26, 2015.', but that is the original 2015
+      facility, used only as the start of the builder basket and as a GAAP
+      reference date, so it is the near miss and not the effectiveness of
+      this agreement.

@@ -1,0 +1,187 @@
+# Tier 2 assertions: AMETEK, Inc. / JPMorgan Chase Bank, N.A. and J.P. Morgan
+# SE, Amended and Restated Credit Agreement dated as of September 22, 2011, as
+# further amended and restated as of June 9, 2026, filed 2026-06-12 by
+# AMETEK Inc as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A complete amendment and restatement (execution
+# copy) of a 2011 multicurrency revolver, restated again as of June 9, 2026:
+# $3,500,000,000 for AMETEK, Inc. and its Foreign Subsidiary Borrowers, with a
+# $1,000,000,000 certain-funds sublimit for the pending Indicor acquisition
+# inside it. Pricing levels follow leverage or ratings at the election of the
+# Company (ratings only, after the Leverage Pricing Termination Date), and the
+# fee is a facility fee. A U.S. and a Non-U.S. Administrative Agent share the
+# agent role. The leverage covenant converts to an interest coverage covenant
+# once debt that carries its own leverage covenant is paid down. The
+# Restatement Effective Date is event-defined, so closing_date is not
+# labelled; the Original Effective Date (September 22, 2011) belongs to the
+# first agreement.
+
+document: ig2_ametek_2026
+corpus_name: IG_ametek-inc_2026-06-12_0001037868-26-000166_exhibit101jpm-ametekxcredi
+source: real
+tier: 2
+
+assertions:
+
+  - id: ametek_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "AMETEK, INC."
+    note: >
+      'and as further amended and restated as of June 9, 2026, among AMETEK,
+      INC., the FOREIGN SUBSIDIARY BORROWERS from time to time party hereto'
+
+      The preamble names the Company first among the Borrowers; Company means
+      'AMETEK, Inc., a Delaware corporation' and Borrower 'means the Company
+      or any Foreign Subsidiary Borrower'. Rejected: the six Initial Foreign
+      Subsidiary Borrowers (Ametek European Holdings Limited and five others,
+      English, Canadian and German), which are named after it.
+
+  - id: ametek_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: ["JPMORGAN CHASE BANK, N.A.", "J.P. MORGAN SE"]
+    note: >
+      'the LENDERS from time to time party hereto and JPMORGAN CHASE BANK, N.A.
+      and J.P. MORGAN SE, as Administrative Agent'
+
+      Two institutions fill the role. Administrative Agent 'means the U.S.
+      Administrative Agent and/or the Non-U.S. Administrative Agent as the
+      context requires'; the U.S. one 'means JPMorgan Chase Bank, N.A. (or any
+      of its designated branch offices or affiliates)' and the Non-U.S. one
+      'means J.P. Morgan SE (or any of its designated branch offices or
+      affiliates)'. Either name is right, as for a role several parties fill;
+      the two run together as one string are not a legal name. The
+      Co-Syndication and Co-Documentation Agents are not the agent.
+
+  - id: ametek_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by
+      the law of the State of New York.'
+
+      Section 9.09. The Foreign Subsidiary Borrowers are English, Canadian and
+      German entities and the exhibits include forms of opinion of England and
+      Wales, Canadian and German counsel, but those are not a choice of law
+      for the agreement.
+
+  - id: ametek_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$3,500,000,000"
+    note: >
+      'As of the Restatement Effective Date, the Aggregate Commitment is
+      $3,500,000,000.'
+
+      The definition of Aggregate Commitment; per-lender amounts are on
+      Schedule 2.01A, which is listed but not printed. Rejected: the Indicor
+      Closing Date Revolving Loans Sublimit of $1,000,000,000, which 'is part
+      of, and not in addition to, the Revolving Commitments'; the Foreign
+      Currency Sublimit of $1,500,000,000; the Section 2.21 expansion option
+      (up to $1,000,000,000 of commitment increases and Incremental Term
+      Loans together); and the $5,000,000,000 Indicor Bridge Facility, a
+      separate facility.
+
+  - id: ametek_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-09
+    note: >
+      'means, with respect to any Lender, the later of (i) June 9, 2031 and
+      (ii) if the Maturity Date is extended for such Lender pursuant to
+      Section 2.22'
+
+      Five years from the restatement. Section 2.22 lets each Lender, in its
+      sole discretion, agree to a one-year extension on an Extension Request,
+      which is conditional, so the stated date is labelled. The definition
+      rolls a non-Business Day back to the preceding Business Day; June 9,
+      2031 is a Monday, so nothing rolls.
+
+  - id: ametek_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.10%"
+    note: >
+      'Level V | 0.150% | 1.10% | 1.10% | 0.10%'
+
+      Pricing Level V of the Applicable Rate grid, whose columns are 'Facility
+      Fee Rate | Term Benchmark Spread | RFR Spread | ABR Spread'. The Term
+      Benchmark Spread, which prices Term SOFR loans, runs from 0.68% at Level
+      I to 1.10% at Level V, whether the level is set by the Leverage Level or
+      by the Ratings Level (Leverage Level 5 also applies while Financials are
+      late). Rejected: the ABR Spread (0.10%), the Facility Fee Rate (0.150%)
+      and the initial Pricing Level II (0.795%).
+
+  - id: ametek_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if the Adjusted Term SOFR Rate as so determined would be less than the
+      Floor, such rate shall be deemed to be equal to the Floor'
+
+      The Adjusted Term SOFR Rate definition (equal to the Term SOFR Rate, with
+      no spread adjustment), and the Floor definition says 'the initial Floor
+      for each of the Adjusted Term SOFR Rate, the Adjusted EURIBO Rate, the
+      Adjusted TIBO Rate, the Adjusted Term CORRA Rate, the Japanese Prime
+      Rate, each Adjusted Daily Simple RFR or the Central Bank Rate shall be
+      zero'. Rejected: the 1.00% floor on the Alternate Base Rate ('would be
+      less than 1.00%, such rate shall be deemed to be 1.00%').
+
+  - id: ametek_commitment_fee_is_facility_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee, which shall accrue at the Applicable Rate for facility
+      fees on the daily amount of the Commitment of such Lender (whether used
+      or unused)'
+
+      Section 2.12. The only commitment-based fee is this facility fee on the
+      whole Commitment, drawn or not. Its Facility Fee Rate runs from 0.07% at
+      Level I to 0.150% at Level V, and 0.150% is the near miss the pipeline
+      must not report. There is no commitment, unused or ticking fee (ticking
+      fees appear only in a list of fee types in Article VIII), and the
+      fronting fee accrues at a rate 'as separately agreed upon by the Company
+      and such Issuing Bank'.
+
+  - id: ametek_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      'The Company will not permit the Total Net Leverage Ratio, determined as
+      of the end of each of its fiscal quarters ending on and after June 30,
+      2026 but prior to the Financial Covenant Transition Date, to be greater
+      than 3.50 to 1.00.'
+
+      Section 6.07(a). 3.50 to 1.00 is the standing leverage level. Rejected:
+      4.00 to 1.00 for an Adjusted Covenant Period of four quarters after a
+      Qualifying Material Acquisition, after which it 'shall revert to 3.50 to
+      1.00'. The leverage test stops at the Financial Covenant Transition
+      Date, which comes only after the Specified Debt Financings (private
+      placement notes and other debt carrying a leverage-based covenant) fall
+      to $275,000,000 or less; from then Section 6.07(b) requires instead an
+      Interest Coverage Ratio of at least 3.00 to 1.00. That conversion is
+      conditional, so the leverage level in force is labelled.

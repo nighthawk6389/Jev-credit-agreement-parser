@@ -1,0 +1,204 @@
+# Tier 2 assertions: MICHAEL KORS (USA), INC. / JPMorgan Chase Bank, N.A.,
+# Amendment No. 1 dated as of June 24, 2026 to the Amended and Restated Credit
+# Agreement dated as of February 4, 2025, filed 2026-06-25 by Capri Holdings
+# Ltd as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A refinancing amendment replacing the revolving
+# commitments with $1.0 billion of 2026 Revolving Commitments, with the A&R
+# Credit Agreement conformed through Amendment No. 1 attached as a blackline
+# Exhibit A; every label is read from that conformed text, which has deleted
+# the Initial Term Loans. The basis-point pricing grid is damaged by layout,
+# and Annex I (the 2026 commitments) is not printed.
+
+document: ig2_capri_holdings_2026
+corpus_name: IG_capri-holdings-ltd_2026-06-25_0000950142-26-001871_eh260798008_ex1001
+source: real
+tier: 2
+
+assertions:
+
+  - id: cpri_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "MICHAEL KORS (USA), INC."
+    note: >
+      'dated as of February 4, 2025 among MICHAEL KORS (USA), INC., CAPRI
+      HOLDINGS LIMITED, MICHAEL KORS (SWITZERLAND) GMBH, the FOREIGN SUBSIDIARY
+      BORROWERS from time to time party hereto'
+
+      The conformed preamble names Michael Kors (USA), Inc. first, and the
+      definitions confirm it is a Borrower ('" Borrower " means the Company,
+      Capri Holdings , MK Switzerland or any Foreign Subsidiary Borrower';
+      '" Company " means Michael Kors (USA), Inc., a Delaware corporation').
+      The EDGAR filer, Capri Holdings Limited, is the parent and the second
+      Borrower named, not the first.
+
+  - id: cpri_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'the LENDERS from time to time party hereto, JPMORGAN CHASE BANK, N.A., as
+      Administrative Agent, and the ISSUING BANKS'
+
+      The conformed preamble; the definition agrees ('" Administrative Agent "
+      means JPMorgan Chase Bank, N.A. (including its branches and affiliates),
+      in its capacity as administrative agent'). Barclays Bank PLC is
+      Syndication Agent and a joint bookrunner, not the agent.
+
+  - id: cpri_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and the other Loan Documents shall be construed in
+      accordance with and governed by the law of the State of New York.'
+
+      Section 9.09(a) of the conformed agreement; Amendment No. 1 is also
+      governed by New York law (Section 10). The Dutch-law clause in Section
+      9.17 ('shall be governed by the laws of the Netherlands') covers only
+      powers of attorney, and the British Virgin Islands, Swiss, Dutch and
+      Canadian borrowers do not change the governing law.
+
+  - id: cpri_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'As of the Amendment No. 1 Effective Date, the Aggregate Revolving
+      Commitment is $ 1,000,000,000 .'
+
+      The conformed definition of Aggregate Revolving Commitment. Amendment No.
+      1 terminated the Existing Revolving Commitments and replaced them with
+      the 2026 Revolving Commitments in Annex I, which is not printed, so this
+      definition is the source. The recital figures of $392,000,000 and EUR
+      295,557,048.30 were the original Initial Term Loans, now deleted, and the
+      Incremental Amount ('the greater of (x) $400,000,000 and (y) 100% of the
+      Consolidated EBITDA') is an increase option.
+
+  - id: cpri_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-24
+    note: >
+      '" Revolving Maturity Date " means June 24 , 2031 , or, if such date is
+      not a Business Day, the Business Day immediately preceding such date'
+
+      The amended Revolving Maturity Date; Maturity Date now means only this
+      date ('" Maturity Date " means in the case of the Revolving Facility, the
+      Revolving Maturity Date'). June 24, 2031 is a Tuesday, so no roll. Section
+      2.26 lets the Company ask Lenders to extend by a year each anniversary,
+      but each Lender decides in its sole discretion and none has, so the date
+      as it stands is labelled. The February 4, 2025 Effective Date is the
+      original restatement, not a maturity.
+
+  - id: cpri_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.500%"
+    note: >
+      'set forth in the Pricing Grid under the caption "Spread for Term
+      Benchmark Loans ", "Spread for ABR Loans", "Spread for RFR Loans "'
+
+      'Pricing Level | | Net Leverage Ratio | | / Spread for RFR Loans | Spread
+      for ABR Loans | Commercial Letter of Credit Rate | Commitment Fee Rate'
+
+      '4 | | | > 3.50:1.00 | 150.0 bps | 50.0 bps | 75 bps | 20.00 bps'
+
+      Schedule 1.01, Pricing Grid for the Revolving Loans, in basis points: the
+      Term Benchmark and RFR spread runs 112.5, 125.0, 137.5 and 150.0 bps
+      across Levels 1 to 4, so the top level is 1.500%. The Level 4 row prints
+      after a leftover heading, Pricing Grid for the Initial Term Loans, but
+      it belongs to the revolving grid: it has the four revolving columns, the
+      Initial Term Loans are deleted from the conformed agreement, and Levels
+      1 to 3 stop at 3.50:1.00. The first column has lost the Term Benchmark
+      half of its caption, which the Applicable Rate definition supplies.
+      Pricing starts at Level 2 until the first Adjustment Date after
+      Amendment No. 1.
+
+  - id: cpri_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'For the avoidance of doubt the initial Floor for each of Term SOFR Rate,
+      Adjusted EURIBOR Rate, Adjusted TIBOR Rate, Term CORRA , each Daily
+      Simple RFR, the Japanese Prime Rate or the Central Bank Rate shall be
+      0%.'
+
+      'provided that if the Term SOFR Rate as so determined would be less than
+      the Floor, such rate shall be deemed to be equal to the Floor'
+
+      A zero floor on Term SOFR itself and on every other benchmark. The
+      separate zero floors on the Federal Funds Effective Rate and the
+      Swingline Overnight Rate are not this field.
+
+  - id: cpri_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.200%"
+    note: >
+      'a non-refundable commitment fee (the " Commitment Fee "), which shall
+      accrue at the Applicable Rate on the daily Available Revolving Commitment
+      of such Revolving Lender'
+
+      Section 2.12(a), a fee on the unused commitment. The Commitment Fee Rate
+      column of the Schedule 1.01 grid runs 10.00, 15.00, 16.25 and 20.00 bps
+      across Levels 1 to 4 ('4 | | | > 3.50:1.00 | 150.0 bps | 50.0 bps | 75
+      bps | 20.00 bps'), so the top level is 0.200%. There is no facility fee;
+      75 bps in the same row is the Commercial Letter of Credit Rate and the
+      fronting fee is left to separate agreement.
+
+  - id: cpri_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00 to 1.00"
+    note: >
+      'The Loan Parties will not permit the Net Leverage Ratio, determined as of
+      the end of each fiscal quarter of Capri Holdings and its consolidated
+      Subsidiaries ending on and after the Effective Date, to be greater than
+      4.00 to 1.00'
+
+      Section 6.08, the only financial covenant: a maximum lease-adjusted Net
+      Leverage Ratio (debt plus capitalized operating leases, net of up to
+      $200,000,000 of cash, to Consolidated EBITDAR). The standing level is
+      4.00 to 1.00; after a Material Acquisition, Capri Holdings may elect a
+      Transition Period ('ending during such Transition Period to be greater
+      than 4.50 to 1.00'), at most twice, which is not the standing level.
+
+  - id: cpri_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-02-04
+    note: >
+      '" Effective Date " means the date on which the conditions specified in
+      Section 4.01 are satisfied (or waived in accordance with Section 9.02),
+      which is February 4, 2025.'
+
+      The conformed agreement defines its own effectiveness with an explicit
+      date, the date of the amendment and restatement. Amendment No. 1 is dated
+      June 24, 2026 but its Amendment No. 1 Effective Date is event-defined
+      ('the date on which such conditions shall have been so satisfied or
+      waived, the " Amendment No. 1 Effective Date "'); that is an amendment
+      date, not the closing. The 2022 Existing Credit Agreement is older still.

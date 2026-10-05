@@ -1,0 +1,185 @@
+# Tier 2 assertions: EVERGY, INC. / Wells Fargo Bank, National Association,
+# Credit Agreement dated as of June 30, 2026, filed 2026-07-01 by Evergy, Inc.
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original $3.5 billion revolving credit agreement
+# (refinancing a 2021 facility) with four co-borrowers, Evergy, Inc. and its
+# utility subsidiaries Evergy Metro, Evergy Missouri West and Evergy Kansas
+# Central, each with its own Sublimit, Debt Rating and covenant level; where a
+# term differs by borrower the label follows Evergy, Inc., named first.
+# Schedule 1.1(b) (commitments) is not printed.
+
+document: ig2_evergy_2026
+corpus_name: IG_evergy-inc_2026-07-01_0001193125-26-292565_d82314dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: evrg_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "EVERGY, INC."
+    note: >
+      'is entered into by and among EVERGY, INC., a Missouri corporation,
+      EVERGY METRO, INC., a Missouri corporation, EVERGY MISSOURI WEST, INC., a
+      Delaware corporation, and EVERGY KANSAS CENTRAL, INC., a Kansas
+      corporation'
+
+      The preamble names four companies, each a Borrower, and Evergy, Inc. comes
+      first. The three subsidiaries are co-borrowers under their own Sublimits,
+      not guarantors.
+
+  - id: evrg_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+    note: >
+      'and WELLS FARGO BANK, NATIONAL ASSOCIATION, a national banking
+      association, as Administrative Agent for the Lenders'
+
+      The preamble. The definition uses the short name ('" Administrative Agent
+      " means Wells Fargo, in its capacity as Administrative Agent hereunder'),
+      and Wells Fargo is defined as Wells Fargo Bank, National Association. Wells
+      Fargo Securities, LLC is a Joint Lead Arranger, not the agent.
+
+  - id: evrg_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of New York'
+
+      Section 11.5(a), covering this Agreement and the other Loan Documents.
+      The borrowers are Missouri, Delaware and Kansas corporations, which does
+      not change the governing law.
+
+  - id: evrg_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$3,500,000,000"
+    note: >
+      'The aggregate Revolving Commitment of all the Lenders on the Closing Date
+      is $3,500,000,000'
+
+      The definition of Revolving Commitment; the cover shows the same
+      $3,500,000,000. It is one revolving facility, not four tranches: the
+      Initial Sublimits (Evergy $750,000,000, Evergy Kansas $1,000,000,000,
+      Evergy Metro $1,000,000,000, Evergy Missouri West $750,000,000) divide it
+      by borrower, and the Maximum Sublimits ($2,200,000,000 for Evergy) are
+      caps, not commitments. The accordion in Section 4.13 ('an amount (for all
+      such requests) not exceeding $1,000,000,000') is an increase option, and
+      the $250,000,000 Swingline Commitment is a sublimit.
+
+  - id: evrg_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-30
+    note: >
+      'means the earliest to occur of (a) (1) June 30, 2031 and (2) if the
+      Revolving Maturity Date is extended pursuant to Section 4.16 as to any
+      Lender, such extended maturity date'
+
+      The Revolving Maturity Date. Section 4.16 lets the Borrowers ask, on no
+      more than two occasions, for one-year extensions that each Lender grants
+      in its sole discretion; none has been exercised, so the date as it stands
+      is June 30, 2031 (a Monday, so no roll arises). The other limbs are
+      termination events, not dates.
+
+  - id: evrg_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.750%"
+    note: >
+      'Applicable Margin for SOFR Loans, SOFR Market Index Rate Loans and
+      Letter of Credit Fees'
+
+      'VII | | ≤ | BBB-/Baa3 | | | | 0.275 | % | | | 1.750 | % | | | 0.750 | %'
+
+      A seven-level Debt Rating grid applied to each Borrower by its own
+      rating; the SOFR margin runs from 0.750% at Level I to 1.750% at Level
+      VII, which also applies to a Borrower with no Debt Rating. In the Level
+      VII row 0.275% is the commitment fee and 0.750% the Base Rate margin;
+      neither is this field.
+
+  - id: evrg_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means a rate of interest equal to 0%.'
+
+      'shall ever be less than the Floor, then Term SOFR shall be deemed to be
+      the Floor'
+
+      The Floor applies to Term SOFR itself (and to Daily Simple SOFR and any
+      Benchmark Replacement). The separate zero floors on the Federal Funds
+      Rate and the SOFR Market Index Rate are not this field.
+
+  - id: evrg_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.275%"
+    note: >
+      'a non-refundable commitment fee (the " Commitment Fee ") at a rate per
+      annum equal to the product of the Applicable Margin for Commitment Fees
+      applicable to such Borrower on the average daily unused portion of its
+      Sublimit'
+
+      Section 4.3(a): a fee on unused amounts, priced by the Applicable
+      Commitment Fee Rate column of the grid, from 0.050% at Level I to 0.275%
+      at Level VII ('VII | | ≤ | BBB-/Baa3 | | | | 0.275 | %'). The agreement
+      has no facility fee; the other fees are in the Fee Letters.
+
+  - id: evrg_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "0.675 to 1.0"
+    note: >
+      'the ratio of Total Indebtedness to Total Capitalization to be greater
+      than (a) with respect to Evergy Kansas, Evergy Metro and Evergy Missouri
+      West, 0.65 to 1.0 and (b) with respect to Evergy, 0.675 to 1.0'
+
+      Section 8.6, a maximum debt-to-capitalization ratio tested quarterly from
+      June 30, 2026, with no step-down or end date. The level differs by
+      borrower: with '" Evergy " means Evergy, Inc., a Missouri corporation.',
+      0.675 to 1.0 is the level for Evergy, Inc., the Borrower named first and
+      labelled above, and 0.65 to 1.0 binds the three subsidiary Borrowers. The
+      compliance certificate writes them as 0.675 to 1.00 and 0.65 to 1.00.
+
+  - id: evrg_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-30
+    note: >
+      '" Closing Date " means the date of this Agreement.'
+
+      'This CREDIT AGREEMENT, dated as of June 30, 2026, is entered into by and
+      among'
+
+      The Closing Date is defined as the date of the Agreement, which the
+      preamble and cover give as June 30, 2026; it is not defined by the
+      satisfaction of conditions. The fee letter dated June 4, 2026 and the
+      2021 Existing Credit Agreement are other dates, not this one.

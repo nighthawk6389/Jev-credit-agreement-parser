@@ -1,0 +1,176 @@
+# Tier 2 assertions: AMERICAN TOWER CORPORATION / TORONTO DOMINION (TEXAS) LLC,
+# Fourth Amended and Restated Revolving Credit Agreement as amended by
+# Amendment No. 3 dated as of May 7, 2026, filed 2026-07-28 by AMERICAN TOWER
+# CORP /MA/ as Exhibit 10.8.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. Amendment No. 3 to the Fourth A&R Revolving Credit
+# Agreement of December 8, 2021 (earlier amended June 29, 2023 and January 28,
+# 2025), with a restated Schedule 1 of commitments and the conformed agreement
+# attached as Exhibit A in blackline form; every label is read from that
+# conformed text. A $4,000,000,000 multicurrency revolver priced off the
+# Applicable Debt Rating. The normalizer left a few struck fragments fused to
+# their replacements (the commitment fee grid row letters BC./CD./DE. and
+# "Section 7.5 Senior Secured Leverage Ratio[Reserved]"), none of them in a
+# labelled figure. The Effective Date is event-defined, so closing_date is
+# not labelled.
+
+document: ig2_american_tower_2026
+corpus_name: IG_american-tower-corp-ma_2026-07-28_0001053507-26-000133_exhibit108
+source: real
+tier: 2
+
+assertions:
+
+  - id: amt_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "AMERICAN TOWER CORPORATION"
+    note: >
+      'by and among AMERICAN TOWER CORPORATION, a Delaware corporation (the
+      Company), as the Borrower'
+
+      The preamble of the conformed agreement, which defines the Company as the
+      Borrower; the definitions then say 'Borrower shall mean the Company'. The
+      amendment preamble names the same corporation. The EDGAR filer name
+      (AMERICAN TOWER CORP /MA/) is not the legal name.
+
+  - id: amt_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "TORONTO DOMINION (TEXAS) LLC"
+    note: >
+      'TORONTO DOMINION (TEXAS) LLC, as Administrative Agent, and the financial
+      institutions parties hereto'
+
+      The conformed preamble; the definition agrees ('Administrative Agent shall
+      mean Toronto Dominion (Texas) LLC, in its capacity as Administrative Agent
+      for the Lenders and the Issuing Banks'). Near misses: The Toronto-Dominion
+      Bank, New York Branch is the TD lender on Schedule 1 and TD Securities
+      (USA), LLC is a joint lead arranger; neither is the agent.
+
+  - id: amt_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and the Notes shall be construed in accordance with and
+      governed by the internal laws of the State of New York'
+
+      Section 12.8 (Governing Law; Jurisdiction), first clause, of the
+      conformed agreement. Amendment No. 3 is itself
+      governed by New York law (its Section 8).
+
+  - id: amt_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$4,000,000,000"
+    note: >
+      'The aggregate amount of Revolving Loan Commitments on the Amendment No. 3
+      Effective Date is $4,000,000,000'
+
+      The last sentence of the conformed definition of Revolving Loan
+      Commitments; the restated Schedule 1 prints the same Total across
+      nineteen lenders. One revolving facility and no term loan. Near misses:
+      Section 2.14 caps growth at 'after giving effect to all Incremental
+      Commitments the aggregate Revolving Loan Commitments shall not exceed the
+      Dollar Equivalent of $5,500,000,000', which is the accordion ceiling, and
+      the $200,000,000 Letter of Credit Sublimit and $100,000,000 Swingline
+      Sublimit are parts of the commitment, not additions to it.
+
+  - id: amt_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-05-01
+    note: >
+      'Maturity Date shall mean May 1, 2031, or such earlier date as payment of
+      the Loans shall be due'
+
+      The conformed definition as Amendment No. 3 leaves it; the amendment
+      removes any lender that 'does not agree to extend its Revolving Loan
+      Commitment as set forth in this Amendment'. Section 2.18 still lets the
+      Company ask for commitments to be 'renewed for up to two additional one
+      year periods by providing notice of such request to the Administrative
+      Agent', each at the discretion of the lenders, so the date as it stands
+      is labelled. May 1, 2031 is a Thursday.
+
+  - id: amt_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.125%"
+    note: >
+      'Term Rate Advance and SONIA Rate Advance Applicable Margin'
+
+      'E. | | < BBB-/Baa3/BBB- | | | 1.125% | | | | 0.125%'
+
+      The Section 2.3 grid (which the agreement cites as Section 2.3(f)(i))
+      keyed to the Applicable Debt Rating. Dollar Term
+      Rate Advances bear Term SOFR, and their margin runs 0.625%, 0.750%,
+      0.875%, 1.000% and 1.125% from level A to level E; level E also applies
+      when no agency rates the Company. The 0.125% beside it is the Base Rate
+      Advance margin, the near miss.
+
+  - id: amt_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'Floor shall mean a rate of interest equal to 0.0%'
+
+      'if Term SOFR as so determined is less than the Floor, Term SOFR shall be
+      deemed to be the Floor'
+
+      The defined Floor applied inside the Term SOFR definition for SOFR
+      Loans. The Term Rate definition adds the same zero floor for every Term
+      Rate Advance ('if the Term Rate shall be less than zero, such rate shall
+      be deemed to be zero'). Neither is a floor on the Base Rate.
+
+  - id: amt_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.150%"
+    note: >
+      'a commitment fee, in Dollars, on the unused portion of the Available
+      Amount of the Revolving Loan Commitment'
+
+      'DE. | | < BBB-/Baa3/BBB- | | 0.150%'
+
+      Section 2.4, Commitment Fees (cited in the agreement as Section
+      2.4(a)(i)): an unused fee keyed to the Applicable Debt Rating at
+      0.060%, 0.080%, 0.100%, 0.110% and 0.150%, the last also applying when
+      the Company has no rating. The row letters BC., CD. and DE. look like
+      struck letters left fused to their replacements when a row was inserted;
+      each rate is a single clean figure. The agreement has no facility fee.
+
+  - id: amt_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "6.00 to 1.00"
+    note: >
+      'Adjusted EBITDA, as of the last day of such fiscal quarter to be greater
+      than 6.00 to 1.00'
+
+      Section 7.6, the Total Company Leverage Ratio (Total Debt to Adjusted
+      EBITDA), tested each quarter end. The standing level is 6.00 to 1.00.
+      After a Qualified Acquisition, through the fourth full fiscal quarter,
+      'the Company will not permit such ratio as of such date to exceed 7.50 to
+      1.00', which is the acquisition step-up and not the label. Section 7.5,
+      formerly a senior secured leverage test, is now Reserved.

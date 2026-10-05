@@ -1,0 +1,184 @@
+# Tier 2 assertions: ZIMMER BIOMET HOLDINGS, INC. / JPMorgan Chase Bank, N.A.,
+# 364-Day Revolving Credit Agreement dated as of June 26, 2026, filed
+# 2026-06-29 by Zimmer Biomet Holdings, Inc. as Exhibit 10.2.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original 364-day $1.25 billion revolver with a
+# borrower term-out option, signed alongside a separate Five-Year Credit
+# Agreement that is not this document. The maturity date is never printed (it
+# is 364 days after the Effective Date), the Annex I pricing grid is in basis
+# points, and the only ongoing fee on the commitment is a facility fee.
+# Schedule 2.01 (commitments) is not printed.
+
+document: ig2_zimmer_biomet_2026
+corpus_name: IG_zimmer-biomet-holdings-inc_2026-06-29_0001193125-26-288390_d158696dex102
+source: real
+tier: 2
+
+assertions:
+
+  - id: zbh_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "ZIMMER BIOMET HOLDINGS, INC."
+    note: >
+      'among ZIMMER BIOMET HOLDINGS, INC., a Delaware corporation (the "
+      Borrower "), the LENDERS party hereto and JPMORGAN CHASE BANK, N.A., as
+      administrative agent'
+
+      The preamble, which defines the Borrower. The only borrower; any
+      Subsidiary Guarantors are optional and none is named.
+
+  - id: zbh_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'the LENDERS party hereto and JPMORGAN CHASE BANK, N.A., as
+      administrative agent'
+
+      The preamble. The definition uses the short name ('" Administrative
+      Agent " shall mean JPMorgan in its capacity as administrative agent'), and
+      '" JPMorgan " shall mean JPMorgan Chase Bank, N.A.' resolves it to the
+      same bank. Citibank and Mizuho are Syndication Agents, not the agent.
+
+  - id: zbh_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of New York'
+
+      Section 10.06 (Applicable Law). The Borrower is a Delaware corporation,
+      which does not change the governing law.
+
+  - id: zbh_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,250,000,000"
+    note: >
+      'The aggregate amount of the Commitments on the Effective Date is
+      $1,250,000,000.'
+
+      The definition of Commitment; the recital says the same ('in an
+      aggregate principal amount not in excess of $1,250,000,000 at any time
+      outstanding'). One revolving tranche. The Incremental Facility Amount in
+      Section 3.05 ('may not exceed (i) $750,000,000 less') is an increase
+      option, and the $1,500,000,000 in the same sentence refers to the
+      separate Five-Year Credit Agreement; neither is this commitment.
+
+  - id: zbh_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2027-06-25
+    note: >
+      '" Maturity Date " shall mean the Commitment Termination Date; provided
+      that if the Maturity Date shall have been extended pursuant to Section
+      3.16, the Maturity Date shall be the first anniversary of the Commitment
+      Termination Date'
+
+      '" Commitment Termination Date " shall mean the date that is 364 days
+      after the Effective Date; provided that if such day is not a Business
+      Day, the Commitment Termination Date shall be the immediately preceding
+      Business Day'
+
+      With '" Effective Date " shall mean June 26, 2026', 364 days later is
+      Friday June 25, 2027, a Business Day, so no roll applies; the text never
+      prints the date. The Term-Out Option is a borrower election on
+      conditions and a 1.00% Term-Out Fee, not yet exercised, so the
+      unextended date is labelled.
+
+  - id: zbh_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.350%"
+    note: >
+      'Applicable Margin for Term SOFR/Daily Simple SOFR Loans (in Basis
+      Points)'
+
+      'Category 5 | | BB+/Ba1 or lower | | | 15.0 | | | | 135.0 | | | | 35.0'
+
+      Annex I, a five-category ratings grid written in basis points ('" Basis
+      Point " shall mean 1/100th of 1%'): the Term SOFR margin runs from 81.5 at
+      Category 1 to 135.0 at Category 5, so the top level is 1.350%, not 135%.
+      In the Category 5 row, 15.0 is the facility fee and 35.0 the ABR margin.
+      Category 5 also applies when no Ratings are in effect.
+
+  - id: zbh_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if the Term SOFR as so determined would be less than zero,
+      such rate shall be deemed to be zero'
+
+      The definition of Term SOFR, a zero floor on the benchmark itself. Daily
+      Simple SOFR carries the same zero floor. The defined Floor is only a
+      placeholder ('" Floor " shall mean the benchmark rate floor, if any,
+      provided in this Agreement initially') used for a Benchmark
+      Replacement, and the zero floors on the NYFRB Rate and Federal Funds
+      Effective Rate are not this field.
+
+  - id: zbh_commitment_fee_none
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee, which shall accrue at the facility fee rate per annum
+      determined pursuant to the Pricing Grid, on the daily amount of the
+      Commitment of such Lender (whether used or unused)'
+
+      Section 3.07(a). The only ongoing fee on the commitment is this facility
+      fee, charged on the whole Commitment, drawn or not, from 6.0 to 15.0
+      basis points ('Facility Fee Rate (in Basis Points)'); it is the near miss
+      the pipeline must not report as an unused fee. There is no commitment or
+      unused fee, and the 1.00% Term-Out Fee in Section 3.07(c) is a one-time
+      fee on term-out.
+
+  - id: zbh_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.50 to 1.00"
+    note: >
+      'Permit the Consolidated Leverage Ratio as at the last day of any period
+      of four consecutive fiscal quarters of the Borrower (each such period, a
+      " Test Period ") to exceed 4.50 to 1.00'
+
+      Section 7.04, the only financial covenant: a maximum Consolidated
+      Leverage Ratio. The standing level is 4.50 to 1.00; on a Qualified
+      Material Acquisition the Borrower may elect a temporary step-up ('shall be
+      increased to 5.00 to 1.00 at the end of and for the fiscal quarter in
+      which such Qualified Material Acquisition is consummated'), lasting that
+      quarter and the next three, which is not the standing level.
+
+  - id: zbh_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-26
+    note: >
+      '" Effective Date " shall mean June 26, 2026.'
+
+      An explicit date in the definition, matching the date of the agreement.
+      Section 5.01 lists the conditions to effectiveness, but the defined term
+      is the date itself. The filing date, 2026-06-29, is not the closing.

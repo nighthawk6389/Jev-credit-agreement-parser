@@ -91,6 +91,9 @@ python -m credit_extract.eval.family_report --out-of-sample --no-mutations \
 # sixth pass (about $0.55) and fixed against since.
 python -m credit_extract.eval.family_report --no-mutations --jev api \
     --workers 6 --labels credit_extract/eval/labels_out_of_sample_ig
+# A second twenty, harvested after the sixth pass and labelled blind.
+python -m credit_extract.eval.family_report --no-mutations --jev api \
+    --workers 6 --labels credit_extract/eval/labels_out_of_sample_ig2
 
 # The same model tier through Vercel's AI Gateway, which speaks the Messages
 # API. One key, and the gateway's own model catalogue behind it.
@@ -600,6 +603,7 @@ credit_extract/
               labels/             Tier 2 assertions, one file per document
               labels_out_of_sample/  the same for twenty BDC agreements, never in CI
               labels_out_of_sample_ig/  and for twenty investment-grade agreements
+              labels_out_of_sample_ig2/ and twenty more, harvested after the sixth pass
               families.py         registers, coverage, consistency check
               assertions.py       assertion kinds and evaluation
               split.py            derives and re-checks the document split

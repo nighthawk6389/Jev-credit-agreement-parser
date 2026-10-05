@@ -1,0 +1,174 @@
+# Tier 2 assertions: FLEX LTD. / BANK OF AMERICA, N.A., Credit Agreement dated
+# as of July 15, 2025, filed 2025-07-18 by FLEX LTD. as Exhibit 10.01.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original agreement (execution version), not an
+# amendment: a $2,750,000,000 multicurrency revolver that replaces and
+# refinances the Existing Credit Agreement, priced off the S&P, Moody and Fitch
+# ratings, with Designated Borrowers, a $500,000,000 combined accordion and
+# incremental term capacity, and two lender-consent one-year extension options.
+# The schedules, including Schedule 2.01 (commitments), are not in the text.
+
+document: ig2_flex_2025
+corpus_name: IG_flex-ltd_2025-07-18_0000866374-25-000037_axflexxex1001creditagreeme
+source: real
+tier: 2
+
+assertions:
+
+  - id: flex_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "FLEX LTD."
+    note: >
+      'among FLEX LTD., a Singapore registered public company limited by
+      shares'
+
+      The preamble, which defines FLEX LTD. (acting through its Bermuda
+      branch) as the Company. Subsidiaries added under Section 2.14 become
+      Designated Borrowers alongside it, but the Company is the borrower named
+      first and the only one named.
+
+  - id: flex_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'BANK OF AMERICA, N.A., as the Administrative Agent, an L/C Issuer and a
+      Swing Line Lender'
+
+      The preamble. The definition uses the short name ('means Bank of
+      America (or any of its designated branch offices or affiliates) in its
+      capacity as administrative agent'), and Bank of America is defined as
+      'Bank of America, N.A. and its successors'. Citibank, N.A. is
+      Syndication Agent and BofA Securities, Inc. an arranger; neither is the
+      agent.
+
+  - id: flex_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE
+      STATE OF NEW YORK'
+
+      Section 10.14(a). Section 10.16 (California Judicial Reference) applies
+      only 'If any action or proceeding is filed in a court of the State of
+      California' and sends it to a referee; it is a forum procedure, not a
+      choice of law. The Company is a Singapore company acting through a
+      Bermuda branch; neither place is the governing law.
+
+  - id: flex_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$2,750,000,000"
+    note: >
+      'The Aggregate Revolving Credit Commitments on the Closing Date shall be
+      $2,750,000,000'
+
+      The definition of Aggregate Revolving Credit Commitments; there is one
+      revolving facility, with Alternative Currency, Letter of Credit and
+      Swing Line sublimits inside it. The Maximum Increase Amount, 'an amount
+      equal to (a) $500,000,000 minus (b) the sum of' prior increases and
+      incremental term loans, is the accordion under Sections 2.15 and 2.16,
+      not the commitment. Schedule 2.01 is not in the filed text.
+
+  - id: flex_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-07-15
+    note: >
+      'means (a) with respect to the Revolving Credit Facility, July 15, 2030'
+
+      The Maturity Date definition, which moves a non-Business Day to the
+      next preceding Business Day; July 15, 2030 is a Monday, so nothing
+      rolls. Under Section 2.20 the Company may, no more than twice, 'request
+      that each Revolving Credit Lender extend the Maturity Date' by one year;
+      each lender decides for itself, so the extension is conditional and the
+      stated date is labelled.
+
+  - id: flex_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.750%"
+    note: >
+      '5 | | < BB /Ba2 /BB | | 0.275% | | 1.750% | | 0.750%'
+
+      Pricing Level 5, the lowest Debt Ratings, of the Applicable Rate grid,
+      in the column 'Term SOFR Loans, Alternative Currency Daily Rate Loans,
+      Alternative Currency Term Rate Loans and Letter of Credit Fee'. Those
+      margins run 1.00% (Level 1) to 1.750% (Level 5); in the same row 0.750%
+      is the Base Rate Loan margin and 0.275% the Commitment Fee.
+
+  - id: flex_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than zero, Term SOFR shall be deemed to be zero
+      for purposes of this Agreement'
+
+      The proviso closing the Term SOFR definition: a zero floor on the
+      benchmark. The Base Rate has its own ('if the Base Rate shall be less
+      than zero, such rate shall be deemed zero'), which is the base-rate
+      near miss, and the Federal Funds Rate and Alternative Currency rates are
+      floored at zero too; all are the same number.
+
+  - id: flex_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.275%"
+    note: >
+      'equal to the Applicable Rate times the actual daily amount by which the
+      Aggregate Revolving Credit Commitments exceed the sum of'
+
+      Section 2.09(a): the Commitment Fee is charged on the unused
+      commitments (outstanding Revolving Credit Loans and L/C Obligations are
+      usage, Swing Line Loans are not). The Commitment Fee column of the
+      ratings grid runs 0.100% (Level 1) to 0.275% (Level 5). The fees in the
+      Fee Letters (Section 2.09(b)) are not this fee.
+
+  - id: flex_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00 to 1.00"
+    note: >
+      'The Company shall not permit its Debt/EBITDA Ratio as of the last day
+      of any fiscal quarter to exceed 4.00 to 1.00'
+
+      Section 7.08(a). After a Qualified Acquisition the ratio 'shall be
+      increased to 4.50 to 1.00' for four fiscal quarters (a Leverage Increase
+      Period) and then returns to 4.00 to 1.00; that is a temporary
+      acquisition step-up, not the standing level. Section 7.08(b) adds a
+      minimum Interest Coverage Ratio of 3.00 to 1.00.
+
+  - id: flex_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-07-15
+    note: >
+      'Closing Date " means July 15, 2025'
+
+      The definition gives the date outright, matching the preamble ('is
+      entered into as of July 15, 2025, among FLEX LTD.'). The filing date,
+      July 18, 2025, is not the closing.

@@ -1,0 +1,190 @@
+# Tier 2 assertions: PVH CORP. / Bank of America, N.A., Credit Agreement dated
+# as of June 24, 2026, filed 2026-06-29 by PVH Corp. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original credit agreement replacing a 2022
+# facility agented by Barclays: a $1.5 billion Multicurrency Revolving facility
+# for PVH Corp. (U.S. Borrower) and PVH B.V. (Euro Borrower), plus a EUR
+# 400,000,000 Tranche A Euro Term Loan. Pricing is fixed until the compliance
+# certificate for the quarter ending about August 1, 2027, then follows a
+# hybrid leverage/ratings grid. Schedules 2.01(a) and 2.02 are not printed.
+
+document: ig2_pvh_2026
+corpus_name: IG_pvh-corp-de_2026-06-29_0001213900-26-072861_ea029592601ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: pvh_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "PVH CORP."
+    note: >
+      'is entered into by and among PVH CORP. , a Delaware corporation
+      (together with its permitted successors and assigns, the " U.S. Borrower
+      ")'
+
+      The preamble names PVH Corp. first, as the U.S. Borrower; PVH B.V., the
+      Dutch Euro Borrower, comes second and other Subsidiaries may join. The
+      EDGAR filer name adds /DE/, which is not part of the legal name.
+
+  - id: pvh_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'and BANK OF AMERICA, N.A. (" BofA "), as Administrative Agent'
+
+      The preamble, to which the definition of Administrative Agent points.
+      JPMorgan Chase Bank, N.A. is Syndication Agent, BofA Securities, Inc. a
+      Joint Lead Arranger, and Barclays was agent only under the Existing
+      Credit Agreement.
+
+  - id: pvh_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND SHALL BE CONSTRUED AND ENFORCED IN ACCORDANCE
+      WITH, THE LAWS OF THE STATE OF NEW YORK'
+
+      Section 10.14 (Applicable Law). The Euro Borrower is a Dutch company and
+      Section 1.05 has Dutch Terms for interpretation, but neither changes the
+      governing law.
+
+  - id: pvh_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,500,000,000"
+    note: >
+      'The aggregate amount of the Multicurrency Revolving Commitments as of the
+      Closing Date is $1,500,000,000.'
+
+      Revolving Commitment means a Multicurrency Revolving Commitment, so this
+      is the only revolving tranche. The Tranche A Euro Term Loan ('The
+      aggregate principal amount of Tranche A Euro Term Loans as of the Closing
+      Date after giving effect to the making thereof, is €400,000,000') is a
+      term loan, not a revolver. The accordion in Section 2.24 ('by an
+      aggregate amount not to exceed $1,500,000,000') happens to be the same
+      figure but is an increase option.
+
+  - id: pvh_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-24
+    note: >
+      'means the earliest to occur of (i) the fifth anniversary of the Closing
+      Date, which date is June 24, 2031'
+
+      The Multicurrency Revolving Commitment Termination Date, which the
+      Revolving Commitment Termination Date points to; Section 2.02(a) says
+      the revolving loans 'shall be paid in full no later than such date'.
+      Section 2.26 allows up to two one-year extensions, granted only by
+      consenting Lenders that together hold more than half of the revolving
+      exposure; none is in effect, so the date as it stands (a Tuesday) is
+      labelled. The Tranche A Euro Term Loan Maturity Date belongs to the term
+      loan.
+
+  - id: pvh_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.250%"
+    note: >
+      'Applicable Margin for Term Benchmark Loans, RFR Loans and Euro Swing
+      Line Loans'
+
+      'V | > 3.50:1.00 | BB+ / Ba1 or lower | 1.250% | 0.250%'
+
+      Level V of the revolving grid. Until the compliance certificate for the
+      quarter ending on or about August 1, 2027 the margin is fixed at 1.000%,
+      and the grid then runs from 0.750% (Level I) to 1.250% (Level V) on the
+      better of the Net Leverage Ratio and the Public Debt Rating. The
+      separate Tranche A Euro Term Loan grid tops out at 1.375% ('V | > 3.50:1.00
+      | BB+ / Ba1 or lower | 1.375%') and the 0.250% is the Base Rate margin;
+      neither is the revolving Term SOFR margin.
+
+  - id: pvh_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '" Floor " means a rate of interest equal to 0.00%.'
+
+      'would otherwise be less than the Floor, the Term SOFR shall be deemed to
+      be the Floor'
+
+      The definition of Term SOFR applies the Floor to the benchmark itself.
+      The same 0.00% Floor applies to EURIBOR, SONIA, SARON, TIBOR, Term CORRA,
+      ESTR, Daily Simple SOFR and any Successor Rate, so no currency has a
+      different floor.
+
+  - id: pvh_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.175%"
+    note: >
+      'commitment fees equal to (1) the actual daily difference between (a) the
+      Multicurrency Revolving Commitments and (b) the Dollar Equivalent of the
+      aggregate principal amount of (x) all outstanding Multicurrency Revolving
+      Loans'
+
+      'V | > 3.50:1.00 | BB+ / Ba1 or lower | 0.175%'
+
+      Section 2.11(a)(i), a fee on the unused commitment at the Applicable
+      Revolving Commitment Fee Percentage: 0.090% until the compliance
+      certificate for the quarter ending on or about August 1, 2027, then a
+      grid from 0.065% (Level I) to 0.175% (Level V). There is no facility
+      fee; the 0.125% figure in Section 2.11(c) is the letter of credit
+      fronting fee.
+
+  - id: pvh_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.00:1.00"
+    note: >
+      'permit the Net Leverage Ratio as of the last day of the first Fiscal
+      Quarter in which the Closing Date occurs and any Fiscal Quarter thereafter
+      to exceed (i) if such day occurs during an Acquisition Period, 4.50 to
+      1.00 or (ii) if such day does not occur during an Acquisition Period,
+      4.00:1.00'
+
+      Section 6.04, the only financial covenant, a maximum Net Leverage Ratio
+      stated in the case of the U.S. Borrower. The standing level is
+      4.00:1.00, written with a colon as the document writes it; 4.50 to 1.00
+      applies only during an Acquisition Period, which ends with the fourth
+      full Fiscal Quarter after a Qualifying Acquisition.
+
+  - id: pvh_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-24
+    note: >
+      '" Closing Date " means the first date all the conditions precedent in
+      Section 3.01 are satisfied (or waived in accordance with Section 10.05 ),
+      which date is June 24, 2026.'
+
+      The definition ties the Closing Date to the conditions but states the
+      date explicitly, and it matches the date of the agreement. The December
+      9, 2022 Existing Credit Agreement and the 2026-06-29 filing date are
+      other dates.

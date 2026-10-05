@@ -1,0 +1,155 @@
+# Tier 2 assertions: HNI Corporation / Wells Fargo Bank, National Association,
+# Credit Agreement dated as of September 5, 2025, filed 2025-09-05 by HNI CORP
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original agreement (execution version), not an
+# amendment: the senior secured financing for the Steelcase acquisition, with a
+# $425,000,000 revolver, a $500,000,000 Term Loan A and a Term Loan B that is $0
+# at signing and up to $800,000,000 at the Closing Date. Funding waits for an
+# event-defined Closing Date (the acquisition closing), so the revolver maturity
+# (five years after the Closing Date) and the closing date have no calendar date
+# in the text and are not labelled. Pricing is a Net Leverage Ratio grid, not a
+# ratings grid. Exhibit 2.1(a), the lender schedule, is not in the text.
+
+document: ig2_hni_2025
+corpus_name: IG_hni-corp_2025-09-05_0000950103-25-011326_dp233731_ex1001
+source: real
+tier: 2
+
+assertions:
+
+  - id: hni_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "HNI Corporation"
+    note: >
+      'is by and among HNI Corporation, an Iowa corporation'
+
+      The preamble, which defines the Borrower; the cover prints the same name
+      in capitals. The Subsidiary Guarantors (HNI Workplace Furnishings LLC,
+      The HON Company LLC and others) and the acquisition target Steelcase,
+      Inc. are not the Borrower.
+
+  - id: hni_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "Wells Fargo Bank, National Association"
+    note: >
+      'Wells Fargo Bank, National Association, as Administrative Agent for the
+      Lenders'
+
+      The preamble. JPMorgan Chase Bank, N.A. is Syndication Agent and Wells
+      Fargo Securities, LLC is one of the Joint Lead Arrangers; neither is the
+      agent.
+
+  - id: hni_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED AND INTERPRETED IN ACCORDANCE WITH,
+      THE LAW OF THE STATE OF NEW YORK'
+
+      Section 10.13. Its proviso sends only questions under the Steelcase
+      Acquisition Agreement (its Material Adverse Effect, the specified
+      acquisition representations, whether the acquisition conditions are
+      met) to Delaware law: 'SHALL BE GOVERNED BY AND CONSTRUED IN ACCORDANCE
+      WITH THE INTERNAL LAWS OF THE STATE OF DELAWARE'. Delaware is the near
+      miss, not the law of the agreement.
+
+  - id: hni_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$425,000,000"
+    note: >
+      'being as of the Effective Date FOUR HUNDRED AND TWENTY-FIVE MILLION
+      DOLLARS ($425,000,000)'
+
+      The definition of Aggregate Revolving Committed Amount; the recital
+      describes 'a $425,000,000 senior secured revolving credit facility, (y)
+      a $500,000,000 senior secured term loan A facility'. The $500,000,000
+      Initial Tranche A Term Commitments and the Initial Tranche B Term
+      Commitments ($0 at the Effective Date, up to $800,000,000 at the Closing
+      Date) are term loans, not the revolver; the $125,000,000 LOC Committed
+      Amount is a sublimit and Section 2.22 incremental capacity is an
+      increase, not the commitment. The revolver matures five years after the
+      event-defined Closing Date, so no maturity date is labelled.
+
+  - id: hni_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.875%"
+    note: >
+      'V | > 3.00 to 1.00 | 0.875% | 1.875% | 0.25%'
+
+      Level V of the Applicable Percentage grid, in the column 'Term SOFR and
+      RFR Margin for Revolving Loans, Initial Tranche A Term Loans and Letter
+      of Credit Fees'. The grid is keyed to the Net Leverage Ratio, not to
+      debt ratings; the Term SOFR margins run 1.25% (Level I) to 1.875% (Level
+      V), pricing starts at Level III (1.50%) until the first Interest
+      Determination Date after the Closing Date, and 0.875% is the Alternate
+      Base Rate margin. The Term Loan B margin is a rate 'to be determined
+      based on market conditions' and is not the revolver.
+
+  - id: hni_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if Term SOFR as so determined shall ever be less than the Floor, then
+      Term SOFR shall be deemed to be the Floor'
+
+      The proviso closing the Term SOFR definition, with the defined Floor,
+      which 'means a rate of interest equal to 0%'. The same Floor applies to
+      any Benchmark Replacement and to Daily Simple RFR. The zero floor on the
+      Federal Funds Rate is on a component of the Alternate Base Rate, the
+      near miss, and has the same number.
+
+  - id: hni_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.250%"
+    note: >
+      'in an amount equal to the Applicable Percentage per annum for Commitment
+      Fees on the average daily unused amount of the Aggregate Revolving
+      Committed Amount'
+
+      Section 2.9(a): a fee on unused revolving commitments. The Commitment
+      Fee column of the Net Leverage Ratio grid runs 0.125%, 0.15%, 0.175%,
+      0.20% and 0.25%; the top, Level V above 3.00 to 1.00, is 0.25%. The
+      0.125% Letter of Credit fronting fee and the ticking fees payable under
+      the fee letters (Section 2.9(e)) are not this fee.
+
+  - id: hni_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      '3.50:1.00 as of the end of the seventh full fiscal quarter ending after
+      the Closing Date and as of the end of each fiscal quarter thereafter'
+
+      Section 6.11(a), a maximum Net Leverage Ratio (Consolidated Funded Debt
+      less Unrestricted Cash, to Consolidated EBITDA) for the Revolving
+      Facility and Term Loan A. It steps down from 4.25 to 1.00 (first four
+      full fiscal quarters after the Closing Date) and 4.00:1.00 (fifth and
+      sixth) to the standing 3.50:1.00; from the seventh quarter a Permitted
+      Acquisition over $200,000,000 can lift it to 4.25 to 1.00 for four
+      quarters. Section 6.11(b) also requires an Interest Coverage Ratio
+      'greater than or equal to 3.50 to 1.0'.

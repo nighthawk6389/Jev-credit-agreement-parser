@@ -1,0 +1,177 @@
+# Tier 2 assertions: CBRE Services, Inc. / Wells Fargo Bank, National
+# Association, 364-Day Revolving Credit Agreement dated as of June 23, 2026,
+# filed 2026-06-23 by CBRE Group, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original agreement (execution version), not an
+# amendment or a restatement: a $1,000,000,000 364-day revolver. The filer,
+# CBRE Group, Inc., is party as Holdings and guarantor; its subsidiary CBRE
+# Services, Inc. is the Borrower. Pricing is a five-level ratings grid whose
+# last column is a facility fee charged regardless of usage, and there is no
+# unused fee. No accordion, extension or term-out option. Schedule 1.1(b)
+# (per-lender commitments) is listed but not printed in the text.
+
+document: ig2_cbre_group_2026
+corpus_name: IG_cbre-group-inc_2026-06-23_0001193125-26-279756_cbre-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: cbre_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "CBRE SERVICES, INC."
+    note: >
+      'by and among CBRE GROUP, INC., a Delaware corporation, as Holdings,
+      CBRE SERVICES, INC., a Delaware corporation, as Borrower'
+
+      The preamble. The filer and parent, CBRE Group, Inc., is named first but
+      as Holdings (a guarantor), not as Borrower, so it is the near miss. No
+      Subsidiary Borrower is party at signing; Section 12.9(f) only lets the
+      Borrower designate one later.
+
+  - id: cbre_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+    note: >
+      'WELLS FARGO BANK, NATIONAL ASSOCIATION, a national banking association,
+      as Administrative Agent for the Lenders'
+
+      The preamble. The definition uses the short name ('means Wells Fargo, in
+      its capacity as Administrative Agent hereunder'), and Wells Fargo is
+      defined as Wells Fargo Bank, National Association. Wells Fargo
+      Securities, LLC is Sole Lead Arranger and Sole Bookrunner, not the agent.
+
+  - id: cbre_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of New York'
+
+      Section 12.5(a), covering this Agreement and the other Loan Documents;
+      Section 12.5(b) submits to New York courts. The form of Joinder Agreement
+      is also governed by New York law.
+
+  - id: cbre_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,000,000,000"
+    note: >
+      'The aggregate Revolving Credit Commitment of all the Revolving Credit
+      Lenders on the Closing Date shall be $1,000,000,000.'
+
+      The definition of Revolving Credit Commitment; the cover prints the same
+      $1,000,000,000. One revolving facility, no term loan, and no accordion
+      or incremental option. The other $1,000,000,000 figures in the text are
+      debt baskets in Section 9.1, not the commitment.
+
+  - id: cbre_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2027-06-22
+    note: >
+      'means the earliest to occur of (a) June 22, 2027, (b) the date of
+      termination of the entire Revolving Credit Commitment by the Borrower
+      pursuant to Section 2.5'
+
+      The Revolving Credit Maturity Date, 364 days after the June 23, 2026
+      closing. Clauses (b) and (c) are early-termination events, so the date
+      is labelled; there is no extension or term-out option. June 22, 2027 is
+      a Tuesday.
+
+  - id: cbre_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.125%"
+    note: >
+      'V | ≤BBB- | ≤BBB- | ≤Baa3 | 1.125% | 0.100% | 0.125%'
+
+      Pricing Level V (the lowest ratings) of the Applicable Margin grid, whose
+      columns are 'Term SOFR Spread | Base Rate Spread | Facility Fee'. The
+      Term SOFR Spread runs from 0.645% at Level I to 1.125% at Level V.
+      Rejected: the Base Rate Spread (0.100%), the Facility Fee (0.125%) and
+      the default rate of 2% over the rate otherwise applicable.
+
+  - id: cbre_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'Notwithstanding the foregoing, if Term SOFR as so determined shall ever
+      be less than the Floor, then Term SOFR shall be deemed to be the Floor.'
+
+      The closing sentence of the Term SOFR definition, and the Floor 'means a
+      rate of interest equal to 0.00%'. The same Floor also bounds the Base
+      Rate ('in no event shall the Base Rate be less than the Floor'), so the
+      base-rate floor is the same number and there is no other floor to
+      confuse with it.
+
+  - id: cbre_commitment_fee_is_facility_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a non-refundable facility fee (the " Facility Fee ") at a rate per annum
+      equal to the Applicable Margin on the Revolving Credit Commitment,
+      regardless of usage'
+
+      Section 5.3(a). The only commitment-based fee is this facility fee,
+      charged on the whole Revolving Credit Commitment whether drawn or not.
+      It runs from 0.055% at Level I to 0.125% at Level V of the grid, and
+      0.125% is the near miss the pipeline must not report. There is no
+      commitment, unused or ticking fee; Section 5.3(b) sends the arranger and
+      agent fees to the Fee Letter dated May 14, 2026.
+
+  - id: cbre_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "4.25 to 1.00"
+    note: >
+      'Holdings will not permit the Leverage Ratio on the last day of any
+      fiscal quarter to be greater than (i) 4.25 to 1.00 or (ii) for the first
+      four full fiscal quarters following the consummation of a Qualified
+      Acquisition, 4.75 to 1.00.'
+
+      Section 9.5, the only financial covenant: Total Debt less Available Cash
+      to Consolidated EBITDA, tested on Holdings. 4.25 to 1.00 is the standing
+      level. Rejected: 4.75 to 1.00, the step-up for four quarters after a
+      Qualified Acquisition (a Significant Acquisition that Holdings
+      designates).
+
+  - id: cbre_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-23
+    note: >
+      '" Closing Date " means the date of this Agreement.'
+
+      A definition by reference that resolves in one hop to the cover and
+      preamble date: '364-DAY REVOLVING CREDIT AGREEMENT, dated as of June 23,
+      2026, by and among CBRE GROUP, INC.' Section 12.16 makes the agreement
+      effective on execution and delivery of counterparts, subject to the
+      Section 6.1 closing conditions; no separate Effective Date is defined.
+      The Fee Letter date, May 14, 2026, is the near miss.

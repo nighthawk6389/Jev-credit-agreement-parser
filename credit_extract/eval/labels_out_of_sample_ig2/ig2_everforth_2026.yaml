@@ -1,0 +1,211 @@
+# Tier 2 assertions: Everforth, Inc. (formerly ASGN Incorporated) / Wells Fargo
+# Bank, National Association, Third Amendment to Third Amended and Restated
+# Credit Agreement dated as of July 7, 2026, filed 2026-07-09 by Everforth Inc
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A short Third Amendment (revolver increased to
+# $600,000,000, revolving maturity extended, Initial Term A Loans prepaid,
+# borrower renamed from ASGN Incorporated) with the conformed Third Amended and
+# Restated Credit Agreement of August 31, 2023 attached as Annex A. That
+# conformed copy is a blackline whose struck text survived normalization:
+# struck and inserted runs are fused throughout (SECONDTHIRD,
+# $500,000,000600,000,000, the revolving pricing grid, Section 7.11), always
+# struck first, inserted second. Terms that live only in fused text are
+# labelled needs_review under the guide's missed-blackline rule; terms the
+# amendment states cleanly, or that the blackline does not touch, carry their
+# value. A secured, leverage-priced facility with an Initial Term B-1 Loan
+# beside the revolver; Annex B (the commitment schedule) is not in the filing.
+
+document: ig2_everforth_2026
+corpus_name: IG_everforth-inc_2026-07-09_0000890564-26-000045_a101thirdamendmenttothir
+source: real
+tier: 2
+
+assertions:
+
+  - id: evf_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "EVERFORTH, INC."
+    note: >
+      'among EVERFORTH, INC. (formerly known as ASGN INCORPORATED), a Delaware
+      corporation'
+
+      The conformed preamble, which defines the Borrower. The parenthetical is
+      the former name and not part of the legal name: Section 2 of the
+      amendment provides that 'all references in the Loan Documents to "ASGN
+      Incorporated" shall be replaced with' the new name. ASGN Incorporated
+      is the near miss.
+
+  - id: evf_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+    note: >
+      'and WELLS FARGO BANK, NATIONAL ASSOCIATION, as Administrative Agent'
+
+      The conformed preamble; the amendment names the same bank as
+      administrative agent for the Lenders. The definition uses the short name
+      ('means Wells Fargo in its capacity as administrative agent under any of
+      the Loan Documents'). Wells Fargo Securities, LLC is a joint lead
+      arranger, not the agent.
+
+  - id: evf_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'AND THE TRANSACTIONS CONTEMPLATED HEREBY AND THEREBY SHALL BE GOVERNED
+      BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE STATE OF NEW YORK'
+
+      Section 10.14(a) of the conformed agreement, untouched by the blackline.
+      The Third Amendment itself (its Section 8) is also governed by New York
+      law.
+
+  - id: evf_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$600,000,000"
+    note: >
+      'Upon the effectiveness of this Agreement, the aggregate principal amount
+      of the Revolving Credit Facility shall be increased to $600,000,000'
+
+      Section 11(a) of the Third Amendment, in clean text; the recital says
+      the same ('the aggregate amount of the Revolving Credit Commitment under
+      the Amended Credit Agreement shall be equal to $600,000,000'). The
+      conformed definition is a missed blackline ('The aggregate principal
+      amount of the Revolving Credit Facility on the ClosingThird Amendment
+      Effective Date is $500,000,000600,000,000'), so the old $500,000,000
+      survives fused to the new figure; the amendment states the operative
+      amount outright, which is why this is a value and not needs_review. The
+      Initial Term B-1 Loans and the prepaid Initial Term A Loans are term
+      loans, not the revolver; Annex B, the per-lender schedule, is not in the
+      filing.
+
+  - id: evf_maturity_fused_blackline
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: revolver.maturity_date
+    expect: needs_review
+    note: >
+      '"Revolving Credit Maturity Date" means February 14, 2028the earliest of
+      (a) July 7, 2031, (b) the date that is 91 days prior to the stated
+      maturity date of the 2028 Notes'
+
+      A missed blackline: the struck February 14, 2028 survives fused to the
+      inserted text, and the new date is stated nowhere else in the filing
+      (the amendment only promises 'an extension of the Revolving Credit
+      Maturity Date as set forth in Annex A hereto'). Read struck first and
+      inserted second, as everywhere else in this copy, the extended
+      definition is the earliest of
+      July 7, 2031 (a Monday), 91 days before the 2028 Notes mature if more
+      than $110,000,000 of them are outstanding, and 91 days before the
+      Initial Term B-1 Loans mature if any are outstanding, so the
+      unconditional date would be 2031-07-07. Under the guide rule for a
+      blackline the normalizer missed, a confident value of either date is a
+      silent error, and the right output is review.
+
+  - id: evf_margin_fused_grid
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: needs_review
+    note: >
+      '1 ≥ 3.00 : 1.00 3.00% 2.00% 3.00% 0.45% 21 < 3.00 : 1.00 but ≥ 2.75 :
+      1.00Greater than or equal to 3.00 to 1.00 2.75% 1.75% 2.75% 0.40%'
+
+      The revolving grid, keyed to the Consolidated Secured Leverage Ratio
+      rather than ratings, is a missed blackline: the old five-level grid and
+      the new four-level grid are interleaved, with fused level numbers (21,
+      32, 53). Read struck first and inserted second, the old top row (3.00%
+      over Term SOFR at 3.00x or more) is deleted and the new Level 1 is
+      2.75%, with 2.50%, 2.00% and 1.75% below it; until the Compliance
+      Certificate for the quarter ending September 30, 2026 arrives, the
+      revolver is priced at 2.00%.
+      Both 3.00% and 2.75% survive in the text, so the right output is review.
+      The Initial Term B-1 margin (1.75% flat) and the Term A grid are not the
+      revolver.
+
+  - id: evf_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      '"Floor" means rate of interest equal to 0% per annum'
+
+      One Floor for every tranche, applied to Term SOFR ('shall ever be less
+      than the Floor, then Term SOFR shall be deemed to be the Floor') and to
+      Adjusted Term SOFR. The Floor definition carries no blackline text, and
+      the fused punctuation near the end of the Term SOFR definition does not
+      touch the floor proviso, so this value is settled. The 0.10% revolving
+      Term SOFR Adjustment is a spread add-on, not a floor, and the zero
+      floor on the Federal Funds Rate is a base-rate component.
+
+  - id: evf_commitment_fee_fused_grid
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: commitment_fee_pct
+    expect: needs_review
+    note: >
+      'a commitment fee ("Commitment Fee") equal to the Applicable Rate times
+      the actual daily amount by which the Revolving Credit Facility exceeds'
+
+      Section 2.09(a): a true unused fee, but its rate is the Commitment Fees
+      column of the same missed-blackline grid. The deleted old top row reads
+      '1 ≥ 3.00 : 1.00 3.00% 2.00% 3.00% 0.45%' and the inserted new Level 1
+      reads '1.00Greater than or equal to 3.00 to 1.00 2.75% 1.75% 2.75%
+      0.40%'. Read struck first and inserted second, the top unused fee is
+      0.40% (old 0.45%), with 0.35%, 0.30% and 0.25% below; both figures
+      survive in the text, so the right output is review.
+
+  - id: evf_covenant_fused_blackline
+    family: F05_versioning
+    member: operative_version_ambiguous
+    kind: field_status
+    target: financial_covenant.level
+    expect: needs_review
+    note: >
+      'Except during a Suspension Period, permitPermit the Consolidated Secured
+      Leverage Ratio at any time during any Measurement Period to be greater
+      than 3.75 to 1.00. the corresponding ratio set forth below'
+
+      Section 7.11, a maximum Consolidated Secured Leverage Ratio (secured
+      debt to EBITDA), is a missed blackline. Read struck first and inserted
+      second, the old flat 3.75 to 1.00 covenant, suspended while no revolving
+      loans, letters of credit or Term A loans are outstanding, gives way to a
+      step-down table: 3.75 to 1.00 through June 29, 2027, 3.50 to 1.00
+      through June 29, 2028, and 'June 30, 2028 and thereafter 3.25 to 1.00',
+      so the standing level would be 3.25 to 1.00. The acquisition step-up
+      cap is fused the same way ('to exceed 4.253.75 to 1.00 for any
+      Measurement Period'). Both the flat 3.75 and the table survive in the
+      text, so the right output is review.
+
+  - id: evf_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2023-08-31
+    note: >
+      '"Closing Date" means August 31, 2023. "Code" means the Internal Revenue
+      Code'
+
+      The Closing Date of the Third Amended and Restated Credit Agreement,
+      which is entered into as of the same date; the definition carries no
+      blackline text. The Third Amendment Effective Date ('"Third Amendment
+      Effective Date" means July 7, 2026') and the First and Second Amendment
+      Effective Dates are amendment dates, not the closing.

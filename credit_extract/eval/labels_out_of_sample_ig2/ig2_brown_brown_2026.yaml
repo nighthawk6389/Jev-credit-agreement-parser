@@ -1,0 +1,160 @@
+# Tier 2 assertions: BROWN & BROWN, INC. / JPMORGAN CHASE BANK, N.A., Third
+# Amended and Restated Credit Agreement dated as of June 5, 2026, filed
+# 2026-07-27 by BROWN & BROWN, INC. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. The executed Third A&R Credit Agreement, restating
+# the Second A&R Credit Agreement of October 27, 2021, with Schedule 2.01 of
+# commitments printed in the text. A $1,250,000,000 revolver beside two new
+# $250,000,000 term loan tranches (Term A-1 and Term A-2), priced on the better
+# of a net leverage level and a debt ratings level, with a facility fee and no
+# unused fee. revolver.maturity_date and closing_date are not labelled: the
+# revolver matures on the fifth anniversary of an Effective Date that the text
+# defines only by its conditions (Section 4.01) and never dates.
+
+document: ig2_brown_brown_2026
+corpus_name: IG_brown-brown-inc_2026-07-27_0001193125-26-318251_bro-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: bro_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "BROWN & BROWN, INC."
+    note: >
+      'dated as of June 5, 2026 among BROWN & BROWN, INC., the SUBSIDIARY
+      BORROWERS from time to time party hereto'
+
+      The preamble names the Company first, ahead of Subsidiary Borrowers that
+      the text never names. The definitions read 'Company means Brown & Brown,
+      Inc., a Florida corporation' and 'Borrower means the Company or any
+      Subsidiary Borrower'.
+
+  - id: bro_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'the LENDERS from time to time party hereto and JPMORGAN CHASE BANK, N.A.,
+      as Administrative Agent'
+
+      The preamble. The definition agrees ('Administrative Agent means JPMorgan
+      Chase Bank, N.A. (including its branches and affiliates), in its capacity
+      as administrative agent for the Lenders hereunder'). Bank of America,
+      BMO and Truist are only Co-Syndication Agents.
+
+  - id: bro_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be construed in accordance with and governed by the
+      law of the State of New York'
+
+      Section 9.09(a).
+
+  - id: bro_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,250,000,000"
+    note: >
+      'The initial aggregate amount of the Revolving Commitments on the
+      Effective Date is $1,250,000,000'
+
+      The definition of Revolving Commitment; Schedule 2.01 prints the same
+      figure ('Aggregate Commitment | $1,250,000,000 | $250,000,000 |
+      $250,000,000'). The two $250,000,000 columns are the Term A-1 and Term
+      A-2 Loan Commitments, term loans and not the revolver, and the
+      $1,750,000,000 they make together is printed nowhere. Section 2.20 lets
+      increases run until 'the aggregate amount of such increases in Revolving
+      Commitments and all such Incremental Term Loans does not exceed
+      $1,000,000,000', which is the accordion, not the commitment.
+
+  - id: bro_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.300%"
+    note: >
+      'Pricing Level | Term Benchmark / RFR Spread for Revolving Loans | ABR
+      Spread for Revolving Loans | Facility Fee Rate'
+
+      'Level IV: | 1.30% | 0.30% | 0.20%'
+
+      The Applicable Rate grid for Revolving Loans: 0.90%, 1.00%, 1.10% and
+      1.30% from Level I to Level IV, the Pricing Level being whichever of the
+      Leverage Level and the Ratings Level gives the lower level. Near misses:
+      0.30% is the ABR spread and 0.20% the facility fee; the separate term
+      loan grid runs higher (Term A-1 to 1.375%, Term A-2 to 1.50%) but prices
+      term loans, not the revolver.
+
+  - id: bro_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'the initial Floor for each of the Adjusted Term SOFR Rate, the Adjusted
+      EURIBO Rate, the Adjusted Term CORRA Rate, each Adjusted Daily Simple
+      RFR, the Canadian Prime Rate or the Central Bank Rate shall be 0%'
+
+      'if the Adjusted Term SOFR Rate as so determined would be less than the
+      Floor, such rate shall be deemed to be equal to the Floor'
+
+      A zero floor on Term SOFR. The near miss is the Alternate Base Rate
+      floor ('if the Alternate Base Rate as determined pursuant to the
+      foregoing would be less than 1.00%, such rate shall be deemed to be
+      1.00%'), which is a floor on the base rate.
+
+  - id: bro_commitment_fee_null
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee, which shall accrue at the applicable Facility Fee Rate
+      (as specified in the definition of Applicable Rate) on the daily amount
+      of the Revolving Commitment of such Lender (whether used or unused)'
+
+      Section 2.12(a). The only fee on the revolving commitments is this
+      facility fee on the whole commitment, drawn or not, at 0.10%, 0.125%,
+      0.15% and 0.20% from Level I to Level IV; there is no commitment or
+      unused fee, so 0.20% is the near miss the pipeline must not report. The
+      term loans carry no ticking fee, because 'the Term Loan Commitments
+      shall terminate on the Effective Date upon the funding thereof'.
+
+  - id: bro_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.50 to 1.00"
+    note: >
+      'Consolidated EBITDA for the period of four (4) consecutive fiscal
+      quarters ending with the end of such fiscal quarter, all calculated for
+      the Company and its Subsidiaries on a consolidated basis, to be greater
+      than 3.50 to 1.00'
+
+      Section 6.05(a), the Maximum Net Leverage Ratio (Consolidated Net
+      Indebtedness to Consolidated EBITDA), tested from June 30, 2026. The
+      standing level is 3.50 to 1.00. On up to two occasions the Company may
+      'elect to increase the maximum Net Leverage Ratio permitted under this
+      Section 6.05(a) to 4.00 to 1.00 for a period of six (6) consecutive
+      fiscal quarters' after a large acquisition, the step-up. Section 6.05(b)
+      adds a Minimum Interest Coverage Ratio of 'Consolidated EBITDA to (ii)
+      Consolidated Interest Expense' not 'to be less than 4.00 to 1.00'; the
+      leverage cap is labelled, and its 4.00 step-up shares a number with that
+      coverage floor.

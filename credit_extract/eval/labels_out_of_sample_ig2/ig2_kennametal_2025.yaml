@@ -1,0 +1,179 @@
+# Tier 2 assertions: KENNAMETAL INC. / BANK OF AMERICA, N.A., Seventh Amended
+# and Restated Credit Agreement dated as of November 17, 2025, filed 2025-11-18
+# by KENNAMETAL INC as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A complete amended and restated agreement, not an
+# amendment: it restates the Sixth Amended and Restated Credit Agreement of
+# June 14, 2022. A $650,000,000 multicurrency revolver for Kennametal Inc. and
+# Kennametal Europe GmbH (a $300,000,000 Multicurrency Sublimit inside the
+# total), priced off the S&P and Moody ratings, with a facility fee on the
+# whole commitment and no unused fee. The stated Termination Date is a Sunday
+# and its own definition rolls it back to the preceding Business Day.
+
+document: ig2_kennametal_2025
+corpus_name: IG_kennametal-inc_2025-11-18_0001193125-25-286159_d845048dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: kmt_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "KENNAMETAL INC."
+    note: >
+      'dated as of November 17, 2025, among KENNAMETAL INC., a Pennsylvania
+      corporation'
+
+      The preamble, which names the Company first. KENNAMETAL EUROPE GmbH, a
+      Swiss limited liability company, and any later Foreign Borrowers are
+      co-Borrowers named after it.
+
+  - id: kmt_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'BANK OF AMERICA, N.A., LONDON BRANCH, as Euro Swingline Lender, and BANK
+      OF AMERICA, N.A., as administrative agent'
+
+      The preamble. The London Branch is the Euro Swingline Lender, not the
+      agent. PNC Bank, National Association, BNP Paribas and U.S. Bank
+      National Association are Co-Syndication Agents and Citizens Bank, N.A.
+      is Documentation Agent.
+
+  - id: kmt_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH, THE LAW OF THE
+      STATE OF NEW YORK'
+
+      Section 9.11. The Company is a Pennsylvania corporation and Kennametal
+      Europe GmbH is organized under the laws of Switzerland; neither is the
+      governing law.
+
+  - id: kmt_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$650,000,000"
+    note: >
+      'The aggregate principal amount of the Total Commitments as in effect on
+      the Closing Date is $650,000,000'
+
+      The Total Commitments definition; the cover prints $650,000,000 and
+      Schedule 1.1 totals $650,000,000.00. The $300,000,000 Multicurrency
+      Sublimit 'is part of, and not in addition to, the Total Commitments', so
+      it is a sublimit, not a second tranche. Section 2.15(b) bars increases
+      that would 'increase the Total Commitments to an amount greater than
+      $950,000,000': the accordion ceiling, not the commitment.
+
+  - id: kmt_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-11-15
+    note: >
+      'November 17, 2030; provided , that , if such date is not a Business
+      Day, the Termination Date shall be the next preceding Business Day'
+
+      The Termination Date, on which each Borrower 'shall repay all
+      outstanding Dollar Revolving Loans borrowed by it on the earlier of the
+      Termination Date' and its Section 7 acceleration (Multicurrency,
+      Swingline and Euro Swingline Loans likewise). November 17, 2030 is a
+      Sunday, and the definition itself rolls a non-Business Day back to the
+      next preceding Business Day, Friday November 15, 2030, which is the
+      label. The agreement has no extension option.
+
+  - id: kmt_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.300%"
+    note: >
+      'V | | <BBB- <Baa3 | | 0.200% | | 1.300% | | 0.300% | | 1.300% | |
+      0.900%'
+
+      Pricing Level V of the Pricing Grid, keyed to the Debt Ratings. The
+      second figure is the 'Term SOFR Applicable Margin, Foreign Currency
+      Daily Rate Applicable Margin, Foreign Currency Term Rate Applicable
+      Margin and Swingline' column, running 0.785% (Level I) to 1.300% (Level
+      V). The other figures in the row are the Facility Fee Rate (0.200%), the
+      ABR Applicable Margin (0.300%) and the Standby (1.300%) and Trade
+      (0.900%) Letter of Credit Fee Rates.
+
+  - id: kmt_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than zero, Term SOFR shall be deemed zero for
+      purposes of this Agreement'
+
+      The proviso closing the Term SOFR definition: a zero floor on the
+      benchmark. The ABR has its own ('if the ABR shall be less than zero,
+      such rate shall be deemed zero'), which is the base-rate near miss; the
+      Federal Funds Effective Rate and the foreign currency rates are also
+      floored at zero.
+
+  - id: kmt_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'computed at the Facility Fee Rate on the actual daily amount of the
+      Commitment of such Lender (whether or not utilized)'
+
+      Section 2.14(a) charges a facility fee on the whole Commitment, drawn or
+      not, at the Facility Fee Rate of the Pricing Grid: 0.090% at Level I up
+      to 0.200% at Level V. The agreement has no commitment, unused or ticking
+      fee on undrawn commitments, so there is no value; the 0.200% facility
+      fee is the near miss the pipeline must not report as one.
+
+  - id: kmt_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75 to 1.00"
+    note: >
+      'Permit the Consolidated Leverage Ratio as at the last day of any period
+      of four consecutive fiscal quarters of the Borrowers to exceed 3.75 to
+      1.00'
+
+      Section 6.1, the only financial covenant: Indebtedness less Unrestricted
+      Cash, to Consolidated EBITDA. After a Qualified Acquisition the ratio
+      may 'be increased to 4.25 to 1.00' for a four-quarter Leverage Increase
+      Period, at most twice; that step-up is temporary, so the standing 3.75
+      to 1.00 is labelled.
+
+  - id: kmt_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2025-11-17
+    note: >
+      'the date on which the conditions precedent set forth in Section 4.1
+      shall have been satisfied, which date is November 17, 2025'
+
+      The Closing Date definition is conditions-based but names the date
+      itself, which matches the dated-as-of date on the cover and preamble.
+      The filing date, November 18, 2025, and the June 14, 2022 date of the
+      Existing Credit Agreement are not this closing.

@@ -1,0 +1,176 @@
+# Tier 2 assertions: The Timken Company / Bank of America, N.A. and JPMorgan
+# Chase Bank, N.A. as Co-Administrative Agents, Sixth Amended and Restated
+# Credit Agreement dated as of July 2, 2026, filed 2026-07-06 by TIMKEN CO as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A complete restated agreement (execution version, not
+# a blackline) that amends and restates the Fifth Amended and Restated Credit
+# Agreement of December 5, 2022. A single $1,200,000,000 multicurrency
+# revolver for Timken and Timken Europe B.V. (the only Designated Borrower at
+# closing), priced off S&P and Moody ratings with a facility fee rather than an
+# unused fee. Two banks
+# share the administrative agent role; JPMorgan Chase Bank, N.A. and J.P.
+# Morgan SE are separately paying agents. Schedule 2.01 is not in the text.
+
+document: ig2_timken_2026
+corpus_name: IG_timken-co_2026-07-06_0001206774-26-000349_tkr4658521-ex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: tkr_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "THE TIMKEN COMPANY"
+    note: >
+      'among THE TIMKEN COMPANY, an Ohio corporation'
+
+      The preamble names Timken first, and the Borrowers are defined as the
+      Designated Borrowers together with Timken. Section 2.17 adds a second
+      borrower ('As of the Closing Date, the only Designated Borrower is
+      TEBV'), Timken Europe B.V., a Dutch subsidiary; it is a co-borrower
+      named after Timken, so it is not the label.
+
+  - id: tkr_administrative_agents
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: ["BANK OF AMERICA, N.A.", "JPMORGAN CHASE BANK, N.A."]
+    note: >
+      'BANK OF AMERICA, N.A. and JPMORGAN CHASE BANK, N.A., as
+      Co-Administrative Agents'
+
+      Two banks share the role ('means each of Bank of America (or any of its
+      designated branch offices or affiliates) and JPMCB'), so both are listed
+      under the guide rule for a role several parties fill. The Paying Agents
+      (JPMorgan Chase Bank, N.A. for the Non-EEA Agented Borrowers and J.P.
+      Morgan SE for the EEA Agented Borrowers) are a separate role, and J.P.
+      Morgan SE is not an administrative agent.
+
+  - id: tkr_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of NEW YORK'
+
+      Section 11.19(a), covering this agreement and each other Loan Document.
+
+  - id: tkr_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$1,200,000,000"
+    note: >
+      'The Revolving Credit Commitments of all of the Revolving Credit Lenders
+      on the Closing Date shall be $1,200,000,000'
+
+      The only facility: a Commitment means a Revolving Credit Commitment, and
+      there is no term loan. Section 2.02(g) lets Timken increase the
+      Aggregate Revolving Credit Commitments 'by up to $600,000,000 with
+      additional Revolving Credit Commitments', which is the accordion, not
+      the commitment.
+
+  - id: tkr_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-07-02
+    note: >
+      'means, the earlier of (a) July 2, 2031 or with respect to some or all
+      of the Lenders if such date is otherwise extended pursuant to Section
+      2.18 , July 2, 2032 or July 2, 2033'
+
+      Five years from the July 2, 2026 Closing Date, a Wednesday. The 2032 and
+      2033 dates apply only to Lenders that agree to an extension under
+      Section 2.18, so they are conditional and the date as it stands is
+      labelled; limb (b) of the definition is termination of the commitments,
+      an event.
+
+  - id: tkr_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.325%"
+    note: >
+      '5 | BB+/Ba1 or worse | 0.175% | 1.325% | 1.325% | 0.325%'
+
+      Pricing Level 5 of the S&P and Moody debt ratings grid, in the column
+      headed
+      'Applicable Rate for Term SOFR Loans, Committed Currency Daily Rate Loans
+      and Committed Currency Term Rate Loans'; the levels run 0.795%, 0.910%,
+      1.015%, 1.100% and 1.325%. In that row 0.175% is the facility fee, the
+      second 1.325% the letter of credit fee and 0.325% the Base Rate margin.
+      Pricing starts at Level 3.
+
+  - id: tkr_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if Term SOFR as so determined would be less than 0.00%,
+      such rate shall be deemed to be equal to 0.00% for the purposes of this
+      Agreement'
+
+      The definition of Term SOFR. Adjusted Term CORRA carries its own zero
+      floor ('would be less than 0%, such rate shall be deemed to be equal to
+      0%'), and neither Term SOFR nor the Base Rate has a floor above zero.
+
+  - id: tkr_commitment_fee_is_facility_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a fee (the " Facility Fee ") equal to, the Applicable Rate times the
+      Aggregate Revolving Credit Commitments'
+
+      Section 2.09(a) charges a facility fee on the whole commitment, drawn or
+      not, at 0.080% to 0.175% across the grid, and the agreement has no
+      commitment or unused fee. The 0.175% Level 5 facility fee is the near
+      miss the pipeline must not report as a commitment fee.
+
+  - id: tkr_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75 to 1.0"
+    note: >
+      'Permit the Consolidated Net Leverage Ratio at any time to be greater
+      than 3.75 to 1.0'
+
+      Section 8.11(a), net debt to EBITDA. After a Qualified Acquisition and a
+      Leverage Increase Notice the cap rises to 4.25 to 1.0 for the Leverage
+      Increase Period, an acquisition step-up and not the standing level.
+      Section 8.11(b) adds a minimum interest coverage test ('Permit the
+      Consolidated Interest Coverage Ratio at any time to be less than or
+      equal to 3.00 to 1.0'); the leverage cap is labelled as the first and
+      primary covenant.
+
+  - id: tkr_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-07-02
+    note: >
+      '" Closing Date " means July 2, 2026.'
+
+      The restated agreement defines its own Closing Date explicitly, the same
+      date it is dated as of. December 5, 2022 is the date of the Fifth
+      Amended and Restated Credit Agreement it restates.

@@ -1,0 +1,178 @@
+# Tier 2 assertions: SERVICENOW, INC. / JPMORGAN CHASE BANK, N.A., Credit
+# Agreement dated as of April 1, 2026, filed 2026-04-01 by ServiceNow, Inc. as
+# Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. An original (not amended or restated) five-year
+# US$3,000,000,000 unsecured revolver priced off the Moody's and S&P ratings
+# of the Index Debt, with an undrawn commitment fee. It has no financial
+# covenant at all. The schedules (including Schedule 2.01, Commitments) are
+# listed but not reproduced; the commitment is stated in the definitions.
+
+document: ig2_servicenow_2026
+corpus_name: IG_servicenow-inc_2026-04-01_0001373715-26-000030_exh101-creditagreement
+source: real
+tier: 2
+
+assertions:
+
+  - id: now_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "SERVICENOW, INC."
+    note: >
+      'among SERVICENOW, INC., a Delaware corporation, as the Borrower'
+
+      The preamble. The definition agrees ('Borrower means ServiceNow, Inc., a
+      Delaware corporation'); the sole Borrower, with no subsidiary
+      borrowers.
+
+  - id: now_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'the LENDERS from time to time party hereto and JPMORGAN CHASE BANK, N.A.,
+      as Administrative Agent'
+
+      The preamble. The definition uses the short name ('Administrative Agent
+      means JPMorgan (or any of its designated branch offices or Affiliates)
+      in its capacity as administrative agent hereunder'), and 'JPMorgan means
+      JPMorgan Chase Bank, N.A. and its successors', so the legal name is the
+      preamble one. JPMorgan Chase Bank, N.A. is also a Joint Lead Arranger.
+
+  - id: now_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'arising out of or relating to this Agreement and the transactions
+      contemplated hereby, shall be construed in accordance with and governed
+      by the law of the State of New York'
+
+      Section 9.09(a).
+
+  - id: now_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$3,000,000,000"
+    note: >
+      'Commitments on the Effective Date is US$3,000,000,000'
+
+      The last sentence of the definition of Commitment. One revolving
+      facility (swingline and letters of credit are participations in it) and
+      no term loan; Schedule 2.01 itself is not reproduced in the filing. The
+      near miss is the Section 2.19 Incremental Facility, under which 'all new
+      Commitments and increases in existing Commitments becoming effective
+      under this paragraph during the term of this Agreement shall not exceed
+      US$2,000,000,000 in the aggregate'.
+
+  - id: now_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-04-01
+    note: >
+      'Maturity Date means April 1, 2031, as extended pursuant to Section 2.22'
+
+      The definition rolls a non-Business Day back, but April 1, 2031 is a
+      Tuesday. Section 2.22 lets the Borrower 'request an extension (each, an
+      Extension) of the Maturity Date to a date no later than the first
+      anniversary of the then-existing Maturity Date', at the sole discretion
+      of each Lender, so the unextended date is labelled.
+
+  - id: now_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.000%"
+    note: >
+      'Category | Index Debt Ratings: | RFR Spread | ABR Spread | Term
+      Benchmark Spread | Undrawn Commitment Fee Rate'
+
+      'Category 4: | Baal/BBB+ or lower | 1.000% | 0.000% | 1.000% | 0.100%'
+
+      The Applicable Rate grid keyed to the two agency ratings (Moody and
+      S&P) of the Index Debt. The Term Benchmark Spread (Term SOFR loans) runs 0.600%,
+      0.700%, 0.850% and 1.000% from Category 1 to Category 4, and Category 4
+      also applies when neither agency rates the Index Debt. The RFR Spread
+      matches it; 0.000% is the ABR Spread and 0.100% the undrawn fee.
+
+  - id: now_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'provided that if the Term SOFR as so determined shall be less than
+      zero, it shall be deemed to be zero'
+
+      The Term SOFR definition: a zero floor on the benchmark. The near miss
+      is the base rate floor in the Alternate Base Rate definition ('if the
+      Alternate Base Rate determined as set forth above would be less than
+      1.00% per annum, such rate shall be deemed to be 1.00% per annum').
+
+  - id: now_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.100%"
+    note: >
+      'an undrawn commitment fee, which shall accrue at the Applicable Rate on
+      the actual daily difference between (x) the Aggregate Commitments then
+      in effect and (y) the Aggregate Revolving Credit Exposure'
+
+      Section 2.11(a): a fee on the unused commitment only, so this is the
+      commitment fee and not a facility fee. The Undrawn Commitment Fee Rate
+      column runs 0.040%, 0.060%, 0.080% and 0.100% from Category 1 to
+      Category 4; the top level is 0.100%.
+
+  - id: now_no_financial_covenant
+    family: F04_absence
+    member: no_financial_covenant
+    kind: field_status
+    target: financial_covenant.level
+    expect: absent_from_document
+    note: >
+      'The Borrower will not permit any of its Subsidiaries to create or suffer
+      to exist any Debt, other than'
+
+      'a completed Compliance Certificate signed by a Financial Officer of the
+      Borrower, certifying as to whether a Default has occurred'
+
+      There is no leverage or coverage covenant because Article VI, the only
+      negative covenants, is four restrictions: Liens (6.01), Mergers and Other
+      Fundamental Changes (6.02), Subsidiary Debt (6.03, quoted) and Change in
+      Nature of Business (6.04). None tests a ratio. The nearest figure is the
+      general basket in 6.03(l), which 'shall not at any time exceed the
+      greater of (x) US$1,750,000,000 and (y) 15% of Consolidated Net Tangible
+      Assets at such time'; it sizes permitted subsidiary debt and is not a
+      maintenance test. The Compliance Certificate certifies only whether a
+      Default exists, and credit quality enters only through the ratings
+      grid.
+
+  - id: now_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-04-01
+    note: >
+      'Effective Date means April 1, 2026'
+
+      The definition fixes the date, the same day the agreement is dated
+      ('CREDIT AGREEMENT dated as of April 1, 2026, among SERVICENOW, INC.').
+      Section 4.01 lists conditions to effectiveness, but the defined term is
+      an explicit date, not an event.

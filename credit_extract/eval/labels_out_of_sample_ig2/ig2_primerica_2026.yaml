@@ -1,0 +1,168 @@
+# Tier 2 assertions: PRIMERICA, Inc. / WELLS FARGO BANK, NATIONAL ASSOCIATION,
+# Second Amended and Restated Credit Agreement dated as of June 2, 2026, filed
+# 2026-06-02 by Primerica, Inc. as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A complete amended and restated agreement, not an
+# amendment: it restates the Amended and Restated Credit Agreement of June 22,
+# 2021 in its entirety. A $200,000,000 single-borrower revolver priced off the
+# S&P and Moody ratings, with a $100,000,000 accordion and two lender-consent
+# one-year extension options; the commitment schedule (Schedule 1.1(a)) is
+# printed at the end of the text. The Closing Date is defined as the date of
+# the agreement, which the preamble states.
+
+document: ig2_primerica_2026
+corpus_name: IG_primerica-inc_2026-06-02_0001193125-26-253592_pri-ex10_1
+source: real
+tier: 2
+
+assertions:
+
+  - id: pri_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "PRIMERICA, Inc."
+    note: >
+      'by and among PRIMERICA, Inc. , a Delaware corporation, as Borrower'
+
+      The preamble, matching the cover; the signature block prints PRIMERICA,
+      INC., which differs only in case. It is the sole Borrower.
+
+  - id: pri_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "WELLS FARGO BANK, NATIONAL ASSOCIATION"
+    note: >
+      'WELLS FARGO BANK, NATIONAL ASSOCIATION, a national banking association,
+      as Administrative Agent for the Lenders'
+
+      The preamble. The definition uses the short name ('means Wells Fargo,
+      in its capacity as Administrative Agent hereunder'), and Wells Fargo is
+      'Wells Fargo Bank, National Association, a national banking
+      association'. Wells Fargo Securities, LLC is Sole Lead Arranger and Sole
+      Bookrunner, not the agent.
+
+  - id: pri_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'shall be governed by, and construed in accordance with, the law of the
+      State of New York'
+
+      Section 11.5(a). The Borrower is a Delaware corporation, which is not
+      the governing law.
+
+  - id: pri_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$200,000,000"
+    note: >
+      'The aggregate Commitment of all the Lenders on the Closing Date shall be
+      $200,000,000'
+
+      The Commitment definition; the cover prints $200,000,000 and Schedule
+      1.1(a) totals it across six lenders ('The Bank of Nova Scotia |
+      $32,000,000 | Total | $200,000,000'). Section 4.13 lets the Borrower
+      request increases of up to $100,000,000 in aggregate, which is the
+      accordion, not the commitment.
+
+  - id: pri_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-02
+    note: >
+      'the earliest to occur of (a) the later of (1) June 2, 2031 and (2) if
+      the Maturity Date is extended pursuant to Section 4.16 as to any Lender'
+
+      The Maturity Date definition; its other limbs are early terminations of
+      the Commitment under Sections 2.5 and 9.2(a). June 2, 2031 is a Monday,
+      so its next-preceding-Business-Day rule does not move it. Section 4.16
+      lets the Borrower ask, on no more than two occasions, for a one-year
+      extension that each Lender may refuse; that is conditional, so the
+      stated date is labelled.
+
+  - id: pri_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.625%"
+    note: >
+      'V | ≤ BBB-/Baa3 | 0.225% | 1.625% | 0.625%'
+
+      Pricing Level V of the Applicable Margin grid, which is keyed to the
+      Debt Rating. In the column 'Applicable Margin for SOFR Loans and Letter
+      of Credit Fees' the margins run 1.00% (Level I) to 1.625% (Level V); in
+      the same row 0.625% is the Base Rate Loan margin and 0.225% the
+      Commitment Fee. A Borrower rated by neither agency is priced at Level V.
+
+  - id: pri_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'shall ever be less than the Floor, then Term SOFR shall be deemed to be
+      the Floor'
+
+      The proviso closing the Term SOFR definition, with 'Floor " means 0.00%
+      per annum'. The Base Rate is also held at or above the Floor and the
+      Federal Funds Rate is floored at zero; those are base-rate floors, the
+      near miss, with the same number.
+
+  - id: pri_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.225%"
+    note: >
+      'at a rate per annum equal to the Applicable Margin on the average daily
+      unused portion of the Commitment of the Lenders'
+
+      Section 4.3(a): a fee on the unused Commitment (Swingline Loans are not
+      usage). The Commitment Fee column of the ratings grid runs 0.08% (Level
+      I) to 0.225% (Level V). The fees in the Fee Letter of May 4, 2026
+      (Section 4.3(b)) are not this fee.
+
+  - id: pri_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "0.35 to 1.00"
+    note: >
+      'permit the ratio of Consolidated Indebtedness to Total Capitalization to
+      be greater than 0.35 to 1.00'
+
+      Section 8.8(a): a maximum debt-to-capitalization ratio, tested at any
+      time, with no step-down or acquisition step-up. Section 8.8(b) is a
+      minimum Consolidated Net Worth of $1,570,000,000 plus 25% of positive
+      quarterly net income and 25% of equity proceeds after March 31, 2026, a
+      net worth floor rather than a leverage or coverage test.
+
+  - id: pri_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-02
+    note: >
+      'Closing Date " means the date of this Agreement'
+
+      And the agreement is the 'SECOND AMENDED AND RESTATED CREDIT AGREEMENT,
+      dated as of June 2, 2026, by and among PRIMERICA', so the Closing Date
+      is that fixed date, not an event. June 22, 2021 is the date of the
+      Existing Credit Agreement being restated, not this closing.

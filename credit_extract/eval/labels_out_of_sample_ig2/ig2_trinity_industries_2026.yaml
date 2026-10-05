@@ -1,0 +1,173 @@
+# Tier 2 assertions: Trinity Industries, Inc. / JPMorgan Chase Bank, N.A.,
+# Third Amended and Restated Credit Agreement dated as of June 12, 2026,
+# filed 2026-06-16 by Trinity Industries Inc as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A complete amendment and restatement (execution
+# version) of the Second Amended and Restated Credit Agreement of July 25,
+# 2022: a $600,000,000 revolver that also provides swingline loans, letters
+# of credit (up to $100,000,000) and Canadian Dollar borrowings (up to
+# $50,000,000). Unlike most of the set, pricing is a four-level Leverage Ratio
+# grid, not a ratings grid, and the maturity springs earlier if the 2028
+# Notes are not repaid. The cover page drops the Borrower name ("among as
+# Borrower"); the preamble supplies it. The Effective Date is event-defined
+# and no Closing Date is defined, so closing_date is not labelled.
+
+document: ig2_trinity_industries_2026
+corpus_name: IG_trinity-industries-inc_2026-06-16_0000099780-26-000100_exhibit101-jpmxtrinityxthi
+source: real
+tier: 2
+
+assertions:
+
+  - id: trinity_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "TRINITY INDUSTRIES, INC."
+    note: >
+      'dated as of June 12, 2026 among TRINITY INDUSTRIES, INC., a Delaware
+      corporation (the " Borrower ")'
+
+      The preamble. The cover page reads 'THIRD AMENDED AND RESTATED CREDIT
+      AGREEMENT dated as of June 12, 2026 among as Borrower', with the name
+      missing, so a cover-page reading finds nothing or the next party (the
+      agent). TILC (Trinity Industries Leasing Company), named in the
+      definitions and the negative covenants, is a Subsidiary, not a borrower.
+
+  - id: trinity_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "JPMORGAN CHASE BANK, N.A."
+    note: >
+      'the LENDERS from time to time party hereto, JPMORGAN CHASE BANK, N.A.,
+      as Administrative Agent'
+
+      The preamble; the definition reads 'means JPMorgan Chase Bank, N.A. (or
+      any of its designated branch offices or affiliates), in its capacity as
+      administrative agent'. Rejected: Bank of America, N.A., Truist Bank and
+      Wells Fargo Bank, N.A. (Co-Syndication Agents) and Regions Bank and PNC
+      Bank (Co-Documentation Agents).
+
+  - id: trinity_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement and the other Loan Documents shall be construed in
+      accordance with and governed by the law of the State of New York.'
+
+      Section 9.09(a). Claims against the Administrative Agent follow the same
+      law, and the Borrower submits to federal and state courts in Manhattan.
+
+  - id: trinity_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$600,000,000"
+    note: >
+      'As of the Effective Date, the Aggregate Commitment is $600,000,000.'
+
+      The definition of Aggregate Commitment; there is no term loan. The
+      per-lender amounts are on Schedule 2.01, which is listed but not printed
+      in the text. Rejected: the Section 2.20 accordion, under which the
+      Aggregate Commitment may be increased to no more than $900,000,000 in at
+      most four increases; and two limits inside the commitment, the
+      $100,000,000 cap on LC Exposure and the $50,000,000 Foreign Currency
+      Sublimit, which 'is part of, and not in addition to, the Commitments'.
+
+  - id: trinity_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-12
+    note: >
+      'means either (a) if the 2028 Notes have been repaid in full on or prior
+      to April 15, 2028, June 12, 2031 or (b) if the 2028 Notes have not been
+      repaid in full on or prior to April 15, 2028, April 15, 2028.'
+
+      A springing maturity. The scheduled date is June 12, 2031, five years
+      from the June 12, 2026 agreement date; it springs back to April 15,
+      2028 only if the 7.750% Senior Notes due 2028 have not been repaid in
+      full by then. The springing date is conditional, so the stated date is
+      labelled, as for a date that is the earliest of a date and an event.
+      There is no extension option. June 12, 2031 is a Thursday; April 15,
+      2028 is a Saturday, and the definition has no roll convention.
+
+  - id: trinity_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "2.00%"
+    note: >
+      'Level IV | > 3.00 to 1.00 | 0.30% | 2.00% | 1.00%'
+
+      Level IV (Leverage Ratio above 3.00 to 1.00) of the Applicable Rate
+      grid, whose columns are 'Commitment Fee | Applicable Rate for Term
+      Benchmark / RFR Loans | Applicable Rate for ABR Loans / Canadian Prime
+      Loans'. The Term Benchmark column, which prices Term SOFR loans, runs
+      from 1.25% at Level I to 2.00% at Level IV, and the highest level also
+      applies while Financials are late. The grid is keyed to leverage, not
+      to ratings. Rejected: the ABR margin (1.00%), the commitment fee (0.30%)
+      and the initial Level II pricing (1.50%).
+
+  - id: trinity_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if the Term SOFR Rate as so determined would be less than the Floor,
+      such rate shall be deemed to be equal to the Floor'
+
+      The Term SOFR Rate definition, and the Floor definition says 'as of the
+      Effective Date the initial Floor for each of the Term SOFR Rate, Term
+      CORRA, Daily Simple RFR or the Canadian Prime Rate shall be zero'.
+      Rejected: the 1.00% floor on the Alternate Base Rate ('would be less
+      than 1.00%, such rate shall be deemed to be 1.00%'), a base-rate floor.
+
+  - id: trinity_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.30%"
+    note: >
+      'a commitment fee, which shall accrue at the Applicable Rate on the daily
+      unused amount of the Commitment of such Lender'
+
+      Section 2.12(a), a fee on unused commitments. The Commitment Fee column
+      of the leverage grid runs from 0.175% at Level I to 0.30% at Level IV,
+      the top level. The same paragraph later calls it a facility fee where it
+      continues on Revolving Credit Exposure after a Commitment terminates,
+      but it is charged on the unused amount. Rejected: the 0.125% fronting
+      fee.
+
+  - id: trinity_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75 to 1.00"
+    note: >
+      'all calculated for the Borrower and its Restricted Subsidiaries on a
+      consolidated basis, to be greater than 3.75 to 1.00'
+
+      Section 6.09(a), the Maximum Leverage Ratio: Consolidated Total
+      Indebtedness less capped excess cash, to Consolidated EBITDA. 3.75 to
+      1.00 is the standing level. Rejected: the acquisition step-up ('the
+      Borrower may elect to increase the Maximum Leverage Ratio set forth
+      above by 0.50x'), to 4.25 to 1.00 for four quarters, at most twice; the
+      minimum Interest Coverage Ratio of 2.25 to 1.00 in Section 6.09(b); and
+      the 1.50 to 1.00 minimum Unrestricted Subsidiary Indebtedness Interest
+      Coverage Ratio in Section 6.09(c). Neither coverage test is the leverage
+      level.

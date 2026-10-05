@@ -1,0 +1,185 @@
+# Tier 2 assertions: EPR PROPERTIES / KEYBANK NATIONAL ASSOCIATION, Fifth
+# Amended, Restated and Consolidated Credit Agreement dated as of July 17,
+# 2026, filed 2026-07-20 by EPR PROPERTIES as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. The executed agreement, restating the Fourth
+# Amended, Restated and Consolidated Credit Agreement of September 19, 2024
+# (amended September 22, 2025), with Schedule CA of commitments printed in the
+# text. An unsecured REIT facility of $1,600,000,000 in three pieces: a
+# $700,000,000 revolver, a $300,000,000 alternative currency revolver and a
+# $600,000,000 delayed draw term loan, priced off the Index Debt ratings in a
+# grid written in basis points, with facility fees on the revolvers and a
+# ticking fee on the term loan. closing_date is not labelled: the Effective
+# Date is the later of the Agreement Date and the satisfaction of the Section
+# 5.1 conditions.
+
+document: ig2_epr_properties_2026
+corpus_name: IG_epr-properties_2026-07-20_0001045450-26-000033_exhibit101-7172026
+source: real
+tier: 2
+
+assertions:
+
+  - id: epr_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "EPR PROPERTIES"
+    note: >
+      'by and among EPR PROPERTIES, a Maryland real estate investment trust
+      (the Borrower)'
+
+      The preamble, which defines the Borrower; the definitions point back to
+      it ('Borrower has the meaning as defined in the preamble hereto').
+
+  - id: epr_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "KEYBANK NATIONAL ASSOCIATION"
+    note: >
+      'KEYBANK NATIONAL ASSOCIATION, as administrative agent (KeyBank and/or
+      the Agent)'
+
+      The preamble. The agreement calls the role the Agent ('Agent means
+      KeyBank National Association, as administrative agent for the Lenders
+      under the terms of this Agreement'). Near miss: KEYBANC CAPITAL MARKETS,
+      LLC, spelled with a c, is a joint lead arranger and book runner, not the
+      agent.
+
+  - id: epr_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'THIS AGREEMENT SHALL BE GOVERNED BY, AND CONSTRUED IN ACCORDANCE WITH,
+      THE LAWS OF THE STATE OF NEW YORK'
+
+      Section 12.12.
+
+  - id: epr_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$700,000,000"
+    note: >
+      'Revolving Credit Facility Amount means the initial $700,000,000.00
+      unsecured revolving facility'
+
+      Two revolving tranches and no printed revolving total, so the larger
+      tranche is labelled; the Revolving Credit Commitments table of Schedule
+      CA also totals $700,000,000.00. The other revolving tranche is
+      'Alternative Currency Revolving Credit Facility Amount means the initial
+      $300,000,000.00 unsecured alternative currency revolving facility', and
+      the $1,000,000,000 the two would make is printed nowhere. The only
+      printed total, 'Facility Amount means the aggregate amount of the initial
+      $1,600,000,000.00 Facility', includes the $600,000,000 Delayed Draw Term
+      Loan, which is not a revolver. The Increase Option ('to a total Facility
+      Amount of up to $2,600,000,000.00') is the accordion.
+
+  - id: epr_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2030-07-17
+    note: >
+      'Revolving Credit Termination Date means the earliest of (a) the date on
+      which the Revolving Credit Commitments are reduced to zero under Section
+      2.10, (b) July 17, 2030'
+
+      The other limbs of the earliest-of are termination and acceleration
+      events, so the date is July 17, 2030, a Wednesday; the alternative
+      currency revolver ends the same day. Section 2.16 gives the Borrower two
+      six-month options 'to extend the Revolving Credit Termination Date and
+      the Alternative Currency Revolving Credit Termination Date to January 17,
+      2031 and then July 17, 2031', each conditioned on, among other things,
+      no Default and a 0.0625% fee, so the unextended date is labelled. January 17, 2032 is the
+      Delayed Draw Termination Date of the term loan, the near miss.
+
+  - id: epr_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.350%"
+    note: >
+      'with respect to the Revolving Credit Facility or the Alternative
+      Currency Revolving Credit Facility, for any day, with respect to any
+      Base Rate Loan, or RFR Loan'
+
+      'Base Rate Margin | RFR Margin | Facility Fee'
+
+      '5 | ≤ BB+ | ≤ Ba1 | 35.0 bps | 135.0 bps | 30.0 bps'
+
+      Clause (a) of Applicable Margin, the grid for both revolving
+      facilities, with its column headings and its Category 5 row. The RFR
+      Margin (Term SOFR for Dollar Term Rate Loans) runs 67.5, 72.5, 80.0,
+      100.0 and 135.0 bps from Category 1 to Category 5, so the top level is
+      1.350% once the basis points are converted; Category 5 also applies to
+      an agency with no rating. Near misses: 35.0 bps Base Rate Margin, 30.0
+      bps Facility Fee, and the clause (b) term loan grid, whose RFR Margin
+      tops out at 155.0 bps.
+
+  - id: epr_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'As of the Effective Date, the Floor is zero'
+
+      'if Term SOFR as so determined would be less than the Floor, then Term
+      SOFR shall be deemed to be the Floor'
+
+      Section 4.9 definitions: a zero floor on Term SOFR (and on the other
+      RFRs). The near miss is the floor inside the Base Rate, the greatest of
+      several rates including 'plus one percent (1.0%), or (d) one percent
+      (1.0%) per annum', which is a floor on the base rate.
+
+  - id: epr_commitment_fee_null
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: null
+    note: >
+      'a facility fee in Dollars with respect to the amount of the Revolving
+      Credit Facility Amount, calculated by multiplying the Revolving Credit
+      Facility'
+
+      Section 3.6(b), and 3.6(c) for the alternative currency revolver: the
+      revolvers pay a facility fee on the whole facility amount, drawn or not,
+      at 12.5 to 30.0 bps across the grid, and no unused fee. So the field has
+      no value, and 30.0 bps is the near miss the pipeline must not report.
+      The other near miss is the term loan ticking fee of Section 3.6(a),
+      'Delayed Draw Ticking Fee Rate means, on any date with respect to the
+      Delayed Draw Term Loan Commitments, 0.25% per annum', which accrues on
+      undrawn delayed draw commitments and belongs to ticking_fee_pct.
+
+  - id: epr_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "60%"
+    note: >
+      'the ratio of Total Debt to Total Asset Value shall not exceed 60%'
+
+      Section 9.1(b), the leverage covenant (debt to asset value). The
+      standing level is 60%; 'for four consecutive quarters following a
+      Material Acquisition, the Total Debt to Total Asset Value shall not
+      exceed 65%' is the acquisition step-up and not the label. The other
+      Section 9.1 tests are Secured Indebtedness to Total Asset Value of at
+      most 40%, Unsecured Indebtedness to Unencumbered Asset Value of at most
+      60% (65% after a Material Acquisition), an unsecured interest coverage
+      floor of 1.75 to 1.0, a fixed charge coverage floor ('the ratio of
+      Adjusted EBITDA to Fixed Charges shall not be less than 1.50 to 1.0'),
+      and a 25% cap on Permitted Investments whose breach is not a Default.

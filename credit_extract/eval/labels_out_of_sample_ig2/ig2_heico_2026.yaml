@@ -1,0 +1,176 @@
+# Tier 2 assertions: HEICO Corporation / Truist Bank, Revolving Credit
+# Agreement dated as of November 6, 2017 as amended by the Fourth Amendment
+# to Revolving Credit Agreement effective as of June 11, 2026, filed
+# 2026-06-17 by HEICO Corp as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A short Fourth Amendment with the conformed credit
+# agreement ("Conformed Through The Fourth Amendment") attached as Exhibit A
+# in blackline form; every label is read from that conformed text. The Fourth
+# Amendment raises the revolver to $2,200,000,000, sets maturity at June 11,
+# 2031, and releases the subsidiary guarantors. Governed by Florida law, not
+# New York. The Closing Date is event-defined (the 2017 satisfaction of the
+# Section 4.01 conditions), so closing_date is not labelled; the Fourth
+# Amendment Effective Date (June 11, 2026) is an amendment date.
+
+document: ig2_heico_2026
+corpus_name: IG_heico-corp_2026-06-17_0001213900-26-069674_ea029469601ex10-1
+source: real
+tier: 2
+
+assertions:
+
+  - id: heico_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "HEICO CORPORATION"
+    note: >
+      'by and among HEICO CORPORATION, a Florida corporation (the " Borrower ")'
+
+      The preamble of the conformed agreement; the Fourth Amendment preamble
+      names the Borrower the same way. The EDGAR filer name abbreviates it to
+      HEICO CORP. There is one Borrower.
+
+  - id: heico_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "TRUIST BANK"
+    note: >
+      'TRUIST BANK, successor by merger to SunTrust Bank, in its capacity as
+      administrative agent for the Lenders'
+
+      The conformed preamble; the definition reads 'means Truist Bank,
+      successor by merger to SunTrust Bank, in its capacity as administrative
+      agent'. Rejected: SunTrust Bank, the merged predecessor named in the
+      same phrase (and the agent when the agreement was signed in 2017), and
+      Truist Securities, Inc., a Joint Lead Arranger.
+
+  - id: heico_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "Florida"
+    note: >
+      'THIS AGREEMENT AND THE OTHER LOAN DOCUMENTS SHALL BE CONSTRUED IN
+      ACCORDANCE WITH AND BE GOVERNED BY THE LAW (WITHOUT GIVING EFFECT TO THE
+      CONFLICT OF LAW PRINCIPLES THEREOF) OF THE STATE OF FLORIDA.'
+
+      Section 10.16(a) of the conformed agreement, with non-exclusive
+      jurisdiction in Miami-Dade County. The Fourth Amendment is also governed
+      by 'the internal laws of the State of Florida and all applicable federal
+      laws of the United States of America'. Rejected: New York, which appears
+      in Section 10.21 ('All parties agree that closing of the transactions
+      contemplated by this Agreement has occurred in New York.'), a closing
+      location and not a choice of law, and otherwise only in times of day,
+      addresses, a lender branch name, the Federal Reserve Bank of New York
+      and the QFC boilerplate.
+
+  - id: heico_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$2,200,000,000"
+    note: >
+      'to increase the existing revolving credit facility to $2,200,000,000
+      pursuant to the Fourth Amendment'
+
+      A recital of the conformed agreement. Aggregate Commitments are all the
+      Commitments, each Lender on Schedule 2.01, and the restated schedule is
+      printed in the text under the heading 'Commitment, Post Fourth
+      Amendment' and ends 'Total: | | $ | 2,200,000, 000.00' (the stray space
+      is in the text): a total the agreement prints. Rejected: the earlier
+      sizes in the recitals ($1,300,000,000 at closing, then $1,500,000,000
+      and $2,000,000,000 under the First and Third Amendments) and the
+      Section 2.15 accordion of up to $800,000,000 more, capped at
+      $3,000,000,000.
+
+  - id: heico_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-11
+    note: >
+      'means (a) June 11 , 2031 , (b) such earlier date upon which the
+      Commitments are terminated in accordance with the terms hereof'
+
+      The conformed Maturity Date, five years from the Fourth Amendment
+      Effective Date of June 11, 2026. Clause (c) moves it only for a
+      Commitment extended under Section 2.16 (a one-year extension on request,
+      no more than two after the Third Amendment Effective Date), which is
+      conditional, so the stated date is labelled. June 11, 2031 is a
+      Wednesday.
+
+  - id: heico_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.250%"
+    note: >
+      “Category V | Index Debt Ratings equal to or lower than: BBB- by S&P,
+      > BBB- by Fitch, and/or Baa3 by Moody's | 1.250% | 0.250% | 0.200%”
+
+      Category V (the lowest ratings) of the Applicable Rate grid, in the
+      column 'Applicable Rate for RFR Loans, SOFR Loans, Eurocurrency Rate
+      Loans and Letter of Credit Fee', which runs from 0.750% at Category I to
+      1.250% at Category V. Rejected: the Base Rate Loans column (0.250%), the
+      Commitment Fee column (0.200%), and the Category III pricing (1.000%)
+      that holds from the Fourth Amendment Effective Date until the first
+      ratings change.
+
+  - id: heico_floor
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'if Term SOFR determined as provided above (including pursuant to the
+      proviso under clause (a) or (b) above) shall ever be less than the
+      Floor, then Term SOFR shall be deemed to be the Floor'
+
+      The closing proviso of the Term SOFR definition, and the Floor is
+      defined as 'shall mean a rate of interest equal to 0%'. The same Floor
+      applies to the Adjusted Eurocurrency Rate, the SOFR Index Rate and any
+      Benchmark Replacement.
+
+  - id: heico_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.200%"
+    note: >
+      'an unused commitment fee, which shall accrue at the Applicable Rate set
+      forth under the column "Applicable Rate for Commitment Fee" multiplied
+      by the actual daily amount of the unused Commitment of such Lender'
+
+      Section 2.08(a), a fee on unused commitments. Its column runs from
+      0.090% at Category I to 0.200% at Category V, the top level. Rejected:
+      the letter of credit fee, which shares the margin column, and the Base
+      Rate Loans column.
+
+  - id: heico_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75:1.00"
+    note: >
+      'the Total Leverage Ratio to be greater than 3.75:1.00; provided , that
+      during any Material Acquisition Period, the Borrower shall not permit
+      the Total Leverage Ratio to be greater than 4.25:1.00'
+
+      Section 7.07, the only financial covenant, written with a colon: debt
+      less unrestricted cash to Consolidated EBITDA. 3.75:1.00 is the standing
+      level. Rejected: 4.25:1.00, which applies only in a designated Material
+      Acquisition Period (the quarter of an acquisition over $75,000,000 and
+      the next four, at most two such periods after the Fourth Amendment
+      Effective Date).

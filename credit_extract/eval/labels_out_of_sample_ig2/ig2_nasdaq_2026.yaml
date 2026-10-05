@@ -1,0 +1,168 @@
+# Tier 2 assertions: Nasdaq, Inc. / Bank of America, N.A., Amended and Restated
+# Credit Agreement dated as of June 30, 2026, filed 2026-07-01 by NASDAQ, INC.
+# as Exhibit 10.1.
+#
+# Out of sample: harvested from EDGAR after the sixth pass and labelled before
+# the pipeline ran on it. A complete restated agreement (execution version,
+# with signature pages, not a blackline) replacing the Credit Agreement of
+# December 16, 2022 as amended four times. Two revolving tranches, Revolving A
+# ($792,000,000) and Revolving B ($708,000,000), share one maturity date and
+# one S&P and Moody ratings grid; the agreement never prints their total and
+# Schedule 2.01 is not in the text. Margin and commitment fee also carry an
+# annual sustainability adjustment that sits outside the ratings grid.
+
+document: ig2_nasdaq_2026
+corpus_name: IG_nasdaq-inc_2026-07-01_0001193125-26-292723_d146997dex101
+source: real
+tier: 2
+
+assertions:
+
+  - id: ndaq_borrower_legal_name
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: borrower.legal_name
+    expect: "NASDAQ, INC."
+    note: >
+      'among NASDAQ, INC., a Delaware corporation (the " Borrower ")'
+
+      The preamble. Additional Borrowers may join later, but none is named.
+
+  - id: ndaq_administrative_agent
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: administrative_agent.legal_name
+    expect: "BANK OF AMERICA, N.A."
+    note: >
+      'BANK OF AMERICA, N.A. (" Bank of America "), as Administrative Agent
+      and Issuing Bank'
+
+      The preamble; the same bank signs as Administrative Agent and is also
+      the Sustainability Coordinator. BofA Securities, Inc. is an arranger,
+      not the agent.
+
+  - id: ndaq_governing_law
+    family: F01_integrity
+    member: undefined_term_used
+    kind: field_value
+    target: facility.governing_law
+    expect: "New York"
+    note: >
+      'This Agreement shall be governed by, and construed in accordance with,
+      the laws of the State of New York'
+
+      Section 9.09(a).
+
+  - id: ndaq_revolver_commitment
+    family: F06_structure
+    member: delayed_draw_multi_tranche
+    kind: field_value
+    target: revolver.commitment
+    expect: "$792,000,000"
+    note: >
+      'Revolving A Commitments is $792,000,000'
+
+      Two revolving tranches: Revolving A at $792,000,000 and Revolving B at
+      $708,000,000 ('Revolving B Commitments is $708,000,000'). The agreement
+      never prints their total, so the largest tranche is labelled under the
+      brief, not the $1,500,000,000 sum. Incremental Revolving Commitments
+      are an accordion ('the aggregate principal amount of the Incremental
+      Revolving Commitments shall not exceed $1,000,000,000').
+
+  - id: ndaq_maturity_date
+    family: F09_definitional_depth
+    member: depth_4_plus_closure
+    kind: field_value
+    target: revolver.maturity_date
+    expect: 2031-06-30
+    note: >
+      '" Maturity Date " means June 30, 2031.'
+
+      One date for both tranches, a Monday, stated outright with no
+      business-day proviso.
+
+  - id: ndaq_margin_top_level
+    family: F07_benchmark
+    member: pricing_grid_stepdowns
+    kind: field_value
+    target: applicable_margin.eurodollar_top_level_pct
+    expect: "1.500%"
+    note: >
+      '5 |  | ≤ | BBB- /Baa3 |  |  |  | 0.150 | % |  |  | 1.500 | % |  |  |
+      1.375 | %'
+
+      Pricing Level 5 (BBB- or Baa3 and below) of the ratings grid, in the
+      column for 'Benchmark Loans, Term SOFR Loans, Daily Simple SOFR Loans
+      and Alternative Currency Loans'; the levels run 0.875%, 1.000%, 1.125%,
+      1.250% and 1.500% and apply to both tranches. In that row 0.150% is the
+      commitment fee and 1.375% the letter of credit fee. Section 2.20 then
+      moves the rate by a Sustainability Rate Adjustment of at most 0.025%
+      either way ('will never be reduced or increased by more than 0.025% per
+      annum pursuant to the Sustainability Rate Adjustment'); that adjustment
+      sits outside the ratings grid, so the grid top of 1.500% is labelled
+      rather than 1.525%.
+
+  - id: ndaq_floor_zero
+    family: F07_benchmark
+    member: floor_on_base_vs_all_in
+    kind: field_value
+    target: libor_floor_pct
+    expect: "0.00%"
+    note: >
+      'would otherwise be less than 0.00%, the Term SOFR shall be deemed 0.00%
+      for purposes of this Agreement'
+
+      The definition of Term SOFR; Daily Simple SOFR and the Benchmark Rate
+      carry the same zero floor. The 1.00% in clause (d) of the Base Rate
+      ('publicly announced from time to time by Bank of America as its "prime
+      rate" and (d) 1.00%') floors the base rate, not the benchmark.
+
+  - id: ndaq_commitment_fee
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: commitment_fee_pct
+    expect: "0.150%"
+    note: >
+      'a commitment fee in Dollars (the " Commitment Fee ") equal to the
+      Applicable Rate times the actual daily amount by which the aggregate
+      Revolving Commitments exceed the aggregate Revolving Exposures'
+
+      Section 2.10(a), an unused fee. Its rate is the Commitment Fee column of
+      the ratings grid, from 0.080% at Level 1 up to 0.150% at Level 5. The
+      Sustainability Commitment Fee Adjustment (at most 0.005% either way)
+      sits outside the grid, as for the margin.
+
+  - id: ndaq_leverage_covenant
+    family: F10_conditionality
+    member: time_and_leverage_stepdown
+    kind: field_value
+    target: financial_covenant.level
+    expect: "3.75 to 1.00"
+    note: >
+      'The Borrower will not permit the Leverage Ratio as of the last day of
+      any period of four consecutive fiscal quarters of the Borrower to be
+      greater than 3.75 to 1.00'
+
+      Section 6.06, net debt to EBITDA and the only financial covenant. The
+      Acquisition Holiday levels (4.25 to 1.00 on one occasion; 4.50, 4.25
+      and 4.00 to 1.00 on one further occasion) are acquisition step-ups, not
+      the standing level.
+
+  - id: ndaq_closing_date
+    family: F05_versioning
+    member: conformed_vs_executed
+    kind: field_value
+    target: closing_date
+    expect: 2026-06-30
+    note: >
+      'are satisfied (or waived in accordance with Section 9.02), which date
+      is the date hereof'
+
+      The Closing Date definition starts from the conditions in Section 4.01
+      but fixes the date itself: it is the date hereof, and the agreement is
+      'AMENDED AND RESTATED CREDIT AGREEMENT, dated as of June 30, 2026'.
+      Section 4.01 makes that the date this agreement becomes effective.
+      December 16, 2022 is the date of the agreement it restates.
