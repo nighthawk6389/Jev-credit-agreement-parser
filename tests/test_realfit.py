@@ -228,6 +228,16 @@ def test_a_wrong_value_the_reader_really_read_counts_as_a_mistake():
     assert weighted_threshold(near_misses_only, 0.99, rate=0.028)[0] == 0.9
 
 
+def test_the_held_out_report_says_what_the_reader_itself_gave():
+    """Near misses asked on purpose are the fit's stress, not answers anyone
+    receives; the report keeps the reader's own held-out values apart."""
+    rows = (_rows("economic_terms", "labelled", [0.9, 0.7, 0.5], True, side="holdout")
+            + _rows("economic_terms", "labelled", [0.65], False, side="holdout")
+            + _rows("economic_terms", "in_text", [0.95], False, side="holdout"))
+    assert R.held_out_reading(rows, "economic_terms", 0.6) == (
+        "the reader's own held-out values: 2 of 3 right and 1 of 1 wrong cleared")
+
+
 def test_a_label_that_withholds_the_value_makes_any_value_wrong():
     """Accelevation's joinder labels its revolving commitment needs_review: the
     amount in force is printed nowhere. Whatever the reader hands A for it is

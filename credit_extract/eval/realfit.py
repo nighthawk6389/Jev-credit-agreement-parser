@@ -537,6 +537,23 @@ def curve(rows: list[Row], field_class: str, at: float) -> dict[str, str]:
     return out
 
 
+def held_out_reading(rows: list[Row], field_class: str, at: float) -> str:
+    """What the threshold does to the reader's own held-out values.
+
+    The held-out metrics count every near miss asked on purpose as if the
+    reader had produced it, which is the stress the fit is built on and not
+    a rate anything reaches a user at. This says what the threshold does to
+    the values the reader actually gave.
+    """
+    own = [r for r in _side(rows, "holdout")
+           if r.field_class == field_class and r.kind == "labelled"]
+    right = [r for r in own if r.correct]
+    wrong = [r for r in own if not r.correct]
+    return (f"the reader's own held-out values: {sum(r.probability >= at for r in right)} "
+            f"of {len(right)} right and {sum(r.probability >= at for r in wrong)} of "
+            f"{len(wrong)} wrong cleared")
+
+
 def render(fits: list[ClassFit], rows: list[Row]) -> str:
     lines = []
     counts = {}
@@ -552,8 +569,10 @@ def render(fits: list[ClassFit], rows: list[Row]) -> str:
             lines.append(f"  at {at:.2f} on both sides: "
                          + ", ".join(f"{k} {v}" for k, v in curve(rows, fit.field_class, at).items()))
         m = fit.metrics
-        lines.append(f"  holdout at {m.threshold:.2f}: {m.n_accepted} of {m.n_holdout} "
-                     f"cleared, silent error rate {m.silent_error_rate:.3f}")
+        lines.append(f"  holdout at {m.threshold:.2f}, near misses counted as answers: "
+                     f"{m.n_accepted} of {m.n_holdout} cleared, silent error rate "
+                     f"{m.silent_error_rate:.3f}; "
+                     + held_out_reading(rows, fit.field_class, m.threshold))
     return "\n".join(lines)
 
 
@@ -596,9 +615,11 @@ def main(argv: list[str] | None = None) -> int:
             + "; ".join(
                 f"{VALIDATOR}/{f.field_class} {f.current:.2f} -> {f.adopted:.2f}, "
                 f"{f.reason}, fitted on {f.metrics.n} fit-side samples of which "
-                f"{f.metrics.n_incorrect} wrong; held out, {f.metrics.n_accepted} "
-                f"of {f.metrics.n_holdout} cleared at a silent error rate of "
-                f"{f.metrics.silent_error_rate:.3f}"
+                f"{f.metrics.n_incorrect} wrong; held out, with the near misses "
+                f"counted as answers, {f.metrics.n_accepted} of "
+                f"{f.metrics.n_holdout} cleared at a silent error rate of "
+                f"{f.metrics.silent_error_rate:.3f}, and "
+                + held_out_reading(rows, f.field_class, f.adopted)
                 for f in adopted
             )
             + ". Kept: " + "; ".join(
