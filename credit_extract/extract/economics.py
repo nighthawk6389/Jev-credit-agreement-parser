@@ -68,6 +68,7 @@ from ..ingest.tables import parse_money, parse_percent
 from ..models.core import Span
 from ..models.fpml_model import FIELD_REGISTRY, FieldSpec
 from ..models.quantities import quantity_for
+from .definitions import _SINCE_CHANGED
 
 #: The definitions tier's pass id, deliberately. ``reconcile`` ranks a value
 #: read from the term's own definition above every other reading, and these
@@ -295,12 +296,18 @@ _SIZE_SHAPES = (
 #: tranche's definition: Blue Owl Technology's and Fidelity's "The aggregate
 #: amount of the Lenders' Multicurrency Commitments as of the Second Amendment
 #: Effective Date is $ 550,000,000", and KKR's single total.
+#: The investment-grade forms say the same without the Lenders: Enterprise
+#: Products' "The initial aggregate amount of the Lenders' Commitments as of
+#: the Effective Date is $1,000,000,000", Cencora's "The aggregate amount of
+#: the Commitments as of the Restatement Effective Date is US$7,000,000,000",
+#: Latham's "The aggregate amount of the Initial Revolving Credit Commitments
+#: as of the Closing Date is $75,000,000".
 _TRANCHE_TOTAL = re.compile(
-    r"The\s+aggregate\s+(?:principal\s+)?amount\s+of\s+(?:the\s+)?"
-    r"(?:(?:Lenders['’]?|Lender['’]s)\s+(?P<tranche>(?:[A-Z][\w\-]*\s+){0,3})"
+    r"The\s+(?:initial\s+)?aggregate\s+(?:principal\s+)?amount\s+of\s+(?:the\s+)?"
+    r"(?:(?:(?:Lenders['’]?|Lender['’]s)\s+)?(?P<tranche>(?:[A-Z][\w\-]*\s+){0,3})"
     r"Commitments|Commitments\s+of\s+all\s+(?:of\s+the\s+)?Lenders)"
-    r"\s+(?:as\s+of\s+(?P<asof>[^.$]{0,80}?)\s+)?(?:is|was|equals|shall\s+be)\s+(?P<amount>"
-    + _MONEY + r")"
+    r"\s+(?:as\s+of\s+(?P<asof>[^.$]{0,80}?)\s+)?(?:is|was|equals|shall\s+be)\s+"
+    r"(?:US)?(?P<amount>" + _MONEY + r")"
 )
 #: An amendment, from its title. Its conformed copy keeps statements dated
 #: before it: Lafayette Square's Amendment No. 1 carries "The aggregate amount
@@ -344,6 +351,76 @@ def _size_from(node: Any) -> tuple[Any, str] | None:
     return None
 
 
+#: A commitment term of an investment-grade agreement, whose definition
+#: states the total on a date: "Aggregate Commitments", "Aggregate Revolving
+#: Commitment Amount", "Revolving Credit Facility", "Commitment".
+_AGGREGATE_TERM = re.compile(
+    r"^(?:Aggregate\s+)?(?:(?:Initial\s+)?Revolving(?:\s+Credit)?\s+)?"
+    r"(?:Commitments?|Facility)(?:\s+Amount)?$")
+_ON_DATE = r"the\s+(?P<date>[^,.;$]{0,60}?(?:Date|date\s+hereof))"
+_DATED_AMOUNT = r"(?:US)?(?P<amount>" + _MONEY + r")"
+#: The total, stated on a date. Globe Life's "As of the Effective Date, the
+#: Aggregate Commitments are $1,000,000,000"; Apple Hospitality's "On the
+#: Restatement Effective Date, the Revolving Credit Facility is
+#: $700,000,000"; Artisan's "The Aggregate Commitments on the Closing Date is
+#: $150,000,000"; Target's Commitment, "the aggregate amount of which at the
+#: Effective Date is $4,000,000,000"; Cooper-Standard's Commitments, "which
+#: amount shall be $ 200,000,000 on the Sixth Amendment Effective Date".
+_DATED_AGGREGATE = (
+    re.compile(r"\b(?:On|As\s+of|At)\s+" + _ON_DATE + r"\s*,\s*the\s+"
+               r"(?P<subject>[A-Z][\w\- ]{0,60}?)\s+(?:is|are|equals?|shall\s+be)\s+"
+               + _DATED_AMOUNT),
+    re.compile(r"\bThe\s+(?P<subject>[A-Z][\w\- ]{0,60}?)\s+(?:on|as\s+of|at)\s+"
+               + _ON_DATE + r"\s+(?:is|are|equals?|shall\s+be)\s+" + _DATED_AMOUNT),
+    re.compile(r"\baggregate\s+amount\s+of\s+which\s+(?:on|as\s+of|at)\s+" + _ON_DATE
+               + r"\s+(?:is|was)\s+" + _DATED_AMOUNT),
+    re.compile(r"\bwhich\s+amount\s+shall\s+be\s+" + _DATED_AMOUNT
+               + r"\s+(?:on|as\s+of)\s+" + _ON_DATE),
+)
+#: Not the revolver: a term loan's, an accordion's, a sublimit.
+_NOT_REVOLVING = re.compile(
+    r"\bTerm\b|Incremental|Increase|Swing|Letter|Sublimit|Delayed|Bridge", re.I)
+
+
+def _dated_aggregate(doc: NormalizedDocument, graph: Any) -> list[Any]:
+    """The total a commitment term's own definition states on a date.
+
+    Investment-grade agreements print the per-lender amounts in a schedule
+    that is often not in the filing, and the total in the definition, dated
+    to the day the agreement or its restatement took effect. Two different
+    totals settle nothing, and a definition that says its figure has since
+    changed is not read, as in the definitions tier.
+    """
+    found: list[tuple[Decimal, str, Any, str]] = []
+    for name in graph.nodes:
+        if not _AGGREGATE_TERM.match(name):
+            continue
+        node = graph.get(name)
+        body = _flat(node.body)
+        if _SINCE_CHANGED.search(body):
+            continue
+        for shape in _DATED_AGGREGATE:
+            match = shape.search(body)
+            if match is None:
+                continue
+            subject = match.groupdict().get("subject") or ""
+            if _NOT_REVOLVING.search(subject):
+                continue
+            value = parse_money(re.sub(r"\s+", "", match.group("amount")))
+            if value is not None and value > 0:
+                found.append((value, match.group("amount"), node, name))
+                break
+    if len({value for value, _, _, _ in found}) != 1:
+        return []
+    value, written, node, name = found[0]
+    return [_candidate(
+        "revolver.commitment", value, node.span,
+        f"the definition of {name!r} states the total on the day the agreement "
+        "took effect; an amount it may be increased to is not the size",
+        as_written=written,
+    )]
+
+
 def commitment_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
     if not facility_revolves(doc, graph):
         return []
@@ -365,7 +442,7 @@ def commitment_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
                 "facility; a figure it may be increased to is not the size",
                 as_written=written,
             )]
-    return _tranche_totals(doc)
+    return _dated_aggregate(doc, graph) or _tranche_totals(doc)
 
 
 def _tranche_totals(doc: NormalizedDocument) -> list[Any]:
@@ -410,7 +487,9 @@ def _tranche_totals(doc: NormalizedDocument) -> list[Any]:
         others = ", ".join(sorted({f"{t} {v:,}" for v, t, _ in pool if t != tranche}))
         note = (f"the largest revolving tranche, the {tranche} Commitments; "
                 f"the others ({others}) are not added, because a sum appears "
-                "nowhere in the agreement")
+                "nowhere in the agreement") if others else (
+                f"the {tranche} Commitments, the only revolving tranche whose "
+                "total the agreement states")
     return [_candidate("revolver.commitment", value, span, note,
                        as_written=match.group("amount"))]
 

@@ -196,6 +196,63 @@ def test_an_untranched_total_that_includes_term_commitments_is_not_read():
     ) is None
 
 
+@pytest.mark.parametrize("definition, expected", [
+    # Globe Life
+    ('" Aggregate Commitments " means the Commitments of all the Lenders. As of '
+     "the Effective Date, the Aggregate Commitments are $1,000,000,000.",
+     Decimal("1000000000")),
+    # Artisan Partners
+    ('" Aggregate Commitments " means the Commitments of all the Lenders. The '
+     "Aggregate Commitments on the Closing Date is $150,000,000.",
+     Decimal("150000000")),
+    # Target
+    ('" Commitment " means, with respect to each Lender, the commitment of such '
+     "Lender to make Revolving Loans, the aggregate amount of which at the "
+     "Effective Date is $4,000,000,000.", Decimal("4000000000")),
+    # Cooper-Standard
+    ('" Commitments " means the aggregate amount of all Facility Commitments, '
+     "which amount shall be $ 200,000,000 on the Sixth Amendment Effective Date.",
+     Decimal("200000000")),
+])
+def test_an_investment_grade_total_stated_on_a_date_is_the_commitment(definition, expected):
+    """The per-lender amounts are in a schedule the filing often omits; the
+    total is in the commitment's own definition, dated to the day the
+    agreement or its restatement took effect."""
+    assert _value(E.commitment_candidates, definition) == expected
+
+
+def test_a_dated_total_that_is_not_the_revolvers_or_not_one_settles_nothing():
+    accordion = ('" Commitment " means each Lender\'s commitment. On the Closing Date, '
+                 "the Incremental Commitments are $500,000,000.")
+    assert _value(E.commitment_candidates, accordion) is None
+    two = ('" Aggregate Commitments " means the Commitments of all the Lenders. As '
+           "of the Effective Date, the Aggregate Commitments are $1,000,000,000.",
+           '" Revolving Credit Facility " means the facility. On the Effective Date, '
+           "the Revolving Credit Facility is $1,200,000,000.")
+    assert _value(E.commitment_candidates, *two) is None
+    since_changed = ('" Aggregate Commitments " means the Commitments of all the '
+                     "Lenders. As of the Closing Date, the Aggregate Commitments are "
+                     "$500,000,000; provided that the Aggregate Commitments shall be "
+                     "increased by $100,000,000 on the First Amendment Effective Date.")
+    assert _value(E.commitment_candidates, since_changed) is None
+
+
+@pytest.mark.parametrize("statement, expected", [
+    # Enterprise Products: "initial".
+    ("The initial aggregate amount of the Lenders' Commitments as of the Effective "
+     "Date is $1,000,000,000.", Decimal("1000000000")),
+    # Cencora: no Lenders, and the amount in US$.
+    ("The aggregate amount of the Commitments as of the Restatement Effective Date "
+     "is US$7,000,000,000.", Decimal("7000000000")),
+    # Latham: a revolving tranche named without the Lenders.
+    ("The aggregate amount of the Initial Revolving Credit Commitments as of the "
+     "Closing Date is $75,000,000.", Decimal("75000000")),
+])
+def test_a_stated_total_is_read_without_the_lenders_too(statement, expected):
+    definition = '" Commitment " means each Lender\'s commitment. ' + statement
+    assert _value(E.commitment_candidates, definition) == expected
+
+
 # ---------------------------------------------------------------------------
 # revolver.maturity_date
 # ---------------------------------------------------------------------------
