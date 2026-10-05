@@ -610,6 +610,34 @@ def test_a_party_name_stops_at_the_party_before_it():
     assert rule.search(mixed).group(1) == "Bank of America, N.A."
 
 
+def test_the_last_name_of_a_list_sharing_a_plural_role_is_not_the_party():
+    """Found out of sample, on the investment-grade set: four confirmed
+    parties, each the last of a list. A role in the plural is shared by every
+    name before it, and the first-named is the answer; the name beside the
+    role is only the last, so no rule takes it."""
+    import re
+    from credit_extract.extract.passes import OFFLINE_RULES
+
+    rules = {r.field: re.compile(r.pattern) for r in OFFLINE_RULES
+             if r.field in ("borrower.legal_name", "syndication_agent.legal_name",
+                            "arranger.legal_name", "administrative_agent.legal_name")}
+    athene = ("among ATHENE HOLDING LTD., ATHENE ANNUITY RE LTD., ATHENE LIFE RE "
+              "LTD., and ATHENE USA CORPORATION, as Borrowers, THE LENDERS FROM "
+              "TIME TO TIME PARTY HERETO, CITIBANK, N.A., as Administrative Agent, "
+              "BANK OF AMERICA, N.A., BARCLAYS BANK PLC, and WELLS FARGO BANK, "
+              "NATIONAL ASSOCIATION, as Syndication Agents")
+    assert rules["borrower.legal_name"].search(athene) is None
+    assert rules["syndication_agent.legal_name"].search(athene) is None
+    assert rules["administrative_agent.legal_name"].search(athene).group(1) == "CITIBANK, N.A."
+    assert rules["arranger.legal_name"].search(
+        "CITIBANK, N.A. and WELLS FARGO SECURITIES, LLC, as Joint Lead Arrangers") is None
+    # The singular still reads, in a preamble and on a signature page.
+    assert rules["borrower.legal_name"].search(
+        "among AVNET, INC., as Borrower, and the Lenders").group(1) == "AVNET, INC."
+    assert rules["syndication_agent.legal_name"].search(
+        "Agents, JPMORGAN CHASE BANK, N.A., as Syndication Agent").group(1) == "JPMORGAN CHASE BANK, N.A."
+
+
 def test_a_party_name_survives_a_space_before_its_comma():
     """The normaliser leaves "TRUIST BANK , as" where the source had markup
     between the name and the comma, and a rule anchored on ",\\s*as" matches

@@ -1064,18 +1064,30 @@ _PCT = r"[\d.]+\s*(?:%|bps\b|basis\s+points)"
 #: does not settle either is still caught by the orphan sweep. Before adding a
 #: rule, the question is not "does this match the document in front of me" but
 #: "is this form common and unambiguous enough that a pattern beats a model".
+#
+#: A role in the plural is shared by a list, and the name beside it is only
+#: the list's last. Athene's preamble reads "among ATHENE HOLDING LTD., ATHENE
+#: ANNUITY RE LTD., ATHENE LIFE RE LTD., and ATHENE USA CORPORATION, as
+#: Borrowers", and the borrower came back as Athene USA Corporation; the same
+#: reading took the last of seven syndication agents twice and the last of six
+#: arrangers, all four confirmed, all found out of sample on the
+#: investment-grade set. The first-named is the answer, so a pattern that can
+#: see only the last declines. Guarantors are the exception, below: any
+#: guarantor named is a right answer.
+_SINGULAR = r"(?!s\b)"
+
 OFFLINE_RULES: tuple[Rule, ...] = (
     # -- parties -------------------------------------------------------------
-    Rule("borrower.legal_name", _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Borrower", 0.90, 0),
+    Rule("borrower.legal_name", _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Borrower" + _SINGULAR, 0.90, 0),
     Rule("holdings.legal_name", _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Holdings", 0.90, 0),
     Rule("administrative_agent.legal_name",
-         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Administrative Agent", 0.90, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:the )?Administrative Agent" + _SINGULAR, 0.90, 0),
     Rule("collateral_agent.legal_name",
-         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Administrative Agent and )?Collateral Agent", 0.85, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Administrative Agent and )?Collateral Agent" + _SINGULAR, 0.85, 0),
     Rule("arranger.legal_name",
-         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Lead |Sole |Joint )*(?:Lead )?Arranger", 0.85, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as (?:Lead |Sole |Joint )*(?:Lead )?Arranger" + _SINGULAR, 0.85, 0),
     Rule("syndication_agent.legal_name",
-         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent", 0.90, 0),
+         _PARTY + r"\s*,\s*(?:in its capacit(?:y|ies) )?as Syndication Agent" + _SINGULAR, 0.90, 0),
     # The one party nothing read. A guarantor is named the way the others are
     # -- "FIDELITY DIRECT LENDING FUND I BLOCKER LLC, as Subsidiary Guarantor",
     # "SCHNEIDER NATIONAL CARRIERS, INC., as Guarantors" -- and with no rule
