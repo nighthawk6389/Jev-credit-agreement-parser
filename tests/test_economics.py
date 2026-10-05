@@ -253,6 +253,32 @@ def test_a_stated_total_is_read_without_the_lenders_too(statement, expected):
     assert _value(E.commitment_candidates, definition) == expected
 
 
+def _schedule(*rows: tuple[str, ...]) -> str:
+    return ("<p>SCHEDULE 2.01 COMMITMENTS AND APPLICABLE PERCENTAGES</p><table>"
+            + "".join(_row(*row) for row in rows) + "</table>")
+
+
+def test_a_schedules_total_row_is_read_where_the_lenders_add_up_to_it(tmp_path):
+    """Cboe and Franklin print their total only in Schedule 2.01, with the
+    dollar sign in a cell of its own."""
+    lenders = [("Bank of America, N.A.", "$", "250,000,000.00", "62.5", "%"),
+               ("Morgan Stanley Bank, N.A.", "$", "150,000,000.00", "37.5", "%")]
+    head = ("Lender", "Commitment", "Applicable Percentage")
+    total = ("Total", "$", "400,000,000.00", "100.000000000", "%")
+
+    doc, graph = _filing(tmp_path, _schedule(head, *lenders, total))
+    assert [c.value for c in E.commitment_candidates(doc, graph)] == [Decimal("400000000.00")]
+
+    # A total its rows do not add up to -- a page break, another table -- is not read.
+    doc, graph = _filing(tmp_path, _schedule(head, lenders[0], total))
+    assert E.commitment_candidates(doc, graph) == []
+
+    # Nor is a schedule whose first column of amounts is not the commitments.
+    term_first = ("Lender", "Term Loan Commitment", "Revolving Credit Commitment")
+    doc, graph = _filing(tmp_path, _schedule(term_first, *lenders, total))
+    assert E.commitment_candidates(doc, graph) == []
+
+
 # ---------------------------------------------------------------------------
 # revolver.maturity_date
 # ---------------------------------------------------------------------------

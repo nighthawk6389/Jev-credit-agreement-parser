@@ -421,6 +421,64 @@ def _dated_aggregate(doc: NormalizedDocument, graph: Any) -> list[Any]:
     )]
 
 
+#: A commitment schedule: one column of commitments beside the lenders, and
+#: never a term loan's, a letter of credit's, a swing line's or an increase.
+_SCHEDULE_COMMITMENT_HEAD = re.compile(
+    r"^(?:Revolving\s+(?:Credit\s+)?)?Commitments?(?:\s+Amount)?$", re.I)
+_SCHEDULE_LENDER_HEAD = re.compile(r"^(?:Name\s+of\s+)?(?:Lenders?|Banks?)$", re.I)
+_SCHEDULE_MONEY = re.compile(r"\$\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?)")
+
+
+def _schedule_total(doc: NormalizedDocument) -> list[Any]:
+    """A commitment schedule's Total row, where the lenders' rows add up to it.
+
+    Cboe and Franklin print their totals nowhere else: Schedule 2.01 reads
+    "Lender | Commitment | Applicable Percentage" down to "Total | $ |
+    400,000,000.00 | 100.000000000 | %". The rows must sum to the total, so a
+    schedule split across pages, or a table that only looks like one, is not
+    read; two schedules with different totals settle nothing.
+    """
+    totals: dict[Decimal, Any] = {}
+    for table in doc.tables:
+        rows = [[" ".join(c.text.split()) for c in row] for row in table.rows()]
+        rows = [[text for text in row if text] for row in rows]
+        rows = [row for row in rows if row]
+        if len(rows) < 3:
+            continue
+        head = rows[0]
+        # The first amount in each row is read, so the commitment column must
+        # be the first after the lender's name: Limbach's schedule goes on to
+        # its term and delayed draw columns.
+        if not (len(head) >= 2 and _SCHEDULE_LENDER_HEAD.match(head[0])
+                and _SCHEDULE_COMMITMENT_HEAD.match(head[1])):
+            continue
+        amounts, total, total_row = [], None, None
+        for index, row in enumerate(rows[1:], start=1):
+            money = _SCHEDULE_MONEY.search(" ".join(row).replace("$ ", "$"))
+            if money is None:
+                continue
+            value = parse_money("$" + money.group(1))
+            if re.match(r"(?i)total\b", row[0]):
+                total, total_row = value, index
+                break
+            amounts.append(value)
+        if total is None or not amounts or abs(sum(amounts) - total) > Decimal("1"):
+            continue
+        cells = [c for c in table.rows()[total_row] if _SCHEDULE_MONEY.search(
+            c.text.replace("$ ", "$")) or re.fullmatch(r"[\d,]+(?:\.\d+)?", c.text.strip())]
+        span = doc.span(cells[0].start, cells[0].end) if cells else doc.span(table.start, table.end)
+        totals.setdefault(total, span)
+    if len(totals) != 1:
+        return []
+    (total, span), = totals.items()
+    return [_candidate(
+        "revolver.commitment", total, span,
+        "the Total row of the commitment schedule, which the lenders' "
+        "commitments above it add up to",
+        as_written=f"${total:,}",
+    )]
+
+
 def commitment_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
     if not facility_revolves(doc, graph):
         return []
@@ -442,7 +500,7 @@ def commitment_candidates(doc: NormalizedDocument, graph: Any) -> list[Any]:
                 "facility; a figure it may be increased to is not the size",
                 as_written=written,
             )]
-    return _dated_aggregate(doc, graph) or _tranche_totals(doc)
+    return _dated_aggregate(doc, graph) or _tranche_totals(doc) or _schedule_total(doc)
 
 
 def _tranche_totals(doc: NormalizedDocument) -> list[Any]:
